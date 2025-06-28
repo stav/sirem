@@ -9,12 +9,12 @@ import {
   CheckCircle, 
   Clock, 
   AlertTriangle, 
-  TrendingUp, 
   Calendar,
   Phone,
   Mail,
   Plus,
-  ArrowRight
+  ArrowRight,
+  Table
 } from 'lucide-react'
 import type { Database } from '@/lib/supabase'
 import Navigation from '@/components/Navigation'
@@ -345,6 +345,16 @@ export default function Home() {
                     </div>
                   </Link>
                   <Link 
+                    href="/sheets" 
+                    className="flex items-center p-4 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
+                  >
+                    <Table className="h-6 w-6 text-blue-600 mr-3" />
+                    <div>
+                      <p className="font-medium text-blue-900">Edit in Sheets</p>
+                      <p className="text-sm text-blue-700">Spreadsheet view for contacts</p>
+                    </div>
+                  </Link>
+                  <Link 
                     href="/manage" 
                     className="flex items-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
                   >
@@ -352,16 +362,6 @@ export default function Home() {
                     <div>
                       <p className="font-medium text-orange-900">Create Reminder</p>
                       <p className="text-sm text-orange-700">Set a new reminder</p>
-                    </div>
-                  </Link>
-                  <Link 
-                    href="/manage" 
-                    className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
-                  >
-                    <TrendingUp className="h-6 w-6 text-green-600 mr-3" />
-                    <div>
-                      <p className="font-medium text-green-900">View Reports</p>
-                      <p className="text-sm text-green-700">See your CRM analytics</p>
                     </div>
                   </Link>
                 </div>
