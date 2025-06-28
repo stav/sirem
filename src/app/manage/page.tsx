@@ -5,6 +5,19 @@ import { supabase } from '@/lib/supabase'
 import { Plus, Phone, Mail, Calendar, CheckCircle, Circle, Edit, Trash2 } from 'lucide-react'
 import type { Database } from '@/lib/supabase'
 import Navigation from '@/components/Navigation'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Label } from '@/components/ui/label'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 type Reminder = Database['public']['Tables']['reminders']['Row']
@@ -212,15 +225,6 @@ export default function Manage() {
     setShowReminderForm(true)
   }
 
-  function getPriorityColor(priority: string) {
-    switch (priority) {
-      case 'high': return 'text-red-600 bg-red-100'
-      case 'medium': return 'text-yellow-600 bg-yellow-100'
-      case 'low': return 'text-green-600 bg-green-100'
-      default: return 'text-gray-600 bg-gray-100'
-    }
-  }
-
   function getContactName(contactId: string) {
     const contact = contacts.find((c: Contact) => c.id === contactId)
     return contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
@@ -228,30 +232,30 @@ export default function Manage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading your CRM...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">Loading your CRM...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-background">
       <Navigation pageTitle="Manage" />
 
       <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {/* Tab Navigation */}
         <div className="mb-6">
-          <div className="border-b border-gray-200">
+          <div className="border-b border-border">
             <nav className="-mb-px flex space-x-8">
               <button
                 onClick={() => setActiveTab('contacts')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'contacts'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                 }`}
               >
                 Contacts ({contacts.length})
@@ -260,8 +264,8 @@ export default function Manage() {
                 onClick={() => setActiveTab('reminders')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
                   activeTab === 'reminders'
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
                 }`}
               >
                 Reminders ({reminders.filter(r => !r.completed).length})
@@ -273,113 +277,109 @@ export default function Manage() {
         {activeTab === 'contacts' ? (
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Contacts</h2>
-              <button
+              <h2 className="text-xl font-semibold text-foreground">Contacts</h2>
+              <Button
                 onClick={() => setShowContactForm(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
+                className="flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 Add Contact
-              </button>
+              </Button>
             </div>
 
             {/* Contact Form */}
             {showContactForm && (
-              <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
-                <h3 className="text-lg font-medium mb-4">
-                  {editingContact ? 'Edit Contact' : 'Add New Contact'}
-                </h3>
-                <form onSubmit={handleContactSubmit} className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">First Name</label>
-                      <input
-                        type="text"
-                        required
-                        value={contactForm.first_name}
-                        onChange={(e) => setContactForm({...contactForm, first_name: e.target.value})}
-                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>
+                    {editingContact ? 'Edit Contact' : 'Add New Contact'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleContactSubmit} className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="first_name">First Name</Label>
+                        <Input
+                          id="first_name"
+                          type="text"
+                          required
+                          value={contactForm.first_name}
+                          onChange={(e) => setContactForm({...contactForm, first_name: e.target.value})}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="last_name">Last Name</Label>
+                        <Input
+                          id="last_name"
+                          type="text"
+                          required
+                          value={contactForm.last_name}
+                          onChange={(e) => setContactForm({...contactForm, last_name: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email</Label>
+                        <Input
+                          id="email"
+                          type="email"
+                          value={contactForm.email}
+                          onChange={(e) => setContactForm({...contactForm, email: e.target.value})}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="phone">Phone</Label>
+                        <Input
+                          id="phone"
+                          type="tel"
+                          value={contactForm.phone}
+                          onChange={(e) => setContactForm({...contactForm, phone: e.target.value})}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="notes">Notes</Label>
+                      <Textarea
+                        id="notes"
+                        value={contactForm.notes}
+                        onChange={(e) => setContactForm({...contactForm, notes: e.target.value})}
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Last Name</label>
-                      <input
-                        type="text"
-                        required
-                        value={contactForm.last_name}
-                        onChange={(e) => setContactForm({...contactForm, last_name: e.target.value})}
-                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
+                    <div className="flex gap-3">
+                      <Button type="submit">
+                        {editingContact ? 'Update Contact' : 'Add Contact'}
+                      </Button>
+                      <Button type="button" variant="outline" onClick={resetContactForm}>
+                        Cancel
+                      </Button>
                     </div>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Email</label>
-                      <input
-                        type="email"
-                        value={contactForm.email}
-                        onChange={(e) => setContactForm({...contactForm, email: e.target.value})}
-                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Phone</label>
-                      <input
-                        type="tel"
-                        value={contactForm.phone}
-                        onChange={(e) => setContactForm({...contactForm, phone: e.target.value})}
-                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Notes</label>
-                    <textarea
-                      value={contactForm.notes}
-                      onChange={(e) => setContactForm({...contactForm, notes: e.target.value})}
-                      rows={3}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  <div className="flex gap-3">
-                    <button
-                      type="submit"
-                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-                    >
-                      {editingContact ? 'Update Contact' : 'Add Contact'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={resetContactForm}
-                      className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              </div>
+                  </form>
+                </CardContent>
+              </Card>
             )}
 
             {/* Contacts List */}
-            <div className="bg-white shadow-sm rounded-lg border">
+            <Card>
               {contacts.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
+                <CardContent className="p-8 text-center text-muted-foreground">
                   <p>No contacts yet. Add your first contact to get started!</p>
-                </div>
+                </CardContent>
               ) : (
-                <div className="divide-y divide-gray-200">
+                <div className="divide-y divide-border">
                   {contacts.map((contact) => (
-                    <div key={contact.id} className="p-6">
+                    <CardContent key={contact.id} className="p-6">
                       <div className="flex justify-between items-start">
                         <div className="flex-1">
-                          <h3 className="text-lg font-medium text-gray-900">
+                          <h3 className="text-lg font-medium text-foreground">
                             {contact.first_name} {contact.last_name}
                           </h3>
-                          <div className="mt-2 flex items-center gap-4 text-sm text-gray-600">
+                          <div className="mt-2 flex items-center gap-4 text-sm text-muted-foreground">
                             {contact.email && (
                               <div className="flex items-center gap-1">
                                 <Mail className="w-4 h-4" />
-                                <a href={`mailto:${contact.email}`} className="hover:text-blue-600">
+                                <a href={`mailto:${contact.email}`} className="hover:text-foreground">
                                   {contact.email}
                                 </a>
                               </div>
@@ -387,198 +387,205 @@ export default function Manage() {
                             {contact.phone && (
                               <div className="flex items-center gap-1">
                                 <Phone className="w-4 h-4" />
-                                <a href={`tel:${contact.phone}`} className="hover:text-blue-600">
+                                <a href={`tel:${contact.phone}`} className="hover:text-foreground">
                                   {contact.phone}
                                 </a>
                               </div>
                             )}
                           </div>
                           {contact.notes && (
-                            <p className="mt-2 text-sm text-gray-600">{contact.notes}</p>
+                            <p className="mt-2 text-sm text-muted-foreground">{contact.notes}</p>
                           )}
                         </div>
                         <div className="flex gap-2">
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => editContact(contact)}
-                            className="text-gray-400 hover:text-gray-600"
                           >
                             <Edit className="w-4 h-4" />
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => deleteContact(contact)}
-                            className="text-gray-400 hover:text-red-600"
                           >
                             <Trash2 className="w-4 h-4" />
-                          </button>
+                          </Button>
                         </div>
                       </div>
-                    </div>
+                    </CardContent>
                   ))}
                 </div>
               )}
-            </div>
+            </Card>
           </div>
         ) : (
           <div>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-semibold text-gray-900">Reminders</h2>
-              <button
+              <h2 className="text-xl font-semibold text-foreground">Reminders</h2>
+              <Button
                 onClick={() => setShowReminderForm(true)}
-                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
+                className="flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 Add Reminder
-              </button>
+              </Button>
             </div>
 
             {/* Reminder Form */}
             {showReminderForm && (
-              <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
-                <h3 className="text-lg font-medium mb-4">
-                  {editingReminder ? 'Edit Reminder' : 'Add New Reminder'}
-                </h3>
-                <form onSubmit={handleReminderSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Contact</label>
-                    <select
-                      required
-                      value={reminderForm.contact_id}
-                      onChange={(e) => setReminderForm({...reminderForm, contact_id: e.target.value})}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="">Select a contact</option>
-                      {contacts.map((contact) => (
-                        <option key={contact.id} value={contact.id}>
-                          {contact.first_name} {contact.last_name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Title</label>
-                    <input
-                      type="text"
-                      required
-                      value={reminderForm.title}
-                      onChange={(e) => setReminderForm({...reminderForm, title: e.target.value})}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700">Description</label>
-                    <textarea
-                      value={reminderForm.description}
-                      onChange={(e) => setReminderForm({...reminderForm, description: e.target.value})}
-                      rows={3}
-                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Due Date</label>
-                      <input
-                        type="date"
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle>
+                    {editingReminder ? 'Edit Reminder' : 'Add New Reminder'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleReminderSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="contact">Contact</Label>
+                      <Select
+                        value={reminderForm.contact_id}
+                        onValueChange={(value) => setReminderForm({...reminderForm, contact_id: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select a contact" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {contacts.map((contact) => (
+                            <SelectItem key={contact.id} value={contact.id}>
+                              {contact.first_name} {contact.last_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="title">Title</Label>
+                      <Input
+                        id="title"
+                        type="text"
                         required
-                        value={reminderForm.due_date}
-                        onChange={(e) => setReminderForm({...reminderForm, due_date: e.target.value})}
-                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        value={reminderForm.title}
+                        onChange={(e) => setReminderForm({...reminderForm, title: e.target.value})}
                       />
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700">Priority</label>
-                      <select
-                        value={reminderForm.priority}
-                        onChange={(e) => setReminderForm({...reminderForm, priority: e.target.value as 'low' | 'medium' | 'high'})}
-                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      >
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                      </select>
+                    <div className="space-y-2">
+                      <Label htmlFor="description">Description</Label>
+                      <Textarea
+                        id="description"
+                        value={reminderForm.description}
+                        onChange={(e) => setReminderForm({...reminderForm, description: e.target.value})}
+                      />
                     </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <button
-                      type="submit"
-                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
-                    >
-                      {editingReminder ? 'Update Reminder' : 'Add Reminder'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={resetReminderForm}
-                      className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </form>
-              </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="due_date">Due Date</Label>
+                        <Input
+                          id="due_date"
+                          type="datetime-local"
+                          required
+                          value={reminderForm.due_date}
+                          onChange={(e) => setReminderForm({...reminderForm, due_date: e.target.value})}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="priority">Priority</Label>
+                        <Select
+                          value={reminderForm.priority}
+                          onValueChange={(value: 'low' | 'medium' | 'high') => setReminderForm({...reminderForm, priority: value})}
+                        >
+                          <SelectTrigger>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="low">Low</SelectItem>
+                            <SelectItem value="medium">Medium</SelectItem>
+                            <SelectItem value="high">High</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <div className="flex gap-3">
+                      <Button type="submit">
+                        {editingReminder ? 'Update Reminder' : 'Add Reminder'}
+                      </Button>
+                      <Button type="button" variant="outline" onClick={resetReminderForm}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
             )}
 
             {/* Reminders List */}
-            <div className="bg-white shadow-sm rounded-lg border">
+            <Card>
               {reminders.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
+                <CardContent className="p-8 text-center text-muted-foreground">
                   <p>No reminders yet. Add your first reminder to get started!</p>
-                </div>
+                </CardContent>
               ) : (
-                <div className="divide-y divide-gray-200">
+                <div className="divide-y divide-border">
                   {reminders.map((reminder) => (
-                    <div key={reminder.id} className="p-6">
+                    <CardContent key={reminder.id} className="p-6">
                       <div className="flex items-start gap-4">
-                        <button
+                        <Button
+                          variant="ghost"
+                          size="icon"
                           onClick={() => toggleReminderComplete(reminder)}
-                          className="mt-1"
                         >
                           {reminder.completed ? (
                             <CheckCircle className="w-5 h-5 text-green-600" />
                           ) : (
-                            <Circle className="w-5 h-5 text-gray-400 hover:text-gray-600" />
+                            <Circle className="w-5 h-5 text-muted-foreground hover:text-foreground" />
                           )}
-                        </button>
+                        </Button>
                         <div className="flex-1">
                           <div className="flex items-center gap-3">
-                            <h3 className={`text-lg font-medium ${reminder.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                            <h3 className={`text-lg font-medium ${reminder.completed ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
                               {reminder.title}
                             </h3>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(reminder.priority)}`}>
+                            <Badge variant={reminder.priority === 'high' ? 'destructive' : reminder.priority === 'medium' ? 'default' : 'secondary'}>
                               {reminder.priority}
-                            </span>
+                            </Badge>
                           </div>
-                          <p className="text-sm text-gray-600 mt-1">
+                          <p className="text-sm text-muted-foreground mt-1">
                             Contact: {getContactName(reminder.contact_id)}
                           </p>
                           {reminder.description && (
-                            <p className={`text-sm mt-2 ${reminder.completed ? 'text-gray-400' : 'text-gray-600'}`}>
+                            <p className={`text-sm mt-2 ${reminder.completed ? 'text-muted-foreground' : 'text-muted-foreground'}`}>
                               {reminder.description}
                             </p>
                           )}
-                          <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
+                          <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
                             <Calendar className="w-4 h-4" />
                             <span>Due: {new Date(reminder.due_date).toLocaleDateString()}</span>
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <button
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => editReminder(reminder)}
-                            className="text-gray-400 hover:text-gray-600"
                           >
                             <Edit className="w-4 h-4" />
-                          </button>
-                          <button
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
                             onClick={() => deleteReminder(reminder)}
-                            className="text-gray-400 hover:text-red-600"
                           >
                             <Trash2 className="w-4 h-4" />
-                          </button>
+                          </Button>
                         </div>
                       </div>
-                    </div>
+                    </CardContent>
                   ))}
                 </div>
               )}
-            </div>
+            </Card>
           </div>
         )}
       </div>
