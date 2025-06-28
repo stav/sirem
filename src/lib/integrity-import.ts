@@ -177,57 +177,61 @@ export class IntegrityImporter {
       }
     }
 
-    // Insert tag categories
+    // Insert tag categories using upsert
     for (const category of tagCategories) {
       const { data, error } = await supabase
         .from('tag_categories')
-        .insert({
-          name: category.name,
-          color: category.color
-        })
+        .upsert(
+          { name: category.name, color: category.color },
+          { onConflict: 'name' }
+        )
         .select()
         .single()
       
       if (error) {
-        console.warn(`Failed to insert tag category ${category.name}:`, error)
+        console.warn(`Failed to upsert tag category ${category.name}:`, error)
       } else if (data) {
         this.tagCategoryMap.set(category.id, data.id)
       }
     }
 
-    // Insert tags
+    // Insert tags using upsert
     for (const tag of tags) {
       const categoryId = this.tagCategoryMap.get(tag.categoryId)
       if (categoryId) {
         const { data, error } = await supabase
           .from('tags')
-          .insert({
-            label: tag.label,
-            category_id: categoryId
-          })
+          .upsert(
+            { 
+              label: tag.label,
+              category_id: categoryId
+            },
+            { onConflict: 'label,category_id' }
+          )
           .select()
           .single()
         
         if (error) {
-          console.warn(`Failed to insert tag ${tag.label}:`, error)
+          console.warn(`Failed to upsert tag ${tag.label}:`, error)
         } else if (data) {
           this.tagMap.set(tag.id, data.id)
         }
       }
     }
 
-    // Insert lead statuses
+    // Insert lead statuses using upsert
     for (const status of statuses) {
       const { data, error } = await supabase
         .from('lead_statuses')
-        .insert({
-          name: status.name
-        })
+        .upsert(
+          { name: status.name },
+          { onConflict: 'name' }
+        )
         .select()
         .single()
       
       if (error) {
-        console.warn(`Failed to insert status ${status.name}:`, error)
+        console.warn(`Failed to upsert status ${status.name}:`, error)
       } else if (data) {
         this.statusMap.set(status.id, data.id)
       }
@@ -346,19 +350,22 @@ export class IntegrityImporter {
         })
     }
 
-    // Import tags
+    // Import tags using upsert to avoid duplicates
     for (const leadTag of lead.leadTags) {
       const tagId = this.tagMap.get(leadTag.tag.tagId)
       if (tagId) {
         await supabase
           .from('contact_tags')
-          .insert({
-            contact_id: contact.id,
-            tag_id: tagId,
-            metadata: leadTag.metadata,
-            interaction_url: leadTag.interactionUrl,
-            interaction_url_label: leadTag.interactionUrlLabel
-          })
+          .upsert(
+            {
+              contact_id: contact.id,
+              tag_id: tagId,
+              metadata: leadTag.metadata,
+              interaction_url: leadTag.interactionUrl,
+              interaction_url_label: leadTag.interactionUrlLabel
+            },
+            { onConflict: 'contact_id,tag_id' }
+          )
       }
     }
   }
