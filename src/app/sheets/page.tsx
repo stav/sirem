@@ -6,6 +6,7 @@ import { ColDef, GridReadyEvent, CellValueChangedEvent, ModuleRegistry, AllCommu
 import { supabase } from '@/lib/supabase'
 import Navigation from '@/components/Navigation'
 import type { Database } from '@/lib/supabase'
+import { logger } from '@/lib/logger'
 
 // Import ag-grid styles
 import 'ag-grid-community/styles/ag-grid.css'
@@ -123,11 +124,17 @@ export default function SheetsPage() {
 
       if (error) {
         console.error('Error updating contact:', error)
+        logger.error(`Failed to update contact: ${error.message}`, 'contact_update_error')
         // Revert the change in the grid
         event.api.refreshCells({ force: true })
+      } else {
+        // Log successful update
+        const contactName = `${data.first_name} ${data.last_name}`
+        logger.contactUpdated(contactName)
       }
     } catch (error) {
       console.error('Error updating contact:', error)
+      logger.error('Failed to update contact', 'contact_update_error')
       // Revert the change in the grid
       event.api.refreshCells({ force: true })
     }

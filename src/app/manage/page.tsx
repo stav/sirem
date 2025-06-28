@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { logger } from '@/lib/logger'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 type Reminder = Database['public']['Tables']['reminders']['Row']
@@ -84,7 +85,11 @@ export default function Manage() {
         
         if (error) {
           console.error('Supabase error:', error)
+          logger.error(`Failed to update contact: ${error.message}`, 'contact_update_error')
           throw error
+        } else {
+          const contactName = `${contactForm.first_name} ${contactForm.last_name}`
+          logger.contactUpdated(contactName)
         }
       } else {
         const { error } = await supabase
@@ -93,7 +98,11 @@ export default function Manage() {
         
         if (error) {
           console.error('Supabase error:', error)
+          logger.error(`Failed to create contact: ${error.message}`, 'contact_create_error')
           throw error
+        } else {
+          const contactName = `${contactForm.first_name} ${contactForm.last_name}`
+          logger.contactCreated(contactName)
         }
       }
       
@@ -115,13 +124,23 @@ export default function Manage() {
           .update(reminderForm)
           .eq('id', editingReminder.id)
         
-        if (error) throw error
+        if (error) {
+          logger.error(`Failed to update reminder: ${error.message}`, 'reminder_update_error')
+          throw error
+        } else {
+          logger.info(`Reminder updated: ${reminderForm.title}`, 'reminder_update')
+        }
       } else {
         const { error } = await supabase
           .from('reminders')
           .insert([reminderForm])
         
-        if (error) throw error
+        if (error) {
+          logger.error(`Failed to create reminder: ${error.message}`, 'reminder_create_error')
+          throw error
+        } else {
+          logger.reminderCreated(reminderForm.title)
+        }
       }
       
       resetReminderForm()
@@ -138,7 +157,16 @@ export default function Manage() {
         .update({ completed: !reminder.completed })
         .eq('id', reminder.id)
       
-      if (error) throw error
+      if (error) {
+        logger.error(`Failed to update reminder: ${error.message}`, 'reminder_update_error')
+        throw error
+      } else {
+        if (!reminder.completed) {
+          logger.reminderCompleted(reminder.title)
+        } else {
+          logger.info(`Reminder marked as incomplete: ${reminder.title}`, 'reminder_incomplete')
+        }
+      }
       fetchData()
     } catch (error) {
       console.error('Error updating reminder:', error)
@@ -154,7 +182,13 @@ export default function Manage() {
         .delete()
         .eq('id', contact.id)
       
-      if (error) throw error
+      if (error) {
+        logger.error(`Failed to delete contact: ${error.message}`, 'contact_delete_error')
+        throw error
+      } else {
+        const contactName = `${contact.first_name} ${contact.last_name}`
+        logger.contactDeleted(contactName)
+      }
       fetchData()
     } catch (error) {
       console.error('Error deleting contact:', error)
@@ -170,7 +204,12 @@ export default function Manage() {
         .delete()
         .eq('id', reminder.id)
       
-      if (error) throw error
+      if (error) {
+        logger.error(`Failed to delete reminder: ${error.message}`, 'reminder_delete_error')
+        throw error
+      } else {
+        logger.info(`Reminder deleted: ${reminder.title}`, 'reminder_delete')
+      }
       fetchData()
     } catch (error) {
       console.error('Error deleting reminder:', error)
