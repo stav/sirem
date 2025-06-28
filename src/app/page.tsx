@@ -17,6 +17,7 @@ import {
   ArrowRight
 } from 'lucide-react'
 import type { Database } from '@/lib/supabase'
+import Navigation from '@/components/Navigation'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 type Reminder = Database['public']['Tables']['reminders']['Row']
@@ -103,25 +104,7 @@ export default function Home() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50">
-        {/* Navigation Header */}
-        <nav className="bg-white shadow-sm border-b">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-16">
-              <div className="flex items-center">
-                <h1 className="text-xl font-semibold text-gray-900">Sirem CRM</h1>
-              </div>
-              <div className="flex items-center space-x-4">
-                <Link
-                  href="/manage"
-                  className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md"
-                >
-                  <Users className="h-4 w-4 mr-2" />
-                  Manage Contacts
-                </Link>
-              </div>
-            </div>
-          </div>
-        </nav>
+        <Navigation pageTitle="Dashboard" />
 
         <div className="p-6">
           <div className="max-w-7xl mx-auto">
@@ -144,34 +127,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Navigation Header */}
-      <nav className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-900">Sirem CRM</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link
-                href="/manage"
-                className="flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md"
-              >
-                <Users className="h-4 w-4 mr-2" />
-                Manage Contacts
-              </Link>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Navigation pageTitle="Dashboard" />
 
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-            <p className="text-gray-600 mt-2">Welcome to your CRM overview</p>
-          </div>
-
           {/* Metrics Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-white p-6 rounded-lg shadow-sm border">
