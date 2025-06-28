@@ -1,103 +1,587 @@
-import Image from "next/image";
+'use client'
+
+import React, { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
+import { Plus, Phone, Mail, Calendar, CheckCircle, Circle, AlertCircle, Edit, Trash2 } from 'lucide-react'
+import type { Database } from '@/lib/supabase'
+
+type Contact = Database['public']['Tables']['contacts']['Row']
+type Reminder = Database['public']['Tables']['reminders']['Row']
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [contacts, setContacts] = useState<Contact[]>([])
+  const [reminders, setReminders] = useState<Reminder[]>([])
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'contacts' | 'reminders'>('contacts')
+  
+  // Form states
+  const [showContactForm, setShowContactForm] = useState(false)
+  const [showReminderForm, setShowReminderForm] = useState(false)
+  const [editingContact, setEditingContact] = useState<Contact | null>(null)
+  const [editingReminder, setEditingReminder] = useState<Reminder | null>(null)
+  
+  // Contact form
+  const [contactForm, setContactForm] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    notes: ''
+  })
+  
+  // Reminder form
+  const [reminderForm, setReminderForm] = useState({
+    contact_id: '',
+    title: '',
+    description: '',
+    due_date: '',
+    priority: 'medium' as 'low' | 'medium' | 'high'
+  })
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  useEffect(() => {
+    fetchData()
+  }, [])
+
+  async function fetchData() {
+    try {
+      const [contactsResponse, remindersResponse] = await Promise.all([
+        supabase.from('contacts').select('*').order('created_at', { ascending: false }),
+        supabase.from('reminders').select('*').order('due_date', { ascending: true })
+      ])
+      
+      if (contactsResponse.data) setContacts(contactsResponse.data)
+      if (remindersResponse.data) setReminders(remindersResponse.data)
+    } catch (error) {
+      console.error('Error fetching data:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  async function handleContactSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    
+    try {
+      if (editingContact) {
+        const { error } = await supabase
+          .from('contacts')
+          .update(contactForm)
+          .eq('id', editingContact.id)
+        
+        if (error) {
+          console.error('Supabase error:', error)
+          throw error
+        }
+      } else {
+        const { error } = await supabase
+          .from('contacts')
+          .insert([contactForm])
+        
+        if (error) {
+          console.error('Supabase error:', error)
+          throw error
+        }
+      }
+      
+      resetContactForm()
+      fetchData()
+    } catch (error) {
+      console.error('Error saving contact:', error)
+      alert('Error saving contact. Please check your database setup and try again.')
+    }
+  }
+
+  async function handleReminderSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    
+    try {
+      if (editingReminder) {
+        const { error } = await supabase
+          .from('reminders')
+          .update(reminderForm)
+          .eq('id', editingReminder.id)
+        
+        if (error) throw error
+      } else {
+        const { error } = await supabase
+          .from('reminders')
+          .insert([reminderForm])
+        
+        if (error) throw error
+      }
+      
+      resetReminderForm()
+      fetchData()
+    } catch (error) {
+      console.error('Error saving reminder:', error)
+    }
+  }
+
+  async function toggleReminderComplete(reminder: Reminder) {
+    try {
+      const { error } = await supabase
+        .from('reminders')
+        .update({ completed: !reminder.completed })
+        .eq('id', reminder.id)
+      
+      if (error) throw error
+      fetchData()
+    } catch (error) {
+      console.error('Error updating reminder:', error)
+    }
+  }
+
+  async function deleteContact(contact: Contact) {
+    if (!confirm('Are you sure you want to delete this contact?')) return
+    
+    try {
+      const { error } = await supabase
+        .from('contacts')
+        .delete()
+        .eq('id', contact.id)
+      
+      if (error) throw error
+      fetchData()
+    } catch (error) {
+      console.error('Error deleting contact:', error)
+    }
+  }
+
+  async function deleteReminder(reminder: Reminder) {
+    if (!confirm('Are you sure you want to delete this reminder?')) return
+    
+    try {
+      const { error } = await supabase
+        .from('reminders')
+        .delete()
+        .eq('id', reminder.id)
+      
+      if (error) throw error
+      fetchData()
+    } catch (error) {
+      console.error('Error deleting reminder:', error)
+    }
+  }
+
+  function resetContactForm() {
+    setContactForm({
+      first_name: '',
+      last_name: '',
+      email: '',
+      phone: '',
+      notes: ''
+    })
+    setEditingContact(null)
+    setShowContactForm(false)
+  }
+
+  function resetReminderForm() {
+    setReminderForm({
+      contact_id: '',
+      title: '',
+      description: '',
+      due_date: '',
+      priority: 'medium'
+    })
+    setEditingReminder(null)
+    setShowReminderForm(false)
+  }
+
+  function editContact(contact: Contact) {
+    setContactForm({
+      first_name: contact.first_name,
+      last_name: contact.last_name,
+      email: contact.email || '',
+      phone: contact.phone || '',
+      notes: contact.notes || ''
+    })
+    setEditingContact(contact)
+    setShowContactForm(true)
+  }
+
+  function editReminder(reminder: Reminder) {
+    setReminderForm({
+      contact_id: reminder.contact_id,
+      title: reminder.title,
+      description: reminder.description || '',
+      due_date: reminder.due_date.split('T')[0],
+      priority: reminder.priority
+    })
+    setEditingReminder(reminder)
+    setShowReminderForm(true)
+  }
+
+  function getPriorityColor(priority: string) {
+    switch (priority) {
+      case 'high': return 'text-red-600 bg-red-100'
+      case 'medium': return 'text-yellow-600 bg-yellow-100'
+      case 'low': return 'text-green-600 bg-green-100'
+      default: return 'text-gray-600 bg-gray-100'
+    }
+  }
+
+  function getContactName(contactId: string) {
+    const contact = contacts.find((c: Contact) => c.id === contactId)
+    return contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading your CRM...</p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <h1 className="text-2xl font-bold text-gray-900">Sirem CRM</h1>
+            <div className="flex space-x-4">
+              <button
+                onClick={() => setActiveTab('contacts')}
+                className={`px-3 py-2 rounded-md text-sm font-medium ${
+                  activeTab === 'contacts'
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Contacts ({contacts.length})
+              </button>
+              <button
+                onClick={() => setActiveTab('reminders')}
+                className={`px-3 py-2 rounded-md text-sm font-medium ${
+                  activeTab === 'reminders'
+                    ? 'bg-blue-100 text-blue-700'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Reminders ({reminders.filter(r => !r.completed).length})
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {activeTab === 'contacts' ? (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">Contacts</h2>
+              <button
+                onClick={() => setShowContactForm(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Contact
+              </button>
+            </div>
+
+            {/* Contact Form */}
+            {showContactForm && (
+              <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
+                <h3 className="text-lg font-medium mb-4">
+                  {editingContact ? 'Edit Contact' : 'Add New Contact'}
+                </h3>
+                <form onSubmit={handleContactSubmit} className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">First Name</label>
+                      <input
+                        type="text"
+                        required
+                        value={contactForm.first_name}
+                        onChange={(e) => setContactForm({...contactForm, first_name: e.target.value})}
+                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Last Name</label>
+                      <input
+                        type="text"
+                        required
+                        value={contactForm.last_name}
+                        onChange={(e) => setContactForm({...contactForm, last_name: e.target.value})}
+                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Email</label>
+                      <input
+                        type="email"
+                        value={contactForm.email}
+                        onChange={(e) => setContactForm({...contactForm, email: e.target.value})}
+                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Phone</label>
+                      <input
+                        type="tel"
+                        value={contactForm.phone}
+                        onChange={(e) => setContactForm({...contactForm, phone: e.target.value})}
+                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Notes</label>
+                    <textarea
+                      value={contactForm.notes}
+                      onChange={(e) => setContactForm({...contactForm, notes: e.target.value})}
+                      rows={3}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      type="submit"
+                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                    >
+                      {editingContact ? 'Update Contact' : 'Add Contact'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={resetContactForm}
+                      className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Contacts List */}
+            <div className="bg-white shadow-sm rounded-lg border">
+              {contacts.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  <p>No contacts yet. Add your first contact to get started!</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-200">
+                  {contacts.map((contact) => (
+                    <div key={contact.id} className="p-6">
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h3 className="text-lg font-medium text-gray-900">
+                            {contact.first_name} {contact.last_name}
+                          </h3>
+                          <div className="mt-2 flex items-center gap-4 text-sm text-gray-600">
+                            {contact.email && (
+                              <div className="flex items-center gap-1">
+                                <Mail className="w-4 h-4" />
+                                <a href={`mailto:${contact.email}`} className="hover:text-blue-600">
+                                  {contact.email}
+                                </a>
+                              </div>
+                            )}
+                            {contact.phone && (
+                              <div className="flex items-center gap-1">
+                                <Phone className="w-4 h-4" />
+                                <a href={`tel:${contact.phone}`} className="hover:text-blue-600">
+                                  {contact.phone}
+                                </a>
+                              </div>
+                            )}
+                          </div>
+                          {contact.notes && (
+                            <p className="mt-2 text-sm text-gray-600">{contact.notes}</p>
+                          )}
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => editContact(contact)}
+                            className="text-gray-400 hover:text-gray-600"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteContact(contact)}
+                            className="text-gray-400 hover:text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold text-gray-900">Reminders</h2>
+              <button
+                onClick={() => setShowReminderForm(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Add Reminder
+              </button>
+            </div>
+
+            {/* Reminder Form */}
+            {showReminderForm && (
+              <div className="bg-white p-6 rounded-lg shadow-sm border mb-6">
+                <h3 className="text-lg font-medium mb-4">
+                  {editingReminder ? 'Edit Reminder' : 'Add New Reminder'}
+                </h3>
+                <form onSubmit={handleReminderSubmit} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Contact</label>
+                    <select
+                      required
+                      value={reminderForm.contact_id}
+                      onChange={(e) => setReminderForm({...reminderForm, contact_id: e.target.value})}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    >
+                      <option value="">Select a contact</option>
+                      {contacts.map((contact) => (
+                        <option key={contact.id} value={contact.id}>
+                          {contact.first_name} {contact.last_name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Title</label>
+                    <input
+                      type="text"
+                      required
+                      value={reminderForm.title}
+                      onChange={(e) => setReminderForm({...reminderForm, title: e.target.value})}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700">Description</label>
+                    <textarea
+                      value={reminderForm.description}
+                      onChange={(e) => setReminderForm({...reminderForm, description: e.target.value})}
+                      rows={3}
+                      className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Due Date</label>
+                      <input
+                        type="date"
+                        required
+                        value={reminderForm.due_date}
+                        onChange={(e) => setReminderForm({...reminderForm, due_date: e.target.value})}
+                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700">Priority</label>
+                      <select
+                        value={reminderForm.priority}
+                        onChange={(e) => setReminderForm({...reminderForm, priority: e.target.value as 'low' | 'medium' | 'high'})}
+                        className="mt-1 block w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                      >
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="flex gap-3">
+                    <button
+                      type="submit"
+                      className="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700"
+                    >
+                      {editingReminder ? 'Update Reminder' : 'Add Reminder'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={resetReminderForm}
+                      className="bg-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-400"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+
+            {/* Reminders List */}
+            <div className="bg-white shadow-sm rounded-lg border">
+              {reminders.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  <p>No reminders yet. Add your first reminder to get started!</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-200">
+                  {reminders.map((reminder) => (
+                    <div key={reminder.id} className="p-6">
+                      <div className="flex items-start gap-4">
+                        <button
+                          onClick={() => toggleReminderComplete(reminder)}
+                          className="mt-1"
+                        >
+                          {reminder.completed ? (
+                            <CheckCircle className="w-5 h-5 text-green-600" />
+                          ) : (
+                            <Circle className="w-5 h-5 text-gray-400 hover:text-gray-600" />
+                          )}
+                        </button>
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3">
+                            <h3 className={`text-lg font-medium ${reminder.completed ? 'line-through text-gray-500' : 'text-gray-900'}`}>
+                              {reminder.title}
+                            </h3>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(reminder.priority)}`}>
+                              {reminder.priority}
+                            </span>
+                          </div>
+                          <p className="text-sm text-gray-600 mt-1">
+                            Contact: {getContactName(reminder.contact_id)}
+                          </p>
+                          {reminder.description && (
+                            <p className={`text-sm mt-2 ${reminder.completed ? 'text-gray-400' : 'text-gray-600'}`}>
+                              {reminder.description}
+                            </p>
+                          )}
+                          <div className="flex items-center gap-2 mt-2 text-sm text-gray-500">
+                            <Calendar className="w-4 h-4" />
+                            <span>Due: {new Date(reminder.due_date).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => editReminder(reminder)}
+                            className="text-gray-400 hover:text-gray-600"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => deleteReminder(reminder)}
+                            className="text-gray-400 hover:text-red-600"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
-  );
+  )
 }
