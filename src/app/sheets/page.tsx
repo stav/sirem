@@ -173,7 +173,7 @@ export default function SheetsPage() {
             </p>
           </div>
 
-          <div className="ag-theme-alpine w-full h-[600px]">
+          <div className="ag-theme-alpine w-full" style={{ height: '80vh' }}>
             <AgGridReact
               rowData={contacts}
               columnDefs={columnDefs}
@@ -181,7 +181,7 @@ export default function SheetsPage() {
               onGridReady={onGridReady}
               onCellValueChanged={handleCellValueChanged}
               pagination={true}
-              paginationPageSize={25}
+              paginationPageSize={200}
               animateRows={true}
               enableCellTextSelection={true}
               suppressRowClickSelection={true}
