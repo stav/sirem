@@ -89,7 +89,7 @@ export default function ImportPage() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation pageTitle="Import Data" />
+      <Navigation pageTitle="Import" />
 
       <div className="p-6">
         <div className="max-w-4xl mx-auto">
