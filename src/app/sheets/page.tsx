@@ -53,7 +53,8 @@ export default function SheetsPage() {
       editable: true,
       sortable: true,
       filter: true,
-      width: 150
+      width: 150,
+      valueFormatter: (params) => formatPhoneNumber(params.value)
     },
     {
       field: 'notes',
@@ -69,11 +70,12 @@ export default function SheetsPage() {
       sortable: true,
       filter: true,
       width: 150,
-      valueFormatter: (params) => {
+      valueFormatter: (params) => formatTimeDeltaFromToday(params.value),
+      tooltipValueGetter: (params) => {
         if (params.value) {
-          return new Date(params.value).toLocaleDateString()
+          return new Date(params.value).toLocaleString();
         }
-        return ''
+        return '';
       }
     }
   ], [])
@@ -144,6 +146,34 @@ export default function SheetsPage() {
     params.api.sizeColumnsToFit()
   }
 
+  function formatPhoneNumber(phone: string | null | undefined): string {
+    if (!phone) return '';
+    const cleaned = ('' + phone).replace(/\D/g, '');
+    if (cleaned.length !== 10) return phone;
+    const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
+    if (match) {
+      return `(${match[1]}) ${match[2]}-${match[3]}`;
+    }
+    return phone;
+  }
+
+  function formatTimeDeltaFromToday(dateString: string | null | undefined): string {
+    if (!dateString) return '';
+    const created = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - created.getTime();
+    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    if (diffDays < 31) {
+      return `${diffDays} day${diffDays === 1 ? '' : 's'}`;
+    }
+    const diffMonths = Math.floor(diffDays / 30.44);
+    if (diffMonths < 24) {
+      return `${diffMonths} month${diffMonths === 1 ? '' : 's'}`;
+    }
+    const diffYears = Math.floor(diffMonths / 12);
+    return `${diffYears} year${diffYears === 1 ? '' : 's'}`;
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -185,6 +215,7 @@ export default function SheetsPage() {
               animateRows={true}
               enableCellTextSelection={true}
               suppressRowClickSelection={true}
+              enableBrowserTooltips={true}
             />
           </div>
         </div>

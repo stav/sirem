@@ -20,6 +20,8 @@ type Reminder = Database['public']['Tables']['reminders']['Row']
 interface ContactForm {
   first_name: string
   last_name: string
+  phone: string
+  email: string
   notes: string
 }
 
@@ -43,6 +45,8 @@ export default function ManagePage() {
   const [contactForm, setContactForm] = useState<ContactForm>({
     first_name: '',
     last_name: '',
+    phone: '',
+    email: '',
     notes: ''
   })
 
@@ -84,6 +88,8 @@ export default function ManagePage() {
           .update({
             first_name: contactForm.first_name,
             last_name: contactForm.last_name,
+            phone: contactForm.phone,
+            email: contactForm.email,
             notes: contactForm.notes
           })
           .eq('id', editingContact.id)
@@ -101,6 +107,8 @@ export default function ManagePage() {
           .insert({
             first_name: contactForm.first_name,
             last_name: contactForm.last_name,
+            phone: contactForm.phone,
+            email: contactForm.email,
             notes: contactForm.notes
           })
 
@@ -113,7 +121,7 @@ export default function ManagePage() {
       }
 
       // Reset form and refresh data
-      setContactForm({ first_name: '', last_name: '', notes: '' })
+      setContactForm({ first_name: '', last_name: '', phone: '', email: '', notes: '' })
       setShowContactForm(false)
       setEditingContact(null)
       fetchData()
@@ -238,6 +246,8 @@ export default function ManagePage() {
     setContactForm({
       first_name: contact.first_name,
       last_name: contact.last_name,
+      phone: contact.phone || '',
+      email: contact.email || '',
       notes: contact.notes || ''
     })
     setShowContactForm(true)
@@ -255,7 +265,7 @@ export default function ManagePage() {
   }
 
   function resetForms() {
-    setContactForm({ first_name: '', last_name: '', notes: '' })
+    setContactForm({ first_name: '', last_name: '', phone: '', email: '', notes: '' })
     setReminderForm({ title: '', description: '', reminder_date: '', priority: 'medium' })
     setShowContactForm(false)
     setShowReminderForm(false)
@@ -343,6 +353,16 @@ export default function ManagePage() {
                               <h3 className="font-medium">
                                 {contact.first_name} {contact.last_name}
                               </h3>
+                              {contact.phone && (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {contact.phone}
+                                </p>
+                              )}
+                              {contact.email && (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {contact.email}
+                                </p>
+                              )}
                               {contact.notes && (
                                 <p className="text-sm text-muted-foreground mt-1">
                                   {contact.notes}
@@ -514,6 +534,23 @@ export default function ManagePage() {
                         value={contactForm.last_name}
                         onChange={(e) => setContactForm({...contactForm, last_name: e.target.value})}
                         required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="phone">Phone</Label>
+                      <Input
+                        id="phone"
+                        value={contactForm.phone}
+                        onChange={(e) => setContactForm({...contactForm, phone: e.target.value})}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        value={contactForm.email}
+                        onChange={(e) => setContactForm({...contactForm, email: e.target.value})}
                       />
                     </div>
                     <div>

@@ -241,6 +241,11 @@ export class IntegrityImporter {
   private async importLead(lead: IntegrityLead) {
     console.log(`Importing lead: ${lead.firstName} ${lead.lastName}`)
     
+    // Get the first phone number to populate the contact.phone field
+    const firstPhone = lead.phones.length > 0 ? lead.phones[0].leadPhone : null
+    // Get the first email to populate the contact.email field
+    const firstEmail = lead.emails.length > 0 ? lead.emails[0].leadEmail : null
+    
     // Insert the main contact record
     const { data: contact, error: contactError } = await supabase
       .from('contacts')
@@ -250,6 +255,8 @@ export class IntegrityImporter {
         last_name: lead.lastName,
         middle_name: lead.middleName,
         suffix: lead.suffix,
+        phone: firstPhone, // Populate with first phone number
+        email: firstEmail, // Populate with first email
         lead_status_id: this.statusMap.get(lead.leadStatusId),
         notes: lead.notes,
         medicare_beneficiary_id: lead.medicareBeneficiaryID,

@@ -18,6 +18,8 @@ export type Database = {
           last_name: string
           middle_name: string | null
           suffix: string | null
+          phone: string | null
+          email: string | null
           medicare_beneficiary_id: string | null
           part_a_status: string | null
           part_b_status: string | null
@@ -47,6 +49,8 @@ export type Database = {
           last_name: string
           middle_name?: string | null
           suffix?: string | null
+          phone?: string | null
+          email?: string | null
           medicare_beneficiary_id?: string | null
           part_a_status?: string | null
           part_b_status?: string | null
@@ -76,6 +80,8 @@ export type Database = {
           last_name?: string
           middle_name?: string | null
           suffix?: string | null
+          phone?: string | null
+          email?: string | null
           medicare_beneficiary_id?: string | null
           part_a_status?: string | null
           part_b_status?: string | null

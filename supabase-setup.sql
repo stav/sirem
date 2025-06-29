@@ -43,6 +43,8 @@ CREATE TABLE contacts (
   last_name TEXT NOT NULL,
   middle_name TEXT,
   suffix TEXT,
+  phone TEXT,
+  email TEXT,
   
   -- Medicare-specific fields
   medicare_beneficiary_id TEXT,
