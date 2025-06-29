@@ -8,10 +8,6 @@ import Navigation from '@/components/Navigation'
 import type { Database } from '@/lib/supabase'
 import { logger } from '@/lib/logger'
 
-// Import ag-grid styles
-import 'ag-grid-community/styles/ag-grid.css'
-import 'ag-grid-community/styles/ag-theme-alpine.css'
-
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule])
 
@@ -203,7 +199,7 @@ export default function SheetsPage() {
             </p>
           </div>
 
-          <div className="ag-theme-alpine w-full" style={{ height: '80vh' }}>
+          <div className="w-full" style={{ height: '80vh' }}>
             <AgGridReact
               rowData={contacts}
               columnDefs={columnDefs}
