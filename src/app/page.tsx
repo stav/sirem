@@ -9,12 +9,12 @@ import {
   CheckCircle, 
   Clock, 
   AlertTriangle, 
-  TrendingUp, 
   Calendar,
   Phone,
   Mail,
   Plus,
-  ArrowRight
+  ArrowRight,
+  Table
 } from 'lucide-react'
 import type { Database } from '@/lib/supabase'
 import Navigation from '@/components/Navigation'
@@ -37,7 +37,7 @@ export default function Home() {
     try {
       const [contactsResponse, remindersResponse] = await Promise.all([
         supabase.from('contacts').select('*').order('created_at', { ascending: false }),
-        supabase.from('reminders').select('*').order('due_date', { ascending: true })
+        supabase.from('reminders').select('*').order('reminder_date', { ascending: true })
       ])
       
       if (contactsResponse.data) setContacts(contactsResponse.data)
@@ -52,13 +52,13 @@ export default function Home() {
   // Calculate metrics
   const totalContacts = contacts.length
   const totalReminders = reminders.length
-  const completedReminders = reminders.filter(r => r.completed).length
+  const completedReminders = reminders.filter(r => r.is_complete).length
   const pendingReminders = totalReminders - completedReminders
-  const overdueReminders = reminders.filter(r => !r.completed && new Date(r.due_date) < new Date()).length
+  const overdueReminders = reminders.filter(r => !r.is_complete && new Date(r.reminder_date) < new Date()).length
   const todayReminders = reminders.filter(r => {
     const today = new Date()
-    const reminderDate = new Date(r.due_date)
-    return !r.completed && 
+    const reminderDate = new Date(r.reminder_date)
+    return !r.is_complete && 
            reminderDate.getDate() === today.getDate() &&
            reminderDate.getMonth() === today.getMonth() &&
            reminderDate.getFullYear() === today.getFullYear()
@@ -69,14 +69,14 @@ export default function Home() {
   
   // Get upcoming reminders
   const upcomingReminders = reminders
-    .filter(r => !r.completed && new Date(r.due_date) >= new Date())
+    .filter(r => !r.is_complete && new Date(r.reminder_date) >= new Date())
     .slice(0, 5)
 
   // Get priority distribution
   const priorityStats = {
-    high: reminders.filter(r => r.priority === 'high' && !r.completed).length,
-    medium: reminders.filter(r => r.priority === 'medium' && !r.completed).length,
-    low: reminders.filter(r => r.priority === 'low' && !r.completed).length
+    high: reminders.filter(r => r.priority === 'high' && !r.is_complete).length,
+    medium: reminders.filter(r => r.priority === 'medium' && !r.is_complete).length,
+    low: reminders.filter(r => r.priority === 'low' && !r.is_complete).length
   }
 
   function formatDate(dateString: string) {
@@ -238,8 +238,10 @@ export default function Home() {
                               </div>
                             </div>
                           </div>
-                          <div className="text-sm text-muted-foreground">
-                            {new Date(contact.created_at).toLocaleDateString()}
+                          <div className="text-right">
+                            <p className="text-sm text-muted-foreground">
+                              {formatDate(contact.created_at)}
+                            </p>
                           </div>
                         </div>
                       ))}
@@ -250,19 +252,31 @@ export default function Home() {
             </div>
 
             {/* Upcoming Reminders */}
-            <div className="lg:col-span-1">
+            <div>
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle>Today&apos;s Reminders</CardTitle>
-                    <Badge variant="secondary">{todayReminders}</Badge>
+                    <CardTitle>Upcoming Reminders</CardTitle>
+                    <Link 
+                      href="/manage" 
+                      className="text-sm text-primary hover:text-primary/80 flex items-center"
+                    >
+                      View all <ArrowRight className="h-4 w-4 ml-1" />
+                    </Link>
                   </div>
                 </CardHeader>
                 <CardContent>
                   {upcomingReminders.length === 0 ? (
                     <div className="text-center py-8">
-                      <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                      <Bell className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                       <p className="text-muted-foreground">No upcoming reminders</p>
+                      <Link 
+                        href="/manage" 
+                        className="inline-flex items-center mt-2 text-primary hover:text-primary/80"
+                      >
+                        <Plus className="h-4 w-4 mr-1" />
+                        Add a reminder
+                      </Link>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -270,17 +284,22 @@ export default function Home() {
                         <div key={reminder.id} className="p-4 bg-muted/50 rounded-lg">
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
-                              <h3 className="font-medium text-foreground">{reminder.title}</h3>
+                              <h4 className="font-medium text-foreground">{reminder.title}</h4>
                               {reminder.description && (
-                                <p className="text-sm text-muted-foreground mt-1">{reminder.description}</p>
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {reminder.description}
+                                </p>
                               )}
                               <div className="flex items-center mt-2 space-x-2">
-                                <Badge variant={reminder.priority === 'high' ? 'destructive' : reminder.priority === 'medium' ? 'default' : 'secondary'}>
+                                <Badge 
+                                  variant={reminder.priority === 'high' ? 'destructive' : 
+                                          reminder.priority === 'medium' ? 'default' : 'secondary'}
+                                  className="text-xs"
+                                >
                                   {reminder.priority}
                                 </Badge>
-                                <span className="text-xs text-muted-foreground flex items-center">
-                                  <Clock className="h-3 w-3 mr-1" />
-                                  {formatDate(reminder.due_date)} at {formatTime(reminder.due_date)}
+                                <span className="text-xs text-muted-foreground">
+                                  {formatDate(reminder.reminder_date)} at {formatTime(reminder.reminder_date)}
                                 </span>
                               </div>
                             </div>
@@ -298,75 +317,23 @@ export default function Home() {
                   <CardTitle>Priority Distribution</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
+                  <div className="space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div className="w-3 h-3 bg-destructive rounded-full mr-3"></div>
-                        <span className="text-sm text-muted-foreground">High Priority</span>
-                      </div>
-                      <span className="text-sm font-medium text-foreground">{priorityStats.high}</span>
+                      <span className="text-sm font-medium">High Priority</span>
+                      <Badge variant="destructive">{priorityStats.high}</Badge>
                     </div>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div className="w-3 h-3 bg-primary rounded-full mr-3"></div>
-                        <span className="text-sm text-muted-foreground">Medium Priority</span>
-                      </div>
-                      <span className="text-sm font-medium text-foreground">{priorityStats.medium}</span>
+                      <span className="text-sm font-medium">Medium Priority</span>
+                      <Badge variant="default">{priorityStats.medium}</Badge>
                     </div>
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div className="w-3 h-3 bg-secondary rounded-full mr-3"></div>
-                        <span className="text-sm text-muted-foreground">Low Priority</span>
-                      </div>
-                      <span className="text-sm font-medium text-foreground">{priorityStats.low}</span>
+                      <span className="text-sm font-medium">Low Priority</span>
+                      <Badge variant="secondary">{priorityStats.low}</Badge>
                     </div>
                   </div>
                 </CardContent>
               </Card>
             </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div className="mt-8">
-            <Card>
-              <CardHeader>
-                <CardTitle>Quick Actions</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Link 
-                    href="/manage" 
-                    className="flex items-center p-4 bg-primary/5 rounded-lg hover:bg-primary/10 transition-colors"
-                  >
-                    <Plus className="h-6 w-6 text-primary mr-3" />
-                    <div>
-                      <p className="font-medium text-primary">Add New Contact</p>
-                      <p className="text-sm text-primary/70">Create a new contact record</p>
-                    </div>
-                  </Link>
-                  <Link 
-                    href="/manage" 
-                    className="flex items-center p-4 bg-orange-50 rounded-lg hover:bg-orange-100 transition-colors"
-                  >
-                    <Bell className="h-6 w-6 text-orange-600 mr-3" />
-                    <div>
-                      <p className="font-medium text-orange-900">Create Reminder</p>
-                      <p className="text-sm text-orange-700">Set a new reminder</p>
-                    </div>
-                  </Link>
-                  <Link 
-                    href="/manage" 
-                    className="flex items-center p-4 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
-                  >
-                    <TrendingUp className="h-6 w-6 text-green-600 mr-3" />
-                    <div>
-                      <p className="font-medium text-green-900">View Reports</p>
-                      <p className="text-sm text-green-700">See your CRM analytics</p>
-                    </div>
-                  </Link>
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>
