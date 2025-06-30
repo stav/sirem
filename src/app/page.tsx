@@ -27,10 +27,61 @@ type Reminder = Database['public']['Tables']['reminders']['Row'] & {
   } | null
 }
 
+interface ContactWithBirthday extends Contact {
+  daysUntilBirthday: number;
+}
+
 function formatLocalDate(dateString: string) {
   if (!dateString) return ''
   const [year, month, day] = dateString.split('T')[0].split('-')
   return `${month}/${day}/${year}`
+}
+
+function getDaysUntilBirthday(birthdate: string): number {
+  if (!birthdate) return Infinity;
+  
+  const today = new Date();
+  const birthDate = new Date(birthdate);
+  
+  // Create this year's birthday
+  const thisYearBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+  
+  // If this year's birthday has passed, calculate for next year
+  if (thisYearBirthday < today) {
+    thisYearBirthday.setFullYear(today.getFullYear() + 1);
+  }
+  
+  const diffTime = thisYearBirthday.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  return diffDays;
+}
+
+function getUpcomingBirthdays(contacts: Contact[], daysRange: number = 100): ContactWithBirthday[] {
+  return contacts
+    .filter(contact => contact.birthdate)
+    .map(contact => ({
+      ...contact,
+      daysUntilBirthday: getDaysUntilBirthday(contact.birthdate!)
+    }))
+    .filter(contact => contact.daysUntilBirthday <= daysRange)
+    .sort((a, b) => a.daysUntilBirthday - b.daysUntilBirthday);
+}
+
+function getPastBirthdays(contacts: Contact[], daysRange: number = 60): ContactWithBirthday[] {
+  return contacts
+    .filter(contact => contact.birthdate)
+    .map(contact => {
+      const daysUntilBirthday = getDaysUntilBirthday(contact.birthdate!);
+      // For past birthdays, we want days that are negative (birthday has passed)
+      const daysSinceBirthday = daysUntilBirthday > 0 ? 365 - daysUntilBirthday : Math.abs(daysUntilBirthday);
+      return {
+        ...contact,
+        daysUntilBirthday: -daysSinceBirthday // Negative to indicate past
+      };
+    })
+    .filter(contact => contact.daysUntilBirthday >= -daysRange && contact.daysUntilBirthday < 0)
+    .sort((a, b) => b.daysUntilBirthday - a.daysUntilBirthday); // Sort by most recent first
 }
 
 export default function Home() {
@@ -58,7 +109,6 @@ export default function Home() {
       
       if (contactsResponse.data) setContacts(contactsResponse.data)
       if (remindersResponse.data) {
-        console.log('Reminders data:', remindersResponse.data)
         setReminders(remindersResponse.data)
       }
     } catch (error) {
@@ -253,6 +303,81 @@ export default function Home() {
                   )}
                 </CardContent>
               </Card>
+
+              {/* Birthdays Card */}
+              <Card className="mt-8">
+                <CardHeader>
+                  <CardTitle>Birthdays</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Upcoming Birthdays */}
+                    <div className="relative md:after:absolute md:after:right-[-12px] md:after:top-0 md:after:bottom-0 md:after:w-px md:after:bg-border">
+                      <h4 className="font-medium text-sm text-muted-foreground mb-3">Upcoming</h4>
+                      {(() => {
+                        const upcomingBirthdays = getUpcomingBirthdays(contacts);
+                        return upcomingBirthdays.length === 0 ? (
+                          <div className="text-center py-4">
+                            <p className="text-muted-foreground text-sm">No upcoming birthdays</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-1 max-h-48 overflow-y-auto">
+                            {upcomingBirthdays.map((contact) => (
+                              <div key={contact.id} className="flex items-center justify-between py-1">
+                                <span className="text-sm text-foreground">
+                                  {contact.first_name} {contact.last_name}
+                                </span>
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-xs text-muted-foreground">
+                                    {formatLocalDate(contact.birthdate!)}
+                                  </span>
+                                  <Badge variant="secondary" className="text-xs">
+                                    {contact.daysUntilBirthday === 0 ? 'Today!' : 
+                                     contact.daysUntilBirthday === 1 ? 'Tomorrow' :
+                                     `${contact.daysUntilBirthday} days`}
+                                  </Badge>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    {/* Recent Birthdays */}
+                    <div className="relative">
+                      <h4 className="font-medium text-sm text-muted-foreground mb-3">Recent</h4>
+                      {(() => {
+                        const pastBirthdays = getPastBirthdays(contacts);
+                        return pastBirthdays.length === 0 ? (
+                          <div className="text-center py-4">
+                            <p className="text-muted-foreground text-sm">No recent birthdays</p>
+                          </div>
+                        ) : (
+                          <div className="space-y-1 max-h-48 overflow-y-auto">
+                            {pastBirthdays.map((contact) => (
+                              <div key={contact.id} className="flex items-center justify-between py-1">
+                                <span className="text-sm text-foreground">
+                                  {contact.first_name} {contact.last_name}
+                                </span>
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-xs text-muted-foreground">
+                                    {formatLocalDate(contact.birthdate!)}
+                                  </span>
+                                  <Badge variant="outline" className="text-xs">
+                                    {Math.abs(contact.daysUntilBirthday) === 1 ? 'Yesterday' :
+                                     `${Math.abs(contact.daysUntilBirthday)} days ago`}
+                                  </Badge>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Upcoming Reminders */}
@@ -346,6 +471,8 @@ export default function Home() {
                   </div>
                 </CardContent>
               </Card>
+
+
             </div>
           </div>
         </div>

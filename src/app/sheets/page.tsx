@@ -37,6 +37,7 @@ export default function SheetsPage() {
       contact.email?.toLowerCase().includes(term) ||
       contact.phone?.toLowerCase().includes(term) ||
       contact.notes?.toLowerCase().includes(term) ||
+      (contact.birthdate && new Date(contact.birthdate).toLocaleDateString().toLowerCase().includes(term)) ||
       contact.address?.some(addr => 
         addr.address1?.toLowerCase().includes(term) ||
         addr.address2?.toLowerCase().includes(term) ||
@@ -81,6 +82,29 @@ export default function SheetsPage() {
       filter: true,
       width: 150,
       valueFormatter: (params) => formatPhoneNumber(params.value)
+    },
+    {
+      field: 'birthdate',
+      headerName: 'Birthday',
+      editable: true,
+      sortable: true,
+      filter: true,
+      width: 120,
+      valueFormatter: (params) => {
+        if (!params.value) return '';
+        return new Date(params.value).toLocaleDateString();
+      },
+      tooltipValueGetter: (params) => {
+        if (!params.value) return '';
+        const date = new Date(params.value);
+        const today = new Date();
+        const nextBirthday = new Date(today.getFullYear(), date.getMonth(), date.getDate());
+        if (nextBirthday < today) {
+          nextBirthday.setFullYear(today.getFullYear() + 1);
+        }
+        const daysUntil = Math.ceil((nextBirthday.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+        return `${date.toLocaleDateString()} (${daysUntil} days until next birthday)`;
+      }
     },
     {
       field: 'address',

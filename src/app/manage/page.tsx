@@ -23,6 +23,7 @@ interface ContactForm {
   phone: string
   email: string
   notes: string
+  birthdate: string
 }
 
 interface ReminderForm {
@@ -36,6 +37,17 @@ function formatLocalDate(dateString: string) {
   if (!dateString) return ''
   const [year, month, day] = dateString.split('T')[0].split('-')
   return `${month}/${day}/${year}`
+}
+
+function formatPhoneNumber(phone: string | null | undefined): string {
+  if (!phone) return '';
+  const cleaned = ('' + phone).replace(/\D/g, '');
+  if (cleaned.length !== 10) return phone;
+  const match = cleaned.match(/^(\d{3})(\d{3})(\d{4})$/);
+  if (match) {
+    return `(${match[1]}) ${match[2]}-${match[3]}`;
+  }
+  return phone;
 }
 
 export default function ManagePage() {
@@ -54,7 +66,8 @@ export default function ManagePage() {
     last_name: '',
     phone: '',
     email: '',
-    notes: ''
+    notes: '',
+    birthdate: ''
   })
 
   const [reminderForm, setReminderForm] = useState<ReminderForm>({
@@ -132,7 +145,8 @@ export default function ManagePage() {
             last_name: contactForm.last_name,
             phone: contactForm.phone,
             email: contactForm.email,
-            notes: contactForm.notes
+            notes: contactForm.notes,
+            birthdate: contactForm.birthdate || null
           })
           .eq('id', editingContact.id)
 
@@ -151,7 +165,8 @@ export default function ManagePage() {
             last_name: contactForm.last_name,
             phone: contactForm.phone,
             email: contactForm.email,
-            notes: contactForm.notes
+            notes: contactForm.notes,
+            birthdate: contactForm.birthdate || null
           })
 
         if (error) {
@@ -163,7 +178,7 @@ export default function ManagePage() {
       }
 
       // Reset form and refresh data
-      setContactForm({ first_name: '', last_name: '', phone: '', email: '', notes: '' })
+      setContactForm({ first_name: '', last_name: '', phone: '', email: '', notes: '', birthdate: '' })
       setShowContactForm(false)
       setEditingContact(null)
       fetchData()
@@ -290,7 +305,8 @@ export default function ManagePage() {
       last_name: contact.last_name,
       phone: contact.phone || '',
       email: contact.email || '',
-      notes: contact.notes || ''
+      notes: contact.notes || '',
+      birthdate: contact.birthdate || ''
     })
     setShowContactForm(true)
   }
@@ -307,7 +323,7 @@ export default function ManagePage() {
   }
 
   function resetForms() {
-    setContactForm({ first_name: '', last_name: '', phone: '', email: '', notes: '' })
+    setContactForm({ first_name: '', last_name: '', phone: '', email: '', notes: '', birthdate: '' })
     setReminderForm({ title: '', description: '', reminder_date: '', priority: 'medium' })
     setShowContactForm(false)
     setShowReminderForm(false)
@@ -421,18 +437,34 @@ export default function ManagePage() {
                               <h3 className="font-medium">
                                 {contact.first_name} {contact.last_name}
                               </h3>
-                              {contact.phone && (
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  {contact.phone}
-                                </p>
-                              )}
-                              {contact.email && (
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  {contact.email}
-                                </p>
-                              )}
+                              <div className="flex items-center space-x-4 mt-2">
+                                {contact.phone && (
+                                  <div className="flex items-center space-x-1">
+                                    <span className="text-sm text-muted-foreground">📞</span>
+                                    <span className="text-sm text-muted-foreground">
+                                      {formatPhoneNumber(contact.phone)}
+                                    </span>
+                                  </div>
+                                )}
+                                {contact.email && (
+                                  <div className="flex items-center space-x-1">
+                                    <span className="text-sm text-muted-foreground">✉️</span>
+                                    <span className="text-sm text-muted-foreground">
+                                      {contact.email}
+                                    </span>
+                                  </div>
+                                )}
+                                {contact.birthdate && (
+                                  <div className="flex items-center space-x-1">
+                                    <span className="text-sm text-muted-foreground">🎂</span>
+                                    <span className="text-sm text-muted-foreground">
+                                      {formatLocalDate(contact.birthdate)}
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
                               {contact.notes && (
-                                <p className="text-sm text-muted-foreground mt-1">
+                                <p className="text-sm text-muted-foreground mt-2">
                                   {contact.notes}
                                 </p>
                               )}
@@ -642,6 +674,15 @@ export default function ManagePage() {
                         value={contactForm.notes}
                         onChange={(e) => setContactForm({...contactForm, notes: e.target.value})}
                         rows={3}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="birthdate">Birthday</Label>
+                      <Input
+                        id="birthdate"
+                        type="date"
+                        value={contactForm.birthdate}
+                        onChange={(e) => setContactForm({...contactForm, birthdate: e.target.value})}
                       />
                     </div>
                     <div className="flex space-x-2">
