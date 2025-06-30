@@ -1,10 +1,11 @@
 'use client'
 
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { AgGridReact } from 'ag-grid-react'
 import { ColDef, GridReadyEvent, CellValueChangedEvent, ModuleRegistry, AllCommunityModule } from 'ag-grid-community'
 import { supabase } from '@/lib/supabase'
 import Navigation from '@/components/Navigation'
+import { Input } from '@/components/ui/input'
 import type { Database } from '@/lib/supabase'
 import { logger } from '@/lib/logger'
 
@@ -13,9 +14,29 @@ ModuleRegistry.registerModules([AllCommunityModule])
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 
+
+
 export default function SheetsPage() {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
+  const [searchTerm, setSearchTerm] = useState('')
+  const gridRef = useRef<AgGridReact>(null)
+
+  // Filter contacts based on search term
+  const filteredContacts = useMemo(() => {
+    if (!searchTerm.trim()) {
+      return contacts
+    }
+    
+    const term = searchTerm.toLowerCase()
+    return contacts.filter(contact => 
+      contact.first_name?.toLowerCase().includes(term) ||
+      contact.last_name?.toLowerCase().includes(term) ||
+      contact.email?.toLowerCase().includes(term) ||
+      contact.phone?.toLowerCase().includes(term) ||
+      contact.notes?.toLowerCase().includes(term)
+    )
+  }, [contacts, searchTerm])
 
   // Column definitions for ag-grid
   const columnDefs: ColDef[] = useMemo(() => [
@@ -192,16 +213,10 @@ export default function SheetsPage() {
       
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-foreground">Contacts Sheet</h1>
-            <p className="text-muted-foreground mt-2">
-              Edit your contacts directly in this spreadsheet view. Click column headers to sort.
-            </p>
-          </div>
-
           <div className="w-full" style={{ height: '80vh' }}>
             <AgGridReact
-              rowData={contacts}
+              ref={gridRef}
+              rowData={filteredContacts}
               columnDefs={columnDefs}
               defaultColDef={defaultColDef}
               onGridReady={onGridReady}
@@ -213,6 +228,38 @@ export default function SheetsPage() {
               suppressRowClickSelection={true}
               enableBrowserTooltips={true}
             />
+            {/* Custom Status Bar with Search */}
+            <div className="flex items-center justify-between w-full px-4 py-2 bg-muted border-t text-sm">
+              <div className="flex items-center space-x-4">
+                <span className="text-muted-foreground">
+                  Total: {contacts.length} contacts
+                </span>
+                {searchTerm && (
+                  <span className="text-muted-foreground">
+                    Showing: {filteredContacts.length} results
+                  </span>
+                )}
+              </div>
+              <div className="flex items-center space-x-3">
+                <div className="relative">
+                  <Input
+                    type="text"
+                    placeholder="Search contacts..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-48 h-7 text-sm"
+                  />
+                  {searchTerm && (
+                    <button
+                      onClick={() => setSearchTerm('')}
+                      className="absolute right-2 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors text-xs"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
