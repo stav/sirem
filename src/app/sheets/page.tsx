@@ -12,7 +12,9 @@ import { logger } from '@/lib/logger'
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule])
 
-type Contact = Database['public']['Tables']['contacts']['Row']
+type Contact = Database['public']['Tables']['contacts']['Row'] & {
+  address?: Database['public']['Tables']['addresses']['Row'][] | null
+}
 
 
 
@@ -34,7 +36,14 @@ export default function SheetsPage() {
       contact.last_name?.toLowerCase().includes(term) ||
       contact.email?.toLowerCase().includes(term) ||
       contact.phone?.toLowerCase().includes(term) ||
-      contact.notes?.toLowerCase().includes(term)
+      contact.notes?.toLowerCase().includes(term) ||
+      contact.address?.some(addr => 
+        addr.address1?.toLowerCase().includes(term) ||
+        addr.address2?.toLowerCase().includes(term) ||
+        addr.city?.toLowerCase().includes(term) ||
+        addr.state_code?.toLowerCase().includes(term) ||
+        addr.postal_code?.toLowerCase().includes(term)
+      )
     )
   }, [contacts, searchTerm])
 
@@ -74,12 +83,43 @@ export default function SheetsPage() {
       valueFormatter: (params) => formatPhoneNumber(params.value)
     },
     {
-      field: 'notes',
-      headerName: 'Notes',
-      editable: true,
+      field: 'address',
+      headerName: 'Address',
       sortable: true,
       filter: true,
-      width: 300
+      width: 300,
+      valueGetter: (params) => {
+        const addresses = params.data.address
+        if (!addresses || addresses.length === 0) return ''
+        
+        // Take the first address
+        const address = addresses[0]
+        const parts = [
+          address.address1,
+          address.address2,
+          address.city,
+          address.state_code,
+          address.postal_code
+        ].filter(Boolean)
+        
+        return parts.join(', ')
+      },
+      tooltipValueGetter: (params) => {
+        const addresses = params.data.address
+        if (!addresses || addresses.length === 0) return ''
+        
+        // Take the first address
+        const address = addresses[0]
+        const parts = [
+          address.address1,
+          address.address2,
+          address.city,
+          address.state_code,
+          address.postal_code
+        ].filter(Boolean)
+        
+        return parts.join('\n')
+      }
     },
     {
       field: 'created_at',
@@ -112,7 +152,16 @@ export default function SheetsPage() {
     try {
       const { data, error } = await supabase
         .from('contacts')
-        .select('*')
+        .select(`
+          *,
+          address:addresses(
+            address1,
+            address2,
+            city,
+            state_code,
+            postal_code
+          )
+        `)
         .order('created_at', { ascending: false })
 
       if (error) {
@@ -120,6 +169,7 @@ export default function SheetsPage() {
         return
       }
 
+  
       setContacts(data || [])
     } catch (error) {
       console.error('Error fetching contacts:', error)
