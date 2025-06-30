@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Plus, Edit, Trash2, Check, X } from 'lucide-react'
+import { Plus, Edit, Trash2, Check, X, ArrowLeft } from 'lucide-react'
 import Navigation from '@/components/Navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -41,6 +41,7 @@ export default function ManagePage() {
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null)
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
+  const [singleContactView, setSingleContactView] = useState(false)
 
   const [contactForm, setContactForm] = useState<ContactForm>({
     first_name: '',
@@ -314,14 +315,35 @@ export default function ManagePage() {
               <Card>
                 <CardHeader>
                   <div className="flex items-center justify-between">
-                    <CardTitle>Contacts</CardTitle>
-                    <Button 
-                      onClick={() => setShowContactForm(true)}
-                      size="sm"
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      Add Contact
-                    </Button>
+                    <CardTitle>
+                      {singleContactView && selectedContact ? (
+                        <div className="flex items-center space-x-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => {
+                              setSingleContactView(false)
+                              setSelectedContact(null)
+                            }}
+                          >
+                            <ArrowLeft className="h-4 w-4 mr-2" />
+                            Show all contacts
+                          </Button>
+                          <span>Contact Details</span>
+                        </div>
+                      ) : (
+                        "Contacts"
+                      )}
+                    </CardTitle>
+                    {!singleContactView && (
+                      <Button 
+                        onClick={() => setShowContactForm(true)}
+                        size="sm"
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Add Contact
+                      </Button>
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent>
@@ -338,15 +360,20 @@ export default function ManagePage() {
                     </div>
                   ) : (
                     <div className="space-y-3">
-                      {contacts.map((contact) => (
+                      {(singleContactView && selectedContact ? [selectedContact] : contacts).map((contact) => (
                         <div 
                           key={contact.id} 
-                          className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                          className={`p-4 border rounded-lg transition-colors ${
                             selectedContact?.id === contact.id 
                               ? 'border-primary bg-primary/5' 
-                              : 'hover:bg-muted/50'
+                              : singleContactView ? '' : 'cursor-pointer hover:bg-muted/50'
                           }`}
-                          onClick={() => setSelectedContact(contact)}
+                          onClick={() => {
+                            if (!singleContactView) {
+                              setSelectedContact(contact)
+                              setSingleContactView(true)
+                            }
+                          }}
                         >
                           <div className="flex items-center justify-between">
                             <div>
@@ -427,7 +454,9 @@ export default function ManagePage() {
                 <CardContent>
                   {!selectedContact ? (
                     <div className="text-center py-8">
-                      <p className="text-muted-foreground">Select a contact to view their reminders</p>
+                      <p className="text-muted-foreground">
+                        {singleContactView ? 'No contact selected' : 'Select a contact to view their reminders'}
+                      </p>
                     </div>
                   ) : contactReminders.length === 0 ? (
                     <div className="text-center py-8">
