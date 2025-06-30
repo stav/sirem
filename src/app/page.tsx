@@ -7,14 +7,11 @@ import {
   Users, 
   Bell, 
   CheckCircle, 
-  Clock, 
   AlertTriangle, 
-  Calendar,
   Phone,
   Mail,
   Plus,
   ArrowRight,
-  Table
 } from 'lucide-react'
 import type { Database } from '@/lib/supabase'
 import Navigation from '@/components/Navigation'
@@ -22,7 +19,19 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
-type Reminder = Database['public']['Tables']['reminders']['Row']
+type Reminder = Database['public']['Tables']['reminders']['Row'] & {
+  contact: {
+    id: string
+    first_name: string
+    last_name: string
+  } | null
+}
+
+function formatLocalDate(dateString: string) {
+  if (!dateString) return ''
+  const [year, month, day] = dateString.split('T')[0].split('-')
+  return `${month}/${day}/${year}`
+}
 
 export default function Home() {
   const [contacts, setContacts] = useState<Contact[]>([])
@@ -37,11 +46,21 @@ export default function Home() {
     try {
       const [contactsResponse, remindersResponse] = await Promise.all([
         supabase.from('contacts').select('*').order('created_at', { ascending: false }),
-        supabase.from('reminders').select('*').order('reminder_date', { ascending: true })
+        supabase.from('reminders').select(`
+          *,
+          contact:contacts (
+            id,
+            first_name,
+            last_name
+          )
+        `).order('reminder_date', { ascending: true })
       ])
       
       if (contactsResponse.data) setContacts(contactsResponse.data)
-      if (remindersResponse.data) setReminders(remindersResponse.data)
+      if (remindersResponse.data) {
+        console.log('Reminders data:', remindersResponse.data)
+        setReminders(remindersResponse.data)
+      }
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
@@ -55,14 +74,6 @@ export default function Home() {
   const completedReminders = reminders.filter(r => r.is_complete).length
   const pendingReminders = totalReminders - completedReminders
   const overdueReminders = reminders.filter(r => !r.is_complete && new Date(r.reminder_date) < new Date()).length
-  const todayReminders = reminders.filter(r => {
-    const today = new Date()
-    const reminderDate = new Date(r.reminder_date)
-    return !r.is_complete && 
-           reminderDate.getDate() === today.getDate() &&
-           reminderDate.getMonth() === today.getMonth() &&
-           reminderDate.getFullYear() === today.getFullYear()
-  }).length
 
   // Get recent contacts
   const recentContacts = contacts.slice(0, 5)
@@ -84,13 +95,6 @@ export default function Home() {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
-    })
-  }
-
-  function formatTime(dateString: string) {
-    return new Date(dateString).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit'
     })
   }
 
@@ -279,18 +283,20 @@ export default function Home() {
                       </Link>
                     </div>
                   ) : (
-                    <div className="space-y-4">
+                    <div className="space-y-2">
                       {upcomingReminders.map((reminder) => (
-                        <div key={reminder.id} className="p-4 bg-muted/50 rounded-lg">
+                        <div 
+                          key={reminder.id} 
+                          className="p-2 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted/70 transition-colors"
+                          onClick={() => {
+                            // Navigate to manage page with reminder selected
+                            window.location.href = `/manage?reminder=${reminder.id}`
+                          }}
+                        >
                           <div className="flex items-start justify-between">
                             <div className="flex-1">
                               <h4 className="font-medium text-foreground">{reminder.title}</h4>
-                              {reminder.description && (
-                                <p className="text-sm text-muted-foreground mt-1">
-                                  {reminder.description}
-                                </p>
-                              )}
-                              <div className="flex items-center mt-2 space-x-2">
+                              <div className="flex items-center mt-1 space-x-2">
                                 <Badge 
                                   variant={reminder.priority === 'high' ? 'destructive' : 
                                           reminder.priority === 'medium' ? 'default' : 'secondary'}
@@ -298,10 +304,17 @@ export default function Home() {
                                 >
                                   {reminder.priority}
                                 </Badge>
-                                <span className="text-xs text-muted-foreground">
-                                  {formatDate(reminder.reminder_date)} at {formatTime(reminder.reminder_date)}
-                                </span>
+                                <span className="ml-2 text-xs text-muted-foreground">{formatLocalDate(reminder.reminder_date)}</span>
+                                <span className="flex items-center ml-2 text-xs text-muted-foreground"><Users className="h-3 w-3 mr-1" />{reminder.contact?.first_name} {reminder.contact?.last_name}</span>
                               </div>
+                              {reminder.description && (
+                                <p className="text-sm text-muted-foreground mt-1">
+                                  {reminder.description}
+                                </p>
+                              )}
+                            </div>
+                            <div className="ml-2">
+                              <ArrowRight className="h-4 w-4 text-muted-foreground" />
                             </div>
                           </div>
                         </div>

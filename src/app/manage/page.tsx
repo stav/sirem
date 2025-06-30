@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Plus, Edit, Trash2, Check, X, ArrowLeft } from 'lucide-react'
 import Navigation from '@/components/Navigation'
@@ -32,6 +32,12 @@ interface ReminderForm {
   priority: 'low' | 'medium' | 'high'
 }
 
+function formatLocalDate(dateString: string) {
+  if (!dateString) return ''
+  const [year, month, day] = dateString.split('T')[0].split('-')
+  return `${month}/${day}/${year}`
+}
+
 export default function ManagePage() {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [reminders, setReminders] = useState<Reminder[]>([])
@@ -58,9 +64,44 @@ export default function ManagePage() {
     priority: 'medium'
   })
 
+  const reminderModalRef = useRef<HTMLDivElement>(null)
+
   useEffect(() => {
     fetchData()
   }, [])
+
+  // Handle URL parameters for direct reminder editing
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search)
+    const reminderId = urlParams.get('reminder')
+    
+    if (reminderId && reminders.length > 0) {
+      const reminder = reminders.find(r => r.id === reminderId)
+      if (reminder) {
+        // Find the contact for this reminder
+        const contact = contacts.find(c => c.id === reminder.contact_id)
+        if (contact) {
+          setSelectedContact(contact)
+          setSingleContactView(true)
+          // Open the reminder for editing
+          handleEditReminder(reminder)
+        }
+      }
+    }
+  }, [reminders, contacts])
+
+  // Close modal on Escape key
+  useEffect(() => {
+    if (!showReminderForm) return
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setShowReminderForm(false)
+        setEditingReminder(null)
+      }
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [showReminderForm])
 
   async function fetchData() {
     try {
@@ -492,10 +533,22 @@ export default function ManagePage() {
                                   {reminder.description}
                                 </p>
                               )}
-                              <div className="flex items-center mt-2 space-x-4 text-xs text-muted-foreground">
-                                <span>Due: {new Date(reminder.reminder_date).toLocaleDateString()}</span>
-                                {reminder.is_complete && reminder.completed_date && (
-                                  <span>Completed: {new Date(reminder.completed_date).toLocaleDateString()}</span>
+                              <div className="mt-2 space-y-1">
+                                <div className="text-xs text-muted-foreground">
+                                  <span className="font-medium">Due:</span> {formatLocalDate(reminder.reminder_date)}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  <span className="font-medium">Created:</span> {new Date(reminder.created_at).toLocaleDateString()} at {new Date(reminder.created_at).toLocaleTimeString()}
+                                </div>
+                                {reminder.updated_at !== reminder.created_at && (
+                                  <div className="text-xs text-muted-foreground">
+                                    <span className="font-medium">Updated:</span> {new Date(reminder.updated_at).toLocaleDateString()} at {new Date(reminder.updated_at).toLocaleTimeString()}
+                                  </div>
+                                )}
+                                {reminder.completed_date && (
+                                  <div className="text-xs text-muted-foreground">
+                                    <span className="font-medium">Completed:</span> {new Date(reminder.completed_date).toLocaleDateString()} at {new Date(reminder.completed_date).toLocaleTimeString()}
+                                  </div>
                                 )}
                               </div>
                             </div>
@@ -607,8 +660,16 @@ export default function ManagePage() {
 
           {/* Reminder Form Modal */}
           {showReminderForm && selectedContact && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-              <Card className="w-full max-w-md">
+            <div
+              className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
+              onClick={e => {
+                if (e.target === e.currentTarget) {
+                  setShowReminderForm(false)
+                  setEditingReminder(null)
+                }
+              }}
+            >
+              <Card className="w-full max-w-md" ref={reminderModalRef}>
                 <CardHeader>
                   <CardTitle>
                     {editingReminder ? 'Edit Reminder' : 'Add New Reminder'}
