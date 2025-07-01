@@ -24,6 +24,7 @@ interface ContactForm {
   email: string
   notes: string
   birthdate: string
+  status: string
 }
 
 interface ReminderForm {
@@ -67,7 +68,8 @@ export default function ManagePage() {
     phone: '',
     email: '',
     notes: '',
-    birthdate: ''
+    birthdate: '',
+    status: 'New'
   })
 
   const [reminderForm, setReminderForm] = useState<ReminderForm>({
@@ -146,7 +148,8 @@ export default function ManagePage() {
             phone: contactForm.phone,
             email: contactForm.email,
             notes: contactForm.notes,
-            birthdate: contactForm.birthdate || null
+            birthdate: contactForm.birthdate || null,
+            status: contactForm.status
           })
           .eq('id', editingContact.id)
 
@@ -166,7 +169,8 @@ export default function ManagePage() {
             phone: contactForm.phone,
             email: contactForm.email,
             notes: contactForm.notes,
-            birthdate: contactForm.birthdate || null
+            birthdate: contactForm.birthdate || null,
+            status: contactForm.status
           })
 
         if (error) {
@@ -178,7 +182,7 @@ export default function ManagePage() {
       }
 
       // Reset form and refresh data
-      setContactForm({ first_name: '', last_name: '', phone: '', email: '', notes: '', birthdate: '' })
+      setContactForm({ first_name: '', last_name: '', phone: '', email: '', notes: '', birthdate: '', status: 'New' })
       setShowContactForm(false)
       setEditingContact(null)
       fetchData()
@@ -306,7 +310,8 @@ export default function ManagePage() {
       phone: contact.phone || '',
       email: contact.email || '',
       notes: contact.notes || '',
-      birthdate: contact.birthdate || ''
+      birthdate: contact.birthdate || '',
+      status: contact.status || 'New'
     })
     setShowContactForm(true)
   }
@@ -323,7 +328,7 @@ export default function ManagePage() {
   }
 
   function resetForms() {
-    setContactForm({ first_name: '', last_name: '', phone: '', email: '', notes: '', birthdate: '' })
+    setContactForm({ first_name: '', last_name: '', phone: '', email: '', notes: '', birthdate: '', status: 'New' })
     setReminderForm({ title: '', description: '', reminder_date: '', priority: 'medium' })
     setShowContactForm(false)
     setShowReminderForm(false)
@@ -359,13 +364,6 @@ export default function ManagePage() {
       
       <div className="p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="mb-6">
-            <h1 className="text-3xl font-bold text-foreground">Manage Contacts & Reminders</h1>
-            <p className="text-muted-foreground mt-2">
-              Add, edit, and manage your contacts and their reminders.
-            </p>
-          </div>
-
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Contacts Section */}
             <div>
@@ -434,8 +432,31 @@ export default function ManagePage() {
                         >
                           <div className="flex items-center justify-between">
                             <div>
-                              <h3 className="font-medium">
-                                {contact.first_name} {contact.last_name}
+                              <h3 className="font-medium flex items-center space-x-2">
+                                {contact.status && (
+                                  contact.status === 'Client' ? (
+                                    <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 border border-green-200">
+                                      {contact.status}
+                                    </span>
+                                  ) : contact.status === 'New' ? (
+                                    <span className="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-800 border border-gray-300">
+                                      {contact.status}
+                                    </span>
+                                  ) : contact.status === 'Contacted' ? (
+                                    <span className="px-2 py-1 text-xs rounded-full bg-gray-200 text-gray-800 border border-yellow-400">
+                                      {contact.status}
+                                    </span>
+                                  ) : contact.status === 'Engaged' ? (
+                                    <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 border border-blue-400">
+                                      {contact.status}
+                                    </span>
+                                  ) : (
+                                    <Badge variant="outline" className="text-xs">
+                                      {contact.status}
+                                    </Badge>
+                                  )
+                                )}
+                                <span>{contact.first_name} {contact.last_name}</span>
                               </h3>
                               <div className="flex items-center space-x-4 mt-2">
                                 {contact.phone && (
@@ -684,6 +705,31 @@ export default function ManagePage() {
                         value={contactForm.birthdate}
                         onChange={(e) => setContactForm({...contactForm, birthdate: e.target.value})}
                       />
+                    </div>
+                    <div>
+                      <Label htmlFor="status">Status</Label>
+                      <Select
+                        value={contactForm.status}
+                        onValueChange={(value) => setContactForm({...contactForm, status: value})}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="New">New</SelectItem>
+                          <SelectItem value="Client">Client</SelectItem>
+                          <SelectItem value="Contacted">Contacted</SelectItem>
+                          <SelectItem value="Engaged">Engaged</SelectItem>
+                          <SelectItem value="No response">No response</SelectItem>
+                          <SelectItem value="Already enrolled">Already enrolled</SelectItem>
+                          <SelectItem value="Not interested">Not interested</SelectItem>
+                          <SelectItem value="Not eligible">Not eligible</SelectItem>
+                          <SelectItem value="Other">Other</SelectItem>
+                          <SelectItem value="Loyal">Loyal</SelectItem>
+                          <SelectItem value="Retained">Retained</SelectItem>
+                          <SelectItem value="Too expensive">Too expensive</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                     <div className="flex space-x-2">
                       <Button type="submit" className="flex-1">

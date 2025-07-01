@@ -37,6 +37,7 @@ export default function SheetsPage() {
       contact.email?.toLowerCase().includes(term) ||
       contact.phone?.toLowerCase().includes(term) ||
       contact.notes?.toLowerCase().includes(term) ||
+      contact.status?.toLowerCase().includes(term) ||
       (contact.birthdate && new Date(contact.birthdate).toLocaleDateString().toLowerCase().includes(term)) ||
       contact.address?.some(addr => 
         addr.address1?.toLowerCase().includes(term) ||
@@ -82,6 +83,14 @@ export default function SheetsPage() {
       filter: true,
       width: 150,
       valueFormatter: (params) => formatPhoneNumber(params.value)
+    },
+    {
+      field: 'status',
+      headerName: 'Status',
+      editable: true,
+      sortable: true,
+      filter: true,
+      width: 120,
     },
     {
       field: 'birthdate',

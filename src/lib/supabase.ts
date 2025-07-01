@@ -39,6 +39,7 @@ export type Database = {
           health_policy_count: number
           subsidy_level: string | null
           lead_status_id: string | null
+          status: string | null
         }
         Insert: {
           id?: string
@@ -70,6 +71,7 @@ export type Database = {
           health_policy_count?: number
           subsidy_level?: string | null
           lead_status_id?: string | null
+          status?: string | null
         }
         Update: {
           id?: string
@@ -101,6 +103,7 @@ export type Database = {
           health_policy_count?: number
           subsidy_level?: string | null
           lead_status_id?: string | null
+          status?: string | null
         }
       }
       reminders: {
