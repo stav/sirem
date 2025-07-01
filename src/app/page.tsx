@@ -130,7 +130,14 @@ export default function Home() {
   
   // Get upcoming reminders
   const upcomingReminders = reminders
-    .filter(r => !r.is_complete && new Date(r.reminder_date) >= new Date())
+    .filter(r => {
+      if (r.is_complete) return false;
+      const reminderDate = new Date(r.reminder_date);
+      const today = new Date();
+      reminderDate.setHours(0,0,0,0);
+      today.setHours(0,0,0,0);
+      return reminderDate >= today;
+    })
     .slice(0, 5)
 
   // Get priority distribution
