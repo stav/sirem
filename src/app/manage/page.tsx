@@ -9,6 +9,8 @@ import ReminderForm from '@/components/ReminderForm'
 import { useContacts } from '@/hooks/useContacts'
 import { useReminders } from '@/hooks/useReminders'
 import type { Database } from '@/lib/supabase'
+import { useToast } from '@/hooks/use-toast'
+import { logger } from '@/lib/logger'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 type Reminder = Database['public']['Tables']['reminders']['Row']
@@ -34,6 +36,7 @@ export default function ManagePage() {
   // Custom hooks for data management
   const { contacts, loading: contactsLoading, createContact, updateContact, deleteContact } = useContacts()
   const { reminders, loading: remindersLoading, createReminder, updateReminder, deleteReminder, toggleReminderComplete } = useReminders()
+  const { toast } = useToast()
 
   // UI state
   const [showContactForm, setShowContactForm] = useState(false)
@@ -60,6 +63,9 @@ export default function ManagePage() {
     reminder_date: '',
     priority: 'medium'
   })
+
+  // Show/hide completed reminders
+  const [showCompletedReminders, setShowCompletedReminders] = useState(true)
 
   // Handle URL parameters for direct reminder editing
   useEffect(() => {
@@ -154,7 +160,18 @@ export default function ManagePage() {
 
   const handleDeleteReminder = async (reminderId: string) => {
     if (!confirm('Are you sure you want to delete this reminder?')) return
+    const reminder = reminders.find(r => r.id === reminderId)
+    const contact = reminder ? contacts.find(c => c.id === reminder.contact_id) : undefined
     await deleteReminder(reminderId)
+    if (reminder) {
+      const contactName = contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
+      toast({
+        title: 'Reminder deleted',
+        description: `"${reminder.title}" for ${contactName} was deleted.`,
+        variant: 'destructive',
+      })
+      logger.info(`Reminder deleted: ${reminder.title} for ${contactName}`, 'reminder_delete')
+    }
   }
 
   const handleToggleReminderComplete = async (reminder: Reminder) => {
@@ -222,11 +239,14 @@ export default function ManagePage() {
             {/* Reminders Section */}
             <ReminderList
               reminders={reminders}
+              contacts={contacts}
               selectedContact={selectedContact}
               onAddReminder={handleAddReminder}
               onToggleComplete={handleToggleReminderComplete}
               onEditReminder={handleEditReminder}
               onDeleteReminder={handleDeleteReminder}
+              showCompletedReminders={showCompletedReminders}
+              onToggleShowCompleted={() => setShowCompletedReminders((v) => !v)}
             />
           </div>
 

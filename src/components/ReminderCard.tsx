@@ -9,12 +9,12 @@ type Reminder = Database['public']['Tables']['reminders']['Row']
 
 interface ReminderCardProps {
   reminder: Reminder
+  contactName: string
+  index: number
   onToggleComplete: (reminder: Reminder) => void
   onEdit: (reminder: Reminder) => void
   onDelete: (reminderId: string) => void
 }
-
-
 
 function getPriorityBadge(priority: string) {
   const variant = priority === 'high' ? 'destructive' : 
@@ -29,12 +29,17 @@ function getPriorityBadge(priority: string) {
 
 export default function ReminderCard({
   reminder,
+  contactName,
+  index,
   onToggleComplete,
   onEdit,
   onDelete
 }: ReminderCardProps) {
   return (
     <div className="p-4 border rounded-lg">
+      <div className="text-xs text-muted-foreground mb-1">
+        <span className="text-sm font-medium">{index}.</span> {contactName}
+      </div>
       <div className="flex items-start justify-between">
         <div className="flex-1">
           <div className="flex items-center space-x-2">
