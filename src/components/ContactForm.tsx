@@ -16,6 +16,7 @@ interface ContactFormData {
   notes: string
   birthdate: string
   status: string
+  medicare_beneficiary_id: string
 }
 
 interface ContactFormProps {
@@ -94,6 +95,23 @@ export default function ContactForm({
           onChange={(e) => onFormDataChange({...formData, email: e.target.value})}
           placeholder="john.doe@example.com"
         />
+      </div>
+      <div>
+        <Label htmlFor="medicare_beneficiary_id">Medicare Beneficiary ID (MBI)</Label>
+        <Input
+          id="medicare_beneficiary_id"
+          value={formData.medicare_beneficiary_id}
+          onChange={(e) => {
+            // Only allow alphanumeric characters and hyphens
+            const value = e.target.value.replace(/[^A-Z0-9-]/gi, '');
+            onFormDataChange({...formData, medicare_beneficiary_id: value})
+          }}
+          placeholder="1EG4-TE5-MK73"
+          maxLength={13}
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          Format: XXXX-XXXX-XXXX (11 characters, hyphens optional)
+        </p>
       </div>
       <div>
         <Label htmlFor="notes">Notes</Label>

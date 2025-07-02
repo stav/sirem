@@ -23,6 +23,7 @@ interface ContactFormData {
   notes: string
   birthdate: string
   status: string
+  medicare_beneficiary_id: string
 }
 
 interface ReminderFormData {
@@ -55,7 +56,8 @@ export default function ManagePage() {
     email: '',
     notes: '',
     birthdate: '',
-    status: 'New'
+    status: 'New',
+    medicare_beneficiary_id: ''
   })
 
   const [reminderForm, setReminderForm] = useState<ReminderFormData>({
@@ -91,7 +93,7 @@ export default function ManagePage() {
   // Contact handlers
   const handleAddContact = () => {
     setEditingContact(null)
-    setContactForm({ first_name: '', last_name: '', phone: '', email: '', notes: '', birthdate: '', status: 'New' })
+    setContactForm({ first_name: '', last_name: '', phone: '', email: '', notes: '', birthdate: '', status: 'New', medicare_beneficiary_id: '' })
     setShowContactForm(true)
   }
 
@@ -104,7 +106,8 @@ export default function ManagePage() {
       email: contact.email || '',
       notes: contact.notes || '',
       birthdate: contact.birthdate || '',
-      status: contact.status || 'New'
+      status: contact.status || 'New',
+      medicare_beneficiary_id: contact.medicare_beneficiary_id || ''
     })
     setShowContactForm(true)
   }
@@ -258,7 +261,7 @@ export default function ManagePage() {
 
   // Utility functions
   const resetForms = () => {
-    setContactForm({ first_name: '', last_name: '', phone: '', email: '', notes: '', birthdate: '', status: 'New' })
+    setContactForm({ first_name: '', last_name: '', phone: '', email: '', notes: '', birthdate: '', status: 'New', medicare_beneficiary_id: '' })
     setReminderForm({ title: '', description: '', reminder_date: '', priority: 'medium' })
     setShowContactForm(false)
     setShowReminderForm(false)

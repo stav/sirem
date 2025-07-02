@@ -3,7 +3,7 @@ import { Edit, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import type { Database } from '@/lib/supabase'
-import { formatLocalDate, formatPhoneNumber, getStatusBadge } from '@/lib/contact-utils'
+import { formatLocalDate, formatPhoneNumber, formatMBI, getStatusBadge } from '@/lib/contact-utils'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 
@@ -74,6 +74,14 @@ export default function ContactCard({
                 <span className="text-sm text-muted-foreground">🎂</span>
                 <span className="text-sm text-muted-foreground">
                   {formatLocalDate(contact.birthdate)}
+                </span>
+              </div>
+            )}
+            {contact.medicare_beneficiary_id && (
+              <div className="flex items-center space-x-1">
+                <span className="text-sm text-muted-foreground">🏥</span>
+                <span className="text-sm text-muted-foreground">
+                  MBI: {formatMBI(contact.medicare_beneficiary_id)}
                 </span>
               </div>
             )}

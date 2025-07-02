@@ -15,6 +15,14 @@ export function formatPhoneNumber(phone: string | null | undefined): string {
   return phone;
 }
 
+export function formatMBI(mbi: string | null | undefined): string {
+  if (!mbi) return '';
+  // Remove any non-alphanumeric characters and format as XXXX-XXXX-XXXX
+  const cleaned = mbi.replace(/[^A-Z0-9]/gi, '');
+  if (cleaned.length !== 11) return mbi;
+  return `${cleaned.slice(0, 4)}-${cleaned.slice(4, 8)}-${cleaned.slice(8, 11)}`;
+}
+
 export function getStatusBadge(status: string | null) {
   if (!status) return null;
   
