@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { X } from 'lucide-react'
 import type { Database } from '@/lib/supabase'
 
 type Reminder = Database['public']['Tables']['reminders']['Row']
@@ -58,14 +59,22 @@ export default function ReminderForm({
         }
       }}
     >
-      <Card className="w-full max-w-md" ref={modalRef}>
-        <CardHeader>
+      <Card className="w-full max-w-md max-h-[90vh] flex flex-col" ref={modalRef}>
+        <CardHeader className="relative flex-shrink-0">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute right-2 top-2 h-12 w-12 p-0"
+            onClick={onCancel}
+          >
+            <X className="h-8 w-8" />
+          </Button>
           <CardTitle>
             {editingReminder ? 'Edit Reminder' : 'Add New Reminder'}
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <form onSubmit={onSubmit} className="space-y-4">
+        <CardContent className="flex-1 overflow-y-auto">
+          <form onSubmit={onSubmit} className="space-y-4 pb-4">
             <div>
               <Label htmlFor="title">Title</Label>
               <Input
@@ -112,12 +121,9 @@ export default function ReminderForm({
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex space-x-2">
+            <div className="flex space-x-2 pt-4 border-t">
               <Button type="submit" className="flex-1">
                 {editingReminder ? 'Update' : 'Create'}
-              </Button>
-              <Button type="button" variant="outline" onClick={onCancel}>
-                Cancel
               </Button>
             </div>
           </form>

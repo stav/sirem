@@ -65,7 +65,7 @@ export default function ManagePage() {
   })
 
   // Show/hide completed reminders
-  const [showCompletedReminders, setShowCompletedReminders] = useState(true)
+  const [showCompletedReminders, setShowCompletedReminders] = useState(false)
 
   // Handle URL parameters for direct reminder editing
   useEffect(() => {
@@ -147,14 +147,36 @@ export default function ManagePage() {
   const handleReminderSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
-    if (!selectedContact) return
-
-    const success = editingReminder 
-      ? await updateReminder(editingReminder.id, reminderForm)
-      : await createReminder(selectedContact.id, reminderForm)
-
-    if (success) {
-      resetForms()
+    if (editingReminder) {
+      // Update existing reminder - doesn't need selectedContact
+      const success = await updateReminder(editingReminder.id, reminderForm)
+      
+      if (success) {
+        // Find the contact for this reminder
+        const contact = contacts.find(c => c.id === editingReminder.contact_id)
+        const contactName = contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
+        
+        toast({
+          title: 'Reminder updated',
+          description: `"${reminderForm.title}" for ${contactName} was successfully updated.`,
+        })
+        logger.info(`Reminder updated: ${reminderForm.title} for ${contactName}`, 'reminder_update')
+        resetForms()
+      }
+    } else {
+      // Create new reminder - needs selectedContact
+      if (!selectedContact) return
+      
+      const success = await createReminder(selectedContact.id, reminderForm)
+      
+      if (success) {
+        toast({
+          title: 'Reminder created',
+          description: `"${reminderForm.title}" was successfully created.`,
+        })
+        logger.info(`Reminder created: ${reminderForm.title}`, 'reminder_create')
+        resetForms()
+      }
     }
   }
 
@@ -175,7 +197,18 @@ export default function ManagePage() {
   }
 
   const handleToggleReminderComplete = async (reminder: Reminder) => {
-    await toggleReminderComplete(reminder)
+    const success = await toggleReminderComplete(reminder)
+    if (success) {
+      const contact = contacts.find(c => c.id === reminder.contact_id)
+      const contactName = contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
+      const action = reminder.is_complete ? 'marked as incomplete' : 'marked as complete'
+      
+      toast({
+        title: 'Reminder updated',
+        description: `"${reminder.title}" for ${contactName} was ${action}.`,
+      })
+      logger.info(`Reminder ${action}: ${reminder.title} for ${contactName}`, 'reminder_toggle')
+    }
   }
 
   // Utility functions
