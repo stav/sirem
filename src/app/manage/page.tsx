@@ -31,6 +31,8 @@ interface ReminderFormData {
   description: string
   reminder_date: string
   priority: 'low' | 'medium' | 'high'
+  reminder_type: string
+  completed_date: string
 }
 
 export default function ManagePage() {
@@ -64,7 +66,9 @@ export default function ManagePage() {
     title: '',
     description: '',
     reminder_date: '',
-    priority: 'medium'
+    priority: 'medium',
+    reminder_type: '',
+    completed_date: ''
   })
 
   // Show/hide completed reminders
@@ -177,7 +181,7 @@ export default function ManagePage() {
   const handleAddReminder = () => {
     if (!selectedContact) return
     setEditingReminder(null)
-    setReminderForm({ title: '', description: '', reminder_date: '', priority: 'medium' })
+    setReminderForm({ title: '', description: '', reminder_date: '', priority: 'medium', reminder_type: '', completed_date: '' })
     setShowReminderForm(true)
   }
 
@@ -187,7 +191,9 @@ export default function ManagePage() {
       title: reminder.title,
       description: reminder.description || '',
       reminder_date: reminder.reminder_date.split('T')[0],
-      priority: reminder.priority
+      priority: reminder.priority,
+      reminder_type: reminder.reminder_type || '',
+      completed_date: reminder.completed_date ? reminder.completed_date.split('T')[0] : ''
     })
     setShowReminderForm(true)
   }
@@ -262,7 +268,7 @@ export default function ManagePage() {
   // Utility functions
   const resetForms = () => {
     setContactForm({ first_name: '', last_name: '', phone: '', email: '', notes: '', birthdate: '', status: 'New', medicare_beneficiary_id: '' })
-    setReminderForm({ title: '', description: '', reminder_date: '', priority: 'medium' })
+    setReminderForm({ title: '', description: '', reminder_date: '', priority: 'medium', reminder_type: '', completed_date: '' })
     setShowContactForm(false)
     setShowReminderForm(false)
     setEditingContact(null)

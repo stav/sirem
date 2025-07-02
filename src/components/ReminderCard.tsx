@@ -196,58 +196,74 @@ export default function ReminderCard({
           </div>
         </div>
 
-        {/* Action buttons */}
-        <div className="flex items-center justify-end space-x-1 mt-4 pt-3 border-t">
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onToggleComplete(reminder)}
-                className="h-8 w-8 p-0 hover:bg-green-50 hover:text-green-600"
-                aria-label={reminder.is_complete ? 'Mark as incomplete' : 'Mark as complete'}
+        {/* Footer with badges and action buttons */}
+        <div className="flex items-center justify-between mt-4 pt-3 border-t">
+          {/* Badges on the left */}
+          <div className="flex items-center space-x-1">
+            {reminder.reminder_type && reminder.reminder_type.split(' ').filter(Boolean).map((badge, badgeIndex) => (
+              <Badge 
+                key={badgeIndex}
+                variant="outline" 
+                className="text-xs px-2 py-1 border bg-blue-50 text-blue-700 border-blue-200"
               >
-                {reminder.is_complete ? (
-                  <X className="h-4 w-4" />
-                ) : (
-                  <Check className="h-4 w-4" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              {reminder.is_complete ? 'Mark as incomplete' : 'Mark as complete'}
-            </TooltipContent>
-          </Tooltip>
+                {badge}
+              </Badge>
+            ))}
+          </div>
+          
+          {/* Action buttons on the right */}
+          <div className="flex items-center space-x-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onToggleComplete(reminder)}
+                  className="h-8 w-8 p-0 hover:bg-green-50 hover:text-green-600"
+                  aria-label={reminder.is_complete ? 'Mark as incomplete' : 'Mark as complete'}
+                >
+                  {reminder.is_complete ? (
+                    <X className="h-4 w-4" />
+                  ) : (
+                    <Check className="h-4 w-4" />
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {reminder.is_complete ? 'Mark as incomplete' : 'Mark as complete'}
+              </TooltipContent>
+            </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onEdit(reminder)}
-                className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600"
-                aria-label="Edit reminder"
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Edit reminder</TooltipContent>
-          </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onEdit(reminder)}
+                  className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600"
+                  aria-label="Edit reminder"
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Edit reminder</TooltipContent>
+            </Tooltip>
 
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => onDelete(reminder.id)}
-                className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600"
-                aria-label="Delete reminder"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Delete reminder</TooltipContent>
-          </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => onDelete(reminder.id)}
+                  className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600"
+                  aria-label="Delete reminder"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Delete reminder</TooltipContent>
+            </Tooltip>
+          </div>
         </div>
       </CardContent>
     </Card>

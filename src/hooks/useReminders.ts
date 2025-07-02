@@ -9,6 +9,8 @@ interface ReminderForm {
   description: string
   reminder_date: string
   priority: 'low' | 'medium' | 'high'
+  reminder_type: string
+  completed_date: string
 }
 
 export function useReminders() {
@@ -44,7 +46,10 @@ export function useReminders() {
           title: reminderData.title,
           description: reminderData.description,
           reminder_date: reminderData.reminder_date,
-          priority: reminderData.priority
+          priority: reminderData.priority,
+          reminder_type: reminderData.reminder_type,
+          completed_date: reminderData.completed_date || null,
+          is_complete: !!reminderData.completed_date
         })
 
       if (error) {
@@ -68,7 +73,10 @@ export function useReminders() {
           title: reminderData.title,
           description: reminderData.description,
           reminder_date: reminderData.reminder_date,
-          priority: reminderData.priority
+          priority: reminderData.priority,
+          reminder_type: reminderData.reminder_type,
+          completed_date: reminderData.completed_date || null,
+          is_complete: !!reminderData.completed_date
         })
         .eq('id', reminderId)
 

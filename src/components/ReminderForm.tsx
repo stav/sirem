@@ -13,6 +13,8 @@ interface ReminderFormData {
   description: string
   reminder_date: string
   priority: 'low' | 'medium' | 'high'
+  reminder_type: string
+  completed_date: string
 }
 
 interface ReminderFormProps {
@@ -72,6 +74,16 @@ export default function ReminderForm({
         />
       </div>
       <div>
+        <Label htmlFor="completed_date">Completed Date (optional)</Label>
+        <Input
+          id="completed_date"
+          type="date"
+          value={formData.completed_date}
+          onChange={(e) => onFormDataChange({...formData, completed_date: e.target.value})}
+          placeholder="Leave empty if not completed"
+        />
+      </div>
+      <div>
         <Label htmlFor="priority">Priority</Label>
         <Select
           value={formData.priority}
@@ -88,6 +100,15 @@ export default function ReminderForm({
             <SelectItem value="high">High</SelectItem>
           </SelectContent>
         </Select>
+      </div>
+      <div>
+        <Label htmlFor="reminder_type">Badges (space-separated)</Label>
+        <Input
+          id="reminder_type"
+          value={formData.reminder_type}
+          onChange={(e) => onFormDataChange({...formData, reminder_type: e.target.value})}
+          placeholder="e.g., urgent follow-up medical"
+        />
       </div>
     </ModalForm>
   )
