@@ -20,6 +20,7 @@ interface ReminderListProps {
   onDeleteReminder: (reminderId: string) => void
   showCompletedReminders: boolean
   onToggleShowCompleted: () => void
+  onSelectContact?: (contactId: string) => void
 }
 
 export default function ReminderList({
@@ -31,7 +32,8 @@ export default function ReminderList({
   onEditReminder,
   onDeleteReminder,
   showCompletedReminders,
-  onToggleShowCompleted
+  onToggleShowCompleted,
+  onSelectContact
 }: ReminderListProps) {
   // Always filter reminders based on toggle, for both main and contact views
   let displayReminders = reminders;
@@ -114,6 +116,7 @@ export default function ReminderList({
                   onToggleComplete={onToggleComplete}
                   onEdit={onEditReminder}
                   onDelete={onDeleteReminder}
+                  onSelectContact={onSelectContact}
                 />
               ))}
           </div>
@@ -147,6 +150,7 @@ export default function ReminderList({
                   onToggleComplete={onToggleComplete}
                   onEdit={onEditReminder}
                   onDelete={onDeleteReminder}
+                  onSelectContact={onSelectContact}
                 />
               )
             })}

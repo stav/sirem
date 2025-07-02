@@ -325,6 +325,13 @@ export default function ManagePage() {
               onDeleteReminder={handleDeleteReminder}
               showCompletedReminders={showCompletedReminders}
               onToggleShowCompleted={() => setShowCompletedReminders((v) => !v)}
+              onSelectContact={(contactId) => {
+                const contact = contacts.find(c => c.id === contactId)
+                if (contact) {
+                  setSelectedContact(contact)
+                  setSingleContactView(true)
+                }
+              }}
             />
           </div>
 
