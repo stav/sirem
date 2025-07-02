@@ -1,11 +1,9 @@
-import React, { useRef, useEffect } from 'react'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
+import React from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { X } from 'lucide-react'
+import ModalForm from '@/components/ui/modal-form'
 import type { Database } from '@/lib/supabase'
 
 type Reminder = Database['public']['Tables']['reminders']['Row']
@@ -34,101 +32,63 @@ export default function ReminderForm({
   onSubmit,
   onCancel
 }: ReminderFormProps) {
-  const modalRef = useRef<HTMLDivElement>(null)
-
-  // Close modal on Escape key
-  useEffect(() => {
-    if (!isOpen) return
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === 'Escape') {
-        onCancel()
-      }
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [isOpen, onCancel])
-
-  if (!isOpen) return null
+  const title = editingReminder ? 'Edit Reminder' : 'Add New Reminder'
+  const submitText = editingReminder ? 'Update' : 'Create'
 
   return (
-    <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
-      onClick={e => {
-        if (e.target === e.currentTarget) {
-          onCancel()
-        }
-      }}
+    <ModalForm
+      isOpen={isOpen}
+      title={title}
+      onSubmit={onSubmit}
+      onCancel={onCancel}
+      submitText={submitText}
     >
-      <Card className="w-full max-w-md max-h-[90vh] flex flex-col" ref={modalRef}>
-        <CardHeader className="relative flex-shrink-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="absolute right-2 top-2 h-12 w-12 p-0"
-            onClick={onCancel}
-          >
-            <X className="h-8 w-8" />
-          </Button>
-          <CardTitle>
-            {editingReminder ? 'Edit Reminder' : 'Add New Reminder'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex-1 overflow-y-auto">
-          <form onSubmit={onSubmit} className="space-y-4 pb-4">
-            <div>
-              <Label htmlFor="title">Title</Label>
-              <Input
-                id="title"
-                value={formData.title}
-                onChange={(e) => onFormDataChange({...formData, title: e.target.value})}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => onFormDataChange({...formData, description: e.target.value})}
-                rows={3}
-              />
-            </div>
-            <div>
-              <Label htmlFor="reminder_date">Due Date</Label>
-              <Input
-                id="reminder_date"
-                type="date"
-                value={formData.reminder_date}
-                onChange={(e) => onFormDataChange({...formData, reminder_date: e.target.value})}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="priority">Priority</Label>
-              <Select
-                value={formData.priority}
-                onValueChange={(value: 'low' | 'medium' | 'high') => 
-                  onFormDataChange({...formData, priority: value})
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex space-x-2 pt-4 border-t">
-              <Button type="submit" className="flex-1">
-                {editingReminder ? 'Update' : 'Create'}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+      <div>
+        <Label htmlFor="title">Title</Label>
+        <Input
+          id="title"
+          value={formData.title}
+          onChange={(e) => onFormDataChange({...formData, title: e.target.value})}
+          required
+        />
+      </div>
+      <div>
+        <Label htmlFor="description">Description</Label>
+        <Textarea
+          id="description"
+          value={formData.description}
+          onChange={(e) => onFormDataChange({...formData, description: e.target.value})}
+          rows={3}
+        />
+      </div>
+      <div>
+        <Label htmlFor="reminder_date">Due Date</Label>
+        <Input
+          id="reminder_date"
+          type="date"
+          value={formData.reminder_date}
+          onChange={(e) => onFormDataChange({...formData, reminder_date: e.target.value})}
+          required
+        />
+      </div>
+      <div>
+        <Label htmlFor="priority">Priority</Label>
+        <Select
+          value={formData.priority}
+          onValueChange={(value: 'low' | 'medium' | 'high') => 
+            onFormDataChange({...formData, priority: value})
+          }
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="low">Low</SelectItem>
+            <SelectItem value="medium">Medium</SelectItem>
+            <SelectItem value="high">High</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+    </ModalForm>
   )
 } 

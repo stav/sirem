@@ -122,6 +122,14 @@ export default function ManagePage() {
         const contactName = `${contactForm.first_name} ${contactForm.last_name}`
         const action = editingContact ? 'updated' : 'created'
         
+        // Update selectedContact if we're editing the currently selected contact
+        if (editingContact && selectedContact && editingContact.id === selectedContact.id) {
+          setSelectedContact({
+            ...selectedContact,
+            ...contactForm
+          })
+        }
+        
         toast({
           title: `Contact ${action}`,
           description: `${contactName} was successfully ${action}.`,

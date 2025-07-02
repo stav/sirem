@@ -69,7 +69,7 @@ export function useContacts() {
 
   const updateContact = async (contactId: string, contactData: ContactForm) => {
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('contacts')
         .update({
           first_name: contactData.first_name,
@@ -81,6 +81,7 @@ export function useContacts() {
           status: contactData.status
         })
         .eq('id', contactId)
+        .select()
 
       if (error) {
         console.error('Error updating contact:', error)
@@ -88,7 +89,19 @@ export function useContacts() {
       }
 
       logger.contactUpdated(`${contactData.first_name} ${contactData.last_name}`)
-      await fetchContacts()
+      
+      // Update the local state immediately with the returned data
+      if (data && data.length > 0) {
+        setContacts(prevContacts => 
+          prevContacts.map(contact => 
+            contact.id === contactId ? data[0] : contact
+          )
+        )
+      } else {
+        // Fallback to fetching all contacts
+        await fetchContacts()
+      }
+      
       return true
     } catch (error) {
       console.error('Error updating contact:', error)
