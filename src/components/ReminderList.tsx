@@ -137,21 +137,26 @@ export default function ReminderList({
               </div>
             </div>
           </div>
-          {selectedContact && (
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  onClick={onAddReminder}
-                  size="sm"
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                Add new Reminder
-              </TooltipContent>
-            </Tooltip>
-          )}
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-muted-foreground">
+              {displayReminders.length} / {reminders.length}
+            </span>
+            {selectedContact && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    onClick={onAddReminder}
+                    size="sm"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  Add new Reminder
+                </TooltipContent>
+              </Tooltip>
+            )}
+          </div>
         </div>
       </CardHeader>
       <CardContent>
