@@ -1,3 +1,8 @@
+// NOTE: This system uses date-only, timezone-less dates in the client UI (e.g., YYYY-MM-DD strings from <input type="date">),
+// but the database tables currently use date-time fields (with timezone). This means that care must be taken to avoid
+// time zone conversion issues when displaying or storing dates. All date displays in this component use the raw date string
+// (YYYY-MM-DD) to ensure consistency with user input and avoid time zone shifts.
+
 import React from 'react'
 import { Edit, Trash2, Check, X, Clock, AlertCircle, Calendar, User } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -5,7 +10,12 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Database } from '@/lib/supabase'
-import { formatLocalDate } from '@/lib/contact-utils'
+
+// Helper to format YYYY-MM-DD as YYYY-MM-DD (strip time if present)
+function formatDateString(dateString: string | null | undefined) {
+  if (!dateString) return ''
+  return dateString.split('T')[0]
+}
 
 type Reminder = Database['public']['Tables']['reminders']['Row']
 
@@ -163,34 +173,25 @@ export default function ReminderCard({
             <div className="flex items-center space-x-1">
               <Calendar className="h-3 w-3" />
               <span className="font-medium">Due:</span>
-              <span className={(() => {
-                const reminderDate = new Date(reminder.reminder_date);
-                const now = new Date();
-                const dueNum = ymdNumberUTC(reminderDate);
-                const todayNum = ymdNumberUTC(now);
-                const isOverdue = dueNum < todayNum && !reminder.is_complete;
-                return isOverdue ? 'text-red-600 font-medium' : '';
-              })()}>
-                {formatLocalDate(reminder.reminder_date)}
-              </span>
+              <span>{formatDateString(reminder.reminder_date)}</span>
             </div>
             <div className="flex items-center space-x-1">
               <Clock className="h-3 w-3" />
               <span className="font-medium">Created:</span>
-              <span>{new Date(reminder.created_at).toLocaleDateString()}</span>
+              <span>{formatDateString(reminder.created_at)}</span>
             </div>
             {reminder.updated_at !== reminder.created_at && (
               <div className="flex items-center space-x-1 sm:col-span-2">
                 <Clock className="h-3 w-3" />
                 <span className="font-medium">Updated:</span>
-                <span>{new Date(reminder.updated_at).toLocaleDateString()}</span>
+                <span>{formatDateString(reminder.updated_at)}</span>
               </div>
             )}
             {reminder.completed_date && (
               <div className="flex items-center space-x-1 sm:col-span-2">
                 <Check className="h-3 w-3" />
                 <span className="font-medium">Completed:</span>
-                <span>{new Date(reminder.completed_date).toLocaleDateString()}</span>
+                <span>{formatDateString(reminder.completed_date)}</span>
               </div>
             )}
           </div>
