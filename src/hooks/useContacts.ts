@@ -98,6 +98,10 @@ export function useContacts() {
 
   const deleteContact = async (contactId: string) => {
     try {
+      // Find the contact before deleting to get the name for logging
+      const contactToDelete = contacts.find(c => c.id === contactId)
+      const contactName = contactToDelete ? `${contactToDelete.first_name} ${contactToDelete.last_name}` : 'Unknown Contact'
+      
       const { error } = await supabase
         .from('contacts')
         .delete()
@@ -108,6 +112,7 @@ export function useContacts() {
         return false
       }
 
+      logger.contactDeleted(contactName)
       await fetchContacts()
       return true
     } catch (error) {

@@ -45,6 +45,7 @@ export default function ManagePage() {
   const [editingReminder, setEditingReminder] = useState<Reminder | null>(null)
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
   const [singleContactView, setSingleContactView] = useState(false)
+  const [isSubmittingContact, setIsSubmittingContact] = useState(false)
 
   // Form data
   const [contactForm, setContactForm] = useState<ContactFormData>({
@@ -110,19 +111,55 @@ export default function ManagePage() {
 
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsSubmittingContact(true)
     
-    const success = editingContact 
-      ? await updateContact(editingContact.id, contactForm)
-      : await createContact(contactForm)
+    try {
+      const success = editingContact 
+        ? await updateContact(editingContact.id, contactForm)
+        : await createContact(contactForm)
 
-    if (success) {
-      resetForms()
+      if (success) {
+        const contactName = `${contactForm.first_name} ${contactForm.last_name}`
+        const action = editingContact ? 'updated' : 'created'
+        
+        toast({
+          title: `Contact ${action}`,
+          description: `${contactName} was successfully ${action}.`,
+        })
+        resetForms()
+      } else {
+        toast({
+          title: 'Error',
+          description: `Failed to ${editingContact ? 'update' : 'create'} contact. Please try again.`,
+          variant: 'destructive',
+        })
+      }
+    } finally {
+      setIsSubmittingContact(false)
     }
   }
 
   const handleDeleteContact = async (contactId: string) => {
     if (!confirm('Are you sure you want to delete this contact?')) return
-    await deleteContact(contactId)
+    
+    const contact = contacts.find(c => c.id === contactId)
+    const contactName = contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
+    
+    const success = await deleteContact(contactId)
+    
+    if (success) {
+      toast({
+        title: 'Contact deleted',
+        description: `${contactName} was successfully deleted.`,
+        variant: 'destructive',
+      })
+    } else {
+      toast({
+        title: 'Error',
+        description: `Failed to delete ${contactName}. Please try again.`,
+        variant: 'destructive',
+      })
+    }
   }
 
   // Reminder handlers
@@ -291,6 +328,7 @@ export default function ManagePage() {
             onFormDataChange={setContactForm}
             onSubmit={handleContactSubmit}
             onCancel={resetForms}
+            isLoading={isSubmittingContact}
           />
 
           {/* Reminder Form Modal */}
