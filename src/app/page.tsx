@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
 import { 
   Users, 
@@ -10,6 +11,8 @@ import {
   AlertTriangle, 
   Plus,
   ArrowRight,
+  Phone,
+  Mail,
 } from 'lucide-react'
 import type { Database } from '@/lib/supabase'
 import Navigation from '@/components/Navigation'
@@ -128,7 +131,76 @@ function getRecent65(contacts: Contact[], daysRange: number = 60): ContactWithBi
     .sort((a, b) => b.daysUntilBirthday - a.daysUntilBirthday); // Sort by most recent first
 }
 
+// Helper function to render status badge
+function renderStatusBadge(status: string | null) {
+  const statusBadge = getStatusBadge(status)
+  if (!statusBadge) return null
+  
+  if (statusBadge.variant) {
+    return <Badge variant={statusBadge.variant} className={statusBadge.className}>{statusBadge.text}</Badge>
+  } else {
+    return <span className={statusBadge.className}>{statusBadge.text}</span>
+  }
+}
+
+// Helper function to render contact info with icons
+function renderContactInfo(contact: Contact) {
+  return (
+    <div className="flex items-center space-x-2">
+      <span className="text-sm text-foreground">
+        {contact.first_name} {contact.last_name}
+      </span>
+      {renderStatusBadge(contact.status)}
+      {contact.phone && (
+        <Phone className="h-3 w-3 text-muted-foreground" />
+      )}
+      {contact.email && (
+        <Mail className="h-3 w-3 text-muted-foreground" />
+      )}
+    </div>
+  )
+}
+
+// Helper function to render contact row
+function renderContactRow(
+  contact: ContactWithBirthday, 
+  router: ReturnType<typeof useRouter>, 
+  showDate: boolean = true,
+  badgeVariant: 'secondary' | 'outline' = 'secondary'
+) {
+  const getBadgeText = () => {
+    if (contact.daysUntilBirthday === 0) return 'Today!'
+    if (contact.daysUntilBirthday === 1) return 'Tomorrow'
+    if (contact.daysUntilBirthday > 0) return `${contact.daysUntilBirthday} days`
+    if (Math.abs(contact.daysUntilBirthday) === 1) return 'Yesterday'
+    return `${Math.abs(contact.daysUntilBirthday)} days ago`
+  }
+
+  return (
+    <div 
+      key={contact.id} 
+      className="flex items-center justify-between py-1 hover:bg-muted/70 transition-colors cursor-pointer"
+      onClick={() => {
+        router.push(`/manage?contact=${contact.id}`)
+      }}
+    >
+      {renderContactInfo(contact)}
+      {showDate && (
+        <div className="flex items-center space-x-2">
+          <span className="text-xs text-muted-foreground">
+            {formatLocalDate(contact.birthdate!)}
+          </span>
+          <Badge variant={badgeVariant} className="text-xs">
+            {getBadgeText()}
+          </Badge>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function Home() {
+  const router = useRouter()
   const [contacts, setContacts] = useState<Contact[]>([])
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [loading, setLoading] = useState(true)
@@ -296,35 +368,9 @@ export default function Home() {
                           </div>
                         ) : (
                           <div className="space-y-1 max-h-48 overflow-y-auto">
-                            {upcoming65.map((contact) => (
-                              <div key={contact.id} className="flex items-center justify-between py-1">
-                                <div className="flex items-center space-x-2">
-                                  <span className="text-sm text-foreground">
-                                    {contact.first_name} {contact.last_name}
-                                  </span>
-                                  {(() => {
-                                    const statusBadge = getStatusBadge(contact.status)
-                                    if (!statusBadge) return null
-                                    
-                                    if (statusBadge.variant) {
-                                      return <Badge variant={statusBadge.variant} className={statusBadge.className}>{statusBadge.text}</Badge>
-                                    } else {
-                                      return <span className={statusBadge.className}>{statusBadge.text}</span>
-                                    }
-                                  })()}
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <span className="text-xs text-muted-foreground">
-                                    {formatLocalDate(contact.birthdate!)}
-                                  </span>
-                                  <Badge variant="secondary" className="text-xs">
-                                    {contact.daysUntilBirthday === 0 ? 'Today!' : 
-                                     contact.daysUntilBirthday === 1 ? 'Tomorrow' :
-                                     `${contact.daysUntilBirthday} days`}
-                                  </Badge>
-                                </div>
-                              </div>
-                            ))}
+                            {upcoming65.map((contact) => 
+                              renderContactRow(contact, router)
+                            )}
                           </div>
                         );
                       })()}
@@ -341,34 +387,9 @@ export default function Home() {
                           </div>
                         ) : (
                           <div className="space-y-1 max-h-48 overflow-y-auto">
-                            {recent65.map((contact) => (
-                              <div key={contact.id} className="flex items-center justify-between py-1">
-                                <div className="flex items-center space-x-2">
-                                  <span className="text-sm text-foreground">
-                                    {contact.first_name} {contact.last_name}
-                                  </span>
-                                  {(() => {
-                                    const statusBadge = getStatusBadge(contact.status)
-                                    if (!statusBadge) return null
-                                    
-                                    if (statusBadge.variant) {
-                                      return <Badge variant={statusBadge.variant} className={statusBadge.className}>{statusBadge.text}</Badge>
-                                    } else {
-                                      return <span className={statusBadge.className}>{statusBadge.text}</span>
-                                    }
-                                  })()}
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <span className="text-xs text-muted-foreground">
-                                    {formatLocalDate(contact.birthdate!)}
-                                  </span>
-                                  <Badge variant="outline" className="text-xs">
-                                    {Math.abs(contact.daysUntilBirthday) === 1 ? 'Yesterday' :
-                                     `${Math.abs(contact.daysUntilBirthday)} days ago`}
-                                  </Badge>
-                                </div>
-                              </div>
-                            ))}
+                            {recent65.map((contact) => 
+                              renderContactRow(contact, router, true, 'outline')
+                            )}
                           </div>
                         );
                       })()}
@@ -395,35 +416,9 @@ export default function Home() {
                           </div>
                         ) : (
                           <div className="space-y-1 max-h-48 overflow-y-auto">
-                            {upcomingBirthdays.map((contact) => (
-                              <div key={contact.id} className="flex items-center justify-between py-1">
-                                <div className="flex items-center space-x-2">
-                                  <span className="text-sm text-foreground">
-                                    {contact.first_name} {contact.last_name}
-                                  </span>
-                                  {(() => {
-                                    const statusBadge = getStatusBadge(contact.status)
-                                    if (!statusBadge) return null
-                                    
-                                    if (statusBadge.variant) {
-                                      return <Badge variant={statusBadge.variant} className={statusBadge.className}>{statusBadge.text}</Badge>
-                                    } else {
-                                      return <span className={statusBadge.className}>{statusBadge.text}</span>
-                                    }
-                                  })()}
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <span className="text-xs text-muted-foreground">
-                                    {formatLocalDate(contact.birthdate!)}
-                                  </span>
-                                  <Badge variant="secondary" className="text-xs">
-                                    {contact.daysUntilBirthday === 0 ? 'Today!' : 
-                                     contact.daysUntilBirthday === 1 ? 'Tomorrow' :
-                                     `${contact.daysUntilBirthday} days`}
-                                  </Badge>
-                                </div>
-                              </div>
-                            ))}
+                            {upcomingBirthdays.map((contact) => 
+                              renderContactRow(contact, router)
+                            )}
                           </div>
                         );
                       })()}
@@ -440,34 +435,9 @@ export default function Home() {
                           </div>
                         ) : (
                           <div className="space-y-1 max-h-48 overflow-y-auto">
-                            {pastBirthdays.map((contact) => (
-                              <div key={contact.id} className="flex items-center justify-between py-1">
-                                <div className="flex items-center space-x-2">
-                                  <span className="text-sm text-foreground">
-                                    {contact.first_name} {contact.last_name}
-                                  </span>
-                                  {(() => {
-                                    const statusBadge = getStatusBadge(contact.status)
-                                    if (!statusBadge) return null
-                                    
-                                    if (statusBadge.variant) {
-                                      return <Badge variant={statusBadge.variant} className={statusBadge.className}>{statusBadge.text}</Badge>
-                                    } else {
-                                      return <span className={statusBadge.className}>{statusBadge.text}</span>
-                                    }
-                                  })()}
-                                </div>
-                                <div className="flex items-center space-x-2">
-                                  <span className="text-xs text-muted-foreground">
-                                    {formatLocalDate(contact.birthdate!)}
-                                  </span>
-                                  <Badge variant="outline" className="text-xs">
-                                    {Math.abs(contact.daysUntilBirthday) === 1 ? 'Yesterday' :
-                                     `${Math.abs(contact.daysUntilBirthday)} days ago`}
-                                  </Badge>
-                                </div>
-                              </div>
-                            ))}
+                            {pastBirthdays.map((contact) => 
+                              renderContactRow(contact, router, true, 'outline')
+                            )}
                           </div>
                         );
                       })()}
@@ -512,7 +482,7 @@ export default function Home() {
                           className="p-2 bg-muted/50 rounded-lg cursor-pointer hover:bg-muted/70 transition-colors"
                           onClick={() => {
                             // Navigate to manage page with reminder selected
-                            window.location.href = `/manage?reminder=${reminder.id}`
+                            router.push(`/manage?reminder=${reminder.id}`)
                           }}
                         >
                           <div className="flex items-start justify-between">

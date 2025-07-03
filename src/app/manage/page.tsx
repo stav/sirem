@@ -74,10 +74,11 @@ export default function ManagePage() {
   // Show/hide completed reminders
   const [showCompletedReminders, setShowCompletedReminders] = useState(false)
 
-  // Handle URL parameters for direct reminder editing
+  // Handle URL parameters for direct reminder editing and contact selection
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
     const reminderId = urlParams.get('reminder')
+    const contactId = urlParams.get('contact')
     
     if (reminderId && reminders.length > 0) {
       const reminder = reminders.find(r => r.id === reminderId)
@@ -90,6 +91,12 @@ export default function ManagePage() {
           // Open the reminder for editing
           handleEditReminder(reminder)
         }
+      }
+    } else if (contactId && contacts.length > 0) {
+      const contact = contacts.find(c => c.id === contactId)
+      if (contact) {
+        setSelectedContact(contact)
+        setSingleContactView(true)
       }
     }
   }, [reminders, contacts])
