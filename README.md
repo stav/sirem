@@ -53,8 +53,13 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
 
 1. Open your Supabase project dashboard
 2. Go to **SQL Editor**
-3. Copy and paste the contents of `supabase-setup.sql`
+3. Copy and paste the contents of `data/schema/current-schema.sql`
 4. Run the script to create tables and sample data
+
+Alternatively, you can run the migration script:
+```bash
+npm run show-migrations
+```
 
 ### 5. Start Development Server
 
@@ -91,6 +96,12 @@ Open [http://localhost:3000](http://localhost:3000) to view the application.
 - `npm run build` - Build for production
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
+- `npm run lint:fix` - Fix ESLint errors automatically
+- `npm run type-check` - Run TypeScript type checking
+- `npm run format` - Format code with Prettier
+- `npm run format:check` - Check code formatting
+- `npm run clean` - Clean build artifacts
+- `npm run analyze` - Analyze bundle size
 
 ## Deployment
 
