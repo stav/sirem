@@ -137,8 +137,8 @@ export default function ReminderList({
               </div>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-muted-foreground">
+          <div className="flex items-center">
+            <span className="text-sm text-muted-foreground mr-2">
               {displayReminders.length} / {reminders.length}
             </span>
             {selectedContact && (
