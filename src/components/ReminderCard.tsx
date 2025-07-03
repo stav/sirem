@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { formatTimeDelta } from '@/lib/utils'
 import type { Database } from '@/lib/supabase'
 
 // Helper to format YYYY-MM-DD as YYYY-MM-DD (strip time if present)
@@ -62,11 +63,26 @@ function getStatusIndicator(reminder: Reminder) {
   const isToday = dueNum === todayNum
   const isUpcoming = dueNum > todayNum && dueNum - todayNum === 1
 
+  // Calculate days difference for all reminders
+  const getDaysDifference = () => {
+    const diffTime = reminderDate.getTime() - now.getTime()
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    return diffDays
+  }
+
+  const daysDiff = getDaysDifference()
+
   if (reminder.is_complete) {
+    // Calculate days since completion
+    const completedDate = reminder.completed_date ? new Date(reminder.completed_date) : now
+    const completedDiffTime = now.getTime() - completedDate.getTime()
+    const completedDiffDays = Math.ceil(completedDiffTime / (1000 * 60 * 60 * 24))
+
     return {
       icon: Check,
       className: 'text-green-600 bg-green-50 border-green-200',
       text: 'Completed',
+      daysDiff: completedDiffDays,
     }
   }
 
@@ -75,6 +91,7 @@ function getStatusIndicator(reminder: Reminder) {
       icon: AlertCircle,
       className: 'text-red-600 bg-red-50 border-red-200',
       text: 'Overdue',
+      daysDiff,
     }
   }
 
@@ -83,6 +100,7 @@ function getStatusIndicator(reminder: Reminder) {
       icon: Clock,
       className: 'text-orange-600 bg-orange-50 border-orange-200',
       text: 'Due Today',
+      daysDiff: 0,
     }
   }
 
@@ -91,6 +109,7 @@ function getStatusIndicator(reminder: Reminder) {
       icon: Clock,
       className: 'text-blue-600 bg-blue-50 border-blue-200',
       text: 'Due Soon',
+      daysDiff,
     }
   }
 
@@ -98,6 +117,7 @@ function getStatusIndicator(reminder: Reminder) {
     icon: Calendar,
     className: 'text-gray-600 bg-gray-50 border-gray-200',
     text: 'Upcoming',
+    daysDiff,
   }
 }
 
@@ -135,6 +155,11 @@ export default function ReminderCard({
             )}
           </div>
           <div className="flex items-center space-x-2">
+            {statusIndicator.daysDiff !== null && (
+              <span className="text-xs font-bold text-muted-foreground">
+                {formatTimeDelta(statusIndicator.daysDiff, reminder.is_complete)}
+              </span>
+            )}
             <Badge variant="outline" className={`border px-2 py-1 text-xs ${statusIndicator.className}`}>
               <StatusIcon className="mr-1 h-3 w-3" />
               {statusIndicator.text}
