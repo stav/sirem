@@ -21,6 +21,12 @@ const eslintConfig = [
       'no-unreachable': 'error',
     },
   },
+  {
+    files: ['next.config.ts', 'next.config.js'],
+    rules: {
+      '@typescript-eslint/no-var-requires': 'off',
+    },
+  },
 ]
 
 export default eslintConfig
