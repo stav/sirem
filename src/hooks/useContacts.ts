@@ -22,16 +22,13 @@ export function useContacts() {
 
   const fetchContacts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('contacts')
-        .select('*')
-        .order('created_at', { ascending: false })
-      
+      const { data, error } = await supabase.from('contacts').select('*').order('created_at', { ascending: false })
+
       if (error) {
         console.error('Error fetching contacts:', error)
         return
       }
-      
+
       setContacts(data || [])
     } catch (error) {
       console.error('Error fetching contacts:', error)
@@ -42,18 +39,16 @@ export function useContacts() {
 
   const createContact = async (contactData: ContactForm) => {
     try {
-      const { error } = await supabase
-        .from('contacts')
-        .insert({
-          first_name: contactData.first_name,
-          last_name: contactData.last_name,
-          phone: contactData.phone,
-          email: contactData.email,
-          notes: contactData.notes,
-          birthdate: contactData.birthdate || null,
-          status: contactData.status,
-          medicare_beneficiary_id: contactData.medicare_beneficiary_id || null
-        })
+      const { error } = await supabase.from('contacts').insert({
+        first_name: contactData.first_name,
+        last_name: contactData.last_name,
+        phone: contactData.phone,
+        email: contactData.email,
+        notes: contactData.notes,
+        birthdate: contactData.birthdate || null,
+        status: contactData.status,
+        medicare_beneficiary_id: contactData.medicare_beneficiary_id || null,
+      })
 
       if (error) {
         console.error('Error creating contact:', error)
@@ -81,7 +76,7 @@ export function useContacts() {
           notes: contactData.notes,
           birthdate: contactData.birthdate || null,
           status: contactData.status,
-          medicare_beneficiary_id: contactData.medicare_beneficiary_id || null
+          medicare_beneficiary_id: contactData.medicare_beneficiary_id || null,
         })
         .eq('id', contactId)
         .select()
@@ -92,19 +87,15 @@ export function useContacts() {
       }
 
       logger.contactUpdated(`${contactData.first_name} ${contactData.last_name}`)
-      
+
       // Update the local state immediately with the returned data
       if (data && data.length > 0) {
-        setContacts(prevContacts => 
-          prevContacts.map(contact => 
-            contact.id === contactId ? data[0] : contact
-          )
-        )
+        setContacts((prevContacts) => prevContacts.map((contact) => (contact.id === contactId ? data[0] : contact)))
       } else {
         // Fallback to fetching all contacts
         await fetchContacts()
       }
-      
+
       return true
     } catch (error) {
       console.error('Error updating contact:', error)
@@ -115,13 +106,12 @@ export function useContacts() {
   const deleteContact = async (contactId: string) => {
     try {
       // Find the contact before deleting to get the name for logging
-      const contactToDelete = contacts.find(c => c.id === contactId)
-      const contactName = contactToDelete ? `${contactToDelete.first_name} ${contactToDelete.last_name}` : 'Unknown Contact'
-      
-      const { error } = await supabase
-        .from('contacts')
-        .delete()
-        .eq('id', contactId)
+      const contactToDelete = contacts.find((c) => c.id === contactId)
+      const contactName = contactToDelete
+        ? `${contactToDelete.first_name} ${contactToDelete.last_name}`
+        : 'Unknown Contact'
+
+      const { error } = await supabase.from('contacts').delete().eq('id', contactId)
 
       if (error) {
         console.error('Error deleting contact:', error)
@@ -147,6 +137,6 @@ export function useContacts() {
     fetchContacts,
     createContact,
     updateContact,
-    deleteContact
+    deleteContact,
   }
-} 
+}

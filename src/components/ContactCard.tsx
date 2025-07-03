@@ -22,14 +22,12 @@ export default function ContactCard({
   isSingleView,
   onSelect,
   onEdit,
-  onDelete
+  onDelete,
 }: ContactCardProps) {
   return (
-    <div 
-      className={`p-4 border rounded-lg transition-colors ${
-        isSelected 
-          ? 'border-primary bg-primary/5' 
-          : isSingleView ? '' : 'cursor-pointer hover:bg-muted/50'
+    <div
+      className={`rounded-lg border p-4 transition-colors ${
+        isSelected ? 'border-primary bg-primary/5' : isSingleView ? '' : 'cursor-pointer hover:bg-muted/50'
       }`}
       onClick={() => {
         if (!isSingleView) {
@@ -39,58 +37,52 @@ export default function ContactCard({
     >
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="font-medium flex items-center space-x-2">
+          <h3 className="flex items-center space-x-2 font-medium">
             {(() => {
               const statusBadge = getStatusBadge(contact.status)
               if (!statusBadge) return null
-              
+
               if (statusBadge.variant) {
-                return <Badge variant={statusBadge.variant} className={statusBadge.className}>{statusBadge.text}</Badge>
+                return (
+                  <Badge variant={statusBadge.variant} className={statusBadge.className}>
+                    {statusBadge.text}
+                  </Badge>
+                )
               } else {
                 return <span className={statusBadge.className}>{statusBadge.text}</span>
               }
             })()}
-            <span>{contact.first_name} {contact.last_name}</span>
+            <span>
+              {contact.first_name} {contact.last_name}
+            </span>
           </h3>
-          <div className="flex items-center space-x-4 mt-2">
+          <div className="mt-2 flex items-center space-x-4">
             {contact.phone && (
               <div className="flex items-center space-x-1">
                 <span className="text-sm text-muted-foreground">📞</span>
-                <span className="text-sm text-muted-foreground">
-                  {formatPhoneNumber(contact.phone)}
-                </span>
+                <span className="text-sm text-muted-foreground">{formatPhoneNumber(contact.phone)}</span>
               </div>
             )}
             {contact.email && (
               <div className="flex items-center space-x-1">
                 <span className="text-sm text-muted-foreground">✉️</span>
-                <span className="text-sm text-muted-foreground">
-                  {contact.email}
-                </span>
+                <span className="text-sm text-muted-foreground">{contact.email}</span>
               </div>
             )}
             {contact.birthdate && (
               <div className="flex items-center space-x-1">
                 <span className="text-sm text-muted-foreground">🎂</span>
-                <span className="text-sm text-muted-foreground">
-                  {formatLocalDate(contact.birthdate)}
-                </span>
+                <span className="text-sm text-muted-foreground">{formatLocalDate(contact.birthdate)}</span>
               </div>
             )}
             {contact.medicare_beneficiary_id && (
               <div className="flex items-center space-x-1">
                 <span className="text-sm text-muted-foreground">🏥</span>
-                <span className="text-sm text-muted-foreground">
-                  MBI: {formatMBI(contact.medicare_beneficiary_id)}
-                </span>
+                <span className="text-sm text-muted-foreground">MBI: {formatMBI(contact.medicare_beneficiary_id)}</span>
               </div>
             )}
           </div>
-          {contact.notes && (
-            <p className="text-sm text-muted-foreground mt-2">
-              {contact.notes}
-            </p>
-          )}
+          {contact.notes && <p className="mt-2 text-sm text-muted-foreground">{contact.notes}</p>}
         </div>
         <div className="flex items-center space-x-2">
           <Button
@@ -119,4 +111,4 @@ export default function ContactCard({
       </div>
     </div>
   )
-} 
+}

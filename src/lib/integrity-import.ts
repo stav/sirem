@@ -133,16 +133,16 @@ export class IntegrityImporter {
 
   async importData(data: IntegrityData) {
     console.log(`Starting import of ${data.result.length} leads...`)
-    
+
     try {
       // First, ensure we have all the lookup data
       await this.setupLookupData(data.result)
-      
+
       // Import leads
       for (const lead of data.result) {
         await this.importLead(lead)
       }
-      
+
       console.log('Import completed successfully!')
     } catch (error) {
       console.error('Import failed:', error)
@@ -152,27 +152,27 @@ export class IntegrityImporter {
 
   private async setupLookupData(leads: IntegrityLead[]) {
     // Collect all unique tag categories and tags
-    const tagCategories = new Set<{id: number, name: string, color: string}>()
-    const tags = new Set<{id: number, label: string, categoryId: number}>()
-    const statuses = new Set<{id: number, name: string}>()
+    const tagCategories = new Set<{ id: number; name: string; color: string }>()
+    const tags = new Set<{ id: number; label: string; categoryId: number }>()
+    const statuses = new Set<{ id: number; name: string }>()
 
     for (const lead of leads) {
       // Collect statuses
       statuses.add({ id: lead.leadStatusId, name: lead.statusName })
-      
+
       // Collect tags and categories
       for (const leadTag of lead.leadTags) {
         const category = leadTag.tag.tagCategory
         tagCategories.add({
           id: category.tagCategoryId,
           name: category.tagCategoryName,
-          color: category.tagCategoryColor
+          color: category.tagCategoryColor,
         })
-        
+
         tags.add({
           id: leadTag.tag.tagId,
           label: leadTag.tag.tagLabel,
-          categoryId: category.tagCategoryId
+          categoryId: category.tagCategoryId,
         })
       }
     }
@@ -181,13 +181,10 @@ export class IntegrityImporter {
     for (const category of tagCategories) {
       const { data, error } = await supabase
         .from('tag_categories')
-        .upsert(
-          { name: category.name, color: category.color },
-          { onConflict: 'name' }
-        )
+        .upsert({ name: category.name, color: category.color }, { onConflict: 'name' })
         .select()
         .single()
-      
+
       if (error) {
         console.warn(`Failed to upsert tag category ${category.name}:`, error)
       } else if (data) {
@@ -202,15 +199,15 @@ export class IntegrityImporter {
         const { data, error } = await supabase
           .from('tags')
           .upsert(
-            { 
+            {
               label: tag.label,
-              category_id: categoryId
+              category_id: categoryId,
             },
             { onConflict: 'label,category_id' }
           )
           .select()
           .single()
-        
+
         if (error) {
           console.warn(`Failed to upsert tag ${tag.label}:`, error)
         } else if (data) {
@@ -223,13 +220,10 @@ export class IntegrityImporter {
     for (const status of statuses) {
       const { data, error } = await supabase
         .from('lead_statuses')
-        .upsert(
-          { name: status.name },
-          { onConflict: 'name' }
-        )
+        .upsert({ name: status.name }, { onConflict: 'name' })
         .select()
         .single()
-      
+
       if (error) {
         console.warn(`Failed to upsert status ${status.name}:`, error)
       } else if (data) {
@@ -240,12 +234,12 @@ export class IntegrityImporter {
 
   private async importLead(lead: IntegrityLead) {
     console.log(`Importing lead: ${lead.firstName} ${lead.lastName}`)
-    
+
     // Get the first phone number to populate the contact.phone field
     const firstPhone = lead.phones.length > 0 ? lead.phones[0].leadPhone : null
     // Get the first email to populate the contact.email field
     const firstEmail = lead.emails.length > 0 ? lead.emails[0].leadEmail : null
-    
+
     // Insert the main contact record
     const { data: contact, error: contactError } = await supabase
       .from('contacts')
@@ -277,7 +271,7 @@ export class IntegrityImporter {
         health_policy_count: lead.healthPolicyCount,
         subsidy_level: lead.subsidyLevel,
         created_at: lead.createDate,
-        updated_at: lead.createDate
+        updated_at: lead.createDate,
       })
       .select()
       .single()
@@ -292,87 +286,77 @@ export class IntegrityImporter {
 
     // Import addresses
     for (const address of lead.addresses) {
-      await supabase
-        .from('addresses')
-        .insert({
-          contact_id: contact.id,
-          address1: address.address1,
-          address2: address.address2,
-          city: address.city,
-          state_code: address.stateCode,
-          postal_code: address.postalCode,
-          county: address.county,
-          county_fips: address.countyFips,
-          latitude: address.latitude,
-          longitude: address.longitude,
-          created_at: address.createDate,
-          updated_at: address.modifyDate || address.createDate
-        })
+      await supabase.from('addresses').insert({
+        contact_id: contact.id,
+        address1: address.address1,
+        address2: address.address2,
+        city: address.city,
+        state_code: address.stateCode,
+        postal_code: address.postalCode,
+        county: address.county,
+        county_fips: address.countyFips,
+        latitude: address.latitude,
+        longitude: address.longitude,
+        created_at: address.createDate,
+        updated_at: address.modifyDate || address.createDate,
+      })
     }
 
     // Import phones
     for (const phone of lead.phones) {
-      await supabase
-        .from('phones')
-        .insert({
-          contact_id: contact.id,
-          phone_number: phone.leadPhone,
-          phone_label: phone.phoneLabel,
-          inactive: phone.inactive,
-          is_sms_compatible: phone.isSmsCompatible,
-          created_at: phone.createDate,
-          updated_at: phone.modifyDate || phone.createDate
-        })
+      await supabase.from('phones').insert({
+        contact_id: contact.id,
+        phone_number: phone.leadPhone,
+        phone_label: phone.phoneLabel,
+        inactive: phone.inactive,
+        is_sms_compatible: phone.isSmsCompatible,
+        created_at: phone.createDate,
+        updated_at: phone.modifyDate || phone.createDate,
+      })
     }
 
     // Import emails
     for (const email of lead.emails) {
-      await supabase
-        .from('emails')
-        .insert({
-          contact_id: contact.id,
-          email_address: email.leadEmail,
-          email_label: email.emailLabel,
-          inactive: email.inactive,
-          created_at: email.createDate,
-          updated_at: email.modifyDate || email.createDate
-        })
+      await supabase.from('emails').insert({
+        contact_id: contact.id,
+        email_address: email.leadEmail,
+        email_label: email.emailLabel,
+        inactive: email.inactive,
+        created_at: email.createDate,
+        updated_at: email.modifyDate || email.createDate,
+      })
     }
 
     // Import reminders
     for (const reminder of lead.reminders) {
-      await supabase
-        .from('reminders')
-        .insert({
-          contact_id: contact.id,
-          title: reminder.reminderTitle,
-          description: reminder.reminderNote,
-          reminder_date: reminder.reminderDate,
-          reminder_source: reminder.reminderSource,
-          reminder_type: reminder.reminderType,
-          is_complete: reminder.isComplete,
-          completed_date: reminder.reminderCompleteDate,
-          created_at: reminder.createDate,
-          updated_at: reminder.modifyDate || reminder.createDate
-        })
+      await supabase.from('reminders').insert({
+        contact_id: contact.id,
+        title: reminder.reminderTitle,
+        description: reminder.reminderNote,
+        reminder_date: reminder.reminderDate,
+        reminder_source: reminder.reminderSource,
+        reminder_type: reminder.reminderType,
+        is_complete: reminder.isComplete,
+        completed_date: reminder.reminderCompleteDate,
+        created_at: reminder.createDate,
+        updated_at: reminder.modifyDate || reminder.createDate,
+      })
     }
 
     // Import tags using upsert to avoid duplicates
     for (const leadTag of lead.leadTags) {
       const tagId = this.tagMap.get(leadTag.tag.tagId)
       if (tagId) {
-        await supabase
-          .from('contact_tags')
-          .upsert(
-            {
-              contact_id: contact.id,
-              tag_id: tagId,
-              metadata: leadTag.metadata,
-              interaction_url: leadTag.interactionUrl,
-              interaction_url_label: leadTag.interactionUrlLabel
-            },
-            { onConflict: 'contact_id,tag_id' }
-          )
+        await supabase.from('contact_tags').upsert(
+          {
+            contact_id: contact.id,
+            tag_id: tagId,
+            metadata: leadTag.metadata,
+            interaction_url: leadTag.interactionUrl,
+            interaction_url_label: leadTag.interactionUrlLabel,
+          },
+          { onConflict: 'contact_id,tag_id' }
+        )
       }
     }
   }
@@ -389,4 +373,4 @@ export async function importIntegrityData(jsonData: string) {
     console.error('Import failed:', error)
     return { success: false, message: `Import failed: ${error}` }
   }
-} 
+}

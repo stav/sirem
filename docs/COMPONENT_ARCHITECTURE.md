@@ -1,17 +1,20 @@
 # Component Architecture - Manage Page
 
 ## Overview
+
 The manage page has been refactored from a single 900+ line file into a modular, maintainable architecture with clear separation of concerns.
 
 ## Component Structure
 
 ### Main Page Component
+
 - **`src/app/manage/page.tsx`** - Main orchestrator component (now ~200 lines)
   - Manages UI state and coordinates between components
   - Uses custom hooks for data management
   - Handles form submissions and user interactions
 
 ### UI Components
+
 - **`src/components/ContactCard.tsx`** - Individual contact display
   - Shows contact information with status badges
   - Handles edit/delete actions
@@ -33,6 +36,7 @@ The manage page has been refactored from a single 900+ line file into a modular,
   - Handles empty states and add reminder actions
 
 ### Form Components
+
 - **`src/components/ContactForm.tsx`** - Contact add/edit modal
   - Reusable form for creating and editing contacts
   - Handles form validation and submission
@@ -44,6 +48,7 @@ The manage page has been refactored from a single 900+ line file into a modular,
   - Modal with escape key and backdrop click to close
 
 ### Custom Hooks
+
 - **`src/hooks/useContacts.ts`** - Contact data management
   - Fetches, creates, updates, and deletes contacts
   - Handles loading states
@@ -55,6 +60,7 @@ The manage page has been refactored from a single 900+ line file into a modular,
   - Manages loading states
 
 ### Utilities
+
 - **`src/lib/contact-utils.ts`** - Shared utility functions
   - Date formatting
   - Phone number formatting
@@ -63,26 +69,31 @@ The manage page has been refactored from a single 900+ line file into a modular,
 ## Benefits of This Architecture
 
 ### 1. **Maintainability**
+
 - Each component has a single responsibility
 - Easy to locate and modify specific functionality
 - Clear separation between UI and business logic
 
 ### 2. **Reusability**
+
 - Components can be reused across different pages
 - Form components are generic and flexible
 - Utility functions are shared across components
 
 ### 3. **Testability**
+
 - Each component can be tested in isolation
 - Custom hooks can be tested independently
 - Clear interfaces make mocking easier
 
 ### 4. **Performance**
+
 - Components only re-render when their specific props change
 - Custom hooks optimize data fetching and caching
 - Reduced bundle size through better tree shaking
 
 ### 5. **Developer Experience**
+
 - Easier to understand and navigate codebase
 - Faster development with focused components
 - Better IDE support with TypeScript interfaces
@@ -104,18 +115,21 @@ ManagePage (Orchestrator)
 ## Adding New Features
 
 ### To add a new contact field:
+
 1. Update the `ContactFormData` interface in `useContacts.ts`
 2. Add the field to `ContactForm.tsx`
 3. Update the database operations in `useContacts.ts`
 4. Display the field in `ContactCard.tsx`
 
 ### To add a new reminder feature:
+
 1. Update the `ReminderFormData` interface in `useReminders.ts`
 2. Add the field to `ReminderForm.tsx`
 3. Update the database operations in `useReminders.ts`
 4. Display the feature in `ReminderCard.tsx`
 
 ### To add a new page:
+
 1. Create new components following the same pattern
 2. Create custom hooks for data management
 3. Reuse existing UI components where possible
@@ -134,10 +148,11 @@ ManagePage (Orchestrator)
 ## Future Enhancements
 
 This modular architecture makes it easy to add:
+
 - Advanced filtering and search
 - Bulk operations
 - Real-time updates
 - Offline support
 - Advanced analytics
 - Custom themes
-- Accessibility improvements 
+- Accessibility improvements

@@ -10,7 +10,7 @@ export const AG_GRID_THEMES = {
   balhamDark: 'balham-dark',
   material: 'material',
   materialDark: 'material-dark',
-  
+
   // Legacy themes (CSS-based) - for backward compatibility
   legacy: 'legacy',
   alpine: 'alpine',
@@ -20,9 +20,7 @@ export const AG_GRID_THEMES = {
 // Helper function to get theme based on system preference
 export const getSystemTheme = (): string => {
   if (typeof window !== 'undefined') {
-    return window.matchMedia('(prefers-color-scheme: dark)').matches 
-      ? AG_GRID_THEMES.quartzDark 
-      : AG_GRID_THEMES.quartz
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? AG_GRID_THEMES.quartzDark : AG_GRID_THEMES.quartz
   }
   return AG_GRID_THEMES.quartz
 }
@@ -42,15 +40,15 @@ export const getUserTheme = (userPreference: 'light' | 'dark' | 'auto'): string 
 
 // Example usage in your component:
 // import { AG_GRID_THEMES, getUserTheme } from '@/lib/ag-grid-themes'
-// 
+//
 // // In your AgGridReact component:
 // <AgGridReact
 //   theme={AG_GRID_THEMES.quartz}
 //   // ... other props
 // />
-// 
+//
 // // Or with user preference:
 // <AgGridReact
 //   theme={getUserTheme('dark')}
 //   // ... other props
-// /> 
+// />

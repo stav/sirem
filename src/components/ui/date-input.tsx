@@ -13,14 +13,7 @@ interface DateInputProps {
   placeholder?: string
 }
 
-export default function DateInput({
-  id,
-  label,
-  value,
-  onChange,
-  required = false,
-  placeholder
-}: DateInputProps) {
+export default function DateInput({ id, label, value, onChange, required = false, placeholder }: DateInputProps) {
   const handleClear = () => {
     onChange('')
   }
@@ -43,7 +36,7 @@ export default function DateInput({
           placeholder={placeholder}
           className="pr-20"
         />
-        <div className="absolute right-1 top-1/2 -translate-y-1/2 flex items-center space-x-1">
+        <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center space-x-1">
           {value && (
             <Button
               type="button"
@@ -70,4 +63,4 @@ export default function DateInput({
       </div>
     </div>
   )
-} 
+}

@@ -38,7 +38,14 @@ interface ReminderFormData {
 export default function ManagePage() {
   // Custom hooks for data management
   const { contacts, loading: contactsLoading, createContact, updateContact, deleteContact } = useContacts()
-  const { reminders, loading: remindersLoading, createReminder, updateReminder, deleteReminder, toggleReminderComplete } = useReminders()
+  const {
+    reminders,
+    loading: remindersLoading,
+    createReminder,
+    updateReminder,
+    deleteReminder,
+    toggleReminderComplete,
+  } = useReminders()
   const { toast } = useToast()
 
   // UI state
@@ -59,7 +66,7 @@ export default function ManagePage() {
     notes: '',
     birthdate: '',
     status: 'New',
-    medicare_beneficiary_id: ''
+    medicare_beneficiary_id: '',
   })
 
   const [reminderForm, setReminderForm] = useState<ReminderFormData>({
@@ -68,7 +75,7 @@ export default function ManagePage() {
     reminder_date: '',
     priority: 'medium',
     reminder_type: '',
-    completed_date: ''
+    completed_date: '',
   })
 
   // Show/hide completed reminders
@@ -79,12 +86,12 @@ export default function ManagePage() {
     const urlParams = new URLSearchParams(window.location.search)
     const reminderId = urlParams.get('reminder')
     const contactId = urlParams.get('contact')
-    
+
     if (reminderId && reminders.length > 0) {
-      const reminder = reminders.find(r => r.id === reminderId)
+      const reminder = reminders.find((r) => r.id === reminderId)
       if (reminder) {
         // Find the contact for this reminder
-        const contact = contacts.find(c => c.id === reminder.contact_id)
+        const contact = contacts.find((c) => c.id === reminder.contact_id)
         if (contact) {
           setSelectedContact(contact)
           setSingleContactView(true)
@@ -93,7 +100,7 @@ export default function ManagePage() {
         }
       }
     } else if (contactId && contacts.length > 0) {
-      const contact = contacts.find(c => c.id === contactId)
+      const contact = contacts.find((c) => c.id === contactId)
       if (contact) {
         setSelectedContact(contact)
         setSingleContactView(true)
@@ -104,7 +111,16 @@ export default function ManagePage() {
   // Contact handlers
   const handleAddContact = () => {
     setEditingContact(null)
-    setContactForm({ first_name: '', last_name: '', phone: '', email: '', notes: '', birthdate: '', status: 'New', medicare_beneficiary_id: '' })
+    setContactForm({
+      first_name: '',
+      last_name: '',
+      phone: '',
+      email: '',
+      notes: '',
+      birthdate: '',
+      status: 'New',
+      medicare_beneficiary_id: '',
+    })
     setShowContactForm(true)
   }
 
@@ -118,7 +134,7 @@ export default function ManagePage() {
       notes: contact.notes || '',
       birthdate: contact.birthdate || '',
       status: contact.status || 'New',
-      medicare_beneficiary_id: contact.medicare_beneficiary_id || ''
+      medicare_beneficiary_id: contact.medicare_beneficiary_id || '',
     })
     setShowContactForm(true)
   }
@@ -126,24 +142,24 @@ export default function ManagePage() {
   const handleContactSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setIsSubmittingContact(true)
-    
+
     try {
-      const success = editingContact 
+      const success = editingContact
         ? await updateContact(editingContact.id, contactForm)
         : await createContact(contactForm)
 
       if (success) {
         const contactName = `${contactForm.first_name} ${contactForm.last_name}`
         const action = editingContact ? 'updated' : 'created'
-        
+
         // Update selectedContact if we're editing the currently selected contact
         if (editingContact && selectedContact && editingContact.id === selectedContact.id) {
           setSelectedContact({
             ...selectedContact,
-            ...contactForm
+            ...contactForm,
           })
         }
-        
+
         toast({
           title: `Contact ${action}`,
           description: `${contactName} was successfully ${action}.`,
@@ -163,12 +179,12 @@ export default function ManagePage() {
 
   const handleDeleteContact = async (contactId: string) => {
     if (!confirm('Are you sure you want to delete this contact?')) return
-    
-    const contact = contacts.find(c => c.id === contactId)
+
+    const contact = contacts.find((c) => c.id === contactId)
     const contactName = contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
-    
+
     const success = await deleteContact(contactId)
-    
+
     if (success) {
       toast({
         title: 'Contact deleted',
@@ -188,7 +204,14 @@ export default function ManagePage() {
   const handleAddReminder = () => {
     if (!selectedContact) return
     setEditingReminder(null)
-    setReminderForm({ title: '', description: '', reminder_date: '', priority: 'medium', reminder_type: '', completed_date: '' })
+    setReminderForm({
+      title: '',
+      description: '',
+      reminder_date: '',
+      priority: 'medium',
+      reminder_type: '',
+      completed_date: '',
+    })
     setShowReminderForm(true)
   }
 
@@ -200,23 +223,23 @@ export default function ManagePage() {
       reminder_date: reminder.reminder_date.split('T')[0],
       priority: reminder.priority,
       reminder_type: reminder.reminder_type || '',
-      completed_date: reminder.completed_date ? reminder.completed_date.split('T')[0] : ''
+      completed_date: reminder.completed_date ? reminder.completed_date.split('T')[0] : '',
     })
     setShowReminderForm(true)
   }
 
   const handleReminderSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (editingReminder) {
       // Update existing reminder - doesn't need selectedContact
       const success = await updateReminder(editingReminder.id, reminderForm)
-      
+
       if (success) {
         // Find the contact for this reminder
-        const contact = contacts.find(c => c.id === editingReminder.contact_id)
+        const contact = contacts.find((c) => c.id === editingReminder.contact_id)
         const contactName = contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
-        
+
         toast({
           title: 'Reminder updated',
           description: `"${reminderForm.title}" for ${contactName} was successfully updated.`,
@@ -227,9 +250,9 @@ export default function ManagePage() {
     } else {
       // Create new reminder - needs selectedContact
       if (!selectedContact) return
-      
+
       const success = await createReminder(selectedContact.id, reminderForm)
-      
+
       if (success) {
         toast({
           title: 'Reminder created',
@@ -243,8 +266,8 @@ export default function ManagePage() {
 
   const handleDeleteReminder = async (reminderId: string) => {
     if (!confirm('Are you sure you want to delete this reminder?')) return
-    const reminder = reminders.find(r => r.id === reminderId)
-    const contact = reminder ? contacts.find(c => c.id === reminder.contact_id) : undefined
+    const reminder = reminders.find((r) => r.id === reminderId)
+    const contact = reminder ? contacts.find((c) => c.id === reminder.contact_id) : undefined
     await deleteReminder(reminderId)
     if (reminder) {
       const contactName = contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
@@ -260,10 +283,10 @@ export default function ManagePage() {
   const handleToggleReminderComplete = async (reminder: Reminder) => {
     const success = await toggleReminderComplete(reminder)
     if (success) {
-      const contact = contacts.find(c => c.id === reminder.contact_id)
+      const contact = contacts.find((c) => c.id === reminder.contact_id)
       const contactName = contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
       const action = reminder.is_complete ? 'marked as incomplete' : 'marked as complete'
-      
+
       toast({
         title: 'Reminder updated',
         description: `"${reminder.title}" for ${contactName} was ${action}.`,
@@ -274,8 +297,24 @@ export default function ManagePage() {
 
   // Utility functions
   const resetForms = () => {
-    setContactForm({ first_name: '', last_name: '', phone: '', email: '', notes: '', birthdate: '', status: 'New', medicare_beneficiary_id: '' })
-    setReminderForm({ title: '', description: '', reminder_date: '', priority: 'medium', reminder_type: '', completed_date: '' })
+    setContactForm({
+      first_name: '',
+      last_name: '',
+      phone: '',
+      email: '',
+      notes: '',
+      birthdate: '',
+      status: 'New',
+      medicare_beneficiary_id: '',
+    })
+    setReminderForm({
+      title: '',
+      description: '',
+      reminder_date: '',
+      priority: 'medium',
+      reminder_type: '',
+      completed_date: '',
+    })
     setShowContactForm(false)
     setShowReminderForm(false)
     setEditingContact(null)
@@ -294,12 +333,12 @@ export default function ManagePage() {
       <div className="min-h-screen bg-background">
         <Navigation pageTitle="Manage" />
         <div className="p-6">
-          <div className="max-w-7xl mx-auto">
+          <div className="mx-auto max-w-7xl">
             <div className="animate-pulse">
-              <div className="h-8 bg-muted rounded w-1/4 mb-8"></div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div className="h-96 bg-muted rounded"></div>
-                <div className="h-96 bg-muted rounded"></div>
+              <div className="mb-8 h-8 w-1/4 rounded bg-muted"></div>
+              <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+                <div className="h-96 rounded bg-muted"></div>
+                <div className="h-96 rounded bg-muted"></div>
               </div>
             </div>
           </div>
@@ -311,10 +350,10 @@ export default function ManagePage() {
   return (
     <div className="min-h-screen bg-background">
       <Navigation pageTitle="Manage" />
-      
+
       <div className="p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
             {/* Contacts Section */}
             <ContactList
               contacts={contacts}
@@ -342,7 +381,7 @@ export default function ManagePage() {
               showCompletedReminders={showCompletedReminders}
               onToggleShowCompleted={() => setShowCompletedReminders((v) => !v)}
               onSelectContact={(contactId) => {
-                const contact = contacts.find(c => c.id === contactId)
+                const contact = contacts.find((c) => c.id === contactId)
                 if (contact) {
                   setSelectedContact(contact)
                   setSingleContactView(true)
@@ -375,4 +414,4 @@ export default function ManagePage() {
       </div>
     </div>
   )
-} 
+}

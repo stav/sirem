@@ -36,15 +36,13 @@ export default function ContactForm({
   onFormDataChange,
   onSubmit,
   onCancel,
-  isLoading = false
+  isLoading = false,
 }: ContactFormProps) {
-  const title = editingContact 
-    ? `${editingContact.first_name} ${editingContact.last_name}`
-    : 'Add New Contact'
+  const title = editingContact ? `${editingContact.first_name} ${editingContact.last_name}` : 'Add New Contact'
   const submitText = editingContact ? 'Update' : 'Create'
 
   const editingInfo = editingContact && (
-    <div className="text-xs text-muted-foreground mb-4">
+    <div className="mb-4 text-xs text-muted-foreground">
       Last updated: {new Date(editingContact.updated_at).toLocaleString()}
     </div>
   )
@@ -64,7 +62,7 @@ export default function ContactForm({
         <Input
           id="first_name"
           value={formData.first_name}
-          onChange={(e) => onFormDataChange({...formData, first_name: e.target.value})}
+          onChange={(e) => onFormDataChange({ ...formData, first_name: e.target.value })}
           required
         />
       </div>
@@ -73,7 +71,7 @@ export default function ContactForm({
         <Input
           id="last_name"
           value={formData.last_name}
-          onChange={(e) => onFormDataChange({...formData, last_name: e.target.value})}
+          onChange={(e) => onFormDataChange({ ...formData, last_name: e.target.value })}
           required
         />
       </div>
@@ -82,7 +80,7 @@ export default function ContactForm({
         <Input
           id="phone"
           value={formData.phone}
-          onChange={(e) => onFormDataChange({...formData, phone: e.target.value})}
+          onChange={(e) => onFormDataChange({ ...formData, phone: e.target.value })}
           placeholder="(555) 123-4567"
         />
       </div>
@@ -92,7 +90,7 @@ export default function ContactForm({
           id="email"
           type="email"
           value={formData.email}
-          onChange={(e) => onFormDataChange({...formData, email: e.target.value})}
+          onChange={(e) => onFormDataChange({ ...formData, email: e.target.value })}
           placeholder="john.doe@example.com"
         />
       </div>
@@ -103,22 +101,20 @@ export default function ContactForm({
           value={formData.medicare_beneficiary_id}
           onChange={(e) => {
             // Only allow alphanumeric characters and hyphens
-            const value = e.target.value.replace(/[^A-Z0-9-]/gi, '');
-            onFormDataChange({...formData, medicare_beneficiary_id: value})
+            const value = e.target.value.replace(/[^A-Z0-9-]/gi, '')
+            onFormDataChange({ ...formData, medicare_beneficiary_id: value })
           }}
           placeholder="1EG4-TE5-MK73"
           maxLength={13}
         />
-        <p className="text-xs text-muted-foreground mt-1">
-          Format: XXXX-XXXX-XXXX (11 characters, hyphens optional)
-        </p>
+        <p className="mt-1 text-xs text-muted-foreground">Format: XXXX-XXXX-XXXX (11 characters, hyphens optional)</p>
       </div>
       <div>
         <Label htmlFor="notes">Notes</Label>
         <Textarea
           id="notes"
           value={formData.notes}
-          onChange={(e) => onFormDataChange({...formData, notes: e.target.value})}
+          onChange={(e) => onFormDataChange({ ...formData, notes: e.target.value })}
           rows={3}
           placeholder="Add any additional notes about this contact..."
         />
@@ -129,15 +125,12 @@ export default function ContactForm({
           id="birthdate"
           type="date"
           value={formData.birthdate}
-          onChange={(e) => onFormDataChange({...formData, birthdate: e.target.value})}
+          onChange={(e) => onFormDataChange({ ...formData, birthdate: e.target.value })}
         />
       </div>
       <div>
         <Label htmlFor="status">Status</Label>
-        <Select
-          value={formData.status}
-          onValueChange={(value) => onFormDataChange({...formData, status: value})}
-        >
+        <Select value={formData.status} onValueChange={(value) => onFormDataChange({ ...formData, status: value })}>
           <SelectTrigger>
             <SelectValue placeholder="Select status" />
           </SelectTrigger>
@@ -159,4 +152,4 @@ export default function ContactForm({
       </div>
     </ModalForm>
   )
-} 
+}
