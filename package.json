@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "dump-data": "node supabase-dump.mjs",
+    "dump-data": "node scripts/supabase-dump.mjs",
     "show-migrations": "node data/schema/run-migrations.mjs"
   },
   "dependencies": {

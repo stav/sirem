@@ -24,7 +24,7 @@ npm run dump-data
 
 ### Option 2: Direct execution
 ```bash
-node supabase-dump.mjs
+node scripts/supabase-dump.mjs
 ```
 
 ## What Gets Exported
