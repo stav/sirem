@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button'
 import ReminderCard from './ReminderCard'
 import type { Database } from '@/lib/supabase'
 import { Switch } from '@/components/ui/switch'
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 type Reminder = Database['public']['Tables']['reminders']['Row']
@@ -33,7 +33,7 @@ export default function ReminderList({
   onDeleteReminder,
   showCompletedReminders,
   onToggleShowCompleted,
-  onSelectContact
+  onSelectContact,
 }: ReminderListProps) {
   const [showWeekRange, setShowWeekRange] = useState(false)
 
@@ -62,20 +62,22 @@ export default function ReminderList({
   }
 
   // Always filter reminders based on toggles, for both main and contact views
-  let displayReminders = reminders;
+  let displayReminders = reminders
   if (selectedContact) {
-    displayReminders = displayReminders.filter(r => String(r.contact_id) === String(selectedContact.id));
+    displayReminders = displayReminders.filter((r) => String(r.contact_id) === String(selectedContact.id))
   }
   if (!showCompletedReminders) {
-    displayReminders = displayReminders.filter(r => !Boolean(r.is_complete));
+    displayReminders = displayReminders.filter((r) => !Boolean(r.is_complete))
   }
   if (showWeekRange) {
-    displayReminders = displayReminders.filter(r => {
+    displayReminders = displayReminders.filter((r) => {
       // Check if any of the relevant dates fall within the week range
-      return isWithinWeekRange(r.reminder_date) ||
-             isWithinWeekRange(r.created_at) ||
-             isWithinWeekRange(r.updated_at) ||
-             (r.completed_date && isWithinWeekRange(r.completed_date))
+      return (
+        isWithinWeekRange(r.reminder_date) ||
+        isWithinWeekRange(r.created_at) ||
+        isWithinWeekRange(r.updated_at) ||
+        (r.completed_date && isWithinWeekRange(r.completed_date))
+      )
     })
   }
 
@@ -83,92 +85,75 @@ export default function ReminderList({
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3 min-h-9">
+          <div className="flex min-h-9 items-center space-x-3">
             <CardTitle>
               Reminders
               {selectedContact && (
-                <span className="text-sm font-normal text-muted-foreground ml-2">
+                <span className="ml-2 text-sm font-normal text-muted-foreground">
                   for {selectedContact.first_name} {selectedContact.last_name}
                 </span>
               )}
             </CardTitle>
-            <div className="flex items-center space-x-4 ml-2">
-              <div className="flex items-center space-x-2 cursor-pointer">
+            <div className="ml-2 flex items-center space-x-4">
+              <div className="flex cursor-pointer items-center space-x-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
-                    <span className="flex items-center space-x-2 m-0">
+                    <span className="m-0 flex items-center space-x-2">
                       <Switch
                         checked={showCompletedReminders}
                         onCheckedChange={onToggleShowCompleted}
                         id="show-completed-switch"
                       />
                       {showCompletedReminders && (
-                        <label htmlFor="show-completed-switch" className="text-sm cursor-pointer">
+                        <label htmlFor="show-completed-switch" className="cursor-pointer text-sm">
                           Show completed
                         </label>
                       )}
                     </span>
                   </TooltipTrigger>
-                  <TooltipContent>
-                    Show all the completed reminders as well.
-                  </TooltipContent>
+                  <TooltipContent>Show all the completed reminders as well.</TooltipContent>
                 </Tooltip>
               </div>
-              <div className="flex items-center space-x-2 cursor-pointer">
+              <div className="flex cursor-pointer items-center space-x-2">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <span className="flex items-center space-x-2">
-                      <Switch
-                        checked={showWeekRange}
-                        onCheckedChange={toggleWeekRange}
-                        id="show-week-range-switch"
-                      />
+                      <Switch checked={showWeekRange} onCheckedChange={toggleWeekRange} id="show-week-range-switch" />
                       {showWeekRange && (
-                        <label htmlFor="show-week-range-switch" className="text-sm cursor-pointer">
+                        <label htmlFor="show-week-range-switch" className="cursor-pointer text-sm">
                           ±1 week
                         </label>
                       )}
                     </span>
                   </TooltipTrigger>
-                  <TooltipContent>
-                    Show reminders within 1 week of today.
-                  </TooltipContent>
+                  <TooltipContent>Show reminders within 1 week of today.</TooltipContent>
                 </Tooltip>
               </div>
             </div>
           </div>
           <div className="flex items-center">
-            <span className="text-sm text-muted-foreground mr-2">
+            <span className="mr-2 text-sm text-muted-foreground">
               {displayReminders.length} / {reminders.length}
             </span>
             {selectedContact && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button 
-                    onClick={onAddReminder}
-                    size="sm"
-                    className="cursor-pointer"
-                  >
+                  <Button onClick={onAddReminder} size="sm" className="cursor-pointer">
                     <Plus className="h-4 w-4" />
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
-                  Add new Reminder
-                </TooltipContent>
+                <TooltipContent>Add new Reminder</TooltipContent>
               </Tooltip>
             )}
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        {(!selectedContact && displayReminders.length === 0) ? (
-          <div className="text-center py-8">
+        {!selectedContact && displayReminders.length === 0 ? (
+          <div className="py-8 text-center">
             <p className="text-muted-foreground">No displayReminders yet</p>
-            <Button 
-              onClick={onAddReminder}
-              className="mt-2 cursor-pointer"
-            >
-              <Plus className="h-4 w-4 mr-2" />
+            <Button onClick={onAddReminder} className="mt-2 cursor-pointer">
+              <Plus className="mr-2 h-4 w-4" />
               Add your first reminder
             </Button>
           </div>
@@ -181,7 +166,7 @@ export default function ReminderList({
                 <ReminderCard
                   key={reminder.id}
                   reminder={reminder}
-                  contactName={`${contacts.find(c => c.id === reminder.contact_id)?.first_name} ${contacts.find(c => c.id === reminder.contact_id)?.last_name}`}
+                  contactName={`${contacts.find((c) => c.id === reminder.contact_id)?.first_name} ${contacts.find((c) => c.id === reminder.contact_id)?.last_name}`}
                   index={index + 1}
                   onToggleComplete={onToggleComplete}
                   onEdit={onEditReminder}
@@ -191,24 +176,21 @@ export default function ReminderList({
               ))}
           </div>
         ) : displayReminders.length === 0 ? (
-          <div className="text-center py-8">
+          <div className="py-8 text-center">
             <p className="text-muted-foreground">No reminders for this contact</p>
-            <Button 
-              onClick={onAddReminder}
-              className="mt-2 cursor-pointer"
-            >
-              <Plus className="h-4 w-4 mr-2" />
+            <Button onClick={onAddReminder} className="mt-2 cursor-pointer">
+              <Plus className="mr-2 h-4 w-4" />
               Add reminder
             </Button>
           </div>
         ) : (
           <div className="space-y-3">
             {displayReminders.map((reminder, index) => {
-              let contactName = 'Unknown Contact';
+              let contactName = 'Unknown Contact'
               if (contacts && contacts.length > 0) {
-                const found = contacts.find(c => String(c.id).trim() === String(reminder.contact_id).trim());
+                const found = contacts.find((c) => String(c.id).trim() === String(reminder.contact_id).trim())
                 if (found) {
-                  contactName = `${found.first_name} ${found.last_name}`;
+                  contactName = `${found.first_name} ${found.last_name}`
                 }
               }
               return (
@@ -229,4 +211,4 @@ export default function ReminderList({
       </CardContent>
     </Card>
   )
-} 
+}

@@ -22,7 +22,7 @@ export default function ModalForm({
   onCancel,
   isLoading = false,
   submitText = 'Save',
-  editingInfo
+  editingInfo,
 }: ModalFormProps) {
   const modalRef = useRef<HTMLDivElement>(null)
 
@@ -42,21 +42,16 @@ export default function ModalForm({
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50"
-      onClick={e => {
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={(e) => {
         if (e.target === e.currentTarget) {
           onCancel()
         }
       }}
     >
-      <Card className="w-full max-w-md max-h-[90vh] flex flex-col" ref={modalRef}>
+      <Card className="flex max-h-[90vh] w-full max-w-md flex-col" ref={modalRef}>
         <CardHeader className="relative flex-shrink-0">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="absolute right-2 top-2 h-12 w-12 p-0"
-            onClick={onCancel}
-          >
+          <Button variant="ghost" size="sm" className="absolute right-2 top-2 h-12 w-12 p-0" onClick={onCancel}>
             <X className="h-8 w-8" />
           </Button>
           <CardTitle>{title}</CardTitle>
@@ -75,4 +70,4 @@ export default function ModalForm({
       </Card>
     </div>
   )
-} 
+}

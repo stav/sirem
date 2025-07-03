@@ -21,7 +21,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     if (messages.length > 0 && messages[0].id !== lastMessageId) {
       const latestMessage = messages[0]
       setLastMessageId(latestMessage.id)
-      
+
       toast({
         title: latestMessage.message,
         description: latestMessage.action ? `Action: ${latestMessage.action}` : undefined,
@@ -88,7 +88,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
-      second: '2-digit'
+      second: '2-digit',
     })
   }
 
@@ -96,16 +96,16 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
     })
   }
 
   return (
     <>
       {children}
-      
+
       {/* Toast Notifications */}
-      <div className="fixed top-4 right-4 z-50 space-y-2">
+      <div className="fixed right-4 top-4 z-50 space-y-2">
         {toasts.map((toast, index) => (
           <div key={toast.id} style={{ top: `${index * 80 + 16}px` }} className="absolute right-0">
             <Toast
@@ -120,69 +120,48 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
           </div>
         ))}
       </div>
-      
+
       {/* Message History Button */}
       <div className="fixed bottom-4 right-4 z-50">
-        <Button
-          onClick={() => setShowHistory(true)}
-          size="sm"
-          className="rounded-full shadow-lg cursor-pointer"
-        >
-          <History className="h-4 w-4 mr-2" />
+        <Button onClick={() => setShowHistory(true)} size="sm" className="cursor-pointer rounded-full shadow-lg">
+          <History className="mr-2 h-4 w-4" />
           History ({messages.length})
         </Button>
       </div>
 
       {/* Message History Modal */}
       {showHistory && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div ref={modalRef} className="w-full max-w-2xl max-h-[80vh] overflow-hidden">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div ref={modalRef} className="max-h-[80vh] w-full max-w-2xl overflow-hidden">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                 <CardTitle className="flex items-center">
-                  <History className="h-5 w-5 mr-2" />
+                  <History className="mr-2 h-5 w-5" />
                   Message History
                 </CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowHistory(false)}
-                >
+                <Button variant="ghost" size="sm" onClick={() => setShowHistory(false)}>
                   <X className="h-4 w-4" />
                 </Button>
               </CardHeader>
-              <CardContent className="overflow-y-auto max-h-[60vh]">
+              <CardContent className="max-h-[60vh] overflow-y-auto">
                 {messages.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No messages yet
-                  </div>
+                  <div className="py-8 text-center text-muted-foreground">No messages yet</div>
                 ) : (
                   <div className="space-y-3">
                     {messages.map((message) => (
-                      <div
-                        key={message.id}
-                        className="flex items-start space-x-3 p-3 rounded-lg border bg-card"
-                      >
-                        <div className="flex-shrink-0 mt-1">
-                          {getIcon(message.type)}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center space-x-2 mb-1">
-                            <p className="text-sm font-medium text-foreground">
-                              {message.message}
-                            </p>
-                            <Badge variant={getBadgeVariant(message.type)}>
-                              {message.type}
-                            </Badge>
+                      <div key={message.id} className="flex items-start space-x-3 rounded-lg border bg-card p-3">
+                        <div className="mt-1 flex-shrink-0">{getIcon(message.type)}</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1 flex items-center space-x-2">
+                            <p className="text-sm font-medium text-foreground">{message.message}</p>
+                            <Badge variant={getBadgeVariant(message.type)}>{message.type}</Badge>
                           </div>
                           <div className="flex items-center justify-between text-xs text-muted-foreground">
                             <span>
                               {formatDate(message.timestamp)} at {formatTime(message.timestamp)}
                             </span>
                             {message.action && (
-                              <span className="font-mono bg-muted px-2 py-1 rounded">
-                                {message.action}
-                              </span>
+                              <span className="rounded bg-muted px-2 py-1 font-mono">{message.action}</span>
                             )}
                           </div>
                         </div>
@@ -197,4 +176,4 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       )}
     </>
   )
-} 
+}

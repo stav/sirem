@@ -26,7 +26,7 @@ export default function ContactList({
   onSelectContact,
   onEditContact,
   onDeleteContact,
-  onBackToAll
+  onBackToAll,
 }: ContactListProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
 
@@ -51,43 +51,19 @@ export default function ContactList({
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
             {singleContactView && selectedContact && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onBackToAll}
-                className="px-2 cursor-pointer"
-              >
-                <ArrowLeft className="h-4 w-4 mr-2" />
+              <Button variant="ghost" size="sm" onClick={onBackToAll} className="cursor-pointer px-2">
+                <ArrowLeft className="mr-2 h-4 w-4" />
                 Show all contacts
               </Button>
             )}
-            <CardTitle>
-              {singleContactView && selectedContact ? (
-                <span>Contact Details</span>
-              ) : (
-                "Contacts"
-              )}
-            </CardTitle>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={toggleCollapse}
-              className="px-2 ml-2 cursor-pointer"
-            >
-              {isCollapsed ? (
-                <ChevronDown className="h-4 w-4" />
-              ) : (
-                <ChevronUp className="h-4 w-4" />
-              )}
+            <CardTitle>{singleContactView && selectedContact ? <span>Contact Details</span> : 'Contacts'}</CardTitle>
+            <Button variant="ghost" size="sm" onClick={toggleCollapse} className="ml-2 cursor-pointer px-2">
+              {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
             </Button>
           </div>
           {!singleContactView && (
-            <Button 
-              onClick={onAddContact}
-              size="sm"
-              className="cursor-pointer"
-            >
-              <Plus className="h-4 w-4 mr-2" />
+            <Button onClick={onAddContact} size="sm" className="cursor-pointer">
+              <Plus className="mr-2 h-4 w-4" />
               Add Contact
             </Button>
           )}
@@ -96,13 +72,10 @@ export default function ContactList({
       {!isCollapsed && (
         <CardContent>
           {contacts.length === 0 ? (
-            <div className="text-center py-8">
+            <div className="py-8 text-center">
               <p className="text-muted-foreground">No contacts yet</p>
-              <Button 
-                onClick={onAddContact}
-                className="mt-2 cursor-pointer"
-              >
-                <Plus className="h-4 w-4 mr-2" />
+              <Button onClick={onAddContact} className="mt-2 cursor-pointer">
+                <Plus className="mr-2 h-4 w-4" />
                 Add your first contact
               </Button>
             </div>
@@ -125,4 +98,4 @@ export default function ContactList({
       )}
     </Card>
   )
-} 
+}

@@ -33,25 +33,19 @@ export default function ReminderForm({
   formData,
   onFormDataChange,
   onSubmit,
-  onCancel
+  onCancel,
 }: ReminderFormProps) {
   const title = editingReminder ? 'Edit Reminder' : 'Add New Reminder'
   const submitText = editingReminder ? 'Update' : 'Create'
 
   return (
-    <ModalForm
-      isOpen={isOpen}
-      title={title}
-      onSubmit={onSubmit}
-      onCancel={onCancel}
-      submitText={submitText}
-    >
+    <ModalForm isOpen={isOpen} title={title} onSubmit={onSubmit} onCancel={onCancel} submitText={submitText}>
       <div>
         <Label htmlFor="title">Title</Label>
         <Input
           id="title"
           value={formData.title}
-          onChange={(e) => onFormDataChange({...formData, title: e.target.value})}
+          onChange={(e) => onFormDataChange({ ...formData, title: e.target.value })}
           required
         />
       </div>
@@ -60,7 +54,7 @@ export default function ReminderForm({
         <Textarea
           id="description"
           value={formData.description}
-          onChange={(e) => onFormDataChange({...formData, description: e.target.value})}
+          onChange={(e) => onFormDataChange({ ...formData, description: e.target.value })}
           rows={3}
         />
       </div>
@@ -68,23 +62,21 @@ export default function ReminderForm({
         id="reminder_date"
         label="Due Date"
         value={formData.reminder_date}
-        onChange={(value) => onFormDataChange({...formData, reminder_date: value})}
+        onChange={(value) => onFormDataChange({ ...formData, reminder_date: value })}
         required
       />
       <DateInput
         id="completed_date"
         label="Completed Date (optional)"
         value={formData.completed_date}
-        onChange={(value) => onFormDataChange({...formData, completed_date: value})}
+        onChange={(value) => onFormDataChange({ ...formData, completed_date: value })}
         placeholder="Leave empty if not completed"
       />
       <div>
         <Label htmlFor="priority">Priority</Label>
         <Select
           value={formData.priority}
-          onValueChange={(value: 'low' | 'medium' | 'high') => 
-            onFormDataChange({...formData, priority: value})
-          }
+          onValueChange={(value: 'low' | 'medium' | 'high') => onFormDataChange({ ...formData, priority: value })}
         >
           <SelectTrigger>
             <SelectValue />
@@ -101,10 +93,10 @@ export default function ReminderForm({
         <Input
           id="reminder_type"
           value={formData.reminder_type}
-          onChange={(e) => onFormDataChange({...formData, reminder_type: e.target.value})}
+          onChange={(e) => onFormDataChange({ ...formData, reminder_type: e.target.value })}
           placeholder="e.g., urgent follow-up medical"
         />
       </div>
     </ModalForm>
   )
-} 
+}

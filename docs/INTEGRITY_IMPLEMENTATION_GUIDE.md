@@ -9,33 +9,39 @@ This guide outlines what's involved in implementing the Integrity data functiona
 The Integrity data contains the following key entities:
 
 ### 1. Leads/Contacts
+
 - **Core Information**: Names, addresses, phones, emails
 - **Medicare-Specific Fields**: Part A/B status, beneficiary ID, subsidy levels
 - **Demographics**: Height, weight, gender, marital status, birthdate
 - **Business Data**: Lead source, record type, policy counts, notes
 
 ### 2. Reminders/Tasks
+
 - Due dates and completion status
 - Reminder types and sources
 - Notes and descriptions
 - Priority levels
 
 ### 3. Activities
+
 - Interaction history (currently empty in sample)
 - Activity types, durations, outcomes
 - Metadata for tracking
 
 ### 4. Addresses
+
 - Full address information
 - County and FIPS codes
 - Latitude/longitude coordinates
 
 ### 5. Communication Methods
+
 - Multiple phone numbers per contact
 - Multiple email addresses per contact
 - SMS compatibility flags
 
 ### 6. Tagging System
+
 - Hierarchical tag categories with colors
 - Multiple tags per contact
 - Metadata and interaction URLs
@@ -68,11 +74,13 @@ The Integrity data contains the following key entities:
 ## Implementation Components
 
 ### 1. Database Schema (`supabase-setup.sql`)
+
 - Complete database structure with all tables
 - Default data (statuses, tag categories, sample tags)
 - Performance indexes and security policies
 
 ### 2. Data Import Utility (`src/lib/integrity-import.ts`)
+
 - **IntegrityImporter class** for handling data transformation
 - **Type-safe interfaces** for all Integrity data structures
 - **Batch processing** for efficient imports
@@ -80,6 +88,7 @@ The Integrity data contains the following key entities:
 - **Lookup data management** (tags, categories, statuses)
 
 ### 3. Import Interface (`src/app/import/page.tsx`)
+
 - **File upload** with JSON validation
 - **Data preview** showing sample records
 - **Progress tracking** during import
@@ -87,6 +96,7 @@ The Integrity data contains the following key entities:
 - **User-friendly instructions**
 
 ### 4. UI Components
+
 - **Alert component** for status messages
 - **Enhanced navigation** with Import page
 - **Responsive design** for all screen sizes
@@ -94,22 +104,26 @@ The Integrity data contains the following key entities:
 ## Implementation Steps
 
 ### Phase 1: Database Setup
+
 1. Run the updated `supabase-setup.sql` in your Supabase SQL editor
 2. Verify all tables are created with proper relationships
 3. Check that default data is inserted correctly
 
 ### Phase 2: Code Implementation
+
 1. Deploy the new import utility and interface
 2. Test the import functionality with a small data sample
 3. Verify data integrity and relationships
 
 ### Phase 3: Data Migration
+
 1. Prepare your Integrity export file
 2. Use the import interface to upload and process data
 3. Monitor the import process for any errors
 4. Verify imported data in the CRM interface
 
 ### Phase 4: Testing & Validation
+
 1. Test all CRM functionality with imported data
 2. Verify relationships between contacts, reminders, and tags
 3. Check that Medicare-specific fields are properly stored
@@ -118,39 +132,44 @@ The Integrity data contains the following key entities:
 ## Data Mapping
 
 ### Contact Fields
-| Integrity Field | Database Field | Notes |
-|----------------|----------------|-------|
-| `leadsId` | `contacts.id` | Primary key mapping |
-| `firstName` | `first_name` | |
-| `lastName` | `last_name` | |
-| `medicareBeneficiaryID` | `medicare_beneficiary_id` | |
-| `partA` | `part_a_status` | |
-| `partB` | `part_b_status` | |
-| `hasMedicAid` | `has_medicaid` | Boolean conversion |
-| `birthdate` | `birthdate` | Date conversion |
+
+| Integrity Field         | Database Field            | Notes               |
+| ----------------------- | ------------------------- | ------------------- |
+| `leadsId`               | `contacts.id`             | Primary key mapping |
+| `firstName`             | `first_name`              |                     |
+| `lastName`              | `last_name`               |                     |
+| `medicareBeneficiaryID` | `medicare_beneficiary_id` |                     |
+| `partA`                 | `part_a_status`           |                     |
+| `partB`                 | `part_b_status`           |                     |
+| `hasMedicAid`           | `has_medicaid`            | Boolean conversion  |
+| `birthdate`             | `birthdate`               | Date conversion     |
 
 ### Reminder Fields
-| Integrity Field | Database Field | Notes |
-|----------------|----------------|-------|
-| `reminderTitle` | `title` | |
-| `reminderNote` | `description` | |
-| `reminderDate` | `reminder_date` | |
-| `isComplete` | `is_complete` | |
-| `reminderCompleteDate` | `completed_date` | |
+
+| Integrity Field        | Database Field   | Notes |
+| ---------------------- | ---------------- | ----- |
+| `reminderTitle`        | `title`          |       |
+| `reminderNote`         | `description`    |       |
+| `reminderDate`         | `reminder_date`  |       |
+| `isComplete`           | `is_complete`    |       |
+| `reminderCompleteDate` | `completed_date` |       |
 
 ## Performance Considerations
 
 ### Database Optimization
+
 - **Indexes** on frequently queried fields
 - **Composite indexes** for complex queries
 - **JSONB indexing** for metadata fields
 
 ### Import Performance
+
 - **Batch processing** for large datasets
 - **Error handling** to prevent partial imports
 - **Progress tracking** for user feedback
 
 ### Query Optimization
+
 - **Eager loading** for related data
 - **Pagination** for large result sets
 - **Caching** for frequently accessed data
@@ -158,11 +177,13 @@ The Integrity data contains the following key entities:
 ## Security Considerations
 
 ### Data Protection
+
 - **Row Level Security (RLS)** enabled on all tables
 - **Input validation** for all user inputs
 - **SQL injection prevention** through parameterized queries
 
 ### Access Control
+
 - **Authentication** required for data access
 - **Authorization** based on user roles
 - **Audit logging** for data changes
@@ -170,11 +191,13 @@ The Integrity data contains the following key entities:
 ## Maintenance & Monitoring
 
 ### Regular Tasks
+
 - **Database backups** before major imports
 - **Performance monitoring** for slow queries
 - **Data validation** to ensure integrity
 
 ### Troubleshooting
+
 - **Import logs** for debugging issues
 - **Error reporting** for user feedback
 - **Data recovery** procedures
@@ -182,6 +205,7 @@ The Integrity data contains the following key entities:
 ## Future Enhancements
 
 ### Potential Features
+
 - **Incremental imports** for data updates
 - **Data validation rules** for quality control
 - **Advanced reporting** on imported data
@@ -189,6 +213,7 @@ The Integrity data contains the following key entities:
 - **Data export** functionality for backups
 
 ### Scalability
+
 - **Partitioning** for large datasets
 - **Caching layers** for improved performance
 - **Microservices** for complex operations
@@ -203,4 +228,4 @@ Implementing the Integrity data functionality involves:
 4. **Enhanced UI** for data management and import operations
 5. **Performance optimization** for handling thousands of records
 
-The implementation provides a solid foundation for managing Medicare leads with comprehensive contact information, task management, and flexible tagging capabilities. The modular design allows for future enhancements and integrations. 
+The implementation provides a solid foundation for managing Medicare leads with comprehensive contact information, task management, and flexible tagging capabilities. The modular design allows for future enhancements and integrations.

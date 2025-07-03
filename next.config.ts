@@ -1,4 +1,4 @@
-import type { NextConfig } from "next";
+import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   // Configure Turbopack for faster builds
@@ -10,12 +10,12 @@ const nextConfig: NextConfig = {
       },
     },
   },
-  
+
   // Optimize images
   images: {
     formats: ['image/webp', 'image/avif'],
   },
-  
+
   // Add security headers
   async headers() {
     return [
@@ -36,8 +36,8 @@ const nextConfig: NextConfig = {
           },
         ],
       },
-    ];
+    ]
   },
-};
+}
 
-export default nextConfig;
+export default nextConfig

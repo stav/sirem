@@ -19,16 +19,13 @@ export function useReminders() {
 
   const fetchReminders = async () => {
     try {
-      const { data, error } = await supabase
-        .from('reminders')
-        .select('*')
-        .order('reminder_date', { ascending: true })
-      
+      const { data, error } = await supabase.from('reminders').select('*').order('reminder_date', { ascending: true })
+
       if (error) {
         console.error('Error fetching reminders:', error)
         return
       }
-      
+
       setReminders(data || [])
     } catch (error) {
       console.error('Error fetching reminders:', error)
@@ -39,18 +36,16 @@ export function useReminders() {
 
   const createReminder = async (contactId: string, reminderData: ReminderForm) => {
     try {
-      const { error } = await supabase
-        .from('reminders')
-        .insert({
-          contact_id: contactId,
-          title: reminderData.title,
-          description: reminderData.description,
-          reminder_date: reminderData.reminder_date,
-          priority: reminderData.priority,
-          reminder_type: reminderData.reminder_type,
-          completed_date: reminderData.completed_date || null,
-          is_complete: !!reminderData.completed_date
-        })
+      const { error } = await supabase.from('reminders').insert({
+        contact_id: contactId,
+        title: reminderData.title,
+        description: reminderData.description,
+        reminder_date: reminderData.reminder_date,
+        priority: reminderData.priority,
+        reminder_type: reminderData.reminder_type,
+        completed_date: reminderData.completed_date || null,
+        is_complete: !!reminderData.completed_date,
+      })
 
       if (error) {
         console.error('Error creating reminder:', error)
@@ -76,7 +71,7 @@ export function useReminders() {
           priority: reminderData.priority,
           reminder_type: reminderData.reminder_type,
           completed_date: reminderData.completed_date || null,
-          is_complete: !!reminderData.completed_date
+          is_complete: !!reminderData.completed_date,
         })
         .eq('id', reminderId)
 
@@ -95,10 +90,7 @@ export function useReminders() {
 
   const deleteReminder = async (reminderId: string) => {
     try {
-      const { error } = await supabase
-        .from('reminders')
-        .delete()
-        .eq('id', reminderId)
+      const { error } = await supabase.from('reminders').delete().eq('id', reminderId)
 
       if (error) {
         console.error('Error deleting reminder:', error)
@@ -117,9 +109,9 @@ export function useReminders() {
     try {
       const { error } = await supabase
         .from('reminders')
-        .update({ 
+        .update({
           is_complete: !reminder.is_complete,
-          completed_date: !reminder.is_complete ? new Date().toISOString() : null
+          completed_date: !reminder.is_complete ? new Date().toISOString() : null,
         })
         .eq('id', reminder.id)
 
@@ -147,6 +139,6 @@ export function useReminders() {
     createReminder,
     updateReminder,
     deleteReminder,
-    toggleReminderComplete
+    toggleReminderComplete,
   }
-} 
+}

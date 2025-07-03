@@ -47,18 +47,18 @@ export default function ImportPage() {
     try {
       const text = await selectedFile.text()
       const data = JSON.parse(text)
-      
+
       if (data.result && Array.isArray(data.result)) {
         const sampleLeads = data.result.slice(0, 5).map((lead: IntegrityLeadPreview) => ({
           firstName: lead.firstName,
           lastName: lead.lastName,
           status: lead.statusName,
-          tags: lead.leadTags?.map((tag: { tag: { tagLabel: string } }) => tag.tag.tagLabel) || []
+          tags: lead.leadTags?.map((tag: { tag: { tagLabel: string } }) => tag.tag.tagLabel) || [],
         }))
 
         setPreview({
           totalLeads: data.result.length,
-          sampleLeads
+          sampleLeads,
         })
       }
     } catch (error) {
@@ -80,7 +80,7 @@ export default function ImportPage() {
     } catch (error) {
       setImportResult({
         success: false,
-        message: `Import failed: ${error}`
+        message: `Import failed: ${error}`,
       })
     } finally {
       setIsImporting(false)
@@ -92,26 +92,26 @@ export default function ImportPage() {
       <Navigation pageTitle="Import" />
 
       <div className="p-6">
-        <div className="max-w-4xl mx-auto">
+        <div className="mx-auto max-w-4xl">
           <div className="mb-8">
-            <h1 className="text-3xl font-bold text-foreground mb-2">Import Integrity Data</h1>
+            <h1 className="mb-2 text-3xl font-bold text-foreground">Import Integrity Data</h1>
             <p className="text-muted-foreground">
               Upload your Integrity export file to import leads, contacts, reminders, and tags into your CRM.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
             {/* Upload Section */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <Upload className="h-5 w-5 mr-2" />
+                  <Upload className="mr-2 h-5 w-5" />
                   Upload File
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-6 text-center">
+                  <div className="rounded-lg border-2 border-dashed border-muted-foreground/25 p-6 text-center">
                     <input
                       type="file"
                       accept=".json"
@@ -120,15 +120,12 @@ export default function ImportPage() {
                       id="file-upload"
                       disabled={isImporting}
                     />
-                    <label
-                      htmlFor="file-upload"
-                      className="cursor-pointer flex flex-col items-center"
-                    >
-                      <FileText className="h-12 w-12 text-muted-foreground mb-4" />
+                    <label htmlFor="file-upload" className="flex cursor-pointer flex-col items-center">
+                      <FileText className="mb-4 h-12 w-12 text-muted-foreground" />
                       <span className="text-sm font-medium text-foreground">
                         {file ? file.name : 'Click to select JSON file'}
                       </span>
-                      <span className="text-xs text-muted-foreground mt-1">
+                      <span className="mt-1 text-xs text-muted-foreground">
                         {file ? 'Click to change file' : 'Supports .json files only'}
                       </span>
                     </label>
@@ -136,26 +133,24 @@ export default function ImportPage() {
 
                   {file && (
                     <div className="space-y-4">
-                      <Button
-                        onClick={handleImport}
-                        disabled={isImporting}
-                        className="w-full"
-                      >
+                      <Button onClick={handleImport} disabled={isImporting} className="w-full">
                         {isImporting ? (
                           <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                             Importing...
                           </>
                         ) : (
                           <>
-                            <Upload className="h-4 w-4 mr-2" />
+                            <Upload className="mr-2 h-4 w-4" />
                             Import Data
                           </>
                         )}
                       </Button>
 
                       {importResult && (
-                        <Alert className={importResult.success ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}>
+                        <Alert
+                          className={importResult.success ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}
+                        >
                           {importResult.success ? (
                             <CheckCircle className="h-4 w-4 text-green-600" />
                           ) : (
@@ -180,27 +175,23 @@ export default function ImportPage() {
               <CardContent>
                 {preview ? (
                   <div className="space-y-4">
-                    <div className="bg-muted/50 rounded-lg p-4">
+                    <div className="rounded-lg bg-muted/50 p-4">
                       <div className="text-sm font-medium text-foreground">
                         Total Leads: {preview.totalLeads.toLocaleString()}
                       </div>
                     </div>
 
                     <div>
-                      <h4 className="text-sm font-medium text-foreground mb-2">Sample Leads:</h4>
+                      <h4 className="mb-2 text-sm font-medium text-foreground">Sample Leads:</h4>
                       <div className="space-y-2">
                         {preview.sampleLeads.map((lead, index) => (
-                          <div key={index} className="bg-card border rounded-lg p-3">
-                            <div className="font-medium text-sm">
+                          <div key={index} className="rounded-lg border bg-card p-3">
+                            <div className="text-sm font-medium">
                               {lead.firstName} {lead.lastName}
                             </div>
-                            <div className="text-xs text-muted-foreground">
-                              Status: {lead.status}
-                            </div>
+                            <div className="text-xs text-muted-foreground">Status: {lead.status}</div>
                             {lead.tags.length > 0 && (
-                              <div className="text-xs text-muted-foreground mt-1">
-                                Tags: {lead.tags.join(', ')}
-                              </div>
+                              <div className="mt-1 text-xs text-muted-foreground">Tags: {lead.tags.join(', ')}</div>
                             )}
                           </div>
                         ))}
@@ -208,8 +199,8 @@ export default function ImportPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center text-muted-foreground py-8">
-                    <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <div className="py-8 text-center text-muted-foreground">
+                    <FileText className="mx-auto mb-4 h-12 w-12 opacity-50" />
                     <p>Select a file to see preview</p>
                   </div>
                 )}
@@ -225,8 +216,8 @@ export default function ImportPage() {
             <CardContent>
               <div className="space-y-4 text-sm text-muted-foreground">
                 <div>
-                  <h4 className="font-medium text-foreground mb-2">What will be imported:</h4>
-                  <ul className="list-disc list-inside space-y-1 ml-4">
+                  <h4 className="mb-2 font-medium text-foreground">What will be imported:</h4>
+                  <ul className="ml-4 list-inside list-disc space-y-1">
                     <li>Contact information (names, addresses, phones, emails)</li>
                     <li>Medicare-specific data (Part A/B status, beneficiary ID, etc.)</li>
                     <li>Reminders and tasks</li>
@@ -237,8 +228,8 @@ export default function ImportPage() {
                 </div>
 
                 <div>
-                  <h4 className="font-medium text-foreground mb-2">Important notes:</h4>
-                  <ul className="list-disc list-inside space-y-1 ml-4">
+                  <h4 className="mb-2 font-medium text-foreground">Important notes:</h4>
+                  <ul className="ml-4 list-inside list-disc space-y-1">
                     <li>Existing data with the same IDs will be updated</li>
                     <li>The import process may take several minutes for large files</li>
                     <li>Make sure your database schema is up to date before importing</li>
@@ -252,4 +243,4 @@ export default function ImportPage() {
       </div>
     </div>
   )
-} 
+}
