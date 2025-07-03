@@ -126,7 +126,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         <Button
           onClick={() => setShowHistory(true)}
           size="sm"
-          className="rounded-full shadow-lg"
+          className="rounded-full shadow-lg cursor-pointer"
         >
           <History className="h-4 w-4 mr-2" />
           History ({messages.length})

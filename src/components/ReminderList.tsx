@@ -147,6 +147,7 @@ export default function ReminderList({
                   <Button 
                     onClick={onAddReminder}
                     size="sm"
+                    className="cursor-pointer"
                   >
                     <Plus className="h-4 w-4" />
                   </Button>
@@ -165,7 +166,7 @@ export default function ReminderList({
             <p className="text-muted-foreground">No displayReminders yet</p>
             <Button 
               onClick={onAddReminder}
-              className="mt-2"
+              className="mt-2 cursor-pointer"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add your first reminder
@@ -194,7 +195,7 @@ export default function ReminderList({
             <p className="text-muted-foreground">No reminders for this contact</p>
             <Button 
               onClick={onAddReminder}
-              className="mt-2"
+              className="mt-2 cursor-pointer"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add reminder

@@ -55,7 +55,7 @@ export default function ContactList({
                 variant="ghost"
                 size="sm"
                 onClick={onBackToAll}
-                className="px-2"
+                className="px-2 cursor-pointer"
               >
                 <ArrowLeft className="h-4 w-4 mr-2" />
                 Show all contacts
@@ -85,6 +85,7 @@ export default function ContactList({
             <Button 
               onClick={onAddContact}
               size="sm"
+              className="cursor-pointer"
             >
               <Plus className="h-4 w-4 mr-2" />
               Add Contact
@@ -99,7 +100,7 @@ export default function ContactList({
               <p className="text-muted-foreground">No contacts yet</p>
               <Button 
                 onClick={onAddContact}
-                className="mt-2"
+                className="mt-2 cursor-pointer"
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add your first contact

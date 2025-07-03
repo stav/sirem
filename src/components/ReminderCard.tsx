@@ -220,7 +220,7 @@ export default function ReminderCard({
                   variant="ghost"
                   size="sm"
                   onClick={() => onToggleComplete(reminder)}
-                  className="h-8 w-8 p-0 hover:bg-green-50 hover:text-green-600"
+                  className="h-8 w-8 p-0 hover:bg-green-50 hover:text-green-600 cursor-pointer"
                   aria-label={reminder.is_complete ? 'Mark as incomplete' : 'Mark as complete'}
                 >
                   {reminder.is_complete ? (
@@ -241,7 +241,7 @@ export default function ReminderCard({
                   variant="ghost"
                   size="sm"
                   onClick={() => onEdit(reminder)}
-                  className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600"
+                  className="h-8 w-8 p-0 hover:bg-blue-50 hover:text-blue-600 cursor-pointer"
                   aria-label="Edit reminder"
                 >
                   <Edit className="h-4 w-4" />

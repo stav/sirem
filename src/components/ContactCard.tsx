@@ -100,6 +100,7 @@ export default function ContactCard({
               e.stopPropagation()
               onEdit(contact)
             }}
+            className="cursor-pointer"
           >
             <Edit className="h-4 w-4" />
           </Button>
@@ -110,6 +111,7 @@ export default function ContactCard({
               e.stopPropagation()
               onDelete(contact.id)
             }}
+            className="cursor-pointer"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
