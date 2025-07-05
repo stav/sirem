@@ -22,7 +22,7 @@ export interface IntegrityLead {
   birthdate: string | null
   primaryCommunication: string
   reminders: IntegrityReminder[]
-  activities: IntegrityActivity[]
+  activities: IntegrityActivityData[]
   addresses: IntegrityAddress[]
   emails: IntegrityEmail[]
   phones: IntegrityPhone[]
@@ -45,6 +45,23 @@ export interface IntegrityActivity {
   durationMinutes: number | null
   outcome: string | null
   metadata: Record<string, unknown> | null
+}
+
+// New interface for the actual activities data structure
+export interface IntegrityActivityData {
+  activityId: number
+  createDate: string
+  modifyDate: string
+  activitySubject: string
+  activityBody: string | null
+  activityInteractionURL: string | null
+  activityTypeName: string
+  activityNote: string | null
+  activitySourceId: number | null
+  activitySource: string | null
+  activityInteractionLabel: string | null
+  activityInteractionIconUrl: string | null
+  activityIconUrl: string | null
 }
 
 export interface IntegrityReminder {
@@ -359,6 +376,127 @@ export class IntegrityImporter {
         )
       }
     }
+  }
+}
+
+// Utility function to import activities for existing contacts
+export async function importActivitiesData(jsonData: string) {
+  try {
+    const data: IntegrityData = JSON.parse(jsonData)
+    console.log(`Starting activities import for ${data.result.length} contacts...`)
+
+    let totalActivities = 0
+    let importedActivities = 0
+    let skippedActivities = 0
+    let errors = 0
+
+    for (const lead of data.result) {
+      totalActivities += lead.activities.length
+
+      // Find the contact by phone number or email
+      let contactId: string | null = null
+
+      // Try to find by phone number first
+      if (lead.phones.length > 0) {
+        const phoneNumbers = lead.phones.map((p) => p.leadPhone)
+        const { data: contactByPhone } = await supabase
+          .from('contacts')
+          .select('id')
+          .or(phoneNumbers.map((phone) => `phone.eq.${phone}`).join(','))
+          .single()
+
+        if (contactByPhone) {
+          contactId = contactByPhone.id
+        }
+      }
+
+      // If not found by phone, try by email
+      if (!contactId && lead.emails.length > 0) {
+        const emailAddresses = lead.emails.map((e) => e.leadEmail)
+        const { data: contactByEmail } = await supabase
+          .from('contacts')
+          .select('id')
+          .or(emailAddresses.map((email) => `email.eq.${email}`).join(','))
+          .single()
+
+        if (contactByEmail) {
+          contactId = contactByEmail.id
+        }
+      }
+
+      // If still not found, try by name (less reliable)
+      if (!contactId) {
+        const { data: contactByName } = await supabase
+          .from('contacts')
+          .select('id')
+          .eq('first_name', lead.firstName)
+          .eq('last_name', lead.lastName)
+          .single()
+
+        if (contactByName) {
+          contactId = contactByName.id
+        }
+      }
+
+      if (!contactId) {
+        console.warn(`No matching contact found for ${lead.firstName} ${lead.lastName}`)
+        skippedActivities += lead.activities.length
+        continue
+      }
+
+      // Import activities for this contact
+      for (const activity of lead.activities) {
+        try {
+          const { error } = await supabase.from('activities').insert({
+            contact_id: contactId,
+            activity_type: activity.activityTypeName,
+            title: activity.activitySubject,
+            description: activity.activityNote || activity.activityBody,
+            activity_date: activity.createDate,
+            duration_minutes: null, // Not available in the data
+            outcome: null, // Not available in the data
+            metadata: {
+              activityId: activity.activityId,
+              source: activity.activitySource,
+              interactionUrl: activity.activityInteractionURL,
+              interactionLabel: activity.activityInteractionLabel,
+              interactionIconUrl: activity.activityInteractionIconUrl,
+              iconUrl: activity.activityIconUrl,
+              sourceId: activity.activitySourceId,
+            },
+            created_at: activity.createDate,
+            updated_at: activity.modifyDate || activity.createDate,
+          })
+
+          if (error) {
+            console.error(`Failed to import activity ${activity.activityId}:`, error)
+            errors++
+          } else {
+            importedActivities++
+          }
+        } catch (error) {
+          console.error(`Error importing activity ${activity.activityId}:`, error)
+          errors++
+        }
+      }
+    }
+
+    const message = `Activities import completed: ${importedActivities} imported, ${skippedActivities} skipped (no contact match), ${errors} errors out of ${totalActivities} total activities.`
+    console.log(message)
+
+    return {
+      success: errors === 0,
+      message,
+      stats: {
+        total: totalActivities,
+        imported: importedActivities,
+        skipped: skippedActivities,
+        errors,
+      },
+    }
+  } catch (error) {
+    console.error('Activities import failed:', error)
+    return { success: false, message: `Activities import failed: ${error}` }
   }
 }
 

@@ -1,127 +1,80 @@
 # Sirem CRM
 
-A modern, lightweight CRM system built with Next.js, TypeScript, and Supabase for managing contacts and reminders.
+A modern Medicare CRM system built with Next.js, TypeScript, and Supabase.
 
 ## Features
 
-- **Contact Management**: Add, edit, and delete contacts with full contact information
-- **Reminder System**: Create reminders linked to contacts with priority levels and due dates
-- **Modern UI**: Clean, responsive interface built with Tailwind CSS
-- **Real-time Data**: Powered by Supabase for instant data synchronization
-- **Type Safety**: Full TypeScript support for better development experience
+- **Contact Management**: Complete contact profiles with Medicare-specific fields
+- **Activity Tracking**: Log and track all interactions with contacts
+- **Reminder System**: Task management with priority levels and due dates
+- **Tagging System**: Hierarchical tags for organizing contacts
+- **Data Import**: Import data from Integrity CRM system
+- **Modern UI**: Built with shadcn/ui components and Tailwind CSS
 
-## Tech Stack
+## Data Import
 
-- **Frontend**: Next.js 15, React 19, TypeScript
-- **Styling**: Tailwind CSS
-- **Database**: Supabase (PostgreSQL)
-- **Icons**: Lucide React
+The system supports importing data from Integrity CRM exports in two modes:
 
-## Getting Started
+### Full Import
+
+Imports complete lead records including:
+
+- Contact information (names, addresses, phones, emails)
+- Medicare-specific data (Part A/B status, beneficiary ID, etc.)
+- Reminders and tasks
+- Tags and tag categories
+- Lead statuses
+- Notes and additional metadata
+
+### Activities Only Import
+
+Imports only activity data for existing contacts:
+
+- Matches activities to existing contacts by phone number, email, or name
+- Imports activity history with detailed metadata
+- Provides detailed import statistics
+- Skips activities for contacts that can't be matched
+
+### How to Import
+
+1. Navigate to the `/import` page
+2. Select your import type (Full Import or Activities Only)
+3. Upload your Integrity JSON export file
+4. Review the preview to ensure data looks correct
+5. Click "Import Data" or "Import Activities"
+6. Monitor the import progress and results
+
+**Note**: For Activities Only imports, make sure your contacts are already in the database. The system will attempt to match activities to existing contacts using phone numbers, email addresses, or names.
+
+## Development
 
 ### Prerequisites
 
 - Node.js 18+
 - npm or yarn
-- Supabase account
+- Supabase account and project
 
-### 1. Clone and Install
+### Setup
 
-```bash
-git clone <your-repo-url>
-cd sirem-crm
-npm install
-```
+1. Clone the repository
+2. Install dependencies: `npm install`
+3. Copy `.env.example` to `.env.local` and fill in your Supabase credentials
+4. Run the database migrations in your Supabase SQL editor
+5. Start the development server: `npm run dev`
 
-### 2. Set Up Supabase
+### Database Schema
 
-1. Create a new project at [supabase.com](https://supabase.com)
-2. Go to **Settings > API** and copy your:
-   - Project URL
-   - Anon/public key
+The system uses the following main tables:
 
-### 3. Environment Variables
+- `contacts` - Main contact information
+- `activities` - Activity/interaction history
+- `reminders` - Task management
+- `addresses`, `phones`, `emails` - Contact details
+- `tags`, `tag_categories` - Organization system
+- `lead_statuses` - Status tracking
 
-Create a `.env.local` file in the root directory:
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_url_here
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key_here
-```
-
-### 4. Database Setup
-
-1. Open your Supabase project dashboard
-2. Go to **SQL Editor**
-3. Copy and paste the contents of `data/schema/current-schema.sql`
-4. Run the script to create tables and sample data
-
-Alternatively, you can run the migration script:
-
-```bash
-npm run show-migrations
-```
-
-### 5. Start Development Server
-
-```bash
-npm run dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) to view the application.
-
-## Database Schema
-
-### Contacts Table
-
-- `id` (UUID, Primary Key)
-- `first_name` (Text, Required)
-- `last_name` (Text, Required)
-- `email` (Text, Optional)
-- `phone` (Text, Optional)
-- `notes` (Text, Optional)
-- `created_at` (Timestamp)
-
-### Reminders Table
-
-- `id` (UUID, Primary Key)
-- `contact_id` (UUID, Foreign Key to contacts)
-- `title` (Text, Required)
-- `description` (Text, Optional)
-- `due_date` (Timestamp, Required)
-- `priority` (Enum: 'low', 'medium', 'high')
-- `completed` (Boolean, Default: false)
-- `created_at` (Timestamp)
-
-## Available Scripts
-
-- `npm run dev` - Start development server with Turbopack
-- `npm run build` - Build for production
-- `npm run start` - Start production server
-- `npm run lint` - Run ESLint
-- `npm run lint:fix` - Fix ESLint errors automatically
-- `npm run type-check` - Run TypeScript type checking
-- `npm run format` - Format code with Prettier
-- `npm run format:check` - Check code formatting
-- `npm run clean` - Clean build artifacts
-- `npm run analyze` - Analyze bundle size
-
-## Deployment
-
-This application can be easily deployed to Vercel:
-
-1. Push your code to GitHub
-2. Connect your repository to Vercel
-3. Add your environment variables in Vercel dashboard
-4. Deploy!
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+See `data/schema/` for complete schema definitions.
 
 ## License
 
-MIT License - feel free to use this project for your own CRM needs!
+MIT
