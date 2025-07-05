@@ -406,6 +406,62 @@ export type Database = {
           metadata?: Record<string, unknown> | null
         }
       }
+      actions: {
+        Row: {
+          id: string
+          created_at: string
+          updated_at: string
+          contact_id: string
+          title: string
+          description: string | null
+          tags: string | null
+          start_date: string | null
+          end_date: string | null
+          completed_date: string | null
+          status: 'planned' | 'in_progress' | 'completed' | 'cancelled' | 'overdue'
+          priority: 'low' | 'medium' | 'high'
+          duration: number | null
+          outcome: string | null
+          source: string
+          metadata: Record<string, unknown> | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          contact_id: string
+          title: string
+          description?: string | null
+          tags?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          completed_date?: string | null
+          status?: 'planned' | 'in_progress' | 'completed' | 'cancelled' | 'overdue'
+          priority?: 'low' | 'medium' | 'high'
+          duration?: number | null
+          outcome?: string | null
+          source?: string
+          metadata?: Record<string, unknown> | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          contact_id?: string
+          title?: string
+          description?: string | null
+          tags?: string | null
+          start_date?: string | null
+          end_date?: string | null
+          completed_date?: string | null
+          status?: 'planned' | 'in_progress' | 'completed' | 'cancelled' | 'overdue'
+          priority?: 'low' | 'medium' | 'high'
+          duration?: number | null
+          outcome?: string | null
+          source?: string
+          metadata?: Record<string, unknown> | null
+        }
+      }
     }
   }
 }
