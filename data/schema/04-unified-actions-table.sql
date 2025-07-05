@@ -12,7 +12,7 @@ CREATE TABLE actions (
   -- Core action info
   title TEXT NOT NULL,
   description TEXT,
-  tags TEXT, -- Space-separated tags like "high-priority medicare consultation"
+  tags TEXT, -- Space-separated tags like "medicare consultation"
   
   -- Time tracking
   start_date TIMESTAMP WITH TIME ZONE, -- When action is planned/due (can be null)
@@ -20,8 +20,8 @@ CREATE TABLE actions (
   completed_date TIMESTAMP WITH TIME ZONE, -- When action was actually completed
   
   -- Status and metadata
-  status TEXT CHECK (status IN ('planned', 'in_progress', 'completed', 'cancelled', 'overdue')) DEFAULT 'planned',
-  priority TEXT CHECK (priority IN ('low', 'medium', 'high')) DEFAULT 'medium',
+  status TEXT,
+  priority TEXT,
   duration DECIMAL(4,2), -- Hours (e.g., 1.5 for 1 hour 30 minutes)
   outcome TEXT, -- Result/outcome of the action
   

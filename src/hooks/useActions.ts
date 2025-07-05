@@ -3,19 +3,10 @@ import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase'
 
 type Action = Database['public']['Tables']['actions']['Row']
+type ActionInsert = Database['public']['Tables']['actions']['Insert']
 
-interface ActionForm {
-  title: string
-  description: string
-  tags: string
-  start_date: string | null
-  end_date: string | null
-  completed_date: string | null
-  status: 'planned' | 'in_progress' | 'completed' | 'cancelled' | 'overdue'
-  priority: 'low' | 'medium' | 'high'
-  duration: number | null
-  outcome: string | null
-}
+// Use the generated types for form data
+type ActionForm = Omit<ActionInsert, 'id' | 'created_at' | 'updated_at' | 'contact_id' | 'source' | 'metadata'>
 
 export function useActions() {
   const [actions, setActions] = useState<Action[]>([])
@@ -143,7 +134,8 @@ export function useActions() {
   }
 
   // Helper functions for filtering
-  const getPlannedActions = () => actions.filter((action) => ['planned', 'overdue'].includes(action.status))
+  const getPlannedActions = () =>
+    actions.filter((action) => action.status && ['planned', 'overdue'].includes(action.status))
   const getCompletedActions = () => actions.filter((action) => action.status === 'completed')
   const getOverdueActions = () =>
     actions.filter(

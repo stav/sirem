@@ -4,8 +4,9 @@ import React, { useState, useEffect } from 'react'
 import Navigation from '@/components/Navigation'
 import ContactList from '@/components/ContactList'
 import ActionList from '@/components/ActionList'
-import ContactForm from '@/components/ContactForm'
 import ActionForm from '@/components/ActionForm'
+import ActionViewModal from '@/components/ActionViewModal'
+import ContactForm from '@/components/ContactForm'
 import { useContacts } from '@/hooks/useContacts'
 import { useActions } from '@/hooks/useActions'
 import type { Database } from '@/lib/supabase'
@@ -33,8 +34,8 @@ interface ActionFormData {
   start_date: string | null
   end_date: string | null
   completed_date: string | null
-  status: 'planned' | 'in_progress' | 'completed' | 'cancelled' | 'overdue'
-  priority: 'low' | 'medium' | 'high'
+  status: string | null
+  priority: string | null
   duration: number | null
   outcome: string | null
 }
@@ -55,6 +56,8 @@ export default function ManagePage() {
   // UI state
   const [showContactForm, setShowContactForm] = useState(false)
   const [showActionForm, setShowActionForm] = useState(false)
+  const [showActionViewModal, setShowActionViewModal] = useState(false)
+  const [viewingAction, setViewingAction] = useState<Action | null>(null)
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
   const [editingAction, setEditingAction] = useState<Action | null>(null)
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
@@ -80,8 +83,8 @@ export default function ManagePage() {
     start_date: null,
     end_date: null,
     completed_date: null,
-    status: 'planned',
-    priority: 'medium',
+    status: null,
+    priority: null,
     duration: null,
     outcome: null,
   })
@@ -194,6 +197,12 @@ export default function ManagePage() {
     const success = await deleteContact(contactId)
 
     if (success) {
+      // If the deleted contact was the selected contact, navigate back to full list
+      if (selectedContact && selectedContact.id === contactId) {
+        setSingleContactView(false)
+        setSelectedContact(null)
+      }
+
       toast({
         title: 'Contact deleted',
         description: `${contactName} was successfully deleted.`,
@@ -242,6 +251,11 @@ export default function ManagePage() {
       outcome: action.outcome,
     })
     setShowActionForm(true)
+  }
+
+  const handleViewAction = (action: Action) => {
+    setViewingAction(action)
+    setShowActionViewModal(true)
   }
 
   const handleActionSubmit = async (e: React.FormEvent) => {
@@ -330,15 +344,17 @@ export default function ManagePage() {
       start_date: null,
       end_date: null,
       completed_date: null,
-      status: 'planned',
-      priority: 'medium',
+      status: null,
+      priority: null,
       duration: null,
       outcome: null,
     })
     setShowContactForm(false)
     setShowActionForm(false)
+    setShowActionViewModal(false)
     setEditingContact(null)
     setEditingAction(null)
+    setViewingAction(null)
   }
 
   const handleBackToAll = () => {
@@ -397,6 +413,7 @@ export default function ManagePage() {
               onAddAction={handleAddAction}
               onToggleComplete={handleToggleActionComplete}
               onEditAction={handleEditAction}
+              onViewAction={handleViewAction}
               onDeleteAction={handleDeleteAction}
               showCompletedActions={showCompletedActions}
               onToggleShowCompleted={() => setShowCompletedActions((v) => !v)}
@@ -430,6 +447,20 @@ export default function ManagePage() {
             formData={actionForm}
             setFormData={setActionForm}
             isSubmitting={false}
+          />
+
+          {/* Action View Modal */}
+          <ActionViewModal
+            isOpen={showActionViewModal}
+            onClose={resetForms}
+            action={viewingAction}
+            contactName={
+              viewingAction
+                ? contacts.find((c) => c.id === viewingAction.contact_id)
+                  ? `${contacts.find((c) => c.id === viewingAction.contact_id)?.first_name} ${contacts.find((c) => c.id === viewingAction.contact_id)?.last_name}`
+                  : 'Unknown Contact'
+                : ''
+            }
           />
         </div>
       </div>

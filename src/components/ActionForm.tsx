@@ -26,19 +26,21 @@ export interface ActionFormData {
   start_date: string | null
   end_date: string | null
   completed_date: string | null
-  status: 'planned' | 'in_progress' | 'completed' | 'cancelled' | 'overdue'
-  priority: 'low' | 'medium' | 'high'
+  status: string | null
+  priority: string | null
   duration: number | null
   outcome: string | null
 }
 
 const priorities = [
+  { value: 'none', label: 'None' },
   { value: 'low', label: 'Low' },
   { value: 'medium', label: 'Medium' },
   { value: 'high', label: 'High' },
 ]
 
 const statuses = [
+  { value: 'none', label: 'None' },
   { value: 'planned', label: 'Planned' },
   { value: 'in_progress', label: 'In Progress' },
   { value: 'completed', label: 'Completed' },
@@ -56,7 +58,6 @@ export default function ActionForm({
   isSubmitting,
 }: ActionFormProps) {
   const isEditing = !!action
-  const isCompleted = formData.status === 'completed'
 
   return (
     <ModalForm
@@ -91,6 +92,18 @@ export default function ActionForm({
           />
         </div>
 
+        {/* Outcome */}
+        <div>
+          <Label htmlFor="outcome">Outcome</Label>
+          <Textarea
+            id="outcome"
+            value={formData.outcome || ''}
+            onChange={(e) => setFormData({ ...formData, outcome: e.target.value })}
+            placeholder="Enter the outcome of this action"
+            rows={2}
+          />
+        </div>
+
         {/* Tags */}
         <div>
           <Label htmlFor="tags">Tags</Label>
@@ -98,76 +111,63 @@ export default function ActionForm({
             id="tags"
             value={formData.tags}
             onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
-            placeholder="Enter space-separated tags (e.g., high-priority medicare)"
+            placeholder="Enter space-separated tags (e.g., medicare consultation called)"
           />
         </div>
 
-        {/* Status */}
+        {/* Priority */}
         <div>
-          <Label htmlFor="status">Status *</Label>
+          <Label htmlFor="priority">Priority</Label>
           <Select
-            value={formData.status}
-            onValueChange={(value: 'planned' | 'in_progress' | 'completed' | 'cancelled' | 'overdue') =>
-              setFormData({ ...formData, status: value })
-            }
+            value={formData.priority || 'none'}
+            onValueChange={(value) => {
+              let priority: 'low' | 'medium' | 'high' | null = null
+              if (value === 'low' || value === 'medium' || value === 'high') priority = value
+              setFormData({ ...formData, priority })
+            }}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select status" />
+              <SelectValue placeholder="Select priority" />
             </SelectTrigger>
             <SelectContent>
-              {statuses.map((status) => (
-                <SelectItem key={status.value} value={status.value}>
-                  {status.label}
+              {priorities.map((priority) => (
+                <SelectItem key={priority.label} value={priority.value}>
+                  {priority.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
 
-        {/* Priority (only for planned actions) */}
-        {formData.status === 'planned' && (
-          <div>
-            <Label htmlFor="priority">Priority</Label>
-            <Select
-              value={formData.priority}
-              onValueChange={(value: 'low' | 'medium' | 'high') => setFormData({ ...formData, priority: value })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select priority" />
-              </SelectTrigger>
-              <SelectContent>
-                {priorities.map((priority) => (
-                  <SelectItem key={priority.value} value={priority.value}>
-                    {priority.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-        )}
-
-        {/* Start Date (for planned actions) */}
-        {formData.status === 'planned' && (
-          <div>
-            <DateInput
-              id="start_date"
-              label="Start Date"
-              value={formData.start_date || ''}
-              onChange={(value) => setFormData({ ...formData, start_date: value })}
-              placeholder="Select start date"
-            />
-          </div>
-        )}
-
-        {/* End Date (optional) */}
+        {/* Status */}
         <div>
-          <DateInput
-            id="end_date"
-            label="End Date (Optional)"
-            value={formData.end_date || ''}
-            onChange={(value) => setFormData({ ...formData, end_date: value })}
-            placeholder="Select end date"
-          />
+          <Label htmlFor="status">Status</Label>
+          <Select
+            value={formData.status || 'none'}
+            onValueChange={(value) => {
+              let status: string | null = null
+              if (
+                value === 'planned' ||
+                value === 'in_progress' ||
+                value === 'completed' ||
+                value === 'cancelled' ||
+                value === 'overdue'
+              )
+                status = value
+              setFormData({ ...formData, status })
+            }}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select status" />
+            </SelectTrigger>
+            <SelectContent>
+              {statuses.map((status) => (
+                <SelectItem key={status.label} value={status.value}>
+                  {status.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </div>
 
         {/* Duration (in hours) */}
@@ -184,32 +184,38 @@ export default function ActionForm({
           />
         </div>
 
-        {/* Completed Date (for completed actions) */}
-        {isCompleted && (
-          <div>
-            <DateInput
-              id="completed_date"
-              label="Completed Date"
-              value={formData.completed_date || ''}
-              onChange={(value) => setFormData({ ...formData, completed_date: value })}
-              placeholder="Select completion date"
-            />
-          </div>
-        )}
+        {/* Start Date */}
+        <div>
+          <DateInput
+            id="start_date"
+            label="Start Date"
+            value={formData.start_date || ''}
+            onChange={(value) => setFormData({ ...formData, start_date: value })}
+            placeholder="Select start date"
+          />
+        </div>
 
-        {/* Outcome (for completed actions) */}
-        {isCompleted && (
-          <div>
-            <Label htmlFor="outcome">Outcome</Label>
-            <Textarea
-              id="outcome"
-              value={formData.outcome || ''}
-              onChange={(e) => setFormData({ ...formData, outcome: e.target.value })}
-              placeholder="Enter the outcome of this action"
-              rows={2}
-            />
-          </div>
-        )}
+        {/* End Date */}
+        <div>
+          <DateInput
+            id="end_date"
+            label="End Date"
+            value={formData.end_date || ''}
+            onChange={(value) => setFormData({ ...formData, end_date: value })}
+            placeholder="Select end date"
+          />
+        </div>
+
+        {/* Completed Date */}
+        <div>
+          <DateInput
+            id="completed_date"
+            label="Completed Date"
+            value={formData.completed_date || ''}
+            onChange={(value) => setFormData({ ...formData, completed_date: value })}
+            placeholder="Select completed date"
+          />
+        </div>
       </div>
     </ModalForm>
   )

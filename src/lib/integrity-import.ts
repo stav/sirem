@@ -368,7 +368,7 @@ export class IntegrityImporter {
           {
             contact_id: contact.id,
             tag_id: tagId,
-            metadata: leadTag.metadata,
+            metadata: leadTag.metadata as import('./supabase-types').Json,
             interaction_url: leadTag.interactionUrl,
             interaction_url_label: leadTag.interactionUrlLabel,
           },
@@ -463,7 +463,7 @@ export async function importActivitiesData(jsonData: string) {
               interactionIconUrl: activity.activityInteractionIconUrl,
               iconUrl: activity.activityIconUrl,
               sourceId: activity.activitySourceId,
-            },
+            } as import('./supabase-types').Json,
             created_at: activity.createDate,
             updated_at: activity.modifyDate || activity.createDate,
           })

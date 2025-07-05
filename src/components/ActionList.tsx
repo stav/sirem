@@ -17,6 +17,7 @@ interface ActionListProps {
   onAddAction: () => void
   onToggleComplete: (action: Action) => void
   onEditAction: (action: Action) => void
+  onViewAction: (action: Action) => void
   onDeleteAction: (actionId: string) => void
   showCompletedActions: boolean
   onToggleShowCompleted: () => void
@@ -30,6 +31,7 @@ export default function ActionList({
   onAddAction,
   onToggleComplete,
   onEditAction,
+  onViewAction,
   onDeleteAction,
   showCompletedActions,
   onToggleShowCompleted,
@@ -77,7 +79,11 @@ export default function ActionList({
     displayActions = displayActions.filter((a) => String(a.contact_id) === String(selectedContact.id))
   }
   if (!showCompletedActions) {
-    displayActions = displayActions.filter((a) => a.status !== 'completed')
+    displayActions = displayActions.filter((a) => {
+      // Check if action is completed based on status or completed_date
+      const isCompleted = (a.status as string) === 'completed' || a.completed_date !== null
+      return !isCompleted
+    })
   }
   if (showWeekRange) {
     displayActions = displayActions.filter((a) => {
@@ -179,6 +185,7 @@ export default function ActionList({
                   index={index + 1}
                   onToggleComplete={onToggleComplete}
                   onEdit={onEditAction}
+                  onView={onViewAction}
                   onDelete={onDeleteAction}
                   onSelectContact={onSelectContact}
                 />
@@ -210,6 +217,7 @@ export default function ActionList({
                   index={index + 1}
                   onToggleComplete={onToggleComplete}
                   onEdit={onEditAction}
+                  onView={onViewAction}
                   onDelete={onDeleteAction}
                   onSelectContact={!selectedContact ? onSelectContact : undefined}
                 />
