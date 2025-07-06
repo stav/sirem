@@ -201,28 +201,35 @@ export default function ActionList({
           </div>
         ) : (
           <div className="space-y-3">
-            {displayActions.map((action, index) => {
-              let contactName = 'Unknown Contact'
-              if (contacts && contacts.length > 0) {
-                const found = contacts.find((c) => String(c.id).trim() === String(action.contact_id).trim())
-                if (found) {
-                  contactName = `${found.first_name} ${found.last_name}`
+            {displayActions
+              .slice()
+              .sort((a, b) => {
+                const dateA = getDisplayDate(a)
+                const dateB = getDisplayDate(b)
+                return new Date(dateA).getTime() - new Date(dateB).getTime()
+              })
+              .map((action, index) => {
+                let contactName = 'Unknown Contact'
+                if (contacts && contacts.length > 0) {
+                  const found = contacts.find((c) => String(c.id).trim() === String(action.contact_id).trim())
+                  if (found) {
+                    contactName = `${found.first_name} ${found.last_name}`
+                  }
                 }
-              }
-              return (
-                <ActionCard
-                  key={action.id}
-                  action={action}
-                  contactName={contactName}
-                  index={index + 1}
-                  onToggleComplete={onToggleComplete}
-                  onEdit={onEditAction}
-                  onView={onViewAction}
-                  onDelete={onDeleteAction}
-                  onSelectContact={!selectedContact ? onSelectContact : undefined}
-                />
-              )
-            })}
+                return (
+                  <ActionCard
+                    key={action.id}
+                    action={action}
+                    contactName={contactName}
+                    index={index + 1}
+                    onToggleComplete={onToggleComplete}
+                    onEdit={onEditAction}
+                    onView={onViewAction}
+                    onDelete={onDeleteAction}
+                    onSelectContact={!selectedContact ? onSelectContact : undefined}
+                  />
+                )
+              })}
           </div>
         )}
       </CardContent>

@@ -61,21 +61,21 @@ export function useActions() {
 
   const updateAction = async (actionId: string, actionData: ActionForm) => {
     try {
-      const { error } = await supabase
-        .from('actions')
-        .update({
-          title: actionData.title,
-          description: actionData.description,
-          tags: actionData.tags,
-          start_date: actionData.start_date,
-          end_date: actionData.end_date,
-          completed_date: actionData.completed_date,
-          status: actionData.status,
-          priority: actionData.priority,
-          duration: actionData.duration,
-          outcome: actionData.outcome,
-        })
-        .eq('id', actionId)
+      // Prepare update data with proper type handling
+      const updateData: Database['public']['Tables']['actions']['Update'] = {
+        title: actionData.title,
+        description: actionData.description || null,
+        tags: actionData.tags || null,
+        start_date: actionData.start_date || null,
+        end_date: actionData.end_date || null,
+        completed_date: actionData.completed_date || null,
+        status: actionData.status || null,
+        priority: actionData.priority || null,
+        duration: actionData.duration || null,
+        outcome: actionData.outcome || null,
+      }
+
+      const { error } = await supabase.from('actions').update(updateData).eq('id', actionId)
 
       if (error) {
         console.error('Error updating action:', error)
