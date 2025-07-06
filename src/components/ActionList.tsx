@@ -6,6 +6,7 @@ import ActionCard from './ActionCard'
 import type { Database } from '@/lib/supabase'
 import { Switch } from '@/components/ui/switch'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { getDisplayDate } from '@/lib/action-utils'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 type Action = Database['public']['Tables']['actions']['Row']
@@ -61,16 +62,6 @@ export default function ActionList({
     const oneWeekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
     const oneWeekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
     return date >= oneWeekAgo && date <= oneWeekFromNow
-  }
-
-  // Helper function to get display date for an action
-  const getDisplayDate = (action: Action) => {
-    if (action.completed_date) {
-      return action.completed_date // When it happened
-    } else if (action.end_date) {
-      return action.end_date // When it's due
-    }
-    return action.created_at // Fallback
   }
 
   // Always filter actions based on toggles, for both main and contact views

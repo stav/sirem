@@ -25,6 +25,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 
 import type { Database } from '@/lib/supabase'
+import { getDisplayDate } from '@/lib/action-utils'
 
 // Helper to format YYYY-MM-DD as YYYY-MM-DD (strip time if present)
 function formatDateString(dateString: string | null | undefined) {
@@ -43,16 +44,6 @@ interface ActionCardProps {
   onView: (action: Action) => void
   onDelete: (actionId: string) => void
   onSelectContact?: (contactId: string) => void
-}
-
-// Helper function to get display date for an action
-function getDisplayDate(action: Action) {
-  if (action.completed_date) {
-    return action.completed_date // When it happened
-  } else if (action.end_date) {
-    return action.end_date // When it's due
-  }
-  return action.created_at // Fallback
 }
 
 function getStatusIndicator(action: Action) {

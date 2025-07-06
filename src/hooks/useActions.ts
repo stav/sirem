@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase'
+import { getDisplayDate, getEffectiveStatus } from '@/lib/action-utils'
 
 type Action = Database['public']['Tables']['actions']['Row']
 type ActionInsert = Database['public']['Tables']['actions']['Insert']
@@ -141,30 +142,6 @@ export function useActions() {
     actions.filter(
       (action) => action.status === 'planned' && action.start_date && new Date(action.start_date) < new Date()
     )
-
-  // Helper function to get display date
-  const getDisplayDate = (action: Action) => {
-    if (action.completed_date) {
-      return action.completed_date // When it happened
-    } else if (action.end_date) {
-      return action.end_date // When it's due
-    }
-    return action.created_at // Fallback
-  }
-
-  // Helper function to get effective status
-  const getEffectiveStatus = (action: Action) => {
-    if (action.status === 'completed') return 'completed'
-    if (action.status === 'cancelled') return 'cancelled'
-    if (action.status === 'in_progress') return 'in_progress'
-
-    // For planned actions, check if overdue
-    if (action.status === 'planned' && action.start_date && new Date(action.start_date) < new Date()) {
-      return 'overdue'
-    }
-
-    return 'planned'
-  }
 
   useEffect(() => {
     fetchActions()
