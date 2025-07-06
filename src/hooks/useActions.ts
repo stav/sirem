@@ -146,8 +146,8 @@ export function useActions() {
   const getDisplayDate = (action: Action) => {
     if (action.completed_date) {
       return action.completed_date // When it happened
-    } else if (action.start_date) {
-      return action.start_date // When it's planned
+    } else if (action.end_date) {
+      return action.end_date // When it's due
     }
     return action.created_at // Fallback
   }
