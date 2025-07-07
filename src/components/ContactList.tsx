@@ -15,6 +15,7 @@ interface ContactListProps {
   onSelectContact: (contact: Contact) => void
   onEditContact: (contact: Contact) => void
   onDeleteContact: (contactId: string) => void
+  onViewContact: (contact: Contact) => void
   onBackToAll: () => void
 }
 
@@ -26,6 +27,7 @@ export default function ContactList({
   onSelectContact,
   onEditContact,
   onDeleteContact,
+  onViewContact,
   onBackToAll,
 }: ContactListProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
@@ -90,6 +92,7 @@ export default function ContactList({
                   onSelect={onSelectContact}
                   onEdit={onEditContact}
                   onDelete={onDeleteContact}
+                  onView={onViewContact}
                 />
               ))}
             </div>

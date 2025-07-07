@@ -6,13 +6,13 @@ import ContactList from '@/components/ContactList'
 import ActionList from '@/components/ActionList'
 import ActionForm from '@/components/ActionForm'
 import ActionViewModal from '@/components/ActionViewModal'
+import ContactViewModal from '@/components/ContactViewModal'
 import ContactForm from '@/components/ContactForm'
 import { useContacts } from '@/hooks/useContacts'
 import { useActions } from '@/hooks/useActions'
 import type { Database } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 import { logger } from '@/lib/logger'
-import { useRouter } from 'next/navigation'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 type Action = Database['public']['Tables']['actions']['Row']
@@ -53,13 +53,14 @@ export default function ManagePage() {
     toggleActionComplete,
   } = useActions()
   const { toast } = useToast()
-  const router = useRouter()
 
   // UI state
   const [showContactForm, setShowContactForm] = useState(false)
   const [showActionForm, setShowActionForm] = useState(false)
   const [showActionViewModal, setShowActionViewModal] = useState(false)
+  const [showContactViewModal, setShowContactViewModal] = useState(false)
   const [viewingAction, setViewingAction] = useState<Action | null>(null)
+  const [viewingContact, setViewingContact] = useState<Contact | null>(null)
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
   const [editingAction, setEditingAction] = useState<Action | null>(null)
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
@@ -260,6 +261,11 @@ export default function ManagePage() {
     setShowActionViewModal(true)
   }
 
+  const handleViewContact = (contact: Contact) => {
+    setViewingContact(contact)
+    setShowContactViewModal(true)
+  }
+
   const handleActionSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -354,15 +360,21 @@ export default function ManagePage() {
     setShowContactForm(false)
     setShowActionForm(false)
     setShowActionViewModal(false)
+    setShowContactViewModal(false)
     setEditingContact(null)
     setEditingAction(null)
     setViewingAction(null)
+    setViewingContact(null)
   }
 
   const handleBackToAll = () => {
     setSingleContactView(false)
     setSelectedContact(null)
-    router.replace('/manage') // Clear the query string from the URL
+    // Clear the query string without causing a full page navigation
+    const url = new URL(window.location.href)
+    url.searchParams.delete('contact')
+    url.searchParams.delete('action')
+    window.history.replaceState({}, '', url.toString())
   }
 
   const loading = contactsLoading || actionsLoading
@@ -405,6 +417,7 @@ export default function ManagePage() {
               }}
               onEditContact={handleEditContact}
               onDeleteContact={handleDeleteContact}
+              onViewContact={handleViewContact}
               onBackToAll={handleBackToAll}
             />
 
@@ -465,6 +478,9 @@ export default function ManagePage() {
                 : ''
             }
           />
+
+          {/* Contact View Modal */}
+          <ContactViewModal isOpen={showContactViewModal} onClose={resetForms} contact={viewingContact} />
         </div>
       </div>
     </div>
