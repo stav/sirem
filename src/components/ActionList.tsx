@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Plus } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -6,6 +6,7 @@ import ActionCard from './ActionCard'
 import type { Database } from '@/lib/supabase'
 import { Switch } from '@/components/ui/switch'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import Pagination from '@/components/ui/pagination'
 import { getDisplayDate } from '@/lib/action-utils'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
@@ -39,6 +40,9 @@ export default function ActionList({
   onSelectContact,
 }: ActionListProps) {
   const [showWeekRange, setShowWeekRange] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [itemsPerPage, setItemsPerPage] = useState(50) // Configurable page size
+  const [isRendering, setIsRendering] = useState(false)
 
   // Load week range state from localStorage on component mount
   useEffect(() => {
@@ -64,24 +68,69 @@ export default function ActionList({
     return date >= oneWeekAgo && date <= oneWeekFromNow
   }
 
-  // Always filter actions based on toggles, for both main and contact views
-  let displayActions = actions
-  if (selectedContact) {
-    displayActions = displayActions.filter((a) => String(a.contact_id) === String(selectedContact.id))
-  }
-  if (!showCompletedActions) {
-    displayActions = displayActions.filter((a) => {
-      // Check if action is completed based on status or completed_date
-      const isCompleted = (a.status as string) === 'completed' || a.completed_date !== null
-      return !isCompleted
+  // Memoize contact lookup map for efficient contact name resolution
+  const contactMap = useMemo(() => {
+    const map = new Map()
+    contacts.forEach((contact) => {
+      map.set(contact.id, contact)
     })
+    return map
+  }, [contacts])
+
+  // Reset page when filters change
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [selectedContact, showCompletedActions, showWeekRange, itemsPerPage])
+
+  // Show loading spinner when changing to large page sizes
+  const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    const isLargePageSize = newItemsPerPage >= 100 || newItemsPerPage === displayActions.length
+    if (isLargePageSize && displayActions.length > 50) {
+      setIsRendering(true)
+      // Use setTimeout to allow the spinner to show before the heavy rendering
+      setTimeout(() => {
+        setItemsPerPage(newItemsPerPage)
+        setIsRendering(false)
+      }, 50)
+    } else {
+      setItemsPerPage(newItemsPerPage)
+    }
   }
-  if (showWeekRange) {
-    displayActions = displayActions.filter((a) => {
-      const displayDate = getDisplayDate(a)
-      return isWithinWeekRange(displayDate)
+
+  // Memoize filtered and sorted actions to prevent expensive re-computations
+  const displayActions = useMemo(() => {
+    let filteredActions = actions
+
+    if (selectedContact) {
+      filteredActions = filteredActions.filter((a) => String(a.contact_id) === String(selectedContact.id))
+    }
+    if (!showCompletedActions) {
+      filteredActions = filteredActions.filter((a) => {
+        // Check if action is completed based on status or completed_date
+        const isCompleted = (a.status as string) === 'completed' || a.completed_date !== null
+        return !isCompleted
+      })
+    }
+    if (showWeekRange) {
+      filteredActions = filteredActions.filter((a) => {
+        const displayDate = getDisplayDate(a)
+        return isWithinWeekRange(displayDate)
+      })
+    }
+
+    // Sort actions by display date
+    return filteredActions.slice().sort((a, b) => {
+      const dateA = getDisplayDate(a)
+      const dateB = getDisplayDate(b)
+      return new Date(dateA).getTime() - new Date(dateB).getTime()
     })
-  }
+  }, [actions, selectedContact, showCompletedActions, showWeekRange])
+
+  // Pagination logic
+  const totalPages = Math.ceil(displayActions.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const paginatedActions = displayActions.slice(startIndex, endIndex)
 
   return (
     <Card>
@@ -133,10 +182,15 @@ export default function ActionList({
               </div>
             </div>
           </div>
-          <div className="flex items-center">
-            <span className="mr-2 text-sm text-muted-foreground">
+          <div className="flex items-center space-x-2">
+            <span className="text-sm text-muted-foreground">
               {displayActions.length} / {actions.length}
             </span>
+            {totalPages > 1 && (
+              <span className="text-sm text-muted-foreground">
+                (Page {currentPage} of {totalPages})
+              </span>
+            )}
             {selectedContact && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -149,6 +203,20 @@ export default function ActionList({
             )}
           </div>
         </div>
+
+        {/* Top Pagination Controls */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={displayActions.length}
+          itemsPerPage={itemsPerPage}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={handleItemsPerPageChange}
+          className="mt-4 border-t pt-4"
+          isLoading={isRendering}
+        />
       </CardHeader>
       <CardContent>
         {!selectedContact && displayActions.length === 0 ? (
@@ -161,26 +229,22 @@ export default function ActionList({
           </div>
         ) : !selectedContact ? (
           <div className="space-y-3">
-            {displayActions
-              .slice()
-              .sort((a, b) => {
-                const dateA = getDisplayDate(a)
-                const dateB = getDisplayDate(b)
-                return new Date(dateA).getTime() - new Date(dateB).getTime()
-              })
-              .map((action, index) => (
-                <ActionCard
-                  key={action.id}
-                  action={action}
-                  contactName={`${contacts.find((c) => c.id === action.contact_id)?.first_name} ${contacts.find((c) => c.id === action.contact_id)?.last_name}`}
-                  index={index + 1}
-                  onToggleComplete={onToggleComplete}
-                  onEdit={onEditAction}
-                  onView={onViewAction}
-                  onDelete={onDeleteAction}
-                  onSelectContact={onSelectContact}
-                />
-              ))}
+            {paginatedActions.map((action, index) => (
+              <ActionCard
+                key={action.id}
+                action={action}
+                contactName={(() => {
+                  const contact = contactMap.get(action.contact_id)
+                  return contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
+                })()}
+                index={index + 1}
+                onToggleComplete={onToggleComplete}
+                onEdit={onEditAction}
+                onView={onViewAction}
+                onDelete={onDeleteAction}
+                onSelectContact={onSelectContact}
+              />
+            ))}
           </div>
         ) : displayActions.length === 0 ? (
           <div className="py-8 text-center">
@@ -192,37 +256,39 @@ export default function ActionList({
           </div>
         ) : (
           <div className="space-y-3">
-            {displayActions
-              .slice()
-              .sort((a, b) => {
-                const dateA = getDisplayDate(a)
-                const dateB = getDisplayDate(b)
-                return new Date(dateA).getTime() - new Date(dateB).getTime()
-              })
-              .map((action, index) => {
-                let contactName = 'Unknown Contact'
-                if (contacts && contacts.length > 0) {
-                  const found = contacts.find((c) => String(c.id).trim() === String(action.contact_id).trim())
-                  if (found) {
-                    contactName = `${found.first_name} ${found.last_name}`
-                  }
-                }
-                return (
-                  <ActionCard
-                    key={action.id}
-                    action={action}
-                    contactName={contactName}
-                    index={index + 1}
-                    onToggleComplete={onToggleComplete}
-                    onEdit={onEditAction}
-                    onView={onViewAction}
-                    onDelete={onDeleteAction}
-                    onSelectContact={!selectedContact ? onSelectContact : undefined}
-                  />
-                )
-              })}
+            {paginatedActions.map((action, index) => {
+              const contact = contactMap.get(action.contact_id)
+              const contactName = contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
+              return (
+                <ActionCard
+                  key={action.id}
+                  action={action}
+                  contactName={contactName}
+                  index={index + 1}
+                  onToggleComplete={onToggleComplete}
+                  onEdit={onEditAction}
+                  onView={onViewAction}
+                  onDelete={onDeleteAction}
+                  onSelectContact={!selectedContact ? onSelectContact : undefined}
+                />
+              )
+            })}
           </div>
         )}
+
+        {/* Bottom Pagination Controls */}
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={displayActions.length}
+          itemsPerPage={itemsPerPage}
+          startIndex={startIndex}
+          endIndex={endIndex}
+          onPageChange={setCurrentPage}
+          onItemsPerPageChange={handleItemsPerPageChange}
+          className="mt-6"
+          isLoading={isRendering}
+        />
       </CardContent>
     </Card>
   )

@@ -3,7 +3,7 @@
 // time zone conversion issues when displaying or storing dates. All date displays in this component use the raw date string
 // (YYYY-MM-DD) to ensure consistency with user input and avoid time zone shifts.
 
-import React from 'react'
+import React, { useMemo } from 'react'
 import {
   Edit,
   Trash2,
@@ -58,12 +58,23 @@ function getStatusIndicator(action: Action) {
   }
   const daysDiff = getDaysDifference()
 
+  // If completed, always gray
+  const isCompleted = !!action.completed_date
+  let overdueLevel: 'future' | 'orange' | 'red' | 'gray' = 'future'
+  if (isCompleted) overdueLevel = 'gray'
+  else if (daysDiff < 0 && daysDiff >= -6) overdueLevel = 'orange'
+  else if (daysDiff <= -7) overdueLevel = 'red'
+
+  const isPending = daysDiff >= 0
+
   if (status === '' || status === null) {
     return {
       icon: HelpCircle,
       className: 'text-gray-600 bg-gray-50 border-gray-200',
       text: 'No Status',
       daysDiff,
+      isPending,
+      overdueLevel,
     }
   }
   if (status === 'in_progress') {
@@ -72,6 +83,8 @@ function getStatusIndicator(action: Action) {
       className: 'text-blue-600 bg-blue-50 border-blue-200',
       text: 'In Progress',
       daysDiff,
+      isPending,
+      overdueLevel,
     }
   }
   if (status === 'cancelled') {
@@ -80,6 +93,8 @@ function getStatusIndicator(action: Action) {
       className: 'text-gray-400 bg-gray-100 border-gray-200',
       text: 'Cancelled',
       daysDiff,
+      isPending,
+      overdueLevel,
     }
   }
   // fallback for any other status
@@ -88,6 +103,8 @@ function getStatusIndicator(action: Action) {
     className: 'text-gray-600 bg-gray-50 border-gray-200',
     text: 'No Status',
     daysDiff,
+    isPending,
+    overdueLevel,
   }
 }
 
@@ -104,7 +121,7 @@ function getPriorityColor(priority: string | null) {
   }
 }
 
-export default function ActionCard({
+const ActionCard = React.memo(function ActionCard({
   action,
   contactName,
   index,
@@ -114,18 +131,33 @@ export default function ActionCard({
   onDelete,
   onSelectContact,
 }: ActionCardProps) {
-  const statusIndicator = getStatusIndicator(action)
-  const daysDiffText =
-    statusIndicator.daysDiff === 0
-      ? 'Today'
-      : statusIndicator.daysDiff === -1
-        ? 'yesterday'
-        : statusIndicator.daysDiff > 0
-          ? `in ${statusIndicator.daysDiff} day${statusIndicator.daysDiff === 1 ? '' : 's'}`
-          : `${Math.abs(statusIndicator.daysDiff)} day${Math.abs(statusIndicator.daysDiff) === 1 ? '' : 's'} ago`
+  // Memoize expensive status calculations to prevent re-computation on every render
+  const statusIndicator = useMemo(() => getStatusIndicator(action), [action])
+
+  const daysDiffText = useMemo(() => {
+    if (statusIndicator.daysDiff === 0) return 'Today'
+    if (statusIndicator.daysDiff === -1) return 'yesterday'
+    if (statusIndicator.daysDiff > 0) {
+      return `in ${statusIndicator.daysDiff} day${statusIndicator.daysDiff === 1 ? '' : 's'}`
+    }
+    return `${Math.abs(statusIndicator.daysDiff)} day${Math.abs(statusIndicator.daysDiff) === 1 ? '' : 's'} ago`
+  }, [statusIndicator.daysDiff])
+
+  // Memoize priority color calculation
+  const priorityColor = useMemo(() => getPriorityColor(action.priority), [action.priority])
+
+  // Memoize display date to avoid repeated calls to getDisplayDate
+  const displayDate = useMemo(() => getDisplayDate(action), [action])
 
   return (
-    <Card className={`border-l-4 ${statusIndicator.className} transition-all`}>
+    <Card
+      className={`border-l-4 ${statusIndicator.className} transition-all
+      ${statusIndicator.overdueLevel === 'future' ? 'bg-blue-50 hover:bg-blue-100' : ''}
+      ${statusIndicator.overdueLevel === 'orange' ? 'bg-orange-50 hover:bg-orange-100' : ''}
+      ${statusIndicator.overdueLevel === 'red' ? 'bg-red-50 hover:bg-red-100' : ''}
+      ${statusIndicator.overdueLevel === 'gray' ? 'bg-gray-50 hover:bg-gray-100' : ''}
+    `}
+    >
       <CardContent className="p-4">
         {/* Top Row: Contact (left), Badges (right) */}
         <div className="mb-2 flex items-start justify-between">
@@ -146,7 +178,7 @@ export default function ActionCard({
               <TooltipTrigger asChild>
                 <span className="cursor-help text-xs text-muted-foreground">{daysDiffText}</span>
               </TooltipTrigger>
-              <TooltipContent>{formatDateString(getDisplayDate(action))}</TooltipContent>
+              <TooltipContent>{formatDateString(displayDate)}</TooltipContent>
             </Tooltip>
             {action.status && (
               <Tooltip>
@@ -162,7 +194,7 @@ export default function ActionCard({
             {action.priority && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge className={`${getPriorityColor(action.priority)} cursor-help hover:bg-opacity-100`}>
+                  <Badge className={`${priorityColor} cursor-help hover:bg-opacity-100`}>
                     <AlertTriangle className="mr-1 inline h-3 w-3" />
                     {action.priority}
                   </Badge>
@@ -305,4 +337,6 @@ export default function ActionCard({
       </CardContent>
     </Card>
   )
-}
+})
+
+export default ActionCard
