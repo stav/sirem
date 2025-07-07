@@ -74,6 +74,7 @@ export function useActions() {
         priority: actionData.priority || null,
         duration: actionData.duration || null,
         outcome: actionData.outcome || null,
+        updated_at: new Date().toISOString(), // Always update the updated_at field
       }
 
       const { error } = await supabase.from('actions').update(updateData).eq('id', actionId)

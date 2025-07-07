@@ -146,7 +146,7 @@ export default function ActionCard({
               <TooltipTrigger asChild>
                 <span className="cursor-help text-xs text-muted-foreground">{daysDiffText}</span>
               </TooltipTrigger>
-              <TooltipContent>Relative time from action date to today</TooltipContent>
+              <TooltipContent>{formatDateString(getDisplayDate(action))}</TooltipContent>
             </Tooltip>
             {action.status && (
               <Tooltip>

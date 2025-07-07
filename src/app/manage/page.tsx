@@ -12,6 +12,7 @@ import { useActions } from '@/hooks/useActions'
 import type { Database } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 import { logger } from '@/lib/logger'
+import { useRouter } from 'next/navigation'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 type Action = Database['public']['Tables']['actions']['Row']
@@ -52,6 +53,7 @@ export default function ManagePage() {
     toggleActionComplete,
   } = useActions()
   const { toast } = useToast()
+  const router = useRouter()
 
   // UI state
   const [showContactForm, setShowContactForm] = useState(false)
@@ -360,6 +362,7 @@ export default function ManagePage() {
   const handleBackToAll = () => {
     setSingleContactView(false)
     setSelectedContact(null)
+    router.replace('/manage') // Clear the query string from the URL
   }
 
   const loading = contactsLoading || actionsLoading
