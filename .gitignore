@@ -39,7 +39,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 
-# supabase data dumps
+# supabase
+supabase/
 supabase-dump-*
 
 # Bundle analysis
