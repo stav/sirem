@@ -51,7 +51,12 @@ export default function ModalForm({
     >
       <Card className="flex max-h-[90vh] w-full max-w-md flex-col" ref={modalRef}>
         <CardHeader className="relative flex-shrink-0">
-          <Button variant="ghost" size="sm" className="absolute right-2 top-2 h-12 w-12 p-0" onClick={onCancel}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="absolute right-2 top-2 h-12 w-12 cursor-pointer p-0"
+            onClick={onCancel}
+          >
             <X className="h-8 w-8" />
           </Button>
           <CardTitle>{title}</CardTitle>
@@ -60,11 +65,13 @@ export default function ModalForm({
           <form onSubmit={onSubmit} className="space-y-4 pb-4">
             {editingInfo}
             {children}
-            <div className="flex space-x-2 pt-4">
-              <Button type="submit" className="flex-1" disabled={isLoading}>
-                {isLoading ? 'Saving...' : submitText}
-              </Button>
-            </div>
+            {submitText && (
+              <div className="flex space-x-2 pt-4">
+                <Button type="submit" className="flex-1 cursor-pointer" disabled={isLoading}>
+                  {isLoading ? 'Saving...' : submitText}
+                </Button>
+              </div>
+            )}
           </form>
         </CardContent>
       </Card>

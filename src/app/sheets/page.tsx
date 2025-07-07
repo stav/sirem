@@ -13,7 +13,15 @@ import { logger } from '@/lib/logger'
 ModuleRegistry.registerModules([AllCommunityModule])
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
-  address?: Database['public']['Tables']['addresses']['Row'][] | null
+  address?:
+    | {
+        address1: string | null
+        address2: string | null
+        city: string | null
+        state_code: string | null
+        postal_code: string | null
+      }[]
+    | null
 }
 
 export default function SheetsPage() {

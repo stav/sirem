@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Upload, FileText, AlertCircle, CheckCircle, Loader2 } from 'lucide-react'
-import { importIntegrityData } from '@/lib/integrity-import'
+import { Upload, FileText, AlertCircle, CheckCircle, Loader2, Activity } from 'lucide-react'
+import { importIntegrityData, importActivitiesData } from '@/lib/integrity-import'
 import Navigation from '@/components/Navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -17,22 +17,40 @@ interface IntegrityLeadPreview {
       tagLabel: string
     }
   }>
+  activities: Array<{
+    activitySubject: string
+    activityTypeName: string
+    activityNote: string | null
+  }>
 }
 
 export default function ImportPage() {
   const [file, setFile] = useState<File | null>(null)
   const [isImporting, setIsImporting] = useState(false)
+  const [importType, setImportType] = useState<'full' | 'activities'>('full')
   const [importResult, setImportResult] = useState<{
     success: boolean
     message: string
+    stats?: {
+      total: number
+      imported: number
+      skipped: number
+      errors: number
+    }
   } | null>(null)
   const [preview, setPreview] = useState<{
     totalLeads: number
+    totalActivities: number
     sampleLeads: Array<{
       firstName: string
       lastName: string
       status: string
       tags: string[]
+      activities: Array<{
+        subject: string
+        type: string
+        note: string | null
+      }>
     }>
   } | null>(null)
 
@@ -49,15 +67,30 @@ export default function ImportPage() {
       const data = JSON.parse(text)
 
       if (data.result && Array.isArray(data.result)) {
+        const totalActivities = data.result.reduce(
+          (sum: number, lead: { activities?: Array<{ activitySubject: string }> }) =>
+            sum + (lead.activities?.length || 0),
+          0
+        )
+
         const sampleLeads = data.result.slice(0, 5).map((lead: IntegrityLeadPreview) => ({
           firstName: lead.firstName,
           lastName: lead.lastName,
           status: lead.statusName,
           tags: lead.leadTags?.map((tag: { tag: { tagLabel: string } }) => tag.tag.tagLabel) || [],
+          activities:
+            lead.activities?.map(
+              (activity: { activitySubject: string; activityTypeName: string; activityNote: string | null }) => ({
+                subject: activity.activitySubject,
+                type: activity.activityTypeName,
+                note: activity.activityNote,
+              })
+            ) || [],
         }))
 
         setPreview({
           totalLeads: data.result.length,
+          totalActivities,
           sampleLeads,
         })
       }
@@ -75,7 +108,7 @@ export default function ImportPage() {
 
     try {
       const text = await file.text()
-      const result = await importIntegrityData(text)
+      const result = importType === 'activities' ? await importActivitiesData(text) : await importIntegrityData(text)
       setImportResult(result)
     } catch (error) {
       setImportResult({
@@ -96,7 +129,7 @@ export default function ImportPage() {
           <div className="mb-8">
             <h1 className="mb-2 text-3xl font-bold text-foreground">Import Integrity Data</h1>
             <p className="text-muted-foreground">
-              Upload your Integrity export file to import leads, contacts, reminders, and tags into your CRM.
+              Upload your Integrity export file to import leads, contacts, reminders, and activities into your CRM.
             </p>
           </div>
 
@@ -111,6 +144,33 @@ export default function ImportPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
+                  {/* Import Type Selection */}
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-foreground">Import Type:</label>
+                    <div className="flex space-x-4">
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          value="full"
+                          checked={importType === 'full'}
+                          onChange={(e) => setImportType(e.target.value as 'full' | 'activities')}
+                          className="text-primary"
+                        />
+                        <span className="text-sm">Full Import (Leads + Activities)</span>
+                      </label>
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          value="activities"
+                          checked={importType === 'activities'}
+                          onChange={(e) => setImportType(e.target.value as 'full' | 'activities')}
+                          className="text-primary"
+                        />
+                        <span className="text-sm">Activities Only</span>
+                      </label>
+                    </div>
+                  </div>
+
                   <div className="rounded-lg border-2 border-dashed border-muted-foreground/25 p-6 text-center">
                     <input
                       type="file"
@@ -141,8 +201,12 @@ export default function ImportPage() {
                           </>
                         ) : (
                           <>
-                            <Upload className="mr-2 h-4 w-4" />
-                            Import Data
+                            {importType === 'activities' ? (
+                              <Activity className="mr-2 h-4 w-4" />
+                            ) : (
+                              <Upload className="mr-2 h-4 w-4" />
+                            )}
+                            {importType === 'activities' ? 'Import Activities' : 'Import Data'}
                           </>
                         )}
                       </Button>
@@ -159,6 +223,14 @@ export default function ImportPage() {
                           <AlertDescription className={importResult.success ? 'text-green-800' : 'text-red-800'}>
                             {importResult.message}
                           </AlertDescription>
+                          {importResult.stats && (
+                            <div className="mt-2 text-xs text-green-700">
+                              <div>Total: {importResult.stats.total}</div>
+                              <div>Imported: {importResult.stats.imported}</div>
+                              <div>Skipped: {importResult.stats.skipped}</div>
+                              <div>Errors: {importResult.stats.errors}</div>
+                            </div>
+                          )}
                         </Alert>
                       )}
                     </div>
@@ -179,6 +251,9 @@ export default function ImportPage() {
                       <div className="text-sm font-medium text-foreground">
                         Total Leads: {preview.totalLeads.toLocaleString()}
                       </div>
+                      <div className="text-sm text-muted-foreground">
+                        Total Activities: {preview.totalActivities.toLocaleString()}
+                      </div>
                     </div>
 
                     <div>
@@ -193,52 +268,30 @@ export default function ImportPage() {
                             {lead.tags.length > 0 && (
                               <div className="mt-1 text-xs text-muted-foreground">Tags: {lead.tags.join(', ')}</div>
                             )}
+                            {lead.activities.length > 0 && (
+                              <div className="mt-1 text-xs text-muted-foreground">
+                                Activities: {lead.activities.length} (
+                                {lead.activities
+                                  .slice(0, 2)
+                                  .map((a) => a.subject)
+                                  .join(', ')}
+                                )
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="py-8 text-center text-muted-foreground">
+                  <div className="text-center text-muted-foreground">
                     <FileText className="mx-auto mb-4 h-12 w-12 opacity-50" />
-                    <p>Select a file to see preview</p>
+                    <p className="text-sm">Select a file to preview its contents</p>
                   </div>
                 )}
               </CardContent>
             </Card>
           </div>
-
-          {/* Instructions */}
-          <Card className="mt-8">
-            <CardHeader>
-              <CardTitle>Import Instructions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4 text-sm text-muted-foreground">
-                <div>
-                  <h4 className="mb-2 font-medium text-foreground">What will be imported:</h4>
-                  <ul className="ml-4 list-inside list-disc space-y-1">
-                    <li>Contact information (names, addresses, phones, emails)</li>
-                    <li>Medicare-specific data (Part A/B status, beneficiary ID, etc.)</li>
-                    <li>Reminders and tasks</li>
-                    <li>Tags and tag categories</li>
-                    <li>Lead statuses</li>
-                    <li>Notes and additional metadata</li>
-                  </ul>
-                </div>
-
-                <div>
-                  <h4 className="mb-2 font-medium text-foreground">Important notes:</h4>
-                  <ul className="ml-4 list-inside list-disc space-y-1">
-                    <li>Existing data with the same IDs will be updated</li>
-                    <li>The import process may take several minutes for large files</li>
-                    <li>Make sure your database schema is up to date before importing</li>
-                    <li>Backup your current data before running large imports</li>
-                  </ul>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
         </div>
       </div>
     </div>

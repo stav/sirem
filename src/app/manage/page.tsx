@@ -3,17 +3,19 @@
 import React, { useState, useEffect } from 'react'
 import Navigation from '@/components/Navigation'
 import ContactList from '@/components/ContactList'
-import ReminderList from '@/components/ReminderList'
+import ActionList from '@/components/ActionList'
+import ActionForm from '@/components/ActionForm'
+import ActionViewModal from '@/components/ActionViewModal'
 import ContactForm from '@/components/ContactForm'
-import ReminderForm from '@/components/ReminderForm'
 import { useContacts } from '@/hooks/useContacts'
-import { useReminders } from '@/hooks/useReminders'
+import { useActions } from '@/hooks/useActions'
 import type { Database } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 import { logger } from '@/lib/logger'
+import { useRouter } from 'next/navigation'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
-type Reminder = Database['public']['Tables']['reminders']['Row']
+type Action = Database['public']['Tables']['actions']['Row']
 
 interface ContactFormData {
   first_name: string
@@ -26,33 +28,40 @@ interface ContactFormData {
   medicare_beneficiary_id: string
 }
 
-interface ReminderFormData {
+interface ActionFormData {
   title: string
   description: string
-  reminder_date: string
-  priority: 'low' | 'medium' | 'high'
-  reminder_type: string
-  completed_date: string
+  tags: string
+  start_date: string | null
+  end_date: string | null
+  completed_date: string | null
+  status: string | null
+  priority: string | null
+  duration: number | null
+  outcome: string | null
 }
 
 export default function ManagePage() {
   // Custom hooks for data management
   const { contacts, loading: contactsLoading, createContact, updateContact, deleteContact } = useContacts()
   const {
-    reminders,
-    loading: remindersLoading,
-    createReminder,
-    updateReminder,
-    deleteReminder,
-    toggleReminderComplete,
-  } = useReminders()
+    actions,
+    loading: actionsLoading,
+    createAction,
+    updateAction,
+    deleteAction,
+    toggleActionComplete,
+  } = useActions()
   const { toast } = useToast()
+  const router = useRouter()
 
   // UI state
   const [showContactForm, setShowContactForm] = useState(false)
-  const [showReminderForm, setShowReminderForm] = useState(false)
+  const [showActionForm, setShowActionForm] = useState(false)
+  const [showActionViewModal, setShowActionViewModal] = useState(false)
+  const [viewingAction, setViewingAction] = useState<Action | null>(null)
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
-  const [editingReminder, setEditingReminder] = useState<Reminder | null>(null)
+  const [editingAction, setEditingAction] = useState<Action | null>(null)
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
   const [singleContactView, setSingleContactView] = useState(false)
   const [isSubmittingContact, setIsSubmittingContact] = useState(false)
@@ -69,34 +78,38 @@ export default function ManagePage() {
     medicare_beneficiary_id: '',
   })
 
-  const [reminderForm, setReminderForm] = useState<ReminderFormData>({
+  const [actionForm, setActionForm] = useState<ActionFormData>({
     title: '',
     description: '',
-    reminder_date: '',
-    priority: 'medium',
-    reminder_type: '',
-    completed_date: '',
+    tags: '',
+    start_date: null,
+    end_date: null,
+    completed_date: null,
+    status: null,
+    priority: null,
+    duration: null,
+    outcome: null,
   })
 
-  // Show/hide completed reminders
-  const [showCompletedReminders, setShowCompletedReminders] = useState(false)
+  // Show/hide completed actions
+  const [showCompletedActions, setShowCompletedActions] = useState(false)
 
-  // Handle URL parameters for direct reminder editing and contact selection
+  // Handle URL parameters for direct action editing and contact selection
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search)
-    const reminderId = urlParams.get('reminder')
+    const actionId = urlParams.get('action')
     const contactId = urlParams.get('contact')
 
-    if (reminderId && reminders.length > 0) {
-      const reminder = reminders.find((r) => r.id === reminderId)
-      if (reminder) {
-        // Find the contact for this reminder
-        const contact = contacts.find((c) => c.id === reminder.contact_id)
+    if (actionId && actions.length > 0) {
+      const action = actions.find((a) => a.id === actionId)
+      if (action) {
+        // Find the contact for this action
+        const contact = contacts.find((c) => c.id === action.contact_id)
         if (contact) {
           setSelectedContact(contact)
           setSingleContactView(true)
-          // Open the reminder for editing
-          handleEditReminder(reminder)
+          // Open the action for editing
+          handleEditAction(action)
         }
       }
     } else if (contactId && contacts.length > 0) {
@@ -106,7 +119,7 @@ export default function ManagePage() {
         setSingleContactView(true)
       }
     }
-  }, [reminders, contacts])
+  }, [actions, contacts])
 
   // Contact handlers
   const handleAddContact = () => {
@@ -186,6 +199,12 @@ export default function ManagePage() {
     const success = await deleteContact(contactId)
 
     if (success) {
+      // If the deleted contact was the selected contact, navigate back to full list
+      if (selectedContact && selectedContact.id === contactId) {
+        setSingleContactView(false)
+        setSelectedContact(null)
+      }
+
       toast({
         title: 'Contact deleted',
         description: `${contactName} was successfully deleted.`,
@@ -200,98 +219,111 @@ export default function ManagePage() {
     }
   }
 
-  // Reminder handlers
-  const handleAddReminder = () => {
+  // Action handlers
+  const handleAddAction = () => {
     if (!selectedContact) return
-    setEditingReminder(null)
-    setReminderForm({
+    setEditingAction(null)
+    setActionForm({
       title: '',
       description: '',
-      reminder_date: '',
+      tags: '',
+      start_date: null,
+      end_date: null,
+      completed_date: null,
+      status: 'planned',
       priority: 'medium',
-      reminder_type: '',
-      completed_date: '',
+      duration: null,
+      outcome: null,
     })
-    setShowReminderForm(true)
+    setShowActionForm(true)
   }
 
-  const handleEditReminder = (reminder: Reminder) => {
-    setEditingReminder(reminder)
-    setReminderForm({
-      title: reminder.title,
-      description: reminder.description || '',
-      reminder_date: reminder.reminder_date.split('T')[0],
-      priority: reminder.priority,
-      reminder_type: reminder.reminder_type || '',
-      completed_date: reminder.completed_date ? reminder.completed_date.split('T')[0] : '',
+  const handleEditAction = (action: Action) => {
+    setEditingAction(action)
+    setActionForm({
+      title: action.title,
+      description: action.description || '',
+      tags: action.tags || '',
+      start_date: action.start_date ? action.start_date.split('T')[0] : null,
+      end_date: action.end_date ? action.end_date.split('T')[0] : null,
+      completed_date: action.completed_date ? action.completed_date.split('T')[0] : null,
+      status: action.status,
+      priority: action.priority,
+      duration: action.duration,
+      outcome: action.outcome,
     })
-    setShowReminderForm(true)
+    setShowActionForm(true)
   }
 
-  const handleReminderSubmit = async (e: React.FormEvent) => {
+  const handleViewAction = (action: Action) => {
+    setViewingAction(action)
+    setShowActionViewModal(true)
+  }
+
+  const handleActionSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (editingReminder) {
-      // Update existing reminder - doesn't need selectedContact
-      const success = await updateReminder(editingReminder.id, reminderForm)
+    if (editingAction) {
+      // Update existing action - doesn't need selectedContact
+      const success = await updateAction(editingAction.id, actionForm)
 
       if (success) {
-        // Find the contact for this reminder
-        const contact = contacts.find((c) => c.id === editingReminder.contact_id)
+        // Find the contact for this action
+        const contact = contacts.find((c) => c.id === editingAction.contact_id)
         const contactName = contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
 
         toast({
-          title: 'Reminder updated',
-          description: `"${reminderForm.title}" for ${contactName} was successfully updated.`,
+          title: 'Action updated',
+          description: `"${actionForm.title}" for ${contactName} was successfully updated.`,
         })
-        logger.info(`Reminder updated: ${reminderForm.title} for ${contactName}`, 'reminder_update')
+        logger.info(`Action updated: ${actionForm.title} for ${contactName}`, 'action_update')
         resetForms()
       }
     } else {
-      // Create new reminder - needs selectedContact
+      // Create new action - needs selectedContact
       if (!selectedContact) return
 
-      const success = await createReminder(selectedContact.id, reminderForm)
+      const success = await createAction(selectedContact.id, actionForm)
 
       if (success) {
         toast({
-          title: 'Reminder created',
-          description: `"${reminderForm.title}" was successfully created.`,
+          title: 'Action created',
+          description: `"${actionForm.title}" was successfully created.`,
         })
-        logger.info(`Reminder created: ${reminderForm.title}`, 'reminder_create')
+        logger.info(`Action created: ${actionForm.title}`, 'action_create')
         resetForms()
       }
     }
   }
 
-  const handleDeleteReminder = async (reminderId: string) => {
-    if (!confirm('Are you sure you want to delete this reminder?')) return
-    const reminder = reminders.find((r) => r.id === reminderId)
-    const contact = reminder ? contacts.find((c) => c.id === reminder.contact_id) : undefined
-    await deleteReminder(reminderId)
-    if (reminder) {
+  const handleDeleteAction = async (actionId: string) => {
+    if (!confirm('Are you sure you want to delete this action?')) return
+    const action = actions.find((a) => a.id === actionId)
+    const contact = action ? contacts.find((c) => c.id === action.contact_id) : undefined
+    await deleteAction(actionId)
+    if (action) {
       const contactName = contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
       toast({
-        title: 'Reminder deleted',
-        description: `"${reminder.title}" for ${contactName} was deleted.`,
+        title: 'Action deleted',
+        description: `"${action.title}" for ${contactName} was deleted.`,
         variant: 'destructive',
       })
-      logger.info(`Reminder deleted: ${reminder.title} for ${contactName}`, 'reminder_delete')
+      logger.info(`Action deleted: ${action.title} for ${contactName}`, 'action_delete')
     }
   }
 
-  const handleToggleReminderComplete = async (reminder: Reminder) => {
-    const success = await toggleReminderComplete(reminder)
+  const handleToggleActionComplete = async (action: Action) => {
+    const success = await toggleActionComplete(action)
     if (success) {
-      const contact = contacts.find((c) => c.id === reminder.contact_id)
+      const contact = contacts.find((c) => c.id === action.contact_id)
       const contactName = contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
-      const action = reminder.is_complete ? 'marked as incomplete' : 'marked as complete'
+      const actionText = action.status === 'completed' ? 'marked as incomplete' : 'marked as complete'
 
       toast({
-        title: 'Reminder updated',
-        description: `"${reminder.title}" for ${contactName} was ${action}.`,
+        title: 'Action updated',
+        description: `"${action.title}" for ${contactName} was ${actionText}.`,
       })
-      logger.info(`Reminder ${action}: ${reminder.title} for ${contactName}`, 'reminder_toggle')
+      logger.info(`Action ${actionText}: ${action.title} for ${contactName}`, 'action_toggle')
     }
   }
 
@@ -307,26 +339,33 @@ export default function ManagePage() {
       status: 'New',
       medicare_beneficiary_id: '',
     })
-    setReminderForm({
+    setActionForm({
       title: '',
       description: '',
-      reminder_date: '',
-      priority: 'medium',
-      reminder_type: '',
-      completed_date: '',
+      tags: '',
+      start_date: null,
+      end_date: null,
+      completed_date: null,
+      status: null,
+      priority: null,
+      duration: null,
+      outcome: null,
     })
     setShowContactForm(false)
-    setShowReminderForm(false)
+    setShowActionForm(false)
+    setShowActionViewModal(false)
     setEditingContact(null)
-    setEditingReminder(null)
+    setEditingAction(null)
+    setViewingAction(null)
   }
 
   const handleBackToAll = () => {
     setSingleContactView(false)
     setSelectedContact(null)
+    router.replace('/manage') // Clear the query string from the URL
   }
 
-  const loading = contactsLoading || remindersLoading
+  const loading = contactsLoading || actionsLoading
 
   if (loading) {
     return (
@@ -369,17 +408,18 @@ export default function ManagePage() {
               onBackToAll={handleBackToAll}
             />
 
-            {/* Reminders Section */}
-            <ReminderList
-              reminders={reminders}
+            {/* Actions Section */}
+            <ActionList
+              actions={actions}
               contacts={contacts}
               selectedContact={selectedContact}
-              onAddReminder={handleAddReminder}
-              onToggleComplete={handleToggleReminderComplete}
-              onEditReminder={handleEditReminder}
-              onDeleteReminder={handleDeleteReminder}
-              showCompletedReminders={showCompletedReminders}
-              onToggleShowCompleted={() => setShowCompletedReminders((v) => !v)}
+              onAddAction={handleAddAction}
+              onToggleComplete={handleToggleActionComplete}
+              onEditAction={handleEditAction}
+              onViewAction={handleViewAction}
+              onDeleteAction={handleDeleteAction}
+              showCompletedActions={showCompletedActions}
+              onToggleShowCompleted={() => setShowCompletedActions((v) => !v)}
               onSelectContact={(contactId) => {
                 const contact = contacts.find((c) => c.id === contactId)
                 if (contact) {
@@ -401,14 +441,29 @@ export default function ManagePage() {
             isLoading={isSubmittingContact}
           />
 
-          {/* Reminder Form Modal */}
-          <ReminderForm
-            isOpen={showReminderForm}
-            editingReminder={editingReminder}
-            formData={reminderForm}
-            onFormDataChange={setReminderForm}
-            onSubmit={handleReminderSubmit}
-            onCancel={resetForms}
+          {/* Action Form Modal */}
+          <ActionForm
+            isOpen={showActionForm}
+            onClose={resetForms}
+            onSubmit={handleActionSubmit}
+            action={editingAction}
+            formData={actionForm}
+            setFormData={setActionForm}
+            isSubmitting={false}
+          />
+
+          {/* Action View Modal */}
+          <ActionViewModal
+            isOpen={showActionViewModal}
+            onClose={resetForms}
+            action={viewingAction}
+            contactName={
+              viewingAction
+                ? contacts.find((c) => c.id === viewingAction.contact_id)
+                  ? `${contacts.find((c) => c.id === viewingAction.contact_id)?.first_name} ${contacts.find((c) => c.id === viewingAction.contact_id)?.last_name}`
+                  : 'Unknown Contact'
+                : ''
+            }
           />
         </div>
       </div>
