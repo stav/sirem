@@ -14,7 +14,9 @@ import type { Database } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 import { logger } from '@/lib/logger'
 
-type Contact = Database['public']['Tables']['contacts']['Row']
+type Contact = Database['public']['Tables']['contacts']['Row'] & {
+  addresses?: Database['public']['Tables']['addresses']['Row'][]
+}
 type Action = Database['public']['Tables']['actions']['Row']
 
 interface ContactFormData {

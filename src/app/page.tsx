@@ -4,14 +4,16 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Users, Bell, CheckCircle, AlertTriangle, Plus, ArrowRight, Phone, Mail } from 'lucide-react'
+import { Users, Bell, CheckCircle, AlertTriangle, Plus, ArrowRight, Phone, Mail, MapPin } from 'lucide-react'
 import type { Database } from '@/lib/supabase'
 import Navigation from '@/components/Navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getStatusBadge } from '@/lib/contact-utils'
 
-type Contact = Database['public']['Tables']['contacts']['Row']
+type Contact = Database['public']['Tables']['contacts']['Row'] & {
+  addresses?: Database['public']['Tables']['addresses']['Row'][]
+}
 type Reminder = Database['public']['Tables']['reminders']['Row'] & {
   contact: {
     id: string
@@ -140,6 +142,14 @@ function renderStatusBadge(status: string | null) {
 
 // Helper function to render contact info with icons
 function renderContactInfo(contact: Contact) {
+  // Check if contact has a valid mailing address (address1 and city)
+  const hasValidAddress =
+    contact.addresses &&
+    contact.addresses.length > 0 &&
+    contact.addresses[0] &&
+    contact.addresses[0].address1 &&
+    contact.addresses[0].city
+
   return (
     <div className="flex items-center space-x-2">
       <span className="text-sm text-foreground">
@@ -148,6 +158,7 @@ function renderContactInfo(contact: Contact) {
       {renderStatusBadge(contact.status)}
       {contact.phone && <Phone className="h-3 w-3 text-muted-foreground" />}
       {contact.email && <Mail className="h-3 w-3 text-muted-foreground" />}
+      {hasValidAddress && <MapPin className="h-3 w-3 text-muted-foreground" />}
     </div>
   )
 }
@@ -201,7 +212,29 @@ export default function Home() {
   async function fetchData() {
     try {
       const [contactsResponse, remindersResponse] = await Promise.all([
-        supabase.from('contacts').select('*').order('created_at', { ascending: false }),
+        supabase
+          .from('contacts')
+          .select(
+            `
+            *,
+            addresses (
+              id,
+              address1,
+              address2,
+              city,
+              state_code,
+              postal_code,
+              county,
+              county_fips,
+              latitude,
+              longitude,
+              contact_id,
+              created_at,
+              updated_at
+            )
+          `
+          )
+          .order('created_at', { ascending: false }),
         supabase
           .from('reminders')
           .select(

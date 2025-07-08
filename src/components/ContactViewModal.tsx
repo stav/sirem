@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Label } from '@/components/ui/label'
 import ModalForm from '@/components/ui/modal-form'
 import { Badge } from '@/components/ui/badge'
@@ -15,11 +15,16 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  Plus,
+  Edit,
+  Trash2,
 } from 'lucide-react'
 import type { Database } from '@/lib/supabase'
 import { formatLocalDate, formatPhoneNumber, formatMBI, getStatusBadge } from '@/lib/contact-utils'
+import { supabase } from '@/lib/supabase'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
+type Address = Database['public']['Tables']['addresses']['Row']
 
 interface ContactViewModalProps {
   isOpen: boolean
@@ -73,6 +78,39 @@ function getRecordTypeDisplay(type: string | null) {
 }
 
 export default function ContactViewModal({ isOpen, onClose, contact }: ContactViewModalProps) {
+  const [addresses, setAddresses] = useState<Address[]>([])
+  const [addressesLoading, setAddressesLoading] = useState(false)
+
+  useEffect(() => {
+    if (contact && isOpen) {
+      fetchAddresses()
+    }
+  }, [contact, isOpen])
+
+  const fetchAddresses = async () => {
+    if (!contact) return
+
+    setAddressesLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('addresses')
+        .select('*')
+        .eq('contact_id', contact.id)
+        .order('created_at', { ascending: false })
+
+      if (error) {
+        console.error('Error fetching addresses:', error)
+        return
+      }
+
+      setAddresses(data || [])
+    } catch (error) {
+      console.error('Error fetching addresses:', error)
+    } finally {
+      setAddressesLoading(false)
+    }
+  }
+
   if (!contact) return null
 
   const statusDisplay = getStatusBadge(contact.status)
@@ -129,6 +167,49 @@ export default function ContactViewModal({ isOpen, onClose, contact }: ContactVi
               </div>
             )}
           </div>
+        </div>
+
+        {/* Addresses */}
+        <div className="space-y-3">
+          <Label className="text-sm font-medium text-muted-foreground">Addresses</Label>
+          {addressesLoading ? (
+            <div className="text-sm text-muted-foreground">Loading addresses...</div>
+          ) : addresses.length > 0 ? (
+            <div className="space-y-3">
+              {addresses.map((address) => (
+                <div key={address.id} className="rounded-lg border border-gray-200 p-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="mb-2 flex items-center space-x-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">Address</span>
+                      </div>
+                      <div className="space-y-1 text-sm">
+                        {address.address1 && <div>{address.address1}</div>}
+                        {address.address2 && <div>{address.address2}</div>}
+                        <div>{[address.city, address.state_code, address.postal_code].filter(Boolean).join(', ')}</div>
+                        {address.county && <div className="text-muted-foreground">{address.county}</div>}
+                      </div>
+                    </div>
+                    <div className="flex space-x-1">
+                      <button type="button" className="p-1 text-gray-400 hover:text-gray-600" title="Edit address">
+                        <Edit className="h-3 w-3" />
+                      </button>
+                      <button type="button" className="p-1 text-gray-400 hover:text-red-600" title="Delete address">
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">No addresses found</div>
+          )}
+          <button type="button" className="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800">
+            <Plus className="h-3 w-3" />
+            <span>Add Address</span>
+          </button>
         </div>
 
         {/* Personal Information */}

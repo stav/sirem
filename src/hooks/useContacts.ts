@@ -3,7 +3,9 @@ import { supabase } from '@/lib/supabase'
 import { logger } from '@/lib/logger'
 import type { Database } from '@/lib/supabase'
 
-type Contact = Database['public']['Tables']['contacts']['Row']
+type Contact = Database['public']['Tables']['contacts']['Row'] & {
+  addresses?: Database['public']['Tables']['addresses']['Row'][]
+}
 
 interface ContactForm {
   first_name: string
@@ -22,7 +24,29 @@ export function useContacts() {
 
   const fetchContacts = async () => {
     try {
-      const { data, error } = await supabase.from('contacts').select('*').order('created_at', { ascending: false })
+      const { data, error } = await supabase
+        .from('contacts')
+        .select(
+          `
+          *,
+          addresses (
+            id,
+            address1,
+            address2,
+            city,
+            state_code,
+            postal_code,
+            county,
+            county_fips,
+            latitude,
+            longitude,
+            contact_id,
+            created_at,
+            updated_at
+          )
+        `
+        )
+        .order('created_at', { ascending: false })
 
       if (error) {
         console.error('Error fetching contacts:', error)
