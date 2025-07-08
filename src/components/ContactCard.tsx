@@ -4,7 +4,14 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Database } from '@/lib/supabase'
-import { formatLocalDate, formatPhoneNumber, formatMBI, getStatusBadge } from '@/lib/contact-utils'
+import {
+  formatLocalDate,
+  formatPhoneNumber,
+  formatMBI,
+  getStatusBadge,
+  calculateAge,
+  getDaysPast65,
+} from '@/lib/contact-utils'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 
@@ -134,7 +141,14 @@ export default function ContactCard({
           {contact.birthdate && (
             <div className="flex items-center space-x-1">
               <span className="text-sm text-muted-foreground">🎂</span>
-              <span className="text-sm text-muted-foreground">{formatLocalDate(contact.birthdate)}</span>
+              <span className="text-sm text-muted-foreground">
+                {formatLocalDate(contact.birthdate)}
+                {(() => {
+                  const age = calculateAge(contact.birthdate)
+                  const daysPast65 = getDaysPast65(contact.birthdate)
+                  return age !== null ? ` (${age})${daysPast65 !== null ? ` ${daysPast65}` : ''}` : ''
+                })()}
+              </span>
             </div>
           )}
           {contact.medicare_beneficiary_id && (

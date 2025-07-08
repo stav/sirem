@@ -4,6 +4,80 @@ export function formatLocalDate(dateString: string) {
   return `${month}/${day}/${year}`
 }
 
+export function calculateAge(birthdate: string | null | undefined): number | null {
+  if (!birthdate) return null
+
+  const birthDate = new Date(birthdate)
+  const today = new Date()
+
+  let age = today.getFullYear() - birthDate.getFullYear()
+  const monthDiff = today.getMonth() - birthDate.getMonth()
+
+  if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+    age--
+  }
+
+  return age
+}
+
+export function getDaysPast65(birthdate: string | null | undefined): string | null {
+  if (!birthdate) return null
+
+  const birthDate = new Date(birthdate)
+  const today = new Date()
+
+  // Calculate 65th birthday
+  const sixtyFifthBirthday = new Date(birthDate)
+  sixtyFifthBirthday.setFullYear(birthDate.getFullYear() + 65)
+
+  // Calculate days difference (can be negative if not yet 65)
+  const timeDiff = today.getTime() - sixtyFifthBirthday.getTime()
+  const daysDiff = Math.floor(timeDiff / (1000 * 3600 * 24))
+
+  // If they haven't turned 65 yet, show negative days
+  if (daysDiff < 0) {
+    if (daysDiff >= -60) {
+      if (daysDiff === -1) return '-1d'
+      return `${daysDiff}d`
+    } else {
+      const monthsDiff = Math.floor(Math.abs(daysDiff) / 30)
+      if (monthsDiff >= 12) {
+        const yearsDiff = Math.floor(monthsDiff / 12)
+        const remainingMonths = monthsDiff % 12
+        if (remainingMonths === 0) {
+          return yearsDiff === 1 ? '-1y' : `-${yearsDiff}y`
+        } else {
+          return yearsDiff === 1 ? `-1y${remainingMonths}m` : `-${yearsDiff}y${remainingMonths}m`
+        }
+      } else {
+        return monthsDiff === 1 ? '-1m' : `-${monthsDiff}m`
+      }
+    }
+  }
+
+  // If they have turned 65
+  if (daysDiff === 0) return 'today'
+  if (daysDiff === 1) return '+1d'
+
+  // For periods longer than 60 days, show months and years
+  if (daysDiff > 60) {
+    const monthsDiff = Math.floor(daysDiff / 30)
+    if (monthsDiff >= 12) {
+      const yearsDiff = Math.floor(monthsDiff / 12)
+      const remainingMonths = monthsDiff % 12
+      if (remainingMonths === 0) {
+        return yearsDiff === 1 ? '+1y' : `+${yearsDiff}y`
+      } else {
+        return yearsDiff === 1 ? `+1y${remainingMonths}m` : `+${yearsDiff}y${remainingMonths}m`
+      }
+    } else {
+      return monthsDiff === 1 ? '+1m' : `+${monthsDiff}m`
+    }
+  }
+
+  return `+${daysDiff}d`
+}
+
 export function formatPhoneNumber(phone: string | null | undefined): string {
   if (!phone) return ''
   const cleaned = ('' + phone).replace(/\D/g, '')
