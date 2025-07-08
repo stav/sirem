@@ -11,9 +11,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getStatusBadge } from '@/lib/contact-utils'
 
-type Contact = Database['public']['Tables']['contacts']['Row'] & {
-  addresses?: Database['public']['Tables']['addresses']['Row'][]
+// Optimized type for dashboard contacts
+type DashboardContact = Pick<
+  Database['public']['Tables']['contacts']['Row'],
+  'id' | 'first_name' | 'last_name' | 'birthdate' | 'phone' | 'email' | 'status' | 'created_at' | 'updated_at'
+> & {
+  addresses?: Pick<Database['public']['Tables']['addresses']['Row'], 'address1' | 'city' | 'address_type'>[]
 }
+
 type Reminder = Database['public']['Tables']['reminders']['Row'] & {
   contact: {
     id: string
@@ -22,7 +27,7 @@ type Reminder = Database['public']['Tables']['reminders']['Row'] & {
   } | null
 }
 
-interface ContactWithBirthday extends Contact {
+interface ContactWithBirthday extends DashboardContact {
   daysUntilBirthday: number
 }
 
@@ -52,7 +57,7 @@ function getDaysUntilBirthday(birthdate: string): number {
   return diffDays
 }
 
-function getUpcomingBirthdays(contacts: Contact[], daysRange: number = 100): ContactWithBirthday[] {
+function getUpcomingBirthdays(contacts: DashboardContact[], daysRange: number = 100): ContactWithBirthday[] {
   return contacts
     .filter((contact) => contact.birthdate)
     .map((contact) => ({
@@ -63,7 +68,7 @@ function getUpcomingBirthdays(contacts: Contact[], daysRange: number = 100): Con
     .sort((a, b) => a.daysUntilBirthday - b.daysUntilBirthday)
 }
 
-function getPastBirthdays(contacts: Contact[], daysRange: number = 60): ContactWithBirthday[] {
+function getPastBirthdays(contacts: DashboardContact[], daysRange: number = 60): ContactWithBirthday[] {
   return contacts
     .filter((contact) => contact.birthdate)
     .map((contact) => {
@@ -102,7 +107,7 @@ function getDaysUntil65(birthdate: string): number {
   return diffDays
 }
 
-function getUpcoming65(contacts: Contact[], daysRange: number = 150): ContactWithBirthday[] {
+function getUpcoming65(contacts: DashboardContact[], daysRange: number = 150): ContactWithBirthday[] {
   return contacts
     .filter((contact) => contact.birthdate)
     .map((contact) => ({
@@ -113,7 +118,7 @@ function getUpcoming65(contacts: Contact[], daysRange: number = 150): ContactWit
     .sort((a, b) => a.daysUntilBirthday - b.daysUntilBirthday)
 }
 
-function getRecent65(contacts: Contact[], daysRange: number = 60): ContactWithBirthday[] {
+function getRecent65(contacts: DashboardContact[], daysRange: number = 60): ContactWithBirthday[] {
   return contacts
     .filter((contact) => contact.birthdate)
     .map((contact) => ({
@@ -141,7 +146,7 @@ function renderStatusBadge(status: string | null) {
 }
 
 // Helper function to render contact info with icons
-function renderContactInfo(contact: Contact) {
+function renderContactInfo(contact: DashboardContact) {
   // Check if contact has a valid mailing address (address1 and city)
   const hasValidAddress =
     contact.addresses &&
@@ -201,7 +206,7 @@ function renderContactRow(
 
 export default function Home() {
   const router = useRouter()
-  const [contacts, setContacts] = useState<Contact[]>([])
+  const [contacts, setContacts] = useState<DashboardContact[]>([])
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -212,25 +217,24 @@ export default function Home() {
   async function fetchData() {
     try {
       const [contactsResponse, remindersResponse] = await Promise.all([
+        // Optimized contacts query - only fetch essential fields for dashboard
         supabase
           .from('contacts')
           .select(
             `
-            *,
-            addresses (
-              id,
+            id,
+            first_name,
+            last_name,
+            birthdate,
+            phone,
+            email,
+            status,
+            created_at,
+            updated_at,
+            addresses!inner(
               address1,
-              address2,
               city,
-              state_code,
-              postal_code,
-              county,
-              county_fips,
-              latitude,
-              longitude,
-              contact_id,
-              created_at,
-              updated_at
+              address_type
             )
           `
           )

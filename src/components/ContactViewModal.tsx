@@ -15,9 +15,6 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
-  Plus,
-  Edit,
-  Trash2,
 } from 'lucide-react'
 import type { Database } from '@/lib/supabase'
 import { formatLocalDate, formatPhoneNumber, formatMBI, getStatusBadge } from '@/lib/contact-utils'
@@ -176,40 +173,49 @@ export default function ContactViewModal({ isOpen, onClose, contact }: ContactVi
             <div className="text-sm text-muted-foreground">Loading addresses...</div>
           ) : addresses.length > 0 ? (
             <div className="space-y-3">
-              {addresses.map((address) => (
-                <div key={address.id} className="rounded-lg border border-gray-200 p-3">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="mb-2 flex items-center space-x-2">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Address</span>
-                      </div>
-                      <div className="space-y-1 text-sm">
-                        {address.address1 && <div>{address.address1}</div>}
-                        {address.address2 && <div>{address.address2}</div>}
-                        <div>{[address.city, address.state_code, address.postal_code].filter(Boolean).join(', ')}</div>
-                        {address.county && <div className="text-muted-foreground">{address.county}</div>}
-                      </div>
+              {addresses.map((address) => {
+                // Map of field labels
+                const fieldLabels: Record<string, string> = {
+                  address1: 'Address Line 1',
+                  address2: 'Address Line 2',
+                  city: 'City',
+                  state_code: 'State',
+                  postal_code: 'ZIP Code',
+                  county: 'County',
+                  county_fips: 'County FIPS',
+                  latitude: 'Latitude',
+                  longitude: 'Longitude',
+                  address_type: 'Type',
+                }
+                // Fields to exclude
+                const excludeFields = ['id', 'contact_id', 'created_at', 'updated_at']
+                return (
+                  <div key={address.id} className="rounded-lg border border-gray-200 p-3">
+                    <div className="mb-2 flex items-center space-x-2">
+                      <MapPin className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">Address</span>
+                      {address.address_type && (
+                        <Badge variant="outline" className="text-xs">
+                          {address.address_type}
+                        </Badge>
+                      )}
                     </div>
-                    <div className="flex space-x-1">
-                      <button type="button" className="p-1 text-gray-400 hover:text-gray-600" title="Edit address">
-                        <Edit className="h-3 w-3" />
-                      </button>
-                      <button type="button" className="p-1 text-gray-400 hover:text-red-600" title="Delete address">
-                        <Trash2 className="h-3 w-3" />
-                      </button>
+                    <div className="space-y-1 text-sm">
+                      {Object.entries(address)
+                        .filter(([key, value]) => !excludeFields.includes(key) && value && key !== 'address_type')
+                        .map(([key, value]) => (
+                          <div key={key}>
+                            <span className="font-medium">{fieldLabels[key] || key}:</span> {value}
+                          </div>
+                        ))}
                     </div>
                   </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           ) : (
             <div className="text-sm text-muted-foreground">No addresses found</div>
           )}
-          <button type="button" className="flex items-center space-x-2 text-sm text-blue-600 hover:text-blue-800">
-            <Plus className="h-3 w-3" />
-            <span>Add Address</span>
-          </button>
         </div>
 
         {/* Personal Information */}
