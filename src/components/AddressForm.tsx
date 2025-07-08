@@ -34,6 +34,7 @@ const addressTypes = [
   { value: 'shipping', label: 'Shipping' },
   { value: 'work', label: 'Work' },
   { value: 'home', label: 'Home' },
+  { value: 'tps', label: 'TPS (True People Search)' },
   { value: 'other', label: 'Other' },
 ]
 
@@ -133,13 +134,12 @@ export default function AddressForm({
 
         {/* Address Line 1 */}
         <div>
-          <Label htmlFor="address1">Address Line 1 *</Label>
+          <Label htmlFor="address1">Address Line 1</Label>
           <Input
             id="address1"
             value={formData.address1}
             onChange={(e) => setFormData({ ...formData, address1: e.target.value })}
             placeholder="123 Main St"
-            required
           />
         </div>
 
@@ -156,13 +156,12 @@ export default function AddressForm({
 
         {/* City */}
         <div>
-          <Label htmlFor="city">City *</Label>
+          <Label htmlFor="city">City</Label>
           <Input
             id="city"
             value={formData.city}
             onChange={(e) => setFormData({ ...formData, city: e.target.value })}
             placeholder="New York"
-            required
           />
         </div>
 

@@ -223,8 +223,9 @@ export default function ContactViewModal({ isOpen, onClose, contact, onEdit }: C
                       {Object.entries(address)
                         .filter(([key, value]) => !excludeFields.includes(key) && value && key !== 'address_type')
                         .map(([key, value]) => (
-                          <div key={key}>
-                            <span className="font-medium">{fieldLabels[key] || key}:</span> {value}
+                          <div key={key} className="flex justify-between border-b border-gray-100 pb-1 last:border-b-0">
+                            <span className="font-medium">{value}</span>
+                            <span className="text-muted-foreground">{fieldLabels[key] || key}</span>
                           </div>
                         ))}
                     </div>

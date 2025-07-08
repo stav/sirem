@@ -45,7 +45,14 @@ interface ActionFormData {
 
 export default function ManagePage() {
   // Custom hooks for data management
-  const { contacts, loading: contactsLoading, createContact, updateContact, deleteContact } = useContacts()
+  const {
+    contacts,
+    loading: contactsLoading,
+    fetchContacts,
+    createContact,
+    updateContact,
+    deleteContact,
+  } = useContacts()
   const {
     actions,
     loading: actionsLoading,
@@ -471,6 +478,7 @@ export default function ManagePage() {
             onSubmit={handleContactSubmit}
             onCancel={closeContactForm}
             isLoading={isSubmittingContact}
+            onRefreshContact={fetchContacts}
           />
 
           {/* Action Form Modal */}

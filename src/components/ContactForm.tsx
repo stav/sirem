@@ -9,6 +9,7 @@ import ModalForm from '@/components/ui/modal-form'
 import AddressForm from '@/components/AddressForm'
 import { useAddresses } from '@/hooks/useAddresses'
 import { MapPin, Plus, Edit, Trash2 } from 'lucide-react'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Database } from '@/lib/supabase'
 import { supabase } from '@/lib/supabase'
 
@@ -44,6 +45,7 @@ interface ContactFormProps {
   onSubmit: (e: React.FormEvent) => void
   onCancel: () => void
   isLoading?: boolean
+  onRefreshContact?: () => void
 }
 
 export default function ContactForm({
@@ -54,6 +56,7 @@ export default function ContactForm({
   onSubmit,
   onCancel,
   isLoading = false,
+  onRefreshContact,
 }: ContactFormProps) {
   // Address management state
   const [addresses, setAddresses] = useState<Address[]>([])
@@ -144,6 +147,10 @@ export default function ContactForm({
       try {
         await deleteAddress(addressId)
         await fetchAddresses()
+        // Refresh the main contacts list to update the contact card
+        if (onRefreshContact) {
+          onRefreshContact()
+        }
       } catch (error) {
         console.error('Error deleting address:', error)
       }
@@ -163,6 +170,10 @@ export default function ContactForm({
       }
       setAddressFormOpen(false)
       await fetchAddresses()
+      // Refresh the main contacts list to update the contact card
+      if (onRefreshContact) {
+        onRefreshContact()
+      }
     } catch (error) {
       console.error('Error saving address:', error)
     } finally {
@@ -300,16 +311,20 @@ export default function ContactForm({
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium text-muted-foreground">Addresses</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAddAddress}
-                  className="flex items-center space-x-1"
-                >
-                  <Plus className="h-3 w-3" />
-                  <span>Add Address</span>
-                </Button>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={handleAddAddress}
+                      className="flex cursor-pointer items-center"
+                    >
+                      <Plus className="h-3 w-3" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>Add address</TooltipContent>
+                </Tooltip>
               </div>
 
               {addresses.length > 0 ? (
@@ -332,7 +347,7 @@ export default function ContactForm({
                             variant="ghost"
                             size="sm"
                             onClick={() => handleEditAddress(address)}
-                            className="h-6 w-6 p-0"
+                            className="h-6 w-6 cursor-pointer p-0"
                           >
                             <Edit className="h-3 w-3" />
                           </Button>
@@ -341,7 +356,7 @@ export default function ContactForm({
                             variant="ghost"
                             size="sm"
                             onClick={() => handleDeleteAddress(address.id)}
-                            className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
+                            className="h-6 w-6 cursor-pointer p-0 text-red-600 hover:text-red-800"
                           >
                             <Trash2 className="h-3 w-3" />
                           </Button>
@@ -351,8 +366,12 @@ export default function ContactForm({
                         {Object.entries(address)
                           .filter(([key, value]) => !excludeFields.includes(key) && value && key !== 'address_type')
                           .map(([key, value]) => (
-                            <div key={key}>
-                              <span className="font-medium">{fieldLabels[key] || key}:</span> {value}
+                            <div
+                              key={key}
+                              className="flex justify-between border-b border-gray-100 pb-1 last:border-b-0"
+                            >
+                              <span className="font-medium">{value}</span>
+                              <span className="text-muted-foreground">{fieldLabels[key] || key}</span>
                             </div>
                           ))}
                       </div>
