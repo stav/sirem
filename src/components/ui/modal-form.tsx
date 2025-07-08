@@ -5,13 +5,14 @@ import { X } from 'lucide-react'
 
 interface ModalFormProps {
   isOpen: boolean
-  title: string
+  title: string | ReactNode
   children: ReactNode
   onSubmit: (e: React.FormEvent) => void
   onCancel: () => void
   isLoading?: boolean
   submitText?: string
   editingInfo?: ReactNode
+  zIndex?: number
 }
 
 export default function ModalForm({
@@ -23,6 +24,7 @@ export default function ModalForm({
   isLoading = false,
   submitText = 'Save',
   editingInfo,
+  zIndex = 50,
 }: ModalFormProps) {
   const modalRef = useRef<HTMLDivElement>(null)
 
@@ -42,7 +44,8 @@ export default function ModalForm({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      className={`fixed inset-0 flex items-center justify-center bg-black/50 p-4`}
+      style={{ zIndex }}
       onClick={(e) => {
         if (e.target === e.currentTarget) {
           onCancel()

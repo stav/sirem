@@ -108,6 +108,7 @@ export default function AddressForm({
       onSubmit={onSubmit}
       title={isEditing ? 'Edit Address' : 'Add Address'}
       isLoading={isSubmitting}
+      zIndex={70}
     >
       <div className="space-y-4">
         {/* Address Type */}

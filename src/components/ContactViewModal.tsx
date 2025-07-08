@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { Label } from '@/components/ui/label'
 import ModalForm from '@/components/ui/modal-form'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   Calendar,
   Clock,
@@ -15,6 +16,7 @@ import {
   CheckCircle,
   XCircle,
   AlertCircle,
+  Edit,
 } from 'lucide-react'
 import type { Database } from '@/lib/supabase'
 import { formatLocalDate, formatPhoneNumber, formatMBI, getStatusBadge } from '@/lib/contact-utils'
@@ -27,6 +29,7 @@ interface ContactViewModalProps {
   isOpen: boolean
   onClose: () => void
   contact: Contact | null
+  onEdit?: (contact: Contact) => void
 }
 
 // Helper to format YYYY-MM-DD as YYYY-MM-DD (strip time if present)
@@ -74,7 +77,7 @@ function getRecordTypeDisplay(type: string | null) {
   }
 }
 
-export default function ContactViewModal({ isOpen, onClose, contact }: ContactViewModalProps) {
+export default function ContactViewModal({ isOpen, onClose, contact, onEdit }: ContactViewModalProps) {
   const [addresses, setAddresses] = useState<Address[]>([])
   const [addressesLoading, setAddressesLoading] = useState(false)
 
@@ -127,7 +130,23 @@ export default function ContactViewModal({ isOpen, onClose, contact }: ContactVi
         e.preventDefault()
         onClose()
       }}
-      title="View Contact"
+      title={
+        <div className="flex flex-row items-center gap-2">
+          <span>View Contact</span>
+          {onEdit && contact && (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => onEdit(contact)}
+              className="flex items-center space-x-1"
+            >
+              <Edit className="h-3 w-3" />
+              <span>Edit</span>
+            </Button>
+          )}
+        </div>
+      }
       submitText=""
       isLoading={false}
     >
