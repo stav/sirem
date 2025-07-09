@@ -4,7 +4,14 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Database } from '@/lib/supabase'
-import { formatLocalDate, formatPhoneNumber, getStatusBadge, calculateAge, getDaysPast65 } from '@/lib/contact-utils'
+import {
+  formatLocalDate,
+  formatPhoneNumber,
+  getStatusBadge,
+  calculateAge,
+  getDaysPast65,
+  getT65Days,
+} from '@/lib/contact-utils'
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
   addresses?: Database['public']['Tables']['addresses']['Row'][]
@@ -123,17 +130,30 @@ export default function ContactCard({
         <div className="flex items-center space-x-4">
           {/* Birthdate display */}
           {contact.birthdate && (
-            <div className="flex items-center space-x-1">
-              <span className="text-sm text-muted-foreground">🎂</span>
-              <span className="text-sm text-muted-foreground">
-                {formatLocalDate(contact.birthdate)}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="flex items-center space-x-1">
+                  <span className="text-sm text-muted-foreground">🎂</span>
+                  <span className="text-sm text-muted-foreground">
+                    {formatLocalDate(contact.birthdate)}
+                    {(() => {
+                      const age = calculateAge(contact.birthdate)
+                      const daysPast65 = getDaysPast65(contact.birthdate)
+                      return age !== null ? ` (${age})${daysPast65 !== null ? ` ${daysPast65}` : ''}` : ''
+                    })()}
+                  </span>
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>
                 {(() => {
-                  const age = calculateAge(contact.birthdate)
-                  const daysPast65 = getDaysPast65(contact.birthdate)
-                  return age !== null ? ` (${age})${daysPast65 !== null ? ` ${daysPast65}` : ''}` : ''
+                  const t65Days = getT65Days(contact.birthdate)
+                  if (t65Days === null) return 'T65 days: N/A'
+                  if (t65Days > 0) return `${t65Days} days past 65th birthday`
+                  if (t65Days === 0) return 'Turning 65 today, happy birthday!'
+                  return `${Math.abs(t65Days)} days until 65th birthday`
                 })()}
-              </span>
-            </div>
+              </TooltipContent>
+            </Tooltip>
           )}
           {/* Phone number display */}
           {contact.phone && (

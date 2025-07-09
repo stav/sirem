@@ -3,6 +3,7 @@ import { Plus, ArrowLeft, ChevronDown, ChevronUp, X } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import ContactCard from './ContactCard'
+import { getT65Days } from '@/lib/contact-utils'
 import type { Database } from '@/lib/supabase'
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
@@ -50,15 +51,39 @@ export default function ContactList({
     localStorage.setItem('contactListCollapsed', JSON.stringify(newState))
   }
 
-  // Filter contacts by first or last name (case-insensitive)
-  const filteredContacts =
-    filter.trim() === ''
-      ? contacts
-      : contacts.filter(
-          (c) =>
-            c.first_name?.toLowerCase().includes(filter.toLowerCase()) ||
-            c.last_name?.toLowerCase().includes(filter.toLowerCase())
-        )
+  // Smart filter: if input is numeric, filter by T65 days; otherwise filter by name
+  const filteredContacts = (() => {
+    if (filter.trim() === '') {
+      return contacts
+    }
+
+    const trimmedFilter = filter.trim()
+    const numericValue = parseInt(trimmedFilter, 10)
+
+    // Check if the input is a valid positive integer
+    if (!isNaN(numericValue) && numericValue > 0 && numericValue.toString() === trimmedFilter) {
+      // T65 days filtering: show contacts between 0 and -numericValue T65 days
+      return contacts
+        .filter((contact) => {
+          const t65Days = getT65Days(contact.birthdate)
+          if (t65Days === null) return false
+          return t65Days <= 0 && t65Days >= -numericValue
+        })
+        .sort((a, b) => {
+          // Sort by T65 days descending (people turning 65 soonest first)
+          const aT65Days = getT65Days(a.birthdate) || -Infinity
+          const bT65Days = getT65Days(b.birthdate) || -Infinity
+          return bT65Days - aT65Days
+        })
+    } else {
+      // Name-based filtering (existing logic)
+      return contacts.filter(
+        (c) =>
+          c.first_name?.toLowerCase().includes(trimmedFilter.toLowerCase()) ||
+          c.last_name?.toLowerCase().includes(trimmedFilter.toLowerCase())
+      )
+    }
+  })()
 
   return (
     <Card>
@@ -83,9 +108,9 @@ export default function ContactList({
                     type="text"
                     value={filter}
                     onChange={(e) => setFilter(e.target.value)}
-                    placeholder="Filter contacts..."
+                    placeholder="Filter by name or T65 days (e.g., 180)..."
                     className="rounded border px-2 py-1 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    style={{ minWidth: 0, width: '160px' }}
+                    style={{ minWidth: 0, width: '200px' }}
                   />
                   {filter && (
                     <button
@@ -96,9 +121,24 @@ export default function ContactList({
                     </button>
                   )}
                 </div>
-                <span className="text-xs text-muted-foreground">
-                  {filteredContacts.length}/{contacts.length}
-                </span>
+                <div className="flex items-center space-x-2">
+                  <span className="text-xs text-muted-foreground">
+                    {filteredContacts.length}/{contacts.length}
+                  </span>
+                  {filter && (
+                    <span className="text-xs text-blue-600">
+                      {(() => {
+                        const trimmedFilter = filter.trim()
+                        const numericValue = parseInt(trimmedFilter, 10)
+                        if (!isNaN(numericValue) && numericValue > 0 && numericValue.toString() === trimmedFilter) {
+                          return `T65: 0 to -${numericValue} days`
+                        } else {
+                          return 'Name filter'
+                        }
+                      })()}
+                    </span>
+                  )}
+                </div>
               </div>
             )}
           </div>

@@ -149,7 +149,7 @@ export default function ContactForm({
         await fetchAddresses()
         // Refresh the main contacts list to update the contact card
         if (onRefreshContact) {
-          onRefreshContact()
+          await onRefreshContact()
         }
       } catch (error) {
         console.error('Error deleting address:', error)
@@ -172,7 +172,7 @@ export default function ContactForm({
       await fetchAddresses()
       // Refresh the main contacts list to update the contact card
       if (onRefreshContact) {
-        onRefreshContact()
+        await onRefreshContact()
       }
     } catch (error) {
       console.error('Error saving address:', error)

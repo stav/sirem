@@ -78,6 +78,29 @@ export function getDaysPast65(birthdate: string | null | undefined): string | nu
   return `+${daysDiff}d`
 }
 
+/**
+ * Returns the raw number of days past 65th birthday (T65 days)
+ * Positive number = days past 65th birthday
+ * Negative number = days until 65th birthday
+ * Returns null if no birthdate
+ */
+export function getT65Days(birthdate: string | null | undefined): number | null {
+  if (!birthdate) return null
+
+  const birthDate = new Date(birthdate)
+  const today = new Date()
+
+  // Calculate 65th birthday
+  const sixtyFifthBirthday = new Date(birthDate)
+  sixtyFifthBirthday.setFullYear(birthDate.getFullYear() + 65)
+
+  // Calculate days difference (can be negative if not yet 65)
+  const timeDiff = today.getTime() - sixtyFifthBirthday.getTime()
+  const daysDiff = Math.floor(timeDiff / (1000 * 3600 * 24))
+
+  return daysDiff
+}
+
 export function formatPhoneNumber(phone: string | null | undefined): string {
   if (!phone) return ''
   const cleaned = ('' + phone).replace(/\D/g, '')

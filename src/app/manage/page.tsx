@@ -53,6 +53,16 @@ export default function ManagePage() {
     updateContact,
     deleteContact,
   } = useContacts()
+
+  // Update selectedContact when contacts list changes
+  useEffect(() => {
+    if (selectedContact && contacts.length > 0) {
+      const updatedContact = contacts.find((c) => c.id === selectedContact.id)
+      if (updatedContact) {
+        setSelectedContact(updatedContact)
+      }
+    }
+  }, [contacts])
   const {
     actions,
     loading: actionsLoading,
