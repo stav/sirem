@@ -8,6 +8,12 @@ import type { Database } from '@/lib/supabase'
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
   addresses?: Database['public']['Tables']['addresses']['Row'][]
+  contact_tags?: {
+    tags: {
+      id: string
+      label: string
+    }
+  }[]
 }
 
 interface ContactListProps {
@@ -51,38 +57,76 @@ export default function ContactList({
     localStorage.setItem('contactListCollapsed', JSON.stringify(newState))
   }
 
-  // Smart filter: if input is numeric, filter by T65 days; otherwise filter by name
+  // Enhanced multi-filter: parse space-separated terms with different behaviors
   const filteredContacts = (() => {
     if (filter.trim() === '') {
       return contacts
     }
 
-    const trimmedFilter = filter.trim()
-    const numericValue = parseInt(trimmedFilter, 10)
+    // Parse filter terms separated by spaces
+    const terms = filter.trim().split(/\s+/)
+    const matchingContactIds = new Set<string>()
 
-    // Check if the input is a valid positive integer
-    if (!isNaN(numericValue) && numericValue > 0 && numericValue.toString() === trimmedFilter) {
-      // T65 days filtering: show contacts between 0 and -numericValue T65 days
-      return contacts
-        .filter((contact) => {
-          const t65Days = getT65Days(contact.birthdate)
-          if (t65Days === null) return false
-          return t65Days <= 0 && t65Days >= -numericValue
-        })
-        .sort((a, b) => {
-          // Sort by T65 days descending (people turning 65 soonest first)
-          const aT65Days = getT65Days(a.birthdate) || -Infinity
-          const bT65Days = getT65Days(b.birthdate) || -Infinity
-          return bT65Days - aT65Days
-        })
-    } else {
-      // Name-based filtering (existing logic)
-      return contacts.filter(
-        (c) =>
-          c.first_name?.toLowerCase().includes(trimmedFilter.toLowerCase()) ||
-          c.last_name?.toLowerCase().includes(trimmedFilter.toLowerCase())
-      )
+    terms.forEach((term) => {
+      const trimmedTerm = term.trim()
+      if (!trimmedTerm) return
+
+      // Check filter type and apply appropriate logic
+      if (trimmedTerm.startsWith('t:')) {
+        // Tag filtering: t:tagname
+        const tagQuery = trimmedTerm.substring(2).toLowerCase()
+        if (tagQuery) {
+          contacts.forEach((contact) => {
+            const contactTags = contact.contact_tags?.map((ct) => ct.tags.label.toLowerCase()) || []
+            if (contactTags.some((tag) => tag.includes(tagQuery))) {
+              matchingContactIds.add(contact.id)
+            }
+          })
+        }
+      } else {
+        const numericValue = parseInt(trimmedTerm, 10)
+        if (!isNaN(numericValue) && numericValue > 0 && numericValue.toString() === trimmedTerm) {
+          // T65 days filtering: numeric values
+          contacts.forEach((contact) => {
+            const t65Days = getT65Days(contact.birthdate)
+            if (t65Days !== null && t65Days <= 0 && t65Days >= -numericValue) {
+              matchingContactIds.add(contact.id)
+            }
+          })
+        } else {
+          // Name filtering: alphabetic terms
+          const lowerTerm = trimmedTerm.toLowerCase()
+          contacts.forEach((contact) => {
+            if (
+              contact.first_name?.toLowerCase().includes(lowerTerm) ||
+              contact.last_name?.toLowerCase().includes(lowerTerm)
+            ) {
+              matchingContactIds.add(contact.id)
+            }
+          })
+        }
+      }
+    })
+
+    // Filter contacts that match any of the terms (OR logic)
+    const filtered = contacts.filter((contact) => matchingContactIds.has(contact.id))
+
+    // Apply T65 sorting whenever we have any T65 filters
+    const hasT65Filter = terms.some((term) => {
+      const numericValue = parseInt(term.trim(), 10)
+      return !isNaN(numericValue) && numericValue > 0 && numericValue.toString() === term.trim()
+    })
+
+    if (hasT65Filter) {
+      return filtered.sort((a, b) => {
+        // Sort by T65 days closest to zero first (newest/most recent 65th birthdays)
+        const aT65Days = getT65Days(a.birthdate) || Infinity
+        const bT65Days = getT65Days(b.birthdate) || Infinity
+        return Math.abs(aT65Days) - Math.abs(bT65Days)
+      })
     }
+
+    return filtered
   })()
 
   return (
@@ -108,9 +152,9 @@ export default function ContactList({
                     type="text"
                     value={filter}
                     onChange={(e) => setFilter(e.target.value)}
-                    placeholder="Filter by name or T65 days (e.g., 180)..."
+                    placeholder="Multi-filter: name, T65 days, t:tag (e.g., john 180 t:n2m)..."
                     className="rounded border px-2 py-1 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    style={{ minWidth: 0, width: '200px' }}
+                    style={{ minWidth: 0, width: '280px' }}
                   />
                   {filter && (
                     <button
@@ -128,13 +172,32 @@ export default function ContactList({
                   {filter && (
                     <span className="text-xs text-blue-600">
                       {(() => {
-                        const trimmedFilter = filter.trim()
-                        const numericValue = parseInt(trimmedFilter, 10)
-                        if (!isNaN(numericValue) && numericValue > 0 && numericValue.toString() === trimmedFilter) {
-                          return `T65: 0 to -${numericValue} days`
-                        } else {
-                          return 'Name filter'
-                        }
+                        const terms = filter.trim().split(/\s+/)
+                        const filterTypes = []
+
+                        let hasT65 = false
+                        let hasName = false
+                        let hasTag = false
+
+                        terms.forEach((term) => {
+                          const trimmedTerm = term.trim()
+                          if (trimmedTerm.startsWith('t:')) {
+                            hasTag = true
+                          } else {
+                            const numericValue = parseInt(trimmedTerm, 10)
+                            if (!isNaN(numericValue) && numericValue > 0 && numericValue.toString() === trimmedTerm) {
+                              hasT65 = true
+                            } else {
+                              hasName = true
+                            }
+                          }
+                        })
+
+                        if (hasT65) filterTypes.push('T65')
+                        if (hasName) filterTypes.push('Name')
+                        if (hasTag) filterTypes.push('Tag')
+
+                        return filterTypes.join(' + ') + ' filter'
                       })()}
                     </span>
                   )}

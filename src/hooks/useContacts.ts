@@ -5,6 +5,12 @@ import type { Database } from '@/lib/supabase'
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
   addresses?: Database['public']['Tables']['addresses']['Row'][]
+  contact_tags?: {
+    tags: {
+      id: string
+      label: string
+    }
+  }[]
 }
 
 interface ContactForm {
@@ -44,6 +50,12 @@ export function useContacts() {
             address_type,
             created_at,
             updated_at
+          ),
+          contact_tags (
+            tags (
+              id,
+              label
+            )
           )
         `
         )
