@@ -5,7 +5,9 @@ import { Button } from '@/components/ui/button'
 import ContactCard from './ContactCard'
 import type { Database } from '@/lib/supabase'
 
-type Contact = Database['public']['Tables']['contacts']['Row']
+type Contact = Database['public']['Tables']['contacts']['Row'] & {
+  addresses?: Database['public']['Tables']['addresses']['Row'][]
+}
 
 interface ContactListProps {
   contacts: Contact[]

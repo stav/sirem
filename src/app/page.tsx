@@ -4,14 +4,21 @@ import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
-import { Users, Bell, CheckCircle, AlertTriangle, Plus, ArrowRight, Phone, Mail } from 'lucide-react'
+import { Users, Bell, CheckCircle, AlertTriangle, Plus, ArrowRight, Phone, Mail, MapPin } from 'lucide-react'
 import type { Database } from '@/lib/supabase'
 import Navigation from '@/components/Navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getStatusBadge } from '@/lib/contact-utils'
 
-type Contact = Database['public']['Tables']['contacts']['Row']
+// Optimized type for dashboard contacts
+type DashboardContact = Pick<
+  Database['public']['Tables']['contacts']['Row'],
+  'id' | 'first_name' | 'last_name' | 'birthdate' | 'phone' | 'email' | 'status' | 'created_at' | 'updated_at'
+> & {
+  addresses?: Pick<Database['public']['Tables']['addresses']['Row'], 'address1' | 'city' | 'address_type'>[]
+}
+
 type Reminder = Database['public']['Tables']['reminders']['Row'] & {
   contact: {
     id: string
@@ -20,7 +27,7 @@ type Reminder = Database['public']['Tables']['reminders']['Row'] & {
   } | null
 }
 
-interface ContactWithBirthday extends Contact {
+interface ContactWithBirthday extends DashboardContact {
   daysUntilBirthday: number
 }
 
@@ -50,7 +57,7 @@ function getDaysUntilBirthday(birthdate: string): number {
   return diffDays
 }
 
-function getUpcomingBirthdays(contacts: Contact[], daysRange: number = 100): ContactWithBirthday[] {
+function getUpcomingBirthdays(contacts: DashboardContact[], daysRange: number = 100): ContactWithBirthday[] {
   return contacts
     .filter((contact) => contact.birthdate)
     .map((contact) => ({
@@ -61,7 +68,7 @@ function getUpcomingBirthdays(contacts: Contact[], daysRange: number = 100): Con
     .sort((a, b) => a.daysUntilBirthday - b.daysUntilBirthday)
 }
 
-function getPastBirthdays(contacts: Contact[], daysRange: number = 60): ContactWithBirthday[] {
+function getPastBirthdays(contacts: DashboardContact[], daysRange: number = 60): ContactWithBirthday[] {
   return contacts
     .filter((contact) => contact.birthdate)
     .map((contact) => {
@@ -100,7 +107,7 @@ function getDaysUntil65(birthdate: string): number {
   return diffDays
 }
 
-function getUpcoming65(contacts: Contact[], daysRange: number = 150): ContactWithBirthday[] {
+function getUpcoming65(contacts: DashboardContact[], daysRange: number = 150): ContactWithBirthday[] {
   return contacts
     .filter((contact) => contact.birthdate)
     .map((contact) => ({
@@ -111,7 +118,7 @@ function getUpcoming65(contacts: Contact[], daysRange: number = 150): ContactWit
     .sort((a, b) => a.daysUntilBirthday - b.daysUntilBirthday)
 }
 
-function getRecent65(contacts: Contact[], daysRange: number = 60): ContactWithBirthday[] {
+function getRecent65(contacts: DashboardContact[], daysRange: number = 60): ContactWithBirthday[] {
   return contacts
     .filter((contact) => contact.birthdate)
     .map((contact) => ({
@@ -139,7 +146,15 @@ function renderStatusBadge(status: string | null) {
 }
 
 // Helper function to render contact info with icons
-function renderContactInfo(contact: Contact) {
+function renderContactInfo(contact: DashboardContact) {
+  // Check if contact has a valid mailing address (address1 and city)
+  const hasValidAddress =
+    contact.addresses &&
+    contact.addresses.length > 0 &&
+    contact.addresses[0] &&
+    contact.addresses[0].address1 &&
+    contact.addresses[0].city
+
   return (
     <div className="flex items-center space-x-2">
       <span className="text-sm text-foreground">
@@ -148,6 +163,7 @@ function renderContactInfo(contact: Contact) {
       {renderStatusBadge(contact.status)}
       {contact.phone && <Phone className="h-3 w-3 text-muted-foreground" />}
       {contact.email && <Mail className="h-3 w-3 text-muted-foreground" />}
+      {hasValidAddress && <MapPin className="h-3 w-3 text-muted-foreground" />}
     </div>
   )
 }
@@ -190,7 +206,7 @@ function renderContactRow(
 
 export default function Home() {
   const router = useRouter()
-  const [contacts, setContacts] = useState<Contact[]>([])
+  const [contacts, setContacts] = useState<DashboardContact[]>([])
   const [reminders, setReminders] = useState<Reminder[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -201,7 +217,28 @@ export default function Home() {
   async function fetchData() {
     try {
       const [contactsResponse, remindersResponse] = await Promise.all([
-        supabase.from('contacts').select('*').order('created_at', { ascending: false }),
+        // Optimized contacts query - only fetch essential fields for dashboard
+        supabase
+          .from('contacts')
+          .select(
+            `
+            id,
+            first_name,
+            last_name,
+            birthdate,
+            phone,
+            email,
+            status,
+            created_at,
+            updated_at,
+            addresses!inner(
+              address1,
+              city,
+              address_type
+            )
+          `
+          )
+          .order('created_at', { ascending: false }),
         supabase
           .from('reminders')
           .select(

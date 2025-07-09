@@ -14,7 +14,9 @@ import type { Database } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 import { logger } from '@/lib/logger'
 
-type Contact = Database['public']['Tables']['contacts']['Row']
+type Contact = Database['public']['Tables']['contacts']['Row'] & {
+  addresses?: Database['public']['Tables']['addresses']['Row'][]
+}
 type Action = Database['public']['Tables']['actions']['Row']
 
 interface ContactFormData {
@@ -43,7 +45,14 @@ interface ActionFormData {
 
 export default function ManagePage() {
   // Custom hooks for data management
-  const { contacts, loading: contactsLoading, createContact, updateContact, deleteContact } = useContacts()
+  const {
+    contacts,
+    loading: contactsLoading,
+    fetchContacts,
+    createContact,
+    updateContact,
+    deleteContact,
+  } = useContacts()
   const {
     actions,
     loading: actionsLoading,
@@ -174,11 +183,19 @@ export default function ManagePage() {
           })
         }
 
+        // Update viewingContact if we're editing the contact being viewed
+        if (editingContact && viewingContact && editingContact.id === viewingContact.id) {
+          setViewingContact({
+            ...viewingContact,
+            ...contactForm,
+          })
+        }
+
         toast({
           title: `Contact ${action}`,
           description: `${contactName} was successfully ${action}.`,
         })
-        resetForms()
+        closeContactForm()
       } else {
         toast({
           title: 'Error',
@@ -283,7 +300,7 @@ export default function ManagePage() {
           description: `"${actionForm.title}" for ${contactName} was successfully updated.`,
         })
         logger.info(`Action updated: ${actionForm.title} for ${contactName}`, 'action_update')
-        resetForms()
+        closeActionForm()
       }
     } else {
       // Create new action - needs selectedContact
@@ -297,7 +314,7 @@ export default function ManagePage() {
           description: `"${actionForm.title}" was successfully created.`,
         })
         logger.info(`Action created: ${actionForm.title}`, 'action_create')
-        resetForms()
+        closeActionForm()
       }
     }
   }
@@ -333,8 +350,10 @@ export default function ManagePage() {
     }
   }
 
-  // Utility functions
-  const resetForms = () => {
+  // Individual modal close handlers
+  const closeContactForm = () => {
+    setShowContactForm(false)
+    setEditingContact(null)
     setContactForm({
       first_name: '',
       last_name: '',
@@ -345,6 +364,11 @@ export default function ManagePage() {
       status: 'New',
       medicare_beneficiary_id: '',
     })
+  }
+
+  const closeActionForm = () => {
+    setShowActionForm(false)
+    setEditingAction(null)
     setActionForm({
       title: '',
       description: '',
@@ -357,13 +381,15 @@ export default function ManagePage() {
       duration: null,
       outcome: null,
     })
-    setShowContactForm(false)
-    setShowActionForm(false)
+  }
+
+  const closeActionViewModal = () => {
     setShowActionViewModal(false)
-    setShowContactViewModal(false)
-    setEditingContact(null)
-    setEditingAction(null)
     setViewingAction(null)
+  }
+
+  const closeContactViewModal = () => {
+    setShowContactViewModal(false)
     setViewingContact(null)
   }
 
@@ -450,14 +476,15 @@ export default function ManagePage() {
             formData={contactForm}
             onFormDataChange={setContactForm}
             onSubmit={handleContactSubmit}
-            onCancel={resetForms}
+            onCancel={closeContactForm}
             isLoading={isSubmittingContact}
+            onRefreshContact={fetchContacts}
           />
 
           {/* Action Form Modal */}
           <ActionForm
             isOpen={showActionForm}
-            onClose={resetForms}
+            onClose={closeActionForm}
             onSubmit={handleActionSubmit}
             action={editingAction}
             formData={actionForm}
@@ -468,7 +495,7 @@ export default function ManagePage() {
           {/* Action View Modal */}
           <ActionViewModal
             isOpen={showActionViewModal}
-            onClose={resetForms}
+            onClose={closeActionViewModal}
             action={viewingAction}
             contactName={
               viewingAction
@@ -480,7 +507,15 @@ export default function ManagePage() {
           />
 
           {/* Contact View Modal */}
-          <ContactViewModal isOpen={showContactViewModal} onClose={resetForms} contact={viewingContact} />
+          <ContactViewModal
+            isOpen={showContactViewModal}
+            onClose={closeContactViewModal}
+            contact={viewingContact}
+            onEdit={(contact) => {
+              // Keep view modal open and open edit modal on top
+              handleEditContact(contact)
+            }}
+          />
         </div>
       </div>
     </div>

@@ -4,16 +4,11 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Database } from '@/lib/supabase'
-import {
-  formatLocalDate,
-  formatPhoneNumber,
-  formatMBI,
-  getStatusBadge,
-  calculateAge,
-  getDaysPast65,
-} from '@/lib/contact-utils'
+import { formatLocalDate, formatPhoneNumber, getStatusBadge, calculateAge, getDaysPast65 } from '@/lib/contact-utils'
 
-type Contact = Database['public']['Tables']['contacts']['Row']
+type Contact = Database['public']['Tables']['contacts']['Row'] & {
+  addresses?: Database['public']['Tables']['addresses']['Row'][]
+}
 
 interface ContactCardProps {
   contact: Contact
@@ -126,18 +121,7 @@ export default function ContactCard({
       {/* Main Content */}
       <div>
         <div className="flex items-center space-x-4">
-          {contact.phone && (
-            <div className="flex items-center space-x-1">
-              <span className="text-sm text-muted-foreground">📞</span>
-              <span className="text-sm text-muted-foreground">{formatPhoneNumber(contact.phone)}</span>
-            </div>
-          )}
-          {contact.email && (
-            <div className="flex items-center space-x-1">
-              <span className="text-sm text-muted-foreground">✉️</span>
-              <span className="text-sm text-muted-foreground">{contact.email}</span>
-            </div>
-          )}
+          {/* Birthdate display */}
           {contact.birthdate && (
             <div className="flex items-center space-x-1">
               <span className="text-sm text-muted-foreground">🎂</span>
@@ -151,13 +135,40 @@ export default function ContactCard({
               </span>
             </div>
           )}
-          {contact.medicare_beneficiary_id && (
+          {/* Phone number display */}
+          {contact.phone && (
             <div className="flex items-center space-x-1">
-              <span className="text-sm text-muted-foreground">🏥</span>
-              <span className="text-sm text-muted-foreground">MBI: {formatMBI(contact.medicare_beneficiary_id)}</span>
+              <span className="text-sm text-muted-foreground">📞</span>
+              <span className="text-sm text-muted-foreground">{formatPhoneNumber(contact.phone)}</span>
             </div>
           )}
+          {/* Email display */}
+          {contact.email && (
+            <div className="flex items-center space-x-1">
+              <span className="text-sm text-muted-foreground">✉️</span>
+              <span className="text-sm text-muted-foreground">{contact.email}</span>
+            </div>
+          )}
+          {/* Address display */}
+          {(() => {
+            const address = contact.addresses?.[0]
+            if (!address) return null
+
+            const parts = []
+            if (address.address1) parts.push(address.address1)
+            if (address.city) parts.push(address.city)
+
+            if (parts.length === 0) return null
+
+            return (
+              <div className="flex items-center space-x-1">
+                <span className="text-sm text-muted-foreground">📍</span>
+                <span className="text-sm text-muted-foreground">{parts.join(', ')}</span>
+              </div>
+            )
+          })()}
         </div>
+        {/* Notes display */}
         {contact.notes && <p className="mt-2 text-sm text-muted-foreground">{contact.notes}</p>}
       </div>
     </div>
