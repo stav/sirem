@@ -17,6 +17,7 @@ import {
   XCircle,
   AlertCircle,
   Edit,
+  Tag,
 } from 'lucide-react'
 import type { Database } from '@/lib/supabase'
 import { formatLocalDate, formatPhoneNumber, formatMBI, getStatusBadge } from '@/lib/contact-utils'
@@ -24,6 +25,30 @@ import { supabase } from '@/lib/supabase'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 type Address = Database['public']['Tables']['addresses']['Row']
+type TagWithCategory = {
+  id: string
+  label: string
+  category_id: string
+  tag_categories: {
+    id: string
+    name: string
+    color: string | null
+  }
+}
+
+type ContactTagQueryResult = {
+  tag_id: string
+  tags: {
+    id: string
+    label: string
+    category_id: string
+    tag_categories: {
+      id: string
+      name: string
+      color: string | null
+    }
+  }
+}
 
 interface ContactViewModalProps {
   isOpen: boolean
@@ -80,10 +105,13 @@ function getRecordTypeDisplay(type: string | null) {
 export default function ContactViewModal({ isOpen, onClose, contact, onEdit }: ContactViewModalProps) {
   const [addresses, setAddresses] = useState<Address[]>([])
   const [addressesLoading, setAddressesLoading] = useState(false)
+  const [tags, setTags] = useState<TagWithCategory[]>([])
+  const [tagsLoading, setTagsLoading] = useState(false)
 
   useEffect(() => {
     if (contact && isOpen) {
       fetchAddresses()
+      fetchTags()
     }
   }, [contact, isOpen])
 
@@ -108,6 +136,52 @@ export default function ContactViewModal({ isOpen, onClose, contact, onEdit }: C
       console.error('Error fetching addresses:', error)
     } finally {
       setAddressesLoading(false)
+    }
+  }
+
+  const fetchTags = async () => {
+    if (!contact) return
+
+    setTagsLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('contact_tags')
+        .select(
+          `
+          tag_id,
+          tags!inner(
+            id,
+            label,
+            category_id,
+            tag_categories!inner(
+              id,
+              name,
+              color
+            )
+          )
+        `
+        )
+        .eq('contact_id', contact.id)
+
+      if (error) {
+        console.error('Error fetching tags:', error)
+        return
+      }
+
+      // Transform the data to flatten the structure
+      const transformedTags =
+        (data as ContactTagQueryResult[])?.map((item) => ({
+          id: item.tags.id,
+          label: item.tags.label,
+          category_id: item.tags.category_id,
+          tag_categories: item.tags.tag_categories,
+        })) || []
+
+      setTags(transformedTags)
+    } catch (error) {
+      console.error('Error fetching tags:', error)
+    } finally {
+      setTagsLoading(false)
     }
   }
 
@@ -162,6 +236,35 @@ export default function ContactViewModal({ isOpen, onClose, contact, onEdit }: C
                 .join(' ')}
             </p>
           </div>
+        </div>
+
+        {/* Tags */}
+        <div className="space-y-3">
+          <Label className="text-sm font-medium text-muted-foreground">Tags</Label>
+          {tagsLoading ? (
+            <div className="text-sm text-muted-foreground">Loading tags...</div>
+          ) : tags.length > 0 ? (
+            <div className="flex flex-wrap gap-2">
+              {tags.map((tag) => (
+                <Badge
+                  key={tag.id}
+                  variant="outline"
+                  className="text-xs"
+                  style={{
+                    borderColor: tag.tag_categories.color || '#A9A9A9',
+                    color: tag.tag_categories.color || '#A9A9A9',
+                    backgroundColor: `${tag.tag_categories.color || '#A9A9A9'}10`,
+                  }}
+                >
+                  <Tag className="mr-1 h-3 w-3" />
+                  {tag.label}
+                  <span className="ml-1 text-xs opacity-60">({tag.tag_categories.name})</span>
+                </Badge>
+              ))}
+            </div>
+          ) : (
+            <div className="text-sm text-muted-foreground">No tags assigned</div>
+          )}
         </div>
 
         {/* Contact Information */}

@@ -1,8 +1,8 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Upload, FileText, AlertCircle, CheckCircle, Loader2, Activity } from 'lucide-react'
-import { importIntegrityData, importActivitiesData } from '@/lib/integrity-import'
+import { Upload, FileText, AlertCircle, CheckCircle, Loader2, Activity, Tag } from 'lucide-react'
+import { importIntegrityData, importActivitiesData, importTagsData } from '@/lib/integrity-import'
 import Navigation from '@/components/Navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -27,7 +27,7 @@ interface IntegrityLeadPreview {
 export default function ImportPage() {
   const [file, setFile] = useState<File | null>(null)
   const [isImporting, setIsImporting] = useState(false)
-  const [importType, setImportType] = useState<'full' | 'activities'>('full')
+  const [importType, setImportType] = useState<'full' | 'activities' | 'tags'>('full')
   const [importResult, setImportResult] = useState<{
     success: boolean
     message: string
@@ -41,6 +41,7 @@ export default function ImportPage() {
   const [preview, setPreview] = useState<{
     totalLeads: number
     totalActivities: number
+    totalTags: number
     sampleLeads: Array<{
       firstName: string
       lastName: string
@@ -73,6 +74,12 @@ export default function ImportPage() {
           0
         )
 
+        const totalTags = data.result.reduce(
+          (sum: number, lead: { leadTags?: Array<{ tag: { tagLabel: string } }> }) =>
+            sum + (lead.leadTags?.length || 0),
+          0
+        )
+
         const sampleLeads = data.result.slice(0, 5).map((lead: IntegrityLeadPreview) => ({
           firstName: lead.firstName,
           lastName: lead.lastName,
@@ -91,6 +98,7 @@ export default function ImportPage() {
         setPreview({
           totalLeads: data.result.length,
           totalActivities,
+          totalTags,
           sampleLeads,
         })
       }
@@ -108,7 +116,14 @@ export default function ImportPage() {
 
     try {
       const text = await file.text()
-      const result = importType === 'activities' ? await importActivitiesData(text) : await importIntegrityData(text)
+      let result
+      if (importType === 'activities') {
+        result = await importActivitiesData(text)
+      } else if (importType === 'tags') {
+        result = await importTagsData(text)
+      } else {
+        result = await importIntegrityData(text)
+      }
       setImportResult(result)
     } catch (error) {
       setImportResult({
@@ -147,13 +162,13 @@ export default function ImportPage() {
                   {/* Import Type Selection */}
                   <div className="space-y-2">
                     <label className="text-sm font-medium text-foreground">Import Type:</label>
-                    <div className="flex space-x-4">
+                    <div className="flex flex-col space-y-2">
                       <label className="flex items-center space-x-2">
                         <input
                           type="radio"
                           value="full"
                           checked={importType === 'full'}
-                          onChange={(e) => setImportType(e.target.value as 'full' | 'activities')}
+                          onChange={(e) => setImportType(e.target.value as 'full' | 'activities' | 'tags')}
                           className="text-primary"
                         />
                         <span className="text-sm">Full Import (Leads + Activities)</span>
@@ -163,10 +178,20 @@ export default function ImportPage() {
                           type="radio"
                           value="activities"
                           checked={importType === 'activities'}
-                          onChange={(e) => setImportType(e.target.value as 'full' | 'activities')}
+                          onChange={(e) => setImportType(e.target.value as 'full' | 'activities' | 'tags')}
                           className="text-primary"
                         />
                         <span className="text-sm">Activities Only</span>
+                      </label>
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          value="tags"
+                          checked={importType === 'tags'}
+                          onChange={(e) => setImportType(e.target.value as 'full' | 'activities' | 'tags')}
+                          className="text-primary"
+                        />
+                        <span className="text-sm">Tags Only</span>
                       </label>
                     </div>
                   </div>
@@ -203,10 +228,16 @@ export default function ImportPage() {
                           <>
                             {importType === 'activities' ? (
                               <Activity className="mr-2 h-4 w-4" />
+                            ) : importType === 'tags' ? (
+                              <Tag className="mr-2 h-4 w-4" />
                             ) : (
                               <Upload className="mr-2 h-4 w-4" />
                             )}
-                            {importType === 'activities' ? 'Import Activities' : 'Import Data'}
+                            {importType === 'activities'
+                              ? 'Import Activities'
+                              : importType === 'tags'
+                                ? 'Import Tags'
+                                : 'Import Data'}
                           </>
                         )}
                       </Button>
@@ -253,6 +284,9 @@ export default function ImportPage() {
                       </div>
                       <div className="text-sm text-muted-foreground">
                         Total Activities: {preview.totalActivities.toLocaleString()}
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Total Tags: {preview.totalTags.toLocaleString()}
                       </div>
                     </div>
 

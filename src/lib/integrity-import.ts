@@ -500,6 +500,208 @@ export async function importActivitiesData(jsonData: string) {
   }
 }
 
+// Utility function to import tags for existing contacts
+export async function importTagsData(jsonData: string) {
+  try {
+    const data: IntegrityData = JSON.parse(jsonData)
+    console.log(`Starting tags import for ${data.result.length} contacts...`)
+
+    let totalTags = 0
+    let importedTags = 0
+    let skippedTags = 0
+    let errors = 0
+
+    // First, set up lookup data for tags and categories
+    const tagCategoryMap = new Map<number, string>()
+    const tagMap = new Map<number, string>()
+
+    // Collect all unique tag categories and tags
+    const tagCategories = new Set<{ id: number; name: string; color: string }>()
+    const tags = new Set<{ id: number; label: string; categoryId: number }>()
+
+    for (const lead of data.result) {
+      totalTags += lead.leadTags.length
+
+      // Collect tags and categories
+      for (const leadTag of lead.leadTags) {
+        const category = leadTag.tag.tagCategory
+        tagCategories.add({
+          id: category.tagCategoryId,
+          name: category.tagCategoryName,
+          color: category.tagCategoryColor,
+        })
+
+        tags.add({
+          id: leadTag.tag.tagId,
+          label: leadTag.tag.tagLabel,
+          categoryId: category.tagCategoryId,
+        })
+      }
+    }
+
+    // Insert tag categories using upsert
+    for (const category of tagCategories) {
+      const { data: categoryData, error } = await supabase
+        .from('tag_categories')
+        .upsert(
+          {
+            name: category.name,
+            color: category.color,
+          },
+          { onConflict: 'name' }
+        )
+        .select()
+        .single()
+
+      if (error) {
+        console.error(`Failed to insert tag category ${category.name}:`, error)
+        errors++
+      } else if (categoryData) {
+        tagCategoryMap.set(category.id, categoryData.id)
+      }
+    }
+
+    // Insert tags - check if exists first, then insert if needed
+    for (const tag of tags) {
+      const categoryId = tagCategoryMap.get(tag.categoryId)
+      if (categoryId) {
+        // First check if tag already exists
+        const { data: existingTag } = await supabase
+          .from('tags')
+          .select('id')
+          .eq('label', tag.label)
+          .eq('category_id', categoryId)
+          .single()
+
+        if (existingTag) {
+          // Tag already exists, just map it
+          tagMap.set(tag.id, existingTag.id)
+        } else {
+          // Tag doesn't exist, insert it
+          const { data: newTag, error } = await supabase
+            .from('tags')
+            .insert({
+              label: tag.label,
+              category_id: categoryId,
+            })
+            .select()
+            .single()
+
+          if (error) {
+            console.error(`Failed to insert tag ${tag.label}:`, error)
+            errors++
+          } else if (newTag) {
+            tagMap.set(tag.id, newTag.id)
+          }
+        }
+      }
+    }
+
+    // Now import tags for each contact
+    for (const lead of data.result) {
+      // Find the contact by phone number or email
+      let contactId: string | null = null
+
+      // Try to find by phone number first
+      if (lead.phones.length > 0) {
+        const phoneNumbers = lead.phones.map((p) => p.leadPhone)
+        const { data: contactByPhone } = await supabase
+          .from('contacts')
+          .select('id')
+          .or(phoneNumbers.map((phone) => `phone.eq.${phone}`).join(','))
+          .single()
+
+        if (contactByPhone) {
+          contactId = contactByPhone.id
+        }
+      }
+
+      // If not found by phone, try by email
+      if (!contactId && lead.emails.length > 0) {
+        const emailAddresses = lead.emails.map((e) => e.leadEmail)
+        const { data: contactByEmail } = await supabase
+          .from('contacts')
+          .select('id')
+          .or(emailAddresses.map((email) => `email.eq.${email}`).join(','))
+          .single()
+
+        if (contactByEmail) {
+          contactId = contactByEmail.id
+        }
+      }
+
+      // If still not found, try by name (less reliable)
+      if (!contactId) {
+        const { data: contactByName } = await supabase
+          .from('contacts')
+          .select('id')
+          .eq('first_name', lead.firstName)
+          .eq('last_name', lead.lastName)
+          .single()
+
+        if (contactByName) {
+          contactId = contactByName.id
+        }
+      }
+
+      if (!contactId) {
+        console.warn(`No matching contact found for ${lead.firstName} ${lead.lastName}`)
+        skippedTags += lead.leadTags.length
+        continue
+      }
+
+      // Import tags for this contact
+      for (const leadTag of lead.leadTags) {
+        try {
+          const tagId = tagMap.get(leadTag.tag.tagId)
+          if (tagId) {
+            const { error } = await supabase.from('contact_tags').upsert(
+              {
+                contact_id: contactId,
+                tag_id: tagId,
+                metadata: leadTag.metadata as import('./supabase-types').Json,
+                interaction_url: leadTag.interactionUrl,
+                interaction_url_label: leadTag.interactionUrlLabel,
+              },
+              { onConflict: 'contact_id,tag_id' }
+            )
+
+            if (error) {
+              console.error(`Failed to import tag ${leadTag.tag.tagLabel} for contact ${contactId}:`, error)
+              errors++
+            } else {
+              importedTags++
+            }
+          } else {
+            console.warn(`Tag ID not found for tag ${leadTag.tag.tagLabel}`)
+            skippedTags++
+          }
+        } catch (error) {
+          console.error(`Error importing tag ${leadTag.tag.tagLabel}:`, error)
+          errors++
+        }
+      }
+    }
+
+    const message = `Tags import completed: ${importedTags} imported, ${skippedTags} skipped (no contact match or tag ID), ${errors} errors out of ${totalTags} total tags.`
+    console.log(message)
+
+    return {
+      success: errors === 0,
+      message,
+      stats: {
+        total: totalTags,
+        imported: importedTags,
+        skipped: skippedTags,
+        errors,
+      },
+    }
+  } catch (error) {
+    console.error('Tags import failed:', error)
+    return { success: false, message: `Tags import failed: ${error}` }
+  }
+}
+
 // Utility function to import Integrity data
 export async function importIntegrityData(jsonData: string) {
   try {
