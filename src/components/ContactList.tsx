@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, ArrowLeft, ChevronDown, ChevronUp, X } from 'lucide-react'
+import { Plus, ArrowLeft, ChevronDown, ChevronUp, X, List } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import ContactCard from './ContactCard'
-import { getT65Days } from '@/lib/contact-utils'
+import { getT65Days, formatLocalDate, calculateAge, getDaysPast65 } from '@/lib/contact-utils'
 import type { Database } from '@/lib/supabase'
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
@@ -41,6 +42,7 @@ export default function ContactList({
 }: ContactListProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [filter, setFilter] = useState('')
+  const [showListModal, setShowListModal] = useState(false)
 
   // Load collapsed state from localStorage on component mount
   useEffect(() => {
@@ -129,118 +131,239 @@ export default function ContactList({
     return filtered
   })()
 
+  // Format contacts for printing/copying
+  const formatContactsForPrint = () => {
+    return filteredContacts
+      .map((contact) => {
+        const fullName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim()
+        const status = contact.status ? ` (${contact.status.toLowerCase()})` : ''
+        const nameWithStatus = `${fullName}${status}`
+
+        let dateInfo = ''
+        if (contact.birthdate) {
+          const formattedDate = formatLocalDate(contact.birthdate)
+          const age = calculateAge(contact.birthdate)
+          const t65Display = getDaysPast65(contact.birthdate)
+          dateInfo = `${formattedDate}${age ? ` (${age})` : ''}${t65Display ? ` ${t65Display}` : ''}`
+        } else {
+          dateInfo = 'No birthdate'
+        }
+
+        // Get primary address
+        let addressInfo = 'No address'
+        if (contact.addresses && contact.addresses.length > 0) {
+          const primaryAddress = contact.addresses[0]
+          const addressParts = [
+            primaryAddress.address1,
+            primaryAddress.city,
+            primaryAddress.state_code,
+            primaryAddress.postal_code,
+          ].filter(Boolean)
+          addressInfo = addressParts.join(', ')
+        }
+
+        return `${nameWithStatus}: ${dateInfo}; ${addressInfo}`
+      })
+      .join('\n')
+  }
+
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            {singleContactView && selectedContact && (
-              <Button variant="ghost" size="sm" onClick={onBackToAll} className="cursor-pointer px-2">
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Show all contacts
+    <>
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              {singleContactView && selectedContact && (
+                <Button variant="ghost" size="sm" onClick={onBackToAll} className="cursor-pointer px-2">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Show all contacts
+                </Button>
+              )}
+              <CardTitle>{singleContactView && selectedContact ? <span>Contact Details</span> : 'Contacts'}</CardTitle>
+              <Button variant="ghost" size="sm" onClick={toggleCollapse} className="ml-2 cursor-pointer px-2">
+                {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
               </Button>
-            )}
-            <CardTitle>{singleContactView && selectedContact ? <span>Contact Details</span> : 'Contacts'}</CardTitle>
-            <Button variant="ghost" size="sm" onClick={toggleCollapse} className="ml-2 cursor-pointer px-2">
-              {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
-            </Button>
-            {/* Show filter only when not in single contact view */}
-            {!singleContactView && (
-              <div className="ml-2 flex items-center space-x-2">
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
-                    placeholder="Multi-filter: name, T65 days, t:tag (e.g., john 180 t:n2m)..."
-                    className="rounded border px-2 py-1 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                    style={{ minWidth: 0, width: '280px' }}
-                  />
-                  {filter && (
-                    <button
-                      onClick={() => setFilter('')}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  )}
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span className="text-xs text-muted-foreground">
-                    {filteredContacts.length}/{contacts.length}
-                  </span>
-                  {filter && (
-                    <span className="text-xs text-blue-600">
-                      {(() => {
-                        const terms = filter.trim().split(/\s+/)
-                        const filterTypes = []
-
-                        let hasT65 = false
-                        let hasName = false
-                        let hasTag = false
-
-                        terms.forEach((term) => {
-                          const trimmedTerm = term.trim()
-                          if (trimmedTerm.startsWith('t:')) {
-                            hasTag = true
-                          } else {
-                            const numericValue = parseInt(trimmedTerm, 10)
-                            if (!isNaN(numericValue) && numericValue > 0 && numericValue.toString() === trimmedTerm) {
-                              hasT65 = true
-                            } else {
-                              hasName = true
-                            }
-                          }
-                        })
-
-                        if (hasT65) filterTypes.push('T65')
-                        if (hasName) filterTypes.push('Name')
-                        if (hasTag) filterTypes.push('Tag')
-
-                        return filterTypes.join(' + ') + ' filter'
-                      })()}
+              {/* Show filter only when not in single contact view */}
+              {!singleContactView && (
+                <div className="ml-2 flex items-center space-x-2">
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={filter}
+                      onChange={(e) => setFilter(e.target.value)}
+                      placeholder="Multi-filter: name, T65 days, t:tag (e.g., john 180 t:n2m)..."
+                      className="rounded border px-2 py-1 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      style={{ minWidth: 0, width: '280px' }}
+                    />
+                    {filter && (
+                      <button
+                        onClick={() => setFilter('')}
+                        className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-xs text-muted-foreground">
+                      {filteredContacts.length}/{contacts.length}
                     </span>
-                  )}
+                    {filter && (
+                      <span className="text-xs text-blue-600">
+                        {(() => {
+                          const terms = filter.trim().split(/\s+/)
+                          const filterTypes = []
+
+                          let hasT65 = false
+                          let hasName = false
+                          let hasTag = false
+
+                          terms.forEach((term) => {
+                            const trimmedTerm = term.trim()
+                            if (trimmedTerm.startsWith('t:')) {
+                              hasTag = true
+                            } else {
+                              const numericValue = parseInt(trimmedTerm, 10)
+                              if (!isNaN(numericValue) && numericValue > 0 && numericValue.toString() === trimmedTerm) {
+                                hasT65 = true
+                              } else {
+                                hasName = true
+                              }
+                            }
+                          })
+
+                          if (hasT65) filterTypes.push('T65')
+                          if (hasName) filterTypes.push('Name')
+                          if (hasTag) filterTypes.push('Tag')
+
+                          return filterTypes.join(' + ') + ' filter'
+                        })()}
+                      </span>
+                    )}
+                  </div>
                 </div>
+              )}
+            </div>
+            {!singleContactView && (
+              <div className="flex space-x-2">
+                {contacts.length > 0 && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={() => setShowListModal(true)}
+                          size="sm"
+                          variant="outline"
+                          className="cursor-pointer"
+                        >
+                          <List className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Copy contact list for printing</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button onClick={onAddContact} size="sm" className="cursor-pointer">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" align="end" sideOffset={5}>
+                      <p>Add Contact</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             )}
           </div>
-          {!singleContactView && (
-            <Button onClick={onAddContact} size="sm" className="cursor-pointer">
-              <Plus className="mr-2 h-4 w-4" />
-              Add Contact
-            </Button>
-          )}
-        </div>
-      </CardHeader>
-      {!isCollapsed && (
-        <CardContent>
-          {contacts.length === 0 ? (
-            <div className="py-8 text-center">
-              <p className="text-muted-foreground">No contacts yet</p>
-              <Button onClick={onAddContact} className="mt-2 cursor-pointer">
-                <Plus className="mr-2 h-4 w-4" />
-                Add your first contact
+        </CardHeader>
+        {!isCollapsed && (
+          <CardContent>
+            {contacts.length === 0 ? (
+              <div className="py-8 text-center">
+                <p className="text-muted-foreground">No contacts yet</p>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button onClick={onAddContact} className="mt-2 cursor-pointer">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Add your first contact</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {(singleContactView && selectedContact ? [selectedContact] : filteredContacts).map((contact) => (
+                  <ContactCard
+                    key={contact.id}
+                    contact={contact}
+                    isSelected={selectedContact?.id === contact.id}
+                    isSingleView={singleContactView}
+                    onSelect={onSelectContact}
+                    onEdit={onEditContact}
+                    onDelete={onDeleteContact}
+                    onView={onViewContact}
+                  />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        )}
+      </Card>
+
+      {/* Contact List Modal for Printing */}
+      {showListModal && (
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
+          style={{ zIndex: 50 }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setShowListModal(false)
+            }
+          }}
+        >
+          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-lg bg-white shadow-lg">
+            <div className="flex items-center justify-between border-b p-4">
+              <h2 className="text-lg font-semibold">Contact List for Printing</h2>
+              <Button variant="ghost" size="sm" className="cursor-pointer" onClick={() => setShowListModal(false)}>
+                <X className="h-4 w-4" />
               </Button>
             </div>
-          ) : (
-            <div className="space-y-3">
-              {(singleContactView && selectedContact ? [selectedContact] : filteredContacts).map((contact) => (
-                <ContactCard
-                  key={contact.id}
-                  contact={contact}
-                  isSelected={selectedContact?.id === contact.id}
-                  isSingleView={singleContactView}
-                  onSelect={onSelectContact}
-                  onEdit={onEditContact}
-                  onDelete={onDeleteContact}
-                  onView={onViewContact}
-                />
-              ))}
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="mb-4 text-sm text-gray-600">
+                Copy the text below and paste it into your document for printing:
+              </div>
+              <textarea
+                readOnly
+                value={formatContactsForPrint()}
+                className="h-64 w-full resize-none rounded-md border p-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onClick={(e) => (e.target as HTMLTextAreaElement).select()}
+              />
+              <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
+                <span>{filteredContacts.length} contacts listed</span>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    navigator.clipboard.writeText(formatContactsForPrint())
+                    // Simple feedback - could add a toast here
+                  }}
+                  className="cursor-pointer"
+                >
+                  Copy to Clipboard
+                </Button>
+              </div>
             </div>
-          )}
-        </CardContent>
+          </div>
+        </div>
       )}
-    </Card>
+    </>
   )
 }
