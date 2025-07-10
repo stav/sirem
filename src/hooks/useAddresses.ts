@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase'
+import { AddressType } from '@/lib/address-types'
 
 type Address = Database['public']['Tables']['addresses']['Row']
 
@@ -14,7 +15,8 @@ interface AddressForm {
   county_fips?: string
   latitude?: number
   longitude?: number
-  address_type?: string
+  address_type?: AddressType
+  source?: string
 }
 
 // Cache for storing addresses by contact ID
@@ -87,7 +89,8 @@ export function useAddresses(contactId?: string) {
         county_fips: addressData.county_fips || null,
         latitude: addressData.latitude || null,
         longitude: addressData.longitude || null,
-        address_type: addressData.address_type || 'primary',
+        address_type: addressData.address_type || AddressType.PRIMARY,
+        source: addressData.source || null,
       })
 
       if (error) throw error
@@ -119,7 +122,8 @@ export function useAddresses(contactId?: string) {
           county_fips: addressData.county_fips || null,
           latitude: addressData.latitude || null,
           longitude: addressData.longitude || null,
-          address_type: addressData.address_type || 'primary',
+          address_type: addressData.address_type || AddressType.PRIMARY,
+          source: addressData.source || null,
         })
         .eq('id', addressId)
 

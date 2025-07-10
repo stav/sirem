@@ -1,4 +1,5 @@
 import type { Database } from '@/lib/supabase'
+import { AddressType, isValidAddressType, getAddressTypeLabel } from '@/lib/address-types'
 
 type Address = Database['public']['Tables']['addresses']['Row']
 
@@ -25,47 +26,12 @@ export function formatAddressMultiLine(address: Address): string {
 }
 
 export function getAddressType(address: Address): string {
-  return address.address_type || 'primary'
+  return address.address_type || AddressType.PRIMARY
 }
 
 export function getAddressTypeDisplay(address: Address): string {
   const type = getAddressType(address)
-  switch (type) {
-    case 'primary':
-      return 'Primary'
-    case 'mailing':
-      return 'Mailing'
-    case 'billing':
-      return 'Billing'
-    case 'shipping':
-      return 'Shipping'
-    case 'work':
-      return 'Work'
-    case 'home':
-      return 'Home'
-    default:
-      return type.charAt(0).toUpperCase() + type.slice(1)
-  }
-}
-
-export function getAddressTypeColor(address: Address): string {
-  const type = getAddressType(address)
-  switch (type) {
-    case 'primary':
-      return 'bg-blue-100 text-blue-800 border-blue-200'
-    case 'mailing':
-      return 'bg-green-100 text-green-800 border-green-200'
-    case 'billing':
-      return 'bg-purple-100 text-purple-800 border-purple-200'
-    case 'shipping':
-      return 'bg-orange-100 text-orange-800 border-orange-200'
-    case 'work':
-      return 'bg-gray-100 text-gray-800 border-gray-200'
-    case 'home':
-      return 'bg-pink-100 text-pink-800 border-pink-200'
-    default:
-      return 'bg-gray-100 text-gray-800 border-gray-200'
-  }
+  return getAddressTypeLabel(type)
 }
 
 export function validateAddress(address: Partial<Address>): { isValid: boolean; errors: string[] } {
@@ -88,10 +54,7 @@ export function validateAddress(address: Partial<Address>): { isValid: boolean; 
   }
 
   // Validate address type
-  if (
-    address.address_type &&
-    !['primary', 'mailing', 'billing', 'shipping', 'work', 'home'].includes(address.address_type)
-  ) {
+  if (address.address_type && !isValidAddressType(address.address_type)) {
     errors.push('Invalid address type')
   }
 
@@ -107,7 +70,7 @@ export function hasValidMailingAddress(addresses: Address[]): boolean {
 
 export function getPrimaryAddress(addresses: Address[]): Address | null {
   // First try to find a primary address
-  const primary = addresses.find((addr) => addr.address_type === 'primary')
+  const primary = addresses.find((addr) => addr.address_type === AddressType.PRIMARY)
   if (primary) return primary
 
   // Fallback to first address with valid data

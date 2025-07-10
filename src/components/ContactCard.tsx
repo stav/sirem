@@ -12,6 +12,7 @@ import {
   getDaysPast65,
   getT65Days,
 } from '@/lib/contact-utils'
+import { getPrimaryAddress } from '@/lib/address-utils'
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
   addresses?: Database['public']['Tables']['addresses']['Row'][]
@@ -171,7 +172,8 @@ export default function ContactCard({
           )}
           {/* Address display */}
           {(() => {
-            const address = contact.addresses?.[0]
+            // Use getPrimaryAddress utility to find the best address to display
+            const address = contact.addresses ? getPrimaryAddress(contact.addresses) : null
             if (!address) return null
 
             const parts = []

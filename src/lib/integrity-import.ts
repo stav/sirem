@@ -314,6 +314,7 @@ export class IntegrityImporter {
         county_fips: address.countyFips,
         latitude: address.latitude,
         longitude: address.longitude,
+        source: 'Integrity',
         created_at: address.createDate,
         updated_at: address.modifyDate || address.createDate,
       })

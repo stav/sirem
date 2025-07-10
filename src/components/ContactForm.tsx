@@ -12,6 +12,7 @@ import { MapPin, Plus, Edit, Trash2 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Database } from '@/lib/supabase'
 import { supabase } from '@/lib/supabase'
+import { AddressType } from '@/lib/address-types'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 type Address = Database['public']['Tables']['addresses']['Row']
@@ -34,7 +35,8 @@ interface AddressFormData {
   state_code: string
   postal_code: string
   county: string
-  address_type: string
+  address_type: AddressType
+  source: string
 }
 
 interface ContactFormProps {
@@ -69,7 +71,8 @@ export default function ContactForm({
     state_code: '',
     postal_code: '',
     county: '',
-    address_type: 'primary',
+    address_type: AddressType.PRIMARY,
+    source: '',
   })
   const [addressSubmitting, setAddressSubmitting] = useState(false)
 
@@ -121,7 +124,8 @@ export default function ContactForm({
       state_code: '',
       postal_code: '',
       county: '',
-      address_type: 'primary',
+      address_type: AddressType.PRIMARY,
+      source: '',
     })
     setAddressFormOpen(true)
   }
@@ -135,7 +139,8 @@ export default function ContactForm({
       state_code: address.state_code || '',
       postal_code: address.postal_code || '',
       county: address.county || '',
-      address_type: address.address_type || 'primary',
+      address_type: (address.address_type as AddressType) || AddressType.PRIMARY,
+      source: address.source || '',
     })
     setAddressFormOpen(true)
   }

@@ -48,6 +48,7 @@ export function useContacts() {
             longitude,
             contact_id,
             address_type,
+            source,
             created_at,
             updated_at
           ),

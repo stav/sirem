@@ -4,6 +4,7 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import ModalForm from '@/components/ui/modal-form'
 import type { Database } from '@/lib/supabase'
+import { AddressType, ADDRESS_TYPE_OPTIONS } from '@/lib/address-types'
 
 type Address = Database['public']['Tables']['addresses']['Row']
 
@@ -14,7 +15,8 @@ interface AddressFormData {
   state_code: string
   postal_code: string
   county: string
-  address_type: string
+  address_type: AddressType
+  source: string
 }
 
 interface AddressFormProps {
@@ -26,17 +28,6 @@ interface AddressFormProps {
   setFormData: (data: AddressFormData) => void
   isSubmitting: boolean
 }
-
-const addressTypes = [
-  { value: 'primary', label: 'Primary' },
-  { value: 'mailing', label: 'Mailing' },
-  { value: 'billing', label: 'Billing' },
-  { value: 'shipping', label: 'Shipping' },
-  { value: 'work', label: 'Work' },
-  { value: 'home', label: 'Home' },
-  { value: 'tps', label: 'TPS (True People Search)' },
-  { value: 'other', label: 'Other' },
-]
 
 const states = [
   { value: 'AL', label: 'Alabama' },
@@ -117,13 +108,13 @@ export default function AddressForm({
           <Label htmlFor="address_type">Address Type</Label>
           <Select
             value={formData.address_type}
-            onValueChange={(value) => setFormData({ ...formData, address_type: value })}
+            onValueChange={(value: AddressType) => setFormData({ ...formData, address_type: value })}
           >
             <SelectTrigger>
               <SelectValue placeholder="Select address type" />
             </SelectTrigger>
             <SelectContent>
-              {addressTypes.map((type) => (
+              {ADDRESS_TYPE_OPTIONS.map((type) => (
                 <SelectItem key={type.value} value={type.value}>
                   {type.label}
                 </SelectItem>
@@ -204,6 +195,17 @@ export default function AddressForm({
             value={formData.county}
             onChange={(e) => setFormData({ ...formData, county: e.target.value })}
             placeholder="County name"
+          />
+        </div>
+
+        {/* Source */}
+        <div>
+          <Label htmlFor="source">Source</Label>
+          <Input
+            id="source"
+            value={formData.source}
+            onChange={(e) => setFormData({ ...formData, source: e.target.value })}
+            placeholder="e.g., Manual, TPS, Integrity, Google Maps"
           />
         </div>
       </div>

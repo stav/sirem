@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import ContactCard from './ContactCard'
 import { getT65Days, formatLocalDate, calculateAge, getDaysPast65 } from '@/lib/contact-utils'
+import { getPrimaryAddress } from '@/lib/address-utils'
 import type { Database } from '@/lib/supabase'
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
@@ -88,10 +89,10 @@ export default function ContactList({
       } else {
         const numericValue = parseInt(trimmedTerm, 10)
         if (!isNaN(numericValue) && numericValue > 0 && numericValue.toString() === trimmedTerm) {
-          // T65 days filtering: numeric values
+          // T65 days filtering: numeric values (both before and after 65th birthday)
           contacts.forEach((contact) => {
             const t65Days = getT65Days(contact.birthdate)
-            if (t65Days !== null && t65Days <= 0 && t65Days >= -numericValue) {
+            if (t65Days !== null && Math.abs(t65Days) <= numericValue) {
               matchingContactIds.add(contact.id)
             }
           })
@@ -149,17 +150,19 @@ export default function ContactList({
           dateInfo = 'No birthdate'
         }
 
-        // Get primary address
+        // Get primary address (same logic as ContactCard)
         let addressInfo = 'No address'
         if (contact.addresses && contact.addresses.length > 0) {
-          const primaryAddress = contact.addresses[0]
-          const addressParts = [
-            primaryAddress.address1,
-            primaryAddress.city,
-            primaryAddress.state_code,
-            primaryAddress.postal_code,
-          ].filter(Boolean)
-          addressInfo = addressParts.join(', ')
+          const primaryAddress = getPrimaryAddress(contact.addresses)
+          if (primaryAddress) {
+            const addressParts = [
+              primaryAddress.address1,
+              primaryAddress.city,
+              primaryAddress.state_code,
+              primaryAddress.postal_code,
+            ].filter(Boolean)
+            addressInfo = addressParts.join(', ')
+          }
         }
 
         return `${nameWithStatus}: ${dateInfo}; ${addressInfo}`
