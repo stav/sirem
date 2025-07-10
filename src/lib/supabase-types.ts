@@ -252,6 +252,7 @@ export type Database = {
           phone: string | null
           prefix: string | null
           primary_communication: string | null
+          ssn: string | null
           status: string | null
           subsidy_level: string | null
           suffix: string | null
@@ -284,6 +285,7 @@ export type Database = {
           phone?: string | null
           prefix?: string | null
           primary_communication?: string | null
+          ssn?: string | null
           status?: string | null
           subsidy_level?: string | null
           suffix?: string | null
@@ -316,6 +318,7 @@ export type Database = {
           phone?: string | null
           prefix?: string | null
           primary_communication?: string | null
+          ssn?: string | null
           status?: string | null
           subsidy_level?: string | null
           suffix?: string | null

@@ -20,7 +20,7 @@ import {
   Tag,
 } from 'lucide-react'
 import type { Database } from '@/lib/supabase'
-import { formatLocalDate, formatPhoneNumber, formatMBI, getStatusBadge } from '@/lib/contact-utils'
+import { formatLocalDate, formatPhoneNumber, formatMBI, formatSSN, getStatusBadge } from '@/lib/contact-utils'
 import { supabase } from '@/lib/supabase'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
@@ -392,6 +392,13 @@ export default function ContactViewModal({ isOpen, onClose, contact, onEdit }: C
                 <Shield className="h-4 w-4 text-muted-foreground" />
                 <span className="text-sm font-medium">MBI:</span>
                 <span className="text-sm">{formatMBI(contact.medicare_beneficiary_id)}</span>
+              </div>
+            )}
+            {contact.ssn && (
+              <div className="flex items-center space-x-2">
+                <Shield className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">SSN:</span>
+                <span className="text-sm">{formatSSN(contact.ssn)}</span>
               </div>
             )}
             {contact.part_a_status && (

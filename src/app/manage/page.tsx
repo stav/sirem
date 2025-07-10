@@ -28,6 +28,7 @@ interface ContactFormData {
   birthdate: string
   status: string
   medicare_beneficiary_id: string
+  ssn: string
 }
 
 interface ActionFormData {
@@ -96,6 +97,7 @@ export default function ManagePage() {
     birthdate: '',
     status: 'New',
     medicare_beneficiary_id: '',
+    ssn: '',
   })
 
   const [actionForm, setActionForm] = useState<ActionFormData>({
@@ -153,6 +155,7 @@ export default function ManagePage() {
       birthdate: '',
       status: 'New',
       medicare_beneficiary_id: '',
+      ssn: '',
     })
     setShowContactForm(true)
   }
@@ -168,6 +171,7 @@ export default function ManagePage() {
       birthdate: contact.birthdate || '',
       status: contact.status || 'New',
       medicare_beneficiary_id: contact.medicare_beneficiary_id || '',
+      ssn: contact.ssn || '',
     })
     setShowContactForm(true)
   }
@@ -373,6 +377,7 @@ export default function ManagePage() {
       birthdate: '',
       status: 'New',
       medicare_beneficiary_id: '',
+      ssn: '',
     })
   }
 

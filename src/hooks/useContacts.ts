@@ -22,6 +22,7 @@ interface ContactForm {
   birthdate: string
   status: string
   medicare_beneficiary_id: string
+  ssn: string
 }
 
 export function useContacts() {
@@ -86,6 +87,7 @@ export function useContacts() {
         birthdate: contactData.birthdate || null,
         status: contactData.status,
         medicare_beneficiary_id: contactData.medicare_beneficiary_id || null,
+        ssn: contactData.ssn || null,
       })
 
       if (error) {
@@ -115,6 +117,7 @@ export function useContacts() {
           birthdate: contactData.birthdate || null,
           status: contactData.status,
           medicare_beneficiary_id: contactData.medicare_beneficiary_id || null,
+          ssn: contactData.ssn || null,
         })
         .eq('id', contactId)
         .select()

@@ -120,6 +120,14 @@ export function formatMBI(mbi: string | null | undefined): string {
   return `${cleaned.slice(0, 4)}-${cleaned.slice(4, 8)}-${cleaned.slice(8, 11)}`
 }
 
+export function formatSSN(ssn: string | null | undefined): string {
+  if (!ssn) return ''
+  // Remove any non-numeric characters and format as XXX-XX-XXXX
+  const cleaned = ssn.replace(/\D/g, '')
+  if (cleaned.length !== 9) return ssn
+  return `${cleaned.slice(0, 3)}-${cleaned.slice(3, 5)}-${cleaned.slice(5, 9)}`
+}
+
 export function getStatusBadge(status: string | null) {
   if (!status) return null
 

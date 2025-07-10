@@ -26,6 +26,7 @@ interface ContactFormData {
   birthdate: string
   status: string
   medicare_beneficiary_id: string
+  ssn: string
 }
 
 interface AddressFormData {
@@ -268,6 +269,34 @@ export default function ContactForm({
             <p className="mt-1 text-xs text-muted-foreground">
               Format: XXXX-XXXX-XXXX (11 characters, hyphens optional)
             </p>
+          </div>
+          <div>
+            <Label htmlFor="ssn">Social Security Number (SSN)</Label>
+            <Input
+              id="ssn"
+              value={formData.ssn}
+              onChange={(e) => {
+                // Remove all non-numeric characters
+                const cleaned = e.target.value.replace(/\D/g, '')
+
+                // Format as XXX-XX-XXXX while typing
+                let formatted = ''
+                if (cleaned.length > 0) {
+                  formatted = cleaned.substring(0, 3)
+                  if (cleaned.length > 3) {
+                    formatted += '-' + cleaned.substring(3, 5)
+                    if (cleaned.length > 5) {
+                      formatted += '-' + cleaned.substring(5, 9)
+                    }
+                  }
+                }
+
+                onFormDataChange({ ...formData, ssn: formatted })
+              }}
+              placeholder="123-45-6789"
+              maxLength={11}
+            />
+            <p className="mt-1 text-xs text-muted-foreground">Format: XXX-XX-XXXX (Social Security Number)</p>
           </div>
           <div>
             <Label htmlFor="notes">Notes</Label>
