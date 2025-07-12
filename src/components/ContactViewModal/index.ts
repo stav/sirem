@@ -1,0 +1,6 @@
+export { default as ContactBasicInfo } from './ContactBasicInfo'
+export { default as ContactAddresses } from './ContactAddresses'
+export { default as ContactPersonalInfo } from './ContactPersonalInfo'
+export { default as ContactMedicareInfo } from './ContactMedicareInfo'
+export { default as ContactStatusFlags } from './ContactStatusFlags'
+export { default as ContactAdditionalInfo } from './ContactAdditionalInfo'
