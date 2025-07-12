@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Label } from '@/components/ui/label'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import ModalForm from '@/components/ui/modal-form'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -18,10 +20,12 @@ import {
   AlertCircle,
   Edit,
   Tag,
+  Send,
 } from 'lucide-react'
 import type { Database } from '@/lib/supabase'
 import { formatLocalDate, formatPhoneNumber, formatMBI, formatSSN, getStatusBadge } from '@/lib/contact-utils'
 import { supabase } from '@/lib/supabase'
+import { useToast } from '@/hooks/use-toast'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 type Address = Database['public']['Tables']['addresses']['Row']
@@ -107,11 +111,24 @@ export default function ContactViewModal({ isOpen, onClose, contact, onEdit }: C
   const [addressesLoading, setAddressesLoading] = useState(false)
   const [tags, setTags] = useState<TagWithCategory[]>([])
   const [tagsLoading, setTagsLoading] = useState(false)
+  const [showEmailForm, setShowEmailForm] = useState(false)
+  const [emailForm, setEmailForm] = useState({
+    recipient: '',
+    subject: '',
+    body: '',
+  })
+  const [isSubmittingEmail, setIsSubmittingEmail] = useState(false)
+  const { toast } = useToast()
 
   useEffect(() => {
     if (contact && isOpen) {
       fetchAddresses()
       fetchTags()
+      // Pre-fill recipient with contact's email
+      setEmailForm((prev) => ({
+        ...prev,
+        recipient: contact.email || '',
+      }))
     }
   }, [contact, isOpen])
 
@@ -185,6 +202,77 @@ export default function ContactViewModal({ isOpen, onClose, contact, onEdit }: C
     }
   }
 
+  const handleSendEmail = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!emailForm.recipient || !emailForm.subject || !emailForm.body) {
+      toast({
+        title: 'Error',
+        description: 'Please fill in all email fields.',
+        variant: 'destructive',
+      })
+      return
+    }
+
+    setIsSubmittingEmail(true)
+
+    try {
+      // You'll need to replace this URL with your actual n8n webhook URL
+      const webhookUrl = process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL || 'https://your-n8n-webhook-url.com'
+
+      const emailData = {
+        name: contact ? `${contact.first_name} ${contact.last_name}` : '',
+        email: emailForm.recipient,
+        subject: emailForm.subject,
+        message: emailForm.body,
+        timestamp: new Date().toISOString(),
+      }
+
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(emailData),
+      })
+
+      if (response.ok) {
+        toast({
+          title: 'Email sent',
+          description: `Email sent successfully to ${emailForm.recipient}`,
+        })
+
+        // Reset form and close
+        setEmailForm({
+          recipient: contact?.email || '',
+          subject: '',
+          body: '',
+        })
+        setShowEmailForm(false)
+      } else {
+        throw new Error('Failed to send email')
+      }
+    } catch (error) {
+      console.error('Error sending email:', error)
+      toast({
+        title: 'Error',
+        description: 'Failed to send email. Please try again.',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsSubmittingEmail(false)
+    }
+  }
+
+  const handleCloseEmailForm = () => {
+    setShowEmailForm(false)
+    setEmailForm({
+      recipient: contact?.email || '',
+      subject: '',
+      body: '',
+    })
+  }
+
   if (!contact) return null
 
   const statusDisplay = getStatusBadge(contact.status)
@@ -197,357 +285,446 @@ export default function ContactViewModal({ isOpen, onClose, contact, onEdit }: C
   const CommunicationIcon = communicationDisplay.icon
 
   return (
-    <ModalForm
-      isOpen={isOpen}
-      onCancel={onClose}
-      onSubmit={(e) => {
-        e.preventDefault()
-        onClose()
-      }}
-      title={
-        <div className="flex flex-row items-center gap-2">
-          <span>View Contact</span>
-          {onEdit && contact && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => onEdit(contact)}
-              className="flex items-center space-x-1"
-            >
-              <Edit className="h-3 w-3" />
-              <span>Edit</span>
-            </Button>
-          )}
-        </div>
-      }
-      submitText=""
-      isLoading={false}
-    >
-      <div className="space-y-4">
-        {/* Name */}
-        <div>
-          <Label className="text-sm font-medium text-muted-foreground">Full Name</Label>
-          <div className="mt-1 flex items-center space-x-2">
-            <User className="h-4 w-4 text-muted-foreground" />
-            <p className="text-base font-semibold">
-              {[contact.prefix, contact.first_name, contact.middle_name, contact.last_name, contact.suffix]
-                .filter(Boolean)
-                .join(' ')}
-            </p>
-          </div>
-        </div>
-
-        {/* Tags */}
-        <div className="space-y-3">
-          <Label className="text-sm font-medium text-muted-foreground">Tags</Label>
-          {tagsLoading ? (
-            <div className="text-sm text-muted-foreground">Loading tags...</div>
-          ) : tags.length > 0 ? (
-            <div className="flex flex-wrap gap-2">
-              {tags.map((tag) => (
-                <Badge
-                  key={tag.id}
+    <>
+      <ModalForm
+        isOpen={isOpen}
+        onCancel={onClose}
+        onSubmit={(e) => {
+          e.preventDefault()
+          onClose()
+        }}
+        title={
+          <div className="flex flex-row items-center gap-2">
+            <span>View Contact</span>
+            <div className="flex items-center gap-2">
+              {contact?.email && (
+                <Button
+                  type="button"
                   variant="outline"
-                  className="text-xs"
-                  style={{
-                    borderColor: tag.tag_categories.color || '#A9A9A9',
-                    color: tag.tag_categories.color || '#A9A9A9',
-                    backgroundColor: `${tag.tag_categories.color || '#A9A9A9'}10`,
-                  }}
+                  size="sm"
+                  onClick={() => setShowEmailForm(true)}
+                  className="flex cursor-pointer items-center space-x-1"
                 >
-                  <Tag className="mr-1 h-3 w-3" />
-                  {tag.label}
-                  <span className="ml-1 text-xs opacity-60">({tag.tag_categories.name})</span>
-                </Badge>
-              ))}
-            </div>
-          ) : (
-            <div className="text-sm text-muted-foreground">No tags assigned</div>
-          )}
-        </div>
-
-        {/* Contact Information */}
-        <div className="space-y-3">
-          <Label className="text-sm font-medium text-muted-foreground">Contact Information</Label>
-          <div className="space-y-2">
-            {contact.phone && (
-              <div className="flex items-center space-x-2">
-                <Phone className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Phone:</span>
-                <span className="text-sm">{formatPhoneNumber(contact.phone)}</span>
-              </div>
-            )}
-            {contact.email && (
-              <div className="flex items-center space-x-2">
-                <Mail className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Email:</span>
-                <span className="text-sm">{contact.email}</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Addresses */}
-        <div className="space-y-3">
-          <Label className="text-sm font-medium text-muted-foreground">Addresses</Label>
-          {addressesLoading ? (
-            <div className="text-sm text-muted-foreground">Loading addresses...</div>
-          ) : addresses.length > 0 ? (
-            <div className="space-y-3">
-              {addresses.map((address) => {
-                // Map of field labels
-                const fieldLabels: Record<string, string> = {
-                  address1: 'Address Line 1',
-                  address2: 'Address Line 2',
-                  city: 'City',
-                  state_code: 'State',
-                  postal_code: 'ZIP Code',
-                  county: 'County',
-                  county_fips: 'County FIPS',
-                  latitude: 'Latitude',
-                  longitude: 'Longitude',
-                  address_type: 'Type',
-                }
-                // Fields to exclude
-                const excludeFields = ['id', 'contact_id', 'created_at', 'updated_at']
-                return (
-                  <div key={address.id} className="rounded-lg border border-gray-200 p-3">
-                    <div className="mb-2 flex items-center space-x-2">
-                      <MapPin className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium">Address</span>
-                      {address.address_type && (
-                        <Badge variant="outline" className="text-xs">
-                          {address.address_type}
-                        </Badge>
-                      )}
-                    </div>
-                    <div className="space-y-1 text-sm">
-                      {Object.entries(address)
-                        .filter(([key, value]) => !excludeFields.includes(key) && value && key !== 'address_type')
-                        .map(([key, value]) => (
-                          <div key={key} className="flex justify-between border-b border-gray-100 pb-1 last:border-b-0">
-                            <span className="font-medium">{value}</span>
-                            <span className="text-muted-foreground">{fieldLabels[key] || key}</span>
-                          </div>
-                        ))}
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="text-sm text-muted-foreground">No addresses found</div>
-          )}
-        </div>
-
-        {/* Personal Information */}
-        <div className="space-y-3">
-          <Label className="text-sm font-medium text-muted-foreground">Personal Information</Label>
-          <div className="space-y-2">
-            {contact.birthdate && (
-              <div className="flex items-center space-x-2">
-                <Calendar className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Birthdate:</span>
-                <span className="text-sm">{formatLocalDate(contact.birthdate)}</span>
-              </div>
-            )}
-            {contact.gender && (
-              <div className="flex items-center space-x-2">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Gender:</span>
-                <span className="text-sm">{contact.gender}</span>
-              </div>
-            )}
-            {contact.marital_status && (
-              <div className="flex items-center space-x-2">
-                <Heart className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Marital Status:</span>
-                <span className="text-sm">{contact.marital_status}</span>
-              </div>
-            )}
-            {contact.height && (
-              <div className="flex items-center space-x-2">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Height:</span>
-                <span className="text-sm">{contact.height}</span>
-              </div>
-            )}
-            {contact.weight && (
-              <div className="flex items-center space-x-2">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Weight:</span>
-                <span className="text-sm">{contact.weight}</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Medicare Information */}
-        <div className="space-y-3">
-          <Label className="text-sm font-medium text-muted-foreground">Medicare Information</Label>
-          <div className="space-y-2">
-            {contact.medicare_beneficiary_id && (
-              <div className="flex items-center space-x-2">
-                <Shield className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">MBI:</span>
-                <span className="text-sm">{formatMBI(contact.medicare_beneficiary_id)}</span>
-              </div>
-            )}
-            {contact.ssn && (
-              <div className="flex items-center space-x-2">
-                <Shield className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">SSN:</span>
-                <span className="text-sm">{formatSSN(contact.ssn)}</span>
-              </div>
-            )}
-            {contact.part_a_status && (
-              <div className="flex items-center space-x-2">
-                <Shield className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Part A Status:</span>
-                <span className="text-sm">{contact.part_a_status}</span>
-              </div>
-            )}
-            {contact.part_b_status && (
-              <div className="flex items-center space-x-2">
-                <Shield className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Part B Status:</span>
-                <span className="text-sm">{contact.part_b_status}</span>
-              </div>
-            )}
-            {contact.subsidy_level && (
-              <div className="flex items-center space-x-2">
-                <Shield className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Subsidy Level:</span>
-                <span className="text-sm">{contact.subsidy_level}</span>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Status and Flags */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label className="text-sm font-medium text-muted-foreground">Status</Label>
-            <div className="mt-1">
-              {statusDisplay ? (
-                <Badge className={statusDisplay.className}>
-                  <AlertCircle className="mr-1 h-3 w-3" />
-                  {statusDisplay.text}
-                </Badge>
-              ) : (
-                <span className="text-sm text-muted-foreground">No status</span>
+                  <Send className="h-3 w-3" />
+                  <span>E-mail</span>
+                </Button>
+              )}
+              {onEdit && contact && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onEdit(contact)}
+                  className="flex cursor-pointer items-center space-x-1"
+                >
+                  <Edit className="h-3 w-3" />
+                  <span>Edit</span>
+                </Button>
               )}
             </div>
           </div>
+        }
+        submitText=""
+        isLoading={false}
+      >
+        <div className="space-y-4">
+          {/* Name */}
           <div>
-            <Label className="text-sm font-medium text-muted-foreground">Record Type</Label>
-            <div className="mt-1">
-              <Badge className={recordTypeDisplay.className}>
-                <FileText className="mr-1 h-3 w-3" />
-                {recordTypeDisplay.text}
-              </Badge>
+            <Label className="text-sm font-medium text-muted-foreground">Full Name</Label>
+            <div className="mt-1 flex items-center space-x-2">
+              <User className="h-4 w-4 text-muted-foreground" />
+              <p className="text-base font-semibold">
+                {[contact.prefix, contact.first_name, contact.middle_name, contact.last_name, contact.suffix]
+                  .filter(Boolean)
+                  .join(' ')}
+              </p>
             </div>
           </div>
-        </div>
 
-        {/* Health Flags */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label className="text-sm font-medium text-muted-foreground">Has Medicaid</Label>
-            <div className="mt-1">
-              <Badge className={medicaidDisplay.className}>
-                {contact.has_medicaid ? <CheckCircle className="mr-1 h-3 w-3" /> : <XCircle className="mr-1 h-3 w-3" />}
-                {medicaidDisplay.text}
-              </Badge>
-            </div>
-          </div>
-          <div>
-            <Label className="text-sm font-medium text-muted-foreground">Tobacco User</Label>
-            <div className="mt-1">
-              <Badge className={tobaccoDisplay.className}>
-                {contact.is_tobacco_user ? (
-                  <XCircle className="mr-1 h-3 w-3" />
-                ) : (
-                  <CheckCircle className="mr-1 h-3 w-3" />
-                )}
-                {tobaccoDisplay.text}
-              </Badge>
-            </div>
-          </div>
-        </div>
-
-        {/* Communication Preferences */}
-        <div>
-          <Label className="text-sm font-medium text-muted-foreground">Primary Communication</Label>
-          <div className="mt-1">
-            <Badge className={communicationDisplay.className}>
-              <CommunicationIcon className="mr-1 h-3 w-3" />
-              {communicationDisplay.text}
-            </Badge>
-          </div>
-        </div>
-
-        {/* Policy Counts */}
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <Label className="text-sm font-medium text-muted-foreground">Life Policies</Label>
-            <p className="mt-1 text-sm">{contact.life_policy_count || 0}</p>
-          </div>
-          <div>
-            <Label className="text-sm font-medium text-muted-foreground">Health Policies</Label>
-            <p className="mt-1 text-sm">{contact.health_policy_count || 0}</p>
-          </div>
-        </div>
-
-        {/* Lead Information */}
-        <div className="space-y-3">
-          <Label className="text-sm font-medium text-muted-foreground">Lead Information</Label>
-          <div className="space-y-2">
-            {contact.lead_source && (
-              <div className="flex items-center space-x-2">
-                <MapPin className="h-4 w-4 text-muted-foreground" />
-                <span className="text-sm font-medium">Source:</span>
-                <span className="text-sm">{contact.lead_source}</span>
+          {/* Tags */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium text-muted-foreground">Tags</Label>
+            {tagsLoading ? (
+              <div className="text-sm text-muted-foreground">Loading tags...</div>
+            ) : tags.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <Badge
+                    key={tag.id}
+                    variant="outline"
+                    className="text-xs"
+                    style={{
+                      borderColor: tag.tag_categories.color || '#A9A9A9',
+                      color: tag.tag_categories.color || '#A9A9A9',
+                      backgroundColor: `${tag.tag_categories.color || '#A9A9A9'}10`,
+                    }}
+                  >
+                    <Tag className="mr-1 h-3 w-3" />
+                    {tag.label}
+                    <span className="ml-1 text-xs opacity-60">({tag.tag_categories.name})</span>
+                  </Badge>
+                ))}
               </div>
+            ) : (
+              <div className="text-sm text-muted-foreground">No tags assigned</div>
             )}
           </div>
-        </div>
 
-        {/* Notes */}
-        <div>
-          <Label className="text-sm font-medium text-muted-foreground">Notes</Label>
-          <p className="mt-1 whitespace-pre-wrap text-sm">{contact.notes || 'No notes'}</p>
-        </div>
-
-        {/* Dates */}
-        <div className="space-y-3">
-          <Label className="text-sm font-medium text-muted-foreground">Dates</Label>
-          <div className="space-y-2">
-            <div className="flex items-center space-x-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Created:</span>
-              <span className="text-sm">{formatDateString(contact.created_at)}</span>
+          {/* Contact Information */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium text-muted-foreground">Contact Information</Label>
+            <div className="space-y-2">
+              {contact.phone && (
+                <div className="flex items-center space-x-2">
+                  <Phone className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Phone:</span>
+                  <span className="text-sm">{formatPhoneNumber(contact.phone)}</span>
+                </div>
+              )}
+              {contact.email && (
+                <div className="flex items-center space-x-2">
+                  <Mail className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Email:</span>
+                  <span className="text-sm">{contact.email}</span>
+                </div>
+              )}
             </div>
-            <div className="flex items-center space-x-2">
-              <Clock className="h-4 w-4 text-muted-foreground" />
-              <span className="text-sm font-medium">Updated:</span>
-              <span className="text-sm">{formatDateString(contact.updated_at)}</span>
+          </div>
+
+          {/* Addresses */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium text-muted-foreground">Addresses</Label>
+            {addressesLoading ? (
+              <div className="text-sm text-muted-foreground">Loading addresses...</div>
+            ) : addresses.length > 0 ? (
+              <div className="space-y-3">
+                {addresses.map((address) => {
+                  // Map of field labels
+                  const fieldLabels: Record<string, string> = {
+                    address1: 'Address Line 1',
+                    address2: 'Address Line 2',
+                    city: 'City',
+                    state_code: 'State',
+                    postal_code: 'ZIP Code',
+                    county: 'County',
+                    county_fips: 'County FIPS',
+                    latitude: 'Latitude',
+                    longitude: 'Longitude',
+                    address_type: 'Type',
+                  }
+                  // Fields to exclude
+                  const excludeFields = ['id', 'contact_id', 'created_at', 'updated_at']
+                  return (
+                    <div key={address.id} className="rounded-lg border border-gray-200 p-3">
+                      <div className="mb-2 flex items-center space-x-2">
+                        <MapPin className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">Address</span>
+                        {address.address_type && (
+                          <Badge variant="outline" className="text-xs">
+                            {address.address_type}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="space-y-1 text-sm">
+                        {Object.entries(address)
+                          .filter(([key, value]) => !excludeFields.includes(key) && value && key !== 'address_type')
+                          .map(([key, value]) => (
+                            <div
+                              key={key}
+                              className="flex justify-between border-b border-gray-100 pb-1 last:border-b-0"
+                            >
+                              <span className="font-medium">{value}</span>
+                              <span className="text-muted-foreground">{fieldLabels[key] || key}</span>
+                            </div>
+                          ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground">No addresses found</div>
+            )}
+          </div>
+
+          {/* Personal Information */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium text-muted-foreground">Personal Information</Label>
+            <div className="space-y-2">
+              {contact.birthdate && (
+                <div className="flex items-center space-x-2">
+                  <Calendar className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Birthdate:</span>
+                  <span className="text-sm">{formatLocalDate(contact.birthdate)}</span>
+                </div>
+              )}
+              {contact.gender && (
+                <div className="flex items-center space-x-2">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Gender:</span>
+                  <span className="text-sm">{contact.gender}</span>
+                </div>
+              )}
+              {contact.marital_status && (
+                <div className="flex items-center space-x-2">
+                  <Heart className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Marital Status:</span>
+                  <span className="text-sm">{contact.marital_status}</span>
+                </div>
+              )}
+              {contact.height && (
+                <div className="flex items-center space-x-2">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Height:</span>
+                  <span className="text-sm">{contact.height}</span>
+                </div>
+              )}
+              {contact.weight && (
+                <div className="flex items-center space-x-2">
+                  <User className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Weight:</span>
+                  <span className="text-sm">{contact.weight}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Medicare Information */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium text-muted-foreground">Medicare Information</Label>
+            <div className="space-y-2">
+              {contact.medicare_beneficiary_id && (
+                <div className="flex items-center space-x-2">
+                  <Shield className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">MBI:</span>
+                  <span className="text-sm">{formatMBI(contact.medicare_beneficiary_id)}</span>
+                </div>
+              )}
+              {contact.ssn && (
+                <div className="flex items-center space-x-2">
+                  <Shield className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">SSN:</span>
+                  <span className="text-sm">{formatSSN(contact.ssn)}</span>
+                </div>
+              )}
+              {contact.part_a_status && (
+                <div className="flex items-center space-x-2">
+                  <Shield className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Part A Status:</span>
+                  <span className="text-sm">{contact.part_a_status}</span>
+                </div>
+              )}
+              {contact.part_b_status && (
+                <div className="flex items-center space-x-2">
+                  <Shield className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Part B Status:</span>
+                  <span className="text-sm">{contact.part_b_status}</span>
+                </div>
+              )}
+              {contact.subsidy_level && (
+                <div className="flex items-center space-x-2">
+                  <Shield className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Subsidy Level:</span>
+                  <span className="text-sm">{contact.subsidy_level}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Status and Flags */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Status</Label>
+              <div className="mt-1">
+                {statusDisplay ? (
+                  <Badge className={statusDisplay.className}>
+                    <AlertCircle className="mr-1 h-3 w-3" />
+                    {statusDisplay.text}
+                  </Badge>
+                ) : (
+                  <span className="text-sm text-muted-foreground">No status</span>
+                )}
+              </div>
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Record Type</Label>
+              <div className="mt-1">
+                <Badge className={recordTypeDisplay.className}>
+                  <FileText className="mr-1 h-3 w-3" />
+                  {recordTypeDisplay.text}
+                </Badge>
+              </div>
+            </div>
+          </div>
+
+          {/* Health Flags */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Has Medicaid</Label>
+              <div className="mt-1">
+                <Badge className={medicaidDisplay.className}>
+                  {contact.has_medicaid ? (
+                    <CheckCircle className="mr-1 h-3 w-3" />
+                  ) : (
+                    <XCircle className="mr-1 h-3 w-3" />
+                  )}
+                  {medicaidDisplay.text}
+                </Badge>
+              </div>
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Tobacco User</Label>
+              <div className="mt-1">
+                <Badge className={tobaccoDisplay.className}>
+                  {contact.is_tobacco_user ? (
+                    <XCircle className="mr-1 h-3 w-3" />
+                  ) : (
+                    <CheckCircle className="mr-1 h-3 w-3" />
+                  )}
+                  {tobaccoDisplay.text}
+                </Badge>
+              </div>
+            </div>
+          </div>
+
+          {/* Communication Preferences */}
+          <div>
+            <Label className="text-sm font-medium text-muted-foreground">Primary Communication</Label>
+            <div className="mt-1">
+              <Badge className={communicationDisplay.className}>
+                <CommunicationIcon className="mr-1 h-3 w-3" />
+                {communicationDisplay.text}
+              </Badge>
+            </div>
+          </div>
+
+          {/* Policy Counts */}
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Life Policies</Label>
+              <p className="mt-1 text-sm">{contact.life_policy_count || 0}</p>
+            </div>
+            <div>
+              <Label className="text-sm font-medium text-muted-foreground">Health Policies</Label>
+              <p className="mt-1 text-sm">{contact.health_policy_count || 0}</p>
+            </div>
+          </div>
+
+          {/* Lead Information */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium text-muted-foreground">Lead Information</Label>
+            <div className="space-y-2">
+              {contact.lead_source && (
+                <div className="flex items-center space-x-2">
+                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                  <span className="text-sm font-medium">Source:</span>
+                  <span className="text-sm">{contact.lead_source}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <Label className="text-sm font-medium text-muted-foreground">Notes</Label>
+            <p className="mt-1 whitespace-pre-wrap text-sm">{contact.notes || 'No notes'}</p>
+          </div>
+
+          {/* Dates */}
+          <div className="space-y-3">
+            <Label className="text-sm font-medium text-muted-foreground">Dates</Label>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Created:</span>
+                <span className="text-sm">{formatDateString(contact.created_at)}</span>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <span className="text-sm font-medium">Updated:</span>
+                <span className="text-sm">{formatDateString(contact.updated_at)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Active Status */}
+          <div>
+            <Label className="text-sm font-medium text-muted-foreground">Active Status</Label>
+            <div className="mt-1">
+              <Badge className={inactiveDisplay.className}>
+                {contact.inactive ? <XCircle className="mr-1 h-3 w-3" /> : <CheckCircle className="mr-1 h-3 w-3" />}
+                {inactiveDisplay.text}
+              </Badge>
             </div>
           </div>
         </div>
+      </ModalForm>
 
-        {/* Active Status */}
-        <div>
-          <Label className="text-sm font-medium text-muted-foreground">Active Status</Label>
-          <div className="mt-1">
-            <Badge className={inactiveDisplay.className}>
-              {contact.inactive ? <XCircle className="mr-1 h-3 w-3" /> : <CheckCircle className="mr-1 h-3 w-3" />}
-              {inactiveDisplay.text}
-            </Badge>
+      {/* Email Form Modal */}
+      <ModalForm
+        isOpen={showEmailForm}
+        title={
+          <div className="flex items-center space-x-2">
+            <Send className="h-4 w-4" />
+            <span>Send Email</span>
           </div>
+        }
+        onSubmit={handleSendEmail}
+        onCancel={handleCloseEmailForm}
+        isLoading={isSubmittingEmail}
+        submitText="Send Email"
+        zIndex={60}
+      >
+        <div className="space-y-4">
+          <div>
+            <Label htmlFor="recipient">To</Label>
+            <Input
+              id="recipient"
+              type="email"
+              value={emailForm.recipient}
+              onChange={(e) => setEmailForm({ ...emailForm, recipient: e.target.value })}
+              required
+              placeholder="recipient@example.com"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="subject">Subject</Label>
+            <Input
+              id="subject"
+              value={emailForm.subject}
+              onChange={(e) => setEmailForm({ ...emailForm, subject: e.target.value })}
+              required
+              placeholder="Email subject"
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="body">Message</Label>
+            <Textarea
+              id="body"
+              value={emailForm.body}
+              onChange={(e) => setEmailForm({ ...emailForm, body: e.target.value })}
+              required
+              placeholder="Enter your message here..."
+              rows={8}
+            />
+          </div>
+
+          {contact && (
+            <div className="rounded-md bg-gray-50 p-3">
+              <div className="text-sm font-medium text-gray-700">Contact Information</div>
+              <div className="mt-1 space-y-1 text-sm text-gray-600">
+                <div>
+                  Name: {contact.first_name} {contact.last_name}
+                </div>
+                {contact.phone && <div>Phone: {formatPhoneNumber(contact.phone)}</div>}
+                {contact.email && <div>Email: {contact.email}</div>}
+              </div>
+            </div>
+          )}
         </div>
-      </div>
-    </ModalForm>
+      </ModalForm>
+    </>
   )
 }
