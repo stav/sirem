@@ -262,8 +262,8 @@ export default function ManagePage() {
       start_date: null,
       end_date: null,
       completed_date: null,
-      status: 'planned',
-      priority: 'medium',
+      status: null,
+      priority: null,
       duration: null,
       outcome: null,
     })

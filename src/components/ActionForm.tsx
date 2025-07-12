@@ -39,15 +39,6 @@ const priorities = [
   { value: 'high', label: 'High' },
 ]
 
-const statuses = [
-  { value: 'none', label: 'None' },
-  { value: 'planned', label: 'Planned' },
-  { value: 'in_progress', label: 'In Progress' },
-  { value: 'completed', label: 'Completed' },
-  { value: 'cancelled', label: 'Cancelled' },
-  { value: 'overdue', label: 'Overdue' },
-]
-
 export default function ActionForm({
   isOpen,
   onClose,
@@ -133,37 +124,6 @@ export default function ActionForm({
               {priorities.map((priority) => (
                 <SelectItem key={priority.label} value={priority.value}>
                   {priority.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
-        {/* Status */}
-        <div>
-          <Label htmlFor="status">Status</Label>
-          <Select
-            value={formData.status || 'none'}
-            onValueChange={(value) => {
-              let status: string | null = null
-              if (
-                value === 'planned' ||
-                value === 'in_progress' ||
-                value === 'completed' ||
-                value === 'cancelled' ||
-                value === 'overdue'
-              )
-                status = value
-              setFormData({ ...formData, status })
-            }}
-          >
-            <SelectTrigger>
-              <SelectValue placeholder="Select status" />
-            </SelectTrigger>
-            <SelectContent>
-              {statuses.map((status) => (
-                <SelectItem key={status.label} value={status.value}>
-                  {status.label}
                 </SelectItem>
               ))}
             </SelectContent>
