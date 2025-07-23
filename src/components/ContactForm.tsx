@@ -88,14 +88,7 @@ export default function ContactForm({
     </div>
   )
 
-  // Fetch addresses when editing a contact
-  useEffect(() => {
-    if (editingContact && isOpen) {
-      fetchAddresses()
-    }
-  }, [editingContact, isOpen])
-
-  const fetchAddresses = async () => {
+  const fetchAddresses = React.useCallback(async () => {
     if (!editingContact) return
 
     try {
@@ -114,7 +107,14 @@ export default function ContactForm({
     } catch (error) {
       console.error('Error fetching addresses:', error)
     }
-  }
+  }, [editingContact])
+
+  // Fetch addresses when editing a contact
+  useEffect(() => {
+    if (editingContact && isOpen) {
+      fetchAddresses()
+    }
+  }, [editingContact, isOpen, fetchAddresses])
 
   const handleAddAddress = () => {
     setEditingAddress(null)

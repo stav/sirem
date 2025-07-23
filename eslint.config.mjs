@@ -16,7 +16,7 @@ const eslintConfig = [
       // Catch ASI issues
       'no-unexpected-multiline': 'error',
       // Enforce consistent semicolon style (none in our case)
-      'semi': ['error', 'never'],
+      semi: ['error', 'never'],
       // Catch potential ASI issues with specific patterns
       'no-unreachable': 'error',
     },

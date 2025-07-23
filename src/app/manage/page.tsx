@@ -55,25 +55,6 @@ export default function ManagePage() {
     deleteContact,
   } = useContacts()
 
-  // Update selectedContact when contacts list changes
-  useEffect(() => {
-    if (selectedContact && contacts.length > 0) {
-      const updatedContact = contacts.find((c) => c.id === selectedContact.id)
-      if (updatedContact) {
-        setSelectedContact(updatedContact)
-      }
-    }
-  }, [contacts])
-  const {
-    actions,
-    loading: actionsLoading,
-    createAction,
-    updateAction,
-    deleteAction,
-    toggleActionComplete,
-  } = useActions()
-  const { toast } = useToast()
-
   // UI state
   const [showContactForm, setShowContactForm] = useState(false)
   const [showActionForm, setShowActionForm] = useState(false)
@@ -86,6 +67,25 @@ export default function ManagePage() {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
   const [singleContactView, setSingleContactView] = useState(false)
   const [isSubmittingContact, setIsSubmittingContact] = useState(false)
+
+  // Update selectedContact when contacts list changes
+  useEffect(() => {
+    if (selectedContact && contacts.length > 0) {
+      const updatedContact = contacts.find((c) => c.id === selectedContact.id)
+      if (updatedContact) {
+        setSelectedContact(updatedContact)
+      }
+    }
+  }, [contacts, selectedContact])
+  const {
+    actions,
+    loading: actionsLoading,
+    createAction,
+    updateAction,
+    deleteAction,
+    toggleActionComplete,
+  } = useActions()
+  const { toast } = useToast()
 
   // Form data
   const [contactForm, setContactForm] = useState<ContactFormData>({

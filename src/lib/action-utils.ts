@@ -12,7 +12,9 @@ export function getDisplayDate(action: Action): string {
   if (action.completed_date) {
     return action.completed_date // When it happened
   } else if (action.end_date) {
-    return action.end_date // When it's due
+    return action.end_date // When it was due
+  } else if (action.start_date) {
+    return action.start_date // When it was scheduled to start
   }
   return action.created_at // Fallback
 }

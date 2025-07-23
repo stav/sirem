@@ -164,7 +164,6 @@ const customTheme = {
 ```tsx
 import 'ag-grid-community/styles/ag-grid.css'
 import 'ag-grid-community/styles/ag-theme-alpine.css'
-
 ;<div className="ag-theme-alpine">
   <AgGridReact
     theme="legacy" // Required for CSS themes
