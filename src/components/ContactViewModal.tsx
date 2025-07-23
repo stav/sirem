@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import ModalForm from '@/components/ui/modal-form'
 import { Button } from '@/components/ui/button'
-import { Edit } from 'lucide-react'
+import { Edit, Send } from 'lucide-react'
 import type { Database } from '@/lib/supabase'
 import { supabase } from '@/lib/supabase'
 import {
@@ -11,6 +11,7 @@ import {
   ContactMedicareInfo,
   ContactStatusFlags,
   ContactAdditionalInfo,
+  ContactEmailForm,
 } from './ContactViewModal/index'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
@@ -53,6 +54,7 @@ export default function ContactViewModal({ isOpen, onClose, contact, onEdit }: C
   const [addressesLoading, setAddressesLoading] = useState(false)
   const [tags, setTags] = useState<TagWithCategory[]>([])
   const [tagsLoading, setTagsLoading] = useState(false)
+  const [showEmailForm, setShowEmailForm] = useState(false)
 
   useEffect(() => {
     if (!contact || !isOpen) return
@@ -130,41 +132,59 @@ export default function ContactViewModal({ isOpen, onClose, contact, onEdit }: C
   if (!contact) return null
 
   return (
-    <ModalForm
-      isOpen={isOpen}
-      onCancel={onClose}
-      onSubmit={(e) => {
-        e.preventDefault()
-        onClose()
-      }}
-      title={
-        <div className="flex flex-row items-center gap-2">
-          <span>View Contact</span>
-          {onEdit && contact && (
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => onEdit(contact)}
-              className="flex items-center space-x-1"
-            >
-              <Edit className="h-3 w-3" />
-              <span>Edit</span>
-            </Button>
-          )}
+    <>
+      <ModalForm
+        isOpen={isOpen}
+        onCancel={onClose}
+        onSubmit={(e) => {
+          e.preventDefault()
+          onClose()
+        }}
+        title={
+          <div className="flex flex-row items-center gap-2">
+            <span>View Contact</span>
+            <div className="flex items-center gap-2">
+              {contact?.email && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowEmailForm(true)}
+                  className="flex items-center space-x-1"
+                >
+                  <Send className="h-3 w-3" />
+                  <span>Send Email</span>
+                </Button>
+              )}
+              {onEdit && contact && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onEdit(contact)}
+                  className="flex items-center space-x-1"
+                >
+                  <Edit className="h-3 w-3" />
+                  <span>Edit</span>
+                </Button>
+              )}
+            </div>
+          </div>
+        }
+        submitText=""
+        isLoading={false}
+      >
+        <div className="space-y-4">
+          <ContactBasicInfo contact={contact} tags={tags} tagsLoading={tagsLoading} />
+          <ContactAddresses addresses={addresses} addressesLoading={addressesLoading} />
+          <ContactPersonalInfo contact={contact} />
+          <ContactMedicareInfo contact={contact} />
+          <ContactStatusFlags contact={contact} />
+          <ContactAdditionalInfo contact={contact} />
         </div>
-      }
-      submitText=""
-      isLoading={false}
-    >
-      <div className="space-y-4">
-        <ContactBasicInfo contact={contact} tags={tags} tagsLoading={tagsLoading} />
-        <ContactAddresses addresses={addresses} addressesLoading={addressesLoading} />
-        <ContactPersonalInfo contact={contact} />
-        <ContactMedicareInfo contact={contact} />
-        <ContactStatusFlags contact={contact} />
-        <ContactAdditionalInfo contact={contact} />
-      </div>
-    </ModalForm>
+      </ModalForm>
+
+      <ContactEmailForm isOpen={showEmailForm} onClose={() => setShowEmailForm(false)} contact={contact} />
+    </>
   )
 }
