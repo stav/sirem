@@ -564,6 +564,191 @@ export type Database = {
           },
         ]
       }
+      email_campaigns: {
+        Row: {
+          id: string
+          created_at: string
+          updated_at: string
+          name: string
+          subject: string
+          content: string
+          plain_text_content: string | null
+          convertkit_campaign_id: number | null
+          convertkit_form_id: number | null
+          status: string
+          scheduled_at: string | null
+          sent_at: string | null
+          target_tags: string[] | null
+          target_t65_days: number | null
+          target_lead_statuses: string[] | null
+          metadata: Json | null
+          created_by: string
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          name: string
+          subject: string
+          content: string
+          plain_text_content?: string | null
+          convertkit_campaign_id?: number | null
+          convertkit_form_id?: number | null
+          status?: string
+          scheduled_at?: string | null
+          sent_at?: string | null
+          target_tags?: string[] | null
+          target_t65_days?: number | null
+          target_lead_statuses?: string[] | null
+          metadata?: Json | null
+          created_by?: string
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          name?: string
+          subject?: string
+          content?: string
+          plain_text_content?: string | null
+          convertkit_campaign_id?: number | null
+          convertkit_form_id?: number | null
+          status?: string
+          scheduled_at?: string | null
+          sent_at?: string | null
+          target_tags?: string[] | null
+          target_t65_days?: number | null
+          target_lead_statuses?: string[] | null
+          metadata?: Json | null
+          created_by?: string
+        }
+        Relationships: []
+      }
+      campaign_subscribers: {
+        Row: {
+          id: string
+          created_at: string
+          campaign_id: string
+          contact_id: string
+          convertkit_subscriber_id: number | null
+          convertkit_email: string
+          status: string
+          sent_at: string | null
+          delivered_at: string | null
+          opened_at: string | null
+          clicked_at: string | null
+          open_count: number
+          click_count: number
+          bounce_reason: string | null
+          metadata: Json | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          campaign_id: string
+          contact_id: string
+          convertkit_subscriber_id?: number | null
+          convertkit_email: string
+          status?: string
+          sent_at?: string | null
+          delivered_at?: string | null
+          opened_at?: string | null
+          clicked_at?: string | null
+          open_count?: number
+          click_count?: number
+          bounce_reason?: string | null
+          metadata?: Json | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          campaign_id?: string
+          contact_id?: string
+          convertkit_subscriber_id?: number | null
+          convertkit_email?: string
+          status?: string
+          sent_at?: string | null
+          delivered_at?: string | null
+          opened_at?: string | null
+          clicked_at?: string | null
+          open_count?: number
+          click_count?: number
+          bounce_reason?: string | null
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'campaign_subscribers_campaign_id_fkey'
+            columns: ['campaign_id']
+            isOneToOne: false
+            referencedRelation: 'email_campaigns'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'campaign_subscribers_contact_id_fkey'
+            columns: ['contact_id']
+            isOneToOne: false
+            referencedRelation: 'contacts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
+      convertkit_subscribers: {
+        Row: {
+          id: string
+          created_at: string
+          updated_at: string
+          convertkit_id: number
+          email: string
+          first_name: string | null
+          last_name: string | null
+          contact_id: string | null
+          state: string
+          subscribed_at: string | null
+          unsubscribed_at: string | null
+          convertkit_tags: string[] | null
+          metadata: Json | null
+        }
+        Insert: {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          convertkit_id: number
+          email: string
+          first_name?: string | null
+          last_name?: string | null
+          contact_id?: string | null
+          state?: string
+          subscribed_at?: string | null
+          unsubscribed_at?: string | null
+          convertkit_tags?: string[] | null
+          metadata?: Json | null
+        }
+        Update: {
+          id?: string
+          created_at?: string
+          updated_at?: string
+          convertkit_id?: number
+          email?: string
+          first_name?: string | null
+          last_name?: string | null
+          contact_id?: string | null
+          state?: string
+          subscribed_at?: string | null
+          unsubscribed_at?: string | null
+          convertkit_tags?: string[] | null
+          metadata?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'convertkit_subscribers_contact_id_fkey'
+            columns: ['contact_id']
+            isOneToOne: false
+            referencedRelation: 'contacts'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

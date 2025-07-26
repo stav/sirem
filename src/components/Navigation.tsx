@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Users, BarChart3, Table, Upload } from 'lucide-react'
+import { Users, BarChart3, Table, Upload, Mail } from 'lucide-react'
 
 interface NavigationProps {
   pageTitle: string
@@ -9,6 +9,7 @@ interface NavigationProps {
 const pages = [
   { title: 'Dashboard', path: '/', icon: BarChart3 },
   { title: 'Manage', path: '/manage', icon: Users },
+  { title: 'Campaigns', path: '/campaigns', icon: Mail },
   { title: 'Sheets', path: '/sheets', icon: Table },
   { title: 'Import', path: '/import', icon: Upload },
 ]

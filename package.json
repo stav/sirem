@@ -13,6 +13,8 @@
     "format:check": "prettier --check .",
     "dump-data": "node scripts/supabase-dump.mjs",
     "show-migrations": "node data/schema/run-migrations.mjs",
+    "migrate-campaigns": "node scripts/run-email-campaigns-migration.mjs",
+    "rollback-campaigns": "node scripts/rollback-email-campaigns.mjs",
     "clean": "rm -rf .next out",
     "analyze": "ANALYZE=true npm run build"
   },
@@ -22,6 +24,7 @@
     "@radix-ui/react-select": "^2.2.5",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-switch": "^1.2.5",
+    "@radix-ui/react-tabs": "^1.1.12",
     "@radix-ui/react-toast": "^1.2.14",
     "@radix-ui/react-tooltip": "^1.2.7",
     "@supabase/ssr": "^0.6.1",
