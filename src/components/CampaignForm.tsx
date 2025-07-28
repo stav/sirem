@@ -6,9 +6,28 @@ import { Textarea } from './ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
 import { Badge } from './ui/badge'
-import { X } from 'lucide-react'
+import { X, Users } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import type { CampaignForm } from '../hooks/useEmailCampaigns'
+import { SubscriberSyncModal } from './SubscriberSyncModal'
+
+interface Contact {
+  id: string
+  first_name: string
+  last_name: string
+  email: string
+  lead_status_id?: string
+  tags?: string[]
+}
+
+interface ConvertKitSubscriber {
+  id: number
+  email_address: string
+  first_name?: string
+  last_name?: string
+  state: 'active' | 'inactive' | 'unsubscribed'
+  tags?: { id: number; name: string }[]
+}
 
 interface CampaignFormProps {
   initialData?: Partial<CampaignForm>
@@ -44,6 +63,9 @@ export function CampaignForm({ initialData, onSubmit, onCancel, loading }: Campa
 
   const [availableTags, setAvailableTags] = useState<Tag[]>([])
   const [availableLeadStatuses, setAvailableLeadStatuses] = useState<LeadStatus[]>([])
+  const [showSubscriberSync, setShowSubscriberSync] = useState(false)
+  const [selectedContacts, setSelectedContacts] = useState<Contact[]>([])
+  const [selectedSubscribers, setSelectedSubscribers] = useState<ConvertKitSubscriber[]>([])
 
   useEffect(() => {
     fetchTags()
@@ -270,6 +292,31 @@ export function CampaignForm({ initialData, onSubmit, onCancel, loading }: Campa
                 />
                 <p className="text-sm text-muted-foreground">Leave empty to send immediately when ready</p>
               </div>
+
+              {/* Subscriber Sync */}
+              <div className="space-y-2">
+                <Label>Campaign Recipients</Label>
+                <div className="flex items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowSubscriberSync(true)}
+                    className="flex items-center gap-2"
+                  >
+                    <Users className="h-4 w-4" />
+                    Sync Subscribers
+                  </Button>
+                  {(selectedContacts.length > 0 || selectedSubscribers.length > 0) && (
+                    <div className="text-sm text-muted-foreground">
+                      {selectedContacts.length} CRM contacts + {selectedSubscribers.length} ConvertKit subscribers
+                      selected
+                    </div>
+                  )}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Manually select which contacts and subscribers should receive this campaign
+                </p>
+              </div>
             </div>
 
             {/* Action Buttons */}
@@ -284,6 +331,17 @@ export function CampaignForm({ initialData, onSubmit, onCancel, loading }: Campa
           </form>
         </CardContent>
       </Card>
+
+      {/* Subscriber Sync Modal */}
+      <SubscriberSyncModal
+        isOpen={showSubscriberSync}
+        onClose={() => setShowSubscriberSync(false)}
+        onConfirm={(contacts, subscribers) => {
+          setSelectedContacts(contacts)
+          setSelectedSubscribers(subscribers)
+          setShowSubscriberSync(false)
+        }}
+      />
     </div>
   )
 }

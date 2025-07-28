@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase } from '../lib/supabase'
-import { convertkit } from '../lib/convertkit'
 import type { Database } from '../lib/supabase-types'
 
 type EmailCampaign = Database['public']['Tables']['email_campaigns']['Row']
@@ -14,6 +13,24 @@ export interface CampaignForm {
   target_t65_days?: number
   target_lead_statuses?: string[]
   scheduled_at?: string
+}
+
+interface Contact {
+  id: string
+  first_name: string
+  last_name: string
+  email: string | null
+  lead_status_id?: string | null
+  tags?: string[]
+}
+
+interface ConvertKitSubscriber {
+  id: number
+  email_address: string
+  first_name?: string
+  last_name?: string
+  state: 'active' | 'inactive' | 'unsubscribed'
+  tags?: { id: number; name: string }[]
 }
 
 export function useEmailCampaigns() {
@@ -129,7 +146,11 @@ export function useEmailCampaigns() {
     }
   }
 
-  const sendCampaign = async (campaignId: string): Promise<boolean> => {
+  const sendCampaign = async (
+    campaignId: string,
+    selectedContacts?: Contact[],
+    selectedSubscribers?: ConvertKitSubscriber[]
+  ): Promise<boolean> => {
     try {
       setError(null)
 
@@ -144,39 +165,98 @@ export function useEmailCampaigns() {
         throw fetchError || new Error('Campaign not found')
       }
 
-      // Get target contacts based on campaign criteria
-      const targetContacts = await getTargetContacts(campaign)
+      // Use manually selected contacts/subscribers if provided, otherwise use targeting criteria
+      let targetContacts = selectedContacts || []
+      const targetSubscribers = selectedSubscribers || []
 
-      if (targetContacts.length === 0) {
-        setError('No contacts match the campaign criteria')
-        return false
+      if (!selectedContacts && !selectedSubscribers) {
+        // Fall back to targeting criteria
+        targetContacts = await getTargetContacts(campaign)
+        if (targetContacts.length === 0) {
+          setError('No contacts match the campaign criteria')
+          return false
+        }
       }
 
       // Create ConvertKit broadcast
-      const broadcast = await convertkit.createBroadcast(campaign.name, campaign.subject, campaign.content)
+      const broadcastResponse = await fetch('/api/convertkit/broadcasts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: campaign.name,
+          subject: campaign.subject,
+          content: campaign.content,
+        }),
+      })
+
+      if (!broadcastResponse.ok) {
+        throw new Error('Failed to create ConvertKit broadcast')
+      }
+
+      const broadcast = await broadcastResponse.json()
 
       // Update campaign with ConvertKit broadcast ID
       await supabase
         .from('email_campaigns')
         .update({
-          convertkit_campaign_id: broadcast.id,
+          convertkit_campaign_id: broadcast.broadcast.id,
           status: 'sending',
           sent_at: new Date().toISOString(),
         })
         .eq('id', campaignId)
 
+      // Add CRM contacts to ConvertKit if they're not already subscribers
+      const contactsToAdd = targetContacts.filter(
+        (contact) => !targetSubscribers.some((sub) => sub.email_address === contact.email)
+      )
+
+      for (const contact of contactsToAdd) {
+        if (contact.email) {
+          try {
+            await fetch('/api/convertkit/subscribers/create', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                email: contact.email,
+                first_name: contact.first_name,
+                last_name: contact.last_name,
+              }),
+            })
+          } catch (error) {
+            console.warn(`Failed to add contact ${contact.email} to ConvertKit:`, error)
+          }
+        }
+      }
+
       // Create campaign subscribers records
-      const subscriberRecords = targetContacts.map((contact) => ({
+      const contactRecords = targetContacts.map((contact) => ({
         campaign_id: campaignId,
         contact_id: contact.id,
         convertkit_email: contact.email || '',
         status: 'pending',
       }))
 
-      await supabase.from('campaign_subscribers').insert(subscriberRecords)
+      const subscriberRecords = targetSubscribers.map((subscriber) => ({
+        campaign_id: campaignId,
+        contact_id: '', // Use empty string instead of null
+        convertkit_email: subscriber.email_address,
+        status: 'pending',
+      }))
+
+      await supabase.from('campaign_subscribers').insert([...contactRecords, ...subscriberRecords])
 
       // Send the broadcast
-      await convertkit.sendBroadcast(broadcast.id)
+      const sendResponse = await fetch(`/api/convertkit/broadcasts/${broadcast.broadcast.id}/send`, {
+        method: 'POST',
+      })
+
+      if (!sendResponse.ok) {
+        throw new Error('Failed to send ConvertKit broadcast')
+      }
 
       // Update campaign status to sent
       await supabase.from('email_campaigns').update({ status: 'sent' }).eq('id', campaignId)

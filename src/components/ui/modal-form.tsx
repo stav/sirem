@@ -13,6 +13,7 @@ interface ModalFormProps {
   submitText?: string
   editingInfo?: ReactNode
   zIndex?: number
+  size?: 'sm' | 'md' | 'lg' | 'xl' | 'full'
 }
 
 export default function ModalForm({
@@ -25,8 +26,27 @@ export default function ModalForm({
   submitText = 'Save',
   editingInfo,
   zIndex = 50,
+  size = 'md',
 }: ModalFormProps) {
   const modalRef = useRef<HTMLDivElement>(null)
+
+  // Get size classes
+  const getSizeClasses = () => {
+    switch (size) {
+      case 'sm':
+        return 'max-w-sm'
+      case 'md':
+        return 'max-w-md'
+      case 'lg':
+        return 'max-w-lg'
+      case 'xl':
+        return 'max-w-4xl'
+      case 'full':
+        return 'max-w-7xl'
+      default:
+        return 'max-w-md'
+    }
+  }
 
   // Close modal on Escape key
   useEffect(() => {
@@ -52,7 +72,7 @@ export default function ModalForm({
         }
       }}
     >
-      <Card className="flex max-h-[90vh] w-full max-w-md flex-col" ref={modalRef}>
+      <Card className={`flex max-h-[90vh] w-full ${getSizeClasses()} flex-col`} ref={modalRef}>
         <CardHeader className="relative flex-shrink-0">
           <Button
             variant="ghost"
