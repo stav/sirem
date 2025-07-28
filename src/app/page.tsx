@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { supabase } from '@/lib/supabase'
@@ -265,51 +265,125 @@ export default function Home() {
     }
   }
 
-  // Calculate metrics
-  const totalContacts = contacts.length
-  const totalReminders = reminders.length
-  const completedReminders = reminders.filter((r) => r.is_complete).length
-  const pendingReminders = totalReminders - completedReminders
-  const overdueReminders = reminders.filter((r) => !r.is_complete && new Date(r.reminder_date) < new Date()).length
+  // Memoize expensive calculations
+  const dashboardData = useMemo(() => {
+    if (loading) return null
 
-  // Get upcoming reminders
-  const upcomingReminders = reminders
-    .filter((r) => {
-      if (r.is_complete) return false
-      const reminderDate = new Date(r.reminder_date)
-      const today = new Date()
-      reminderDate.setHours(0, 0, 0, 0)
-      today.setHours(0, 0, 0, 0)
-      return reminderDate >= today
-    })
-    .slice(0, 5)
+    // Calculate metrics
+    const totalContacts = contacts.length
+    const totalReminders = reminders.length
+    const completedReminders = reminders.filter((r) => r.is_complete).length
+    const pendingReminders = totalReminders - completedReminders
+    const overdueReminders = reminders.filter((r) => !r.is_complete && new Date(r.reminder_date) < new Date()).length
 
-  // Get priority distribution
-  const priorityStats = {
-    high: reminders.filter((r) => r.priority === 'high' && !r.is_complete).length,
-    medium: reminders.filter((r) => r.priority === 'medium' && !r.is_complete).length,
-    low: reminders.filter((r) => r.priority === 'low' && !r.is_complete).length,
-  }
+    // Get upcoming reminders
+    const upcomingReminders = reminders
+      .filter((r) => {
+        if (r.is_complete) return false
+        const reminderDate = new Date(r.reminder_date)
+        const today = new Date()
+        reminderDate.setHours(0, 0, 0, 0)
+        today.setHours(0, 0, 0, 0)
+        return reminderDate >= today
+      })
+      .slice(0, 5)
 
-  if (loading) {
+    // Get priority distribution
+    const priorityStats = {
+      high: reminders.filter((r) => r.priority === 'high' && !r.is_complete).length,
+      medium: reminders.filter((r) => r.priority === 'medium' && !r.is_complete).length,
+      low: reminders.filter((r) => r.priority === 'low' && !r.is_complete).length,
+    }
+
+    // Calculate birthday data
+    const upcoming65 = getUpcoming65(contacts)
+    const recent65 = getRecent65(contacts)
+    const upcomingBirthdays = getUpcomingBirthdays(contacts)
+    const pastBirthdays = getPastBirthdays(contacts)
+
+    return {
+      totalContacts,
+      totalReminders,
+      completedReminders,
+      pendingReminders,
+      overdueReminders,
+      upcomingReminders,
+      priorityStats,
+      upcoming65,
+      recent65,
+      upcomingBirthdays,
+      pastBirthdays,
+    }
+  }, [contacts, reminders, loading])
+
+  // Early return if still loading or no data
+  if (loading || !dashboardData) {
     return (
-      <div className="min-h-screen bg-background p-6">
-        <div className="mx-auto max-w-7xl">
-          <div className="animate-pulse">
-            <div className="mb-8 h-8 w-1/4 rounded bg-muted"></div>
-            <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-              {[...Array(4)].map((_, i) => (
-                <div key={i} className="rounded-lg bg-card p-6 shadow">
-                  <div className="mb-2 h-4 w-1/2 rounded bg-muted"></div>
-                  <div className="h-8 w-1/3 rounded bg-muted"></div>
+      <div className="min-h-screen bg-background">
+        <Navigation pageTitle="Dashboard" />
+        <div className="p-6">
+          <div className="mx-auto max-w-7xl">
+            {loading ? (
+              <div className="animate-pulse">
+                <div className="mb-8 h-8 w-1/4 rounded bg-muted"></div>
+                <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="rounded-lg bg-card p-6 shadow">
+                      <div className="mb-2 h-4 w-1/2 rounded bg-muted"></div>
+                      <div className="h-8 w-1/3 rounded bg-muted"></div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+                <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+                  <div className="space-y-8 lg:col-span-2">
+                    {[...Array(2)].map((_, i) => (
+                      <div key={i} className="rounded-lg bg-card p-6 shadow">
+                        <div className="mb-4 h-6 w-1/3 rounded bg-muted"></div>
+                        <div className="space-y-3">
+                          {[...Array(4)].map((_, j) => (
+                            <div key={j} className="h-4 rounded bg-muted"></div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="space-y-6">
+                    {[...Array(2)].map((_, i) => (
+                      <div key={i} className="rounded-lg bg-card p-6 shadow">
+                        <div className="mb-4 h-6 w-1/2 rounded bg-muted"></div>
+                        <div className="space-y-3">
+                          {[...Array(3)].map((_, j) => (
+                            <div key={j} className="h-4 rounded bg-muted"></div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="py-12 text-center">
+                <p className="text-muted-foreground">Loading dashboard data...</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
     )
   }
+
+  const {
+    totalContacts,
+    pendingReminders,
+    overdueReminders,
+    completedReminders,
+    upcomingReminders,
+    priorityStats,
+    upcoming65,
+    recent65,
+    upcomingBirthdays,
+    pastBirthdays,
+  } = dashboardData
 
   return (
     <div className="min-h-screen bg-background">
@@ -317,252 +391,285 @@ export default function Home() {
 
       <div className="p-6">
         <div className="mx-auto max-w-7xl">
-          {/* Metrics Cards */}
-          <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <div className="rounded-lg bg-blue-100 p-2">
-                    <Users className="h-6 w-6 text-blue-600" />
+          {loading ? (
+            <div className="animate-pulse">
+              <div className="mb-8 h-8 w-1/4 rounded bg-muted"></div>
+              <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="rounded-lg bg-card p-6 shadow">
+                    <div className="mb-2 h-4 w-1/2 rounded bg-muted"></div>
+                    <div className="h-8 w-1/3 rounded bg-muted"></div>
                   </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-muted-foreground">Total Contacts</p>
-                    <p className="text-2xl font-bold text-foreground">{totalContacts}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <div className="rounded-lg bg-orange-100 p-2">
-                    <Bell className="h-6 w-6 text-orange-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-muted-foreground">Pending Reminders</p>
-                    <p className="text-2xl font-bold text-foreground">{pendingReminders}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <div className="rounded-lg bg-red-100 p-2">
-                    <AlertTriangle className="h-6 w-6 text-red-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-muted-foreground">Overdue</p>
-                    <p className="text-2xl font-bold text-foreground">{overdueReminders}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <div className="rounded-lg bg-green-100 p-2">
-                    <CheckCircle className="h-6 w-6 text-green-600" />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-muted-foreground">Completed</p>
-                    <p className="text-2xl font-bold text-foreground">{completedReminders}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Main Content Grid */}
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-            {/* Turning 65 */}
-            <div className="lg:col-span-2">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Turning 65</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    {/* Upcoming 65 */}
-                    <div className="relative md:after:absolute md:after:bottom-0 md:after:right-[-12px] md:after:top-0 md:after:w-px md:after:bg-border">
-                      <h4 className="mb-3 text-sm font-medium text-muted-foreground">Upcoming</h4>
-                      {(() => {
-                        const upcoming65 = getUpcoming65(contacts)
-                        return upcoming65.length === 0 ? (
-                          <div className="py-4 text-center">
-                            <p className="text-sm text-muted-foreground">No upcoming 65th birthdays</p>
-                          </div>
-                        ) : (
-                          <div className="max-h-48 space-y-1 overflow-y-auto">
-                            {upcoming65.map((contact) => renderContactRow(contact, router))}
-                          </div>
-                        )
-                      })()}
+                ))}
+              </div>
+              <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+                <div className="space-y-8 lg:col-span-2">
+                  {[...Array(2)].map((_, i) => (
+                    <div key={i} className="rounded-lg bg-card p-6 shadow">
+                      <div className="mb-4 h-6 w-1/3 rounded bg-muted"></div>
+                      <div className="space-y-3">
+                        {[...Array(4)].map((_, j) => (
+                          <div key={j} className="h-4 rounded bg-muted"></div>
+                        ))}
+                      </div>
                     </div>
-
-                    {/* Recent 65 */}
-                    <div className="relative">
-                      <h4 className="mb-3 text-sm font-medium text-muted-foreground">Recent</h4>
-                      {(() => {
-                        const recent65 = getRecent65(contacts)
-                        return recent65.length === 0 ? (
-                          <div className="py-4 text-center">
-                            <p className="text-sm text-muted-foreground">No recent 65th birthdays</p>
-                          </div>
-                        ) : (
-                          <div className="max-h-48 space-y-1 overflow-y-auto">
-                            {recent65.map((contact) => renderContactRow(contact, router, true, 'outline'))}
-                          </div>
-                        )
-                      })()}
+                  ))}
+                </div>
+                <div className="space-y-6">
+                  {[...Array(2)].map((_, i) => (
+                    <div key={i} className="rounded-lg bg-card p-6 shadow">
+                      <div className="mb-4 h-6 w-1/2 rounded bg-muted"></div>
+                      <div className="space-y-3">
+                        {[...Array(3)].map((_, j) => (
+                          <div key={j} className="h-4 rounded bg-muted"></div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Birthdays Card */}
-              <Card className="mt-8">
-                <CardHeader>
-                  <CardTitle>Birthdays</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                    {/* Upcoming Birthdays */}
-                    <div className="relative md:after:absolute md:after:bottom-0 md:after:right-[-12px] md:after:top-0 md:after:w-px md:after:bg-border">
-                      <h4 className="mb-3 text-sm font-medium text-muted-foreground">Upcoming</h4>
-                      {(() => {
-                        const upcomingBirthdays = getUpcomingBirthdays(contacts)
-                        return upcomingBirthdays.length === 0 ? (
-                          <div className="py-4 text-center">
-                            <p className="text-sm text-muted-foreground">No upcoming birthdays</p>
-                          </div>
-                        ) : (
-                          <div className="max-h-48 space-y-1 overflow-y-auto">
-                            {upcomingBirthdays.map((contact) => renderContactRow(contact, router))}
-                          </div>
-                        )
-                      })()}
-                    </div>
-
-                    {/* Recent Birthdays */}
-                    <div className="relative">
-                      <h4 className="mb-3 text-sm font-medium text-muted-foreground">Recent</h4>
-                      {(() => {
-                        const pastBirthdays = getPastBirthdays(contacts)
-                        return pastBirthdays.length === 0 ? (
-                          <div className="py-4 text-center">
-                            <p className="text-sm text-muted-foreground">No recent birthdays</p>
-                          </div>
-                        ) : (
-                          <div className="max-h-48 space-y-1 overflow-y-auto">
-                            {pastBirthdays.map((contact) => renderContactRow(contact, router, true, 'outline'))}
-                          </div>
-                        )
-                      })()}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                  ))}
+                </div>
+              </div>
             </div>
-
-            {/* Upcoming Reminders */}
-            <div>
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle>Upcoming Reminders</CardTitle>
-                    <Link href="/manage" className="flex items-center text-sm text-primary hover:text-primary/80">
-                      View all <ArrowRight className="ml-1 h-4 w-4" />
-                    </Link>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {upcomingReminders.length === 0 ? (
-                    <div className="py-8 text-center">
-                      <Bell className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
-                      <p className="text-muted-foreground">No upcoming reminders</p>
-                      <Link href="/manage" className="mt-2 inline-flex items-center text-primary hover:text-primary/80">
-                        <Plus className="mr-1 h-4 w-4" />
-                        Add a reminder
-                      </Link>
+          ) : (
+            <>
+              {/* Metrics Cards */}
+              <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center">
+                      <div className="rounded-lg bg-blue-100 p-2">
+                        <Users className="h-6 w-6 text-blue-600" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-muted-foreground">Total Contacts</p>
+                        <p className="text-2xl font-bold text-foreground">{totalContacts}</p>
+                      </div>
                     </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {upcomingReminders.map((reminder) => (
-                        <div
-                          key={reminder.id}
-                          className="cursor-pointer rounded-lg bg-muted/50 p-2 transition-colors hover:bg-muted/70"
-                          onClick={() => {
-                            // Navigate to manage page with reminder selected
-                            router.push(`/manage?reminder=${reminder.id}`)
-                          }}
-                        >
-                          <div className="flex items-start justify-between">
-                            <div className="flex-1">
-                              <h4 className="font-medium text-foreground">{reminder.title}</h4>
-                              <div className="mt-1 flex items-center space-x-2">
-                                <Badge
-                                  variant={
-                                    reminder.priority === 'high'
-                                      ? 'destructive'
-                                      : reminder.priority === 'medium'
-                                        ? 'default'
-                                        : 'secondary'
-                                  }
-                                  className="text-xs"
-                                >
-                                  {reminder.priority}
-                                </Badge>
-                                <span className="ml-2 text-xs text-muted-foreground">
-                                  {formatLocalDate(reminder.reminder_date)}
-                                </span>
-                                <span className="ml-2 flex items-center text-xs text-muted-foreground">
-                                  <Users className="mr-1 h-3 w-3" />
-                                  {reminder.contact?.first_name} {reminder.contact?.last_name}
-                                </span>
-                              </div>
-                              {reminder.description && (
-                                <p className="mt-1 text-sm text-muted-foreground">{reminder.description}</p>
-                              )}
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center">
+                      <div className="rounded-lg bg-orange-100 p-2">
+                        <Bell className="h-6 w-6 text-orange-600" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-muted-foreground">Pending Reminders</p>
+                        <p className="text-2xl font-bold text-foreground">{pendingReminders}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center">
+                      <div className="rounded-lg bg-red-100 p-2">
+                        <AlertTriangle className="h-6 w-6 text-red-600" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-muted-foreground">Overdue</p>
+                        <p className="text-2xl font-bold text-foreground">{overdueReminders}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardContent className="p-6">
+                    <div className="flex items-center">
+                      <div className="rounded-lg bg-green-100 p-2">
+                        <CheckCircle className="h-6 w-6 text-green-600" />
+                      </div>
+                      <div className="ml-4">
+                        <p className="text-sm font-medium text-muted-foreground">Completed</p>
+                        <p className="text-2xl font-bold text-foreground">{completedReminders}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Main Content Grid */}
+              <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+                {/* Turning 65 */}
+                <div className="lg:col-span-2">
+                  <Card>
+                    <CardHeader>
+                      <CardTitle>Turning 65</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        {/* Upcoming 65 */}
+                        <div className="relative md:after:absolute md:after:bottom-0 md:after:right-[-12px] md:after:top-0 md:after:w-px md:after:bg-border">
+                          <h4 className="mb-3 text-sm font-medium text-muted-foreground">Upcoming</h4>
+                          {upcoming65.length === 0 ? (
+                            <div className="py-4 text-center">
+                              <p className="text-sm text-muted-foreground">No upcoming 65th birthdays</p>
                             </div>
-                            <div className="ml-2">
-                              <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <div className="max-h-48 space-y-1 overflow-y-auto">
+                              {upcoming65.map((contact) => renderContactRow(contact, router))}
                             </div>
-                          </div>
+                          )}
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
 
-              {/* Priority Distribution */}
-              <Card className="mt-6">
-                <CardHeader>
-                  <CardTitle>Priority Distribution</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">High Priority</span>
-                      <Badge variant="destructive">{priorityStats.high}</Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Medium Priority</span>
-                      <Badge variant="default">{priorityStats.medium}</Badge>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">Low Priority</span>
-                      <Badge variant="secondary">{priorityStats.low}</Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+                        {/* Recent 65 */}
+                        <div className="relative">
+                          <h4 className="mb-3 text-sm font-medium text-muted-foreground">Recent</h4>
+                          {recent65.length === 0 ? (
+                            <div className="py-4 text-center">
+                              <p className="text-sm text-muted-foreground">No recent 65th birthdays</p>
+                            </div>
+                          ) : (
+                            <div className="max-h-48 space-y-1 overflow-y-auto">
+                              {recent65.map((contact) => renderContactRow(contact, router, true, 'outline'))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Birthdays Card */}
+                  <Card className="mt-8">
+                    <CardHeader>
+                      <CardTitle>Birthdays</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        {/* Upcoming Birthdays */}
+                        <div className="relative md:after:absolute md:after:bottom-0 md:after:right-[-12px] md:after:top-0 md:after:w-px md:after:bg-border">
+                          <h4 className="mb-3 text-sm font-medium text-muted-foreground">Upcoming</h4>
+                          {upcomingBirthdays.length === 0 ? (
+                            <div className="py-4 text-center">
+                              <p className="text-sm text-muted-foreground">No upcoming birthdays</p>
+                            </div>
+                          ) : (
+                            <div className="max-h-48 space-y-1 overflow-y-auto">
+                              {upcomingBirthdays.map((contact) => renderContactRow(contact, router))}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Recent Birthdays */}
+                        <div className="relative">
+                          <h4 className="mb-3 text-sm font-medium text-muted-foreground">Recent</h4>
+                          {pastBirthdays.length === 0 ? (
+                            <div className="py-4 text-center">
+                              <p className="text-sm text-muted-foreground">No recent birthdays</p>
+                            </div>
+                          ) : (
+                            <div className="max-h-48 space-y-1 overflow-y-auto">
+                              {pastBirthdays.map((contact) => renderContactRow(contact, router, true, 'outline'))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Upcoming Reminders */}
+                <div>
+                  <Card>
+                    <CardHeader>
+                      <div className="flex items-center justify-between">
+                        <CardTitle>Upcoming Reminders</CardTitle>
+                        <Link href="/manage" className="flex items-center text-sm text-primary hover:text-primary/80">
+                          View all <ArrowRight className="ml-1 h-4 w-4" />
+                        </Link>
+                      </div>
+                    </CardHeader>
+                    <CardContent>
+                      {upcomingReminders.length === 0 ? (
+                        <div className="py-8 text-center">
+                          <Bell className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                          <p className="text-muted-foreground">No upcoming reminders</p>
+                          <Link
+                            href="/manage"
+                            className="mt-2 inline-flex items-center text-primary hover:text-primary/80"
+                          >
+                            <Plus className="mr-1 h-4 w-4" />
+                            Add a reminder
+                          </Link>
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {upcomingReminders.map((reminder) => (
+                            <div
+                              key={reminder.id}
+                              className="cursor-pointer rounded-lg bg-muted/50 p-2 transition-colors hover:bg-muted/70"
+                              onClick={() => {
+                                // Navigate to manage page with reminder selected
+                                router.push(`/manage?reminder=${reminder.id}`)
+                              }}
+                            >
+                              <div className="flex items-start justify-between">
+                                <div className="flex-1">
+                                  <h4 className="font-medium text-foreground">{reminder.title}</h4>
+                                  <div className="mt-1 flex items-center space-x-2">
+                                    <Badge
+                                      variant={
+                                        reminder.priority === 'high'
+                                          ? 'destructive'
+                                          : reminder.priority === 'medium'
+                                            ? 'default'
+                                            : 'secondary'
+                                      }
+                                      className="text-xs"
+                                    >
+                                      {reminder.priority}
+                                    </Badge>
+                                    <span className="ml-2 text-xs text-muted-foreground">
+                                      {formatLocalDate(reminder.reminder_date)}
+                                    </span>
+                                    <span className="ml-2 flex items-center text-xs text-muted-foreground">
+                                      <Users className="mr-1 h-3 w-3" />
+                                      {reminder.contact?.first_name} {reminder.contact?.last_name}
+                                    </span>
+                                  </div>
+                                  {reminder.description && (
+                                    <p className="mt-1 text-sm text-muted-foreground">{reminder.description}</p>
+                                  )}
+                                </div>
+                                <div className="ml-2">
+                                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+
+                  {/* Priority Distribution */}
+                  <Card className="mt-6">
+                    <CardHeader>
+                      <CardTitle>Priority Distribution</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">High Priority</span>
+                          <Badge variant="destructive">{priorityStats.high}</Badge>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">Medium Priority</span>
+                          <Badge variant="default">{priorityStats.medium}</Badge>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-medium">Low Priority</span>
+                          <Badge variant="secondary">{priorityStats.low}</Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>
