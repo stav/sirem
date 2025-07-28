@@ -316,7 +316,7 @@ class ConvertKitService {
           const { data: existingSubscriber } = await supabase
             .from('convertkit_subscribers')
             .select('convertkit_id')
-            .eq('email', contact.email)
+            .eq('email', contact.email!)
             .single()
 
           if (existingSubscriber) {
@@ -327,7 +327,7 @@ class ConvertKitService {
               .eq('convertkit_id', existingSubscriber.convertkit_id)
           } else {
             // Create new ConvertKit subscriber
-            const subscriber = await this.createSubscriber(contact.email, contact.first_name, contact.last_name)
+            const subscriber = await this.createSubscriber(contact.email!, contact.first_name, contact.last_name)
 
             // Store in local database
             await supabase.from('convertkit_subscribers').insert({
