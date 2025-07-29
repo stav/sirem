@@ -29,31 +29,39 @@ async function makeConvertKitRequest(endpoint: string, options: RequestInit = {}
   return response.json()
 }
 
-export async function POST(request: NextRequest) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const body = await request.json()
-    const { name, subject, content, tag_ids } = body
+    const { id: broadcastId } = await params
 
-    console.log('Creating broadcast with:', { name, subject, content: content?.substring(0, 100) + '...' })
-
-    const response = await makeConvertKitRequest('/broadcasts', {
-      method: 'POST',
-      body: JSON.stringify({
-        broadcast: {
-          name,
-          subject,
-          content,
-          tag_ids: tag_ids || [],
-        },
-      }),
-    })
-
-    console.log('Broadcast created:', response)
+    const response = await makeConvertKitRequest(`/broadcasts/${broadcastId}`)
     return NextResponse.json(response)
   } catch (error) {
-    console.error('Error creating ConvertKit broadcast:', error)
+    console.error('Error fetching ConvertKit broadcast:', error)
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to create broadcast' },
+      { error: error instanceof Error ? error.message : 'Failed to fetch broadcast' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id: broadcastId } = await params
+    const body = await request.json()
+
+    console.log('Updating broadcast:', broadcastId, 'with:', body)
+
+    const response = await makeConvertKitRequest(`/broadcasts/${broadcastId}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    })
+
+    console.log('Broadcast updated:', response)
+    return NextResponse.json(response)
+  } catch (error) {
+    console.error('Error updating ConvertKit broadcast:', error)
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'Failed to update broadcast' },
       { status: 500 }
     )
   }

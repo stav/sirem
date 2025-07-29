@@ -27,6 +27,8 @@ interface CampaignListProps {
   campaigns: EmailCampaign[]
   loading: boolean
   error: string | null
+  sendingCampaign?: string | null
+  sendProgress?: string
   onCreateCampaign: (data: CampaignFormType) => Promise<boolean>
   onUpdateCampaign: (id: string, data: Partial<CampaignFormType>) => Promise<boolean>
   onDeleteCampaign: (id: string) => Promise<boolean>
@@ -42,6 +44,8 @@ const getStatusIcon = (status: string) => {
       return <Calendar className="h-4 w-4" />
     case 'sending':
       return <Send className="h-4 w-4" />
+    case 'prepared':
+      return <CheckCircle className="h-4 w-4" />
     case 'sent':
       return <CheckCircle className="h-4 w-4" />
     case 'cancelled':
@@ -59,6 +63,8 @@ const getStatusColor = (status: string) => {
       return 'bg-blue-100 text-blue-800'
     case 'sending':
       return 'bg-yellow-100 text-yellow-800'
+    case 'prepared':
+      return 'bg-green-100 text-green-800'
     case 'sent':
       return 'bg-green-100 text-green-800'
     case 'cancelled':
@@ -72,6 +78,8 @@ export function CampaignList({
   campaigns,
   loading,
   error,
+  sendingCampaign,
+  sendProgress,
   onCreateCampaign,
   onUpdateCampaign,
   onDeleteCampaign,
@@ -237,40 +245,65 @@ export function CampaignList({
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex gap-2 pt-2">
-                  {campaign.status === 'draft' && (
-                    <>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => setEditingCampaign(campaign)}
-                        className="flex-1"
-                      >
-                        <Edit className="mr-1 h-4 w-4" />
-                        Edit
-                      </Button>
-                      <Button size="sm" onClick={() => handleSendCampaign(campaign.id)} className="flex-1">
-                        <Send className="mr-1 h-4 w-4" />
-                        Send
-                      </Button>
-                    </>
-                  )}
+                <div className="space-y-2">
+                  <div className="flex gap-2">
+                    {campaign.status === 'draft' && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => setEditingCampaign(campaign)}
+                          className="flex-1"
+                          disabled={sendingCampaign === campaign.id}
+                        >
+                          <Edit className="mr-1 h-4 w-4" />
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleSendCampaign(campaign.id)}
+                          className="flex-1"
+                          disabled={sendingCampaign === campaign.id}
+                        >
+                          {sendingCampaign === campaign.id ? (
+                            <>
+                              <div className="mr-1 h-4 w-4 animate-spin rounded-full border-b-2 border-current"></div>
+                              Creating...
+                            </>
+                          ) : (
+                            <>
+                              <Send className="mr-1 h-4 w-4" />
+                              Create Broadcast
+                            </>
+                          )}
+                        </Button>
+                      </>
+                    )}
 
-                  {campaign.status === 'sent' && (
-                    <Button size="sm" variant="outline" onClick={() => onViewStats(campaign.id)} className="flex-1">
-                      <BarChart3 className="mr-1 h-4 w-4" />
-                      Stats
+                    {(campaign.status === 'sent' || campaign.status === 'prepared') && (
+                      <Button size="sm" variant="outline" onClick={() => onViewStats(campaign.id)} className="flex-1">
+                        <BarChart3 className="mr-1 h-4 w-4" />
+                        {campaign.status === 'prepared' ? 'View Details' : 'Stats'}
+                      </Button>
+                    )}
+
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDeleteCampaign(campaign.id)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </Button>
-                  )}
+                  </div>
 
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleDeleteCampaign(campaign.id)}
-                    className="text-red-600 hover:text-red-700"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
+                  {/* Progress Indicator */}
+                  {sendingCampaign === campaign.id && sendProgress && (
+                    <div className="flex items-center gap-2 text-xs text-blue-600">
+                      <div className="h-3 w-3 animate-spin rounded-full border-b-2 border-blue-600"></div>
+                      {sendProgress}
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -294,6 +327,27 @@ export function CampaignList({
             target_t65_days: editingCampaign.target_t65_days || undefined,
             target_lead_statuses: editingCampaign.target_lead_statuses || undefined,
             scheduled_at: editingCampaign.scheduled_at || undefined,
+            selected_contacts:
+              (
+                editingCampaign.metadata as {
+                  selected_contacts?: Array<{ id: string; first_name: string; last_name: string; email: string | null }>
+                }
+              )?.selected_contacts || [],
+            selected_subscribers:
+              (
+                editingCampaign.metadata as {
+                  selected_subscribers?: Array<{
+                    id: number
+                    email_address: string
+                    first_name?: string
+                    last_name?: string
+                  }>
+                }
+              )?.selected_subscribers?.map((s) => ({
+                ...s,
+                state: 'active' as const,
+                tags: [],
+              })) || [],
           }}
           onSubmit={handleUpdateCampaign}
           onCancel={() => setEditingCampaign(null)}

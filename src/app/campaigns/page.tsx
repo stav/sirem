@@ -25,8 +25,17 @@ interface CampaignStats {
 }
 
 export default function CampaignsPage() {
-  const { campaigns, loading, createCampaign, updateCampaign, deleteCampaign, sendCampaign, getCampaignStats } =
-    useEmailCampaigns()
+  const {
+    campaigns,
+    loading,
+    sendingCampaign,
+    sendProgress,
+    createCampaign,
+    updateCampaign,
+    deleteCampaign,
+    sendCampaign,
+    getCampaignStats,
+  } = useEmailCampaigns()
 
   const { toast } = useToast()
   const [selectedCampaignId, setSelectedCampaignId] = useState<string | null>(null)
@@ -87,14 +96,15 @@ export default function CampaignsPage() {
   const handleSendCampaign = async (id: string) => {
     const success = await sendCampaign(id)
     if (success) {
+      const campaign = campaigns.find((c) => c.id === id)
       toast({
-        title: 'Campaign Sent',
-        description: 'Your email campaign has been sent successfully.',
+        title: 'Campaign Prepared Successfully! 🎉',
+        description: `"${campaign?.name}" has been prepared and a broadcast created in ConvertKit. You'll need to add content manually in ConvertKit before sending.`,
       })
     } else {
       toast({
         title: 'Error',
-        description: 'Failed to send campaign. Please try again.',
+        description: 'Failed to prepare campaign. Please try again.',
         variant: 'destructive',
       })
     }
@@ -199,6 +209,8 @@ export default function CampaignsPage() {
                 campaigns={campaigns}
                 loading={loading}
                 error={null}
+                sendingCampaign={sendingCampaign}
+                sendProgress={sendProgress}
                 onCreateCampaign={handleCreateCampaign}
                 onUpdateCampaign={handleUpdateCampaign}
                 onDeleteCampaign={handleDeleteCampaign}

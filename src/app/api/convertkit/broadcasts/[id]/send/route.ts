@@ -29,9 +29,9 @@ async function makeConvertKitRequest(endpoint: string, options: RequestInit = {}
   return response.json()
 }
 
-export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const broadcastId = params.id
+    const { id: broadcastId } = await params
 
     await makeConvertKitRequest(`/broadcasts/${broadcastId}/send`, {
       method: 'POST',

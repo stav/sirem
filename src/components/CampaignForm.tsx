@@ -15,8 +15,8 @@ interface Contact {
   id: string
   first_name: string
   last_name: string
-  email: string
-  lead_status_id?: string
+  email: string | null
+  lead_status_id?: string | null
   tags?: string[]
 }
 
@@ -64,8 +64,10 @@ export function CampaignForm({ initialData, onSubmit, onCancel, loading }: Campa
   const [availableTags, setAvailableTags] = useState<Tag[]>([])
   const [availableLeadStatuses, setAvailableLeadStatuses] = useState<LeadStatus[]>([])
   const [showSubscriberSync, setShowSubscriberSync] = useState(false)
-  const [selectedContacts, setSelectedContacts] = useState<Contact[]>([])
-  const [selectedSubscribers, setSelectedSubscribers] = useState<ConvertKitSubscriber[]>([])
+  const [selectedContacts, setSelectedContacts] = useState<Contact[]>(initialData?.selected_contacts || [])
+  const [selectedSubscribers, setSelectedSubscribers] = useState<ConvertKitSubscriber[]>(
+    initialData?.selected_subscribers || []
+  )
 
   useEffect(() => {
     fetchTags()
@@ -108,7 +110,11 @@ export function CampaignForm({ initialData, onSubmit, onCancel, loading }: Campa
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    const success = await onSubmit(formData)
+    const success = await onSubmit({
+      ...formData,
+      selected_contacts: selectedContacts,
+      selected_subscribers: selectedSubscribers,
+    })
     if (success) {
       onCancel()
     }
