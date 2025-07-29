@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, ChevronDown, ChevronUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import ActionCard from './ActionCard'
@@ -43,6 +43,7 @@ export default function ActionList({
   const [currentPage, setCurrentPage] = useState(1)
   const [itemsPerPage, setItemsPerPage] = useState(50) // Configurable page size
   const [isRendering, setIsRendering] = useState(false)
+  const [isCollapsed, setIsCollapsed] = useState(false)
 
   // Load week range state from localStorage on component mount
   useEffect(() => {
@@ -52,11 +53,26 @@ export default function ActionList({
     }
   }, [])
 
+  // Load collapsed state from localStorage on component mount
+  useEffect(() => {
+    const savedState = localStorage.getItem('actionListCollapsed')
+    if (savedState !== null) {
+      setIsCollapsed(JSON.parse(savedState))
+    }
+  }, [])
+
   const toggleWeekRange = () => {
     const newState = !showWeekRange
     setShowWeekRange(newState)
     // Save to localStorage
     localStorage.setItem('actionListWeekRange', JSON.stringify(newState))
+  }
+
+  const toggleCollapse = () => {
+    const newState = !isCollapsed
+    setIsCollapsed(newState)
+    // Save to localStorage
+    localStorage.setItem('actionListCollapsed', JSON.stringify(newState))
   }
 
   // Helper function to check if a date is within 1 week of today
@@ -145,6 +161,9 @@ export default function ActionList({
                 </span>
               )}
             </CardTitle>
+            <Button variant="ghost" size="sm" onClick={toggleCollapse} className="ml-2 cursor-pointer px-2">
+              {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
+            </Button>
             <div className="ml-2 flex items-center space-x-4">
               <div className="flex cursor-pointer items-center space-x-2">
                 <Tooltip>
@@ -205,91 +224,94 @@ export default function ActionList({
         </div>
 
         {/* Top Pagination Controls */}
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={displayActions.length}
-          itemsPerPage={itemsPerPage}
-          startIndex={startIndex}
-          endIndex={endIndex}
-          onPageChange={setCurrentPage}
-          onItemsPerPageChange={handleItemsPerPageChange}
-          className="mt-4 border-t pt-4"
-          isLoading={isRendering}
-        />
+        {!isCollapsed && (
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={displayActions.length}
+            itemsPerPage={itemsPerPage}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={handleItemsPerPageChange}
+            isLoading={isRendering}
+          />
+        )}
       </CardHeader>
-      <CardContent>
-        {!selectedContact && displayActions.length === 0 ? (
-          <div className="py-8 text-center">
-            <p className="text-muted-foreground">No actions yet</p>
-            <Button onClick={onAddAction} className="mt-2 cursor-pointer">
-              <Plus className="mr-2 h-4 w-4" />
-              Add your first action
-            </Button>
-          </div>
-        ) : !selectedContact ? (
-          <div className="space-y-3">
-            {paginatedActions.map((action, index) => (
-              <ActionCard
-                key={action.id}
-                action={action}
-                contactName={(() => {
-                  const contact = contactMap.get(action.contact_id)
-                  return contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
-                })()}
-                index={index + 1}
-                onToggleComplete={onToggleComplete}
-                onEdit={onEditAction}
-                onView={onViewAction}
-                onDelete={onDeleteAction}
-                onSelectContact={onSelectContact}
-              />
-            ))}
-          </div>
-        ) : displayActions.length === 0 ? (
-          <div className="py-8 text-center">
-            <p className="text-muted-foreground">No actions for this contact</p>
-            <Button onClick={onAddAction} className="mt-2 cursor-pointer">
-              <Plus className="mr-2 h-4 w-4" />
-              Add action
-            </Button>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {paginatedActions.map((action, index) => {
-              const contact = contactMap.get(action.contact_id)
-              const contactName = contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
-              return (
+      {!isCollapsed && (
+        <CardContent>
+          {!selectedContact && displayActions.length === 0 ? (
+            <div className="py-8 text-center">
+              <p className="text-muted-foreground">No actions yet</p>
+              <Button onClick={onAddAction} className="mt-2 cursor-pointer">
+                <Plus className="mr-2 h-4 w-4" />
+                Add your first action
+              </Button>
+            </div>
+          ) : !selectedContact ? (
+            <div className="space-y-3">
+              {paginatedActions.map((action, index) => (
                 <ActionCard
                   key={action.id}
                   action={action}
-                  contactName={contactName}
+                  contactName={(() => {
+                    const contact = contactMap.get(action.contact_id)
+                    return contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
+                  })()}
                   index={index + 1}
                   onToggleComplete={onToggleComplete}
                   onEdit={onEditAction}
                   onView={onViewAction}
                   onDelete={onDeleteAction}
-                  onSelectContact={!selectedContact ? onSelectContact : undefined}
+                  onSelectContact={onSelectContact}
                 />
-              )
-            })}
-          </div>
-        )}
+              ))}
+            </div>
+          ) : displayActions.length === 0 ? (
+            <div className="py-8 text-center">
+              <p className="text-muted-foreground">No actions for this contact</p>
+              <Button onClick={onAddAction} className="mt-2 cursor-pointer">
+                <Plus className="mr-2 h-4 w-4" />
+                Add action
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {paginatedActions.map((action, index) => {
+                const contact = contactMap.get(action.contact_id)
+                const contactName = contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
+                return (
+                  <ActionCard
+                    key={action.id}
+                    action={action}
+                    contactName={contactName}
+                    index={index + 1}
+                    onToggleComplete={onToggleComplete}
+                    onEdit={onEditAction}
+                    onView={onViewAction}
+                    onDelete={onDeleteAction}
+                    onSelectContact={!selectedContact ? onSelectContact : undefined}
+                  />
+                )
+              })}
+            </div>
+          )}
 
-        {/* Bottom Pagination Controls */}
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalItems={displayActions.length}
-          itemsPerPage={itemsPerPage}
-          startIndex={startIndex}
-          endIndex={endIndex}
-          onPageChange={setCurrentPage}
-          onItemsPerPageChange={handleItemsPerPageChange}
-          className="mt-6"
-          isLoading={isRendering}
-        />
-      </CardContent>
+          {/* Bottom Pagination Controls */}
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalItems={displayActions.length}
+            itemsPerPage={itemsPerPage}
+            startIndex={startIndex}
+            endIndex={endIndex}
+            onPageChange={setCurrentPage}
+            onItemsPerPageChange={handleItemsPerPageChange}
+            className="mt-6"
+            isLoading={isRendering}
+          />
+        </CardContent>
+      )}
     </Card>
   )
 }
