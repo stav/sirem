@@ -119,6 +119,7 @@ export function useActions() {
         .update({
           status: newStatus,
           completed_date: completedDate,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', action.id)
 

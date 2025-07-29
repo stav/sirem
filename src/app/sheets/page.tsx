@@ -236,7 +236,10 @@ export default function SheetsPage() {
     try {
       const { error } = await supabase
         .from('contacts')
-        .update({ [field]: newValue })
+        .update({
+          [field]: newValue,
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', contactId)
 
       if (error) {

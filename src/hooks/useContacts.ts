@@ -104,7 +104,7 @@ export function useContacts() {
     }
   }
 
-  const updateContact = async (contactId: string, contactData: ContactForm) => {
+  const updateContact = async (contactId: string, contactData: ContactForm): Promise<Contact | false> => {
     try {
       const { data, error } = await supabase
         .from('contacts')
@@ -118,6 +118,7 @@ export function useContacts() {
           status: contactData.status,
           medicare_beneficiary_id: contactData.medicare_beneficiary_id || null,
           ssn: contactData.ssn || null,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', contactId)
         .select()
@@ -132,12 +133,12 @@ export function useContacts() {
       // Update the local state immediately with the returned data
       if (data && data.length > 0) {
         setContacts((prevContacts) => prevContacts.map((contact) => (contact.id === contactId ? data[0] : contact)))
+        return data[0] // Return the updated contact data
       } else {
         // Fallback to fetching all contacts
         await fetchContacts()
+        return false
       }
-
-      return true
     } catch (error) {
       console.error('Error updating contact:', error)
       return false

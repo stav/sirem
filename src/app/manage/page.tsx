@@ -181,28 +181,34 @@ export default function ManagePage() {
     setIsSubmittingContact(true)
 
     try {
-      const success = editingContact
+      const result = editingContact
         ? await updateContact(editingContact.id, contactForm)
         : await createContact(contactForm)
 
-      if (success) {
+      if (result) {
         const contactName = `${contactForm.first_name} ${contactForm.last_name}`
         const action = editingContact ? 'updated' : 'created'
 
         // Update selectedContact if we're editing the currently selected contact
         if (editingContact && selectedContact && editingContact.id === selectedContact.id) {
-          setSelectedContact({
-            ...selectedContact,
-            ...contactForm,
-          })
+          if (typeof result === 'object') {
+            // result is the updated contact data
+            setSelectedContact(result)
+          } else {
+            // result is true (for create), update with form data
+            setSelectedContact({
+              ...selectedContact,
+              ...contactForm,
+            })
+          }
         }
 
         // Update viewingContact if we're editing the contact being viewed
         if (editingContact && viewingContact && editingContact.id === viewingContact.id) {
-          setViewingContact({
-            ...viewingContact,
-            ...contactForm,
-          })
+          if (typeof result === 'object') {
+            // result is the updated contact data
+            setViewingContact(result)
+          }
         }
 
         toast({

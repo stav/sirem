@@ -72,6 +72,7 @@ export function useReminders() {
           reminder_type: reminderData.reminder_type,
           completed_date: reminderData.completed_date || null,
           is_complete: !!reminderData.completed_date,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', reminderId)
 
@@ -112,6 +113,7 @@ export function useReminders() {
         .update({
           is_complete: !reminder.is_complete,
           completed_date: !reminder.is_complete ? new Date().toISOString() : null,
+          updated_at: new Date().toISOString(),
         })
         .eq('id', reminder.id)
 
