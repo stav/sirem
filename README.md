@@ -34,6 +34,11 @@ The contact list features a powerful multi-filter system that supports combining
    - Example: `t:n2m`, `t:giant`, `t:referral`
    - Searches contact tags (case-insensitive, partial matches)
 
+4. **Status Terms** → **Status Filtering**
+   - Format: `s:statusname`
+   - Example: `s:client`, `s:new`, `s:engaged`
+   - Searches contact status (case-insensitive, partial matches)
+
 ### Multi-Filter Examples
 
 - **`john`** → Shows contacts with "john" in first/last name
@@ -43,18 +48,21 @@ The contact list features a powerful multi-filter system that supports combining
   - Name contains "mary" OR
   - T65 days between 0 and -90 OR
   - Tagged with "referral"
+- **`s:client t:giant`** → Shows contacts matching ANY of:
+  - Status contains "client" OR
+  - Tagged with "giant"
 
 ### Smart Features
 
 - **OR Logic**: Contacts matching ANY filter term are included
 - **T65 Sorting**: Automatic sorting by T65 days when numeric filters are present
-- **Dynamic Indicators**: Shows active filter types (e.g., "T65 + Name + Tag filter")
+- **Dynamic Indicators**: Shows active filter types (e.g., "T65 + Name + Tag + Status filter")
 - **Partial Matching**: All filters support partial text matching
 - **Case Insensitive**: All text filtering is case-insensitive
 
 ### Usage Tips
 
-- **Combine filters** for complex searches: `smith 60 t:giant t:high`
+- **Combine filters** for complex searches: `smith 60 t:giant s:client`
 - **Use T65 filtering** to find contacts approaching Medicare eligibility
 - **Tag prefixes** help organize different filter types in one search
 - **Tooltips** on birthdate show detailed T65 days information

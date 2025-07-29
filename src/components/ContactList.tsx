@@ -86,6 +86,16 @@ export default function ContactList({
             }
           })
         }
+      } else if (trimmedTerm.startsWith('s:')) {
+        // Status filtering: s:statusname
+        const statusQuery = trimmedTerm.substring(2).toLowerCase()
+        if (statusQuery) {
+          contacts.forEach((contact) => {
+            if (contact.status?.toLowerCase().includes(statusQuery)) {
+              matchingContactIds.add(contact.id)
+            }
+          })
+        }
       } else {
         const numericValue = parseInt(trimmedTerm, 10)
         if (!isNaN(numericValue) && numericValue > 0 && numericValue.toString() === trimmedTerm) {
@@ -194,7 +204,7 @@ export default function ContactList({
                       type="text"
                       value={filter}
                       onChange={(e) => setFilter(e.target.value)}
-                      placeholder="Multi-filter: name, T65 days, t:tag (e.g., john 180 t:n2m)..."
+                      placeholder="Multi-filter: name, T65 days, t:tag, s:status (e.g., john 180 t:n2m s:client)..."
                       className="rounded border px-2 py-1 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                       style={{ minWidth: 0, width: '280px' }}
                     />
@@ -220,11 +230,14 @@ export default function ContactList({
                           let hasT65 = false
                           let hasName = false
                           let hasTag = false
+                          let hasStatus = false
 
                           terms.forEach((term) => {
                             const trimmedTerm = term.trim()
                             if (trimmedTerm.startsWith('t:')) {
                               hasTag = true
+                            } else if (trimmedTerm.startsWith('s:')) {
+                              hasStatus = true
                             } else {
                               const numericValue = parseInt(trimmedTerm, 10)
                               if (!isNaN(numericValue) && numericValue > 0 && numericValue.toString() === trimmedTerm) {
@@ -238,6 +251,7 @@ export default function ContactList({
                           if (hasT65) filterTypes.push('T65')
                           if (hasName) filterTypes.push('Name')
                           if (hasTag) filterTypes.push('Tag')
+                          if (hasStatus) filterTypes.push('Status')
 
                           return filterTypes.join(' + ') + ' filter'
                         })()}
