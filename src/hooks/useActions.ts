@@ -3,6 +3,22 @@ import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase'
 import { getDisplayDate, getEffectiveStatus } from '@/lib/action-utils'
 
+// Helper function to get local time as UTC (treating local time as if it's UTC)
+function getLocalTimeAsUTC(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  const hours = String(now.getHours()).padStart(2, '0')
+  const minutes = String(now.getMinutes()).padStart(2, '0')
+  const seconds = String(now.getSeconds()).padStart(2, '0')
+  const datetimeLocal = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+
+  // Convert to ISO string (UTC) by treating local time as UTC
+  const utcDate = new Date(datetimeLocal + 'Z')
+  return utcDate.toISOString()
+}
+
 type Action = Database['public']['Tables']['actions']['Row']
 type ActionInsert = Database['public']['Tables']['actions']['Insert']
 
@@ -98,7 +114,7 @@ export function useActions() {
         priority: actionData.priority || null,
         duration: actionData.duration || null,
         outcome: actionData.outcome || null,
-        updated_at: new Date().toISOString(), // Always update the updated_at field
+        updated_at: getLocalTimeAsUTC(), // Always update the updated_at field
       }
 
       const { error } = await supabase.from('actions').update(updateData).eq('id', actionId)
@@ -136,14 +152,14 @@ export function useActions() {
   const toggleActionComplete = async (action: Action) => {
     try {
       const newStatus = action.status === 'completed' ? 'planned' : 'completed'
-      const completedDate = newStatus === 'completed' ? new Date().toISOString() : null
+      const completedDate = newStatus === 'completed' ? getLocalTimeAsUTC() : null
 
       const { error } = await supabase
         .from('actions')
         .update({
           status: newStatus,
           completed_date: completedDate,
-          updated_at: new Date().toISOString(),
+          updated_at: getLocalTimeAsUTC(),
         })
         .eq('id', action.id)
 

@@ -4,7 +4,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import ModalForm from '@/components/ui/modal-form'
-import DateInput from '@/components/ui/date-input'
+import DateTimeInput from '@/components/ui/datetime-input'
 import type { Database } from '@/lib/supabase'
 
 type Action = Database['public']['Tables']['actions']['Row']
@@ -144,36 +144,36 @@ export default function ActionForm({
           />
         </div>
 
-        {/* Start Date */}
+        {/* Start Date & Time */}
         <div>
-          <DateInput
+          <DateTimeInput
             id="start_date"
-            label="Start Date"
+            label="Start Date & Time"
             value={formData.start_date || ''}
             onChange={(value) => setFormData({ ...formData, start_date: value })}
-            placeholder="Select start date"
+            placeholder="Select start date and time"
           />
         </div>
 
-        {/* End Date */}
+        {/* End Date & Time */}
         <div>
-          <DateInput
+          <DateTimeInput
             id="end_date"
-            label="End Date"
+            label="End Date & Time"
             value={formData.end_date || ''}
             onChange={(value) => setFormData({ ...formData, end_date: value })}
-            placeholder="Select end date"
+            placeholder="Select end date and time"
           />
         </div>
 
-        {/* Completed Date */}
+        {/* Completed Date & Time */}
         <div>
-          <DateInput
+          <DateTimeInput
             id="completed_date"
-            label="Completed Date"
+            label="Completed Date & Time"
             value={formData.completed_date || ''}
             onChange={(value) => setFormData({ ...formData, completed_date: value })}
-            placeholder="Select completed date"
+            placeholder="Select completed date and time"
           />
         </div>
       </div>

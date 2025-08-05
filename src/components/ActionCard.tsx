@@ -1,7 +1,7 @@
-// NOTE: This system uses date-only, timezone-less dates in the client UI (e.g., YYYY-MM-DD strings from <input type="date">),
-// but the database tables currently use date-time fields (with timezone). This means that care must be taken to avoid
-// time zone conversion issues when displaying or storing dates. All date displays in this component use the raw date string
-// (YYYY-MM-DD) to ensure consistency with user input and avoid time zone shifts.
+// NOTE: This system uses datetime inputs in the client UI (e.g., YYYY-MM-DDTHH:MM strings from <input type="datetime-local">),
+// and stores them as ISO datetime strings in the database. All times are handled in the user's local timezone without
+// timezone conversion to keep the implementation simple. The database uses timestamp with time zone fields but we treat
+// all times as local time.
 
 import React, { useMemo } from 'react'
 import {
@@ -26,11 +26,11 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 import type { Database } from '@/lib/supabase'
 import { getDisplayDate } from '@/lib/action-utils'
+import { formatDateTime } from '@/lib/utils'
 
-// Helper to format YYYY-MM-DD as YYYY-MM-DD (strip time if present)
-function formatDateString(dateString: string | null | undefined) {
-  if (!dateString) return ''
-  return dateString.split('T')[0]
+// Helper to format datetime string for display
+function formatDateTimeString(dateString: string | null | undefined) {
+  return formatDateTime(dateString)
 }
 
 type Action = Database['public']['Tables']['actions']['Row']
@@ -52,8 +52,12 @@ function getStatusIndicator(action: Action) {
   const status = action.status
 
   const getDaysDifference = () => {
-    const diffTime = displayDate.getTime() - now.getTime()
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24))
+    // Get the date components (ignoring time) for both dates
+    const nowDate = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const displayDateOnly = new Date(displayDate.getFullYear(), displayDate.getMonth(), displayDate.getDate())
+
+    const diffTime = displayDateOnly.getTime() - nowDate.getTime()
+    const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24))
     return diffDays
   }
   const daysDiff = getDaysDifference()
@@ -178,7 +182,7 @@ const ActionCard = React.memo(function ActionCard({
               <TooltipTrigger asChild>
                 <span className="cursor-help text-xs text-muted-foreground">{daysDiffText}</span>
               </TooltipTrigger>
-              <TooltipContent>{formatDateString(displayDate)}</TooltipContent>
+              <TooltipContent>{formatDateTimeString(displayDate)}</TooltipContent>
             </Tooltip>
             {action.status && (
               <Tooltip>
@@ -218,33 +222,33 @@ const ActionCard = React.memo(function ActionCard({
             <div className="flex items-center space-x-1">
               <Calendar className="h-3 w-3" />
               <span className="font-medium">Start:</span>
-              <span>{formatDateString(action.start_date)}</span>
+              <span>{formatDateTimeString(action.start_date)}</span>
             </div>
           )}
           {action.completed_date && (
             <div className="flex items-center space-x-1">
               <Check className="h-3 w-3" />
               <span className="font-medium">Completed:</span>
-              <span>{formatDateString(action.completed_date)}</span>
+              <span>{formatDateTimeString(action.completed_date)}</span>
             </div>
           )}
           <div className="flex items-center space-x-1">
             <Clock className="h-3 w-3" />
             <span className="font-medium">Created:</span>
-            <span>{formatDateString(action.created_at)}</span>
+            <span>{formatDateTimeString(action.created_at)}</span>
           </div>
           {action.updated_at !== action.created_at && (
             <div className="flex items-center space-x-1 sm:col-span-2">
               <Clock className="h-3 w-3" />
               <span className="font-medium">Updated:</span>
-              <span>{formatDateString(action.updated_at)}</span>
+              <span>{formatDateTimeString(action.updated_at)}</span>
             </div>
           )}
           {action.end_date && (
             <div className="flex items-center space-x-1 sm:col-span-2">
               <Calendar className="h-3 w-3" />
               <span className="font-medium">End:</span>
-              <span>{formatDateString(action.end_date)}</span>
+              <span>{formatDateTimeString(action.end_date)}</span>
             </div>
           )}
         </div>

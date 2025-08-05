@@ -14,6 +14,7 @@ import {
   ExternalLink,
 } from 'lucide-react'
 import type { Database } from '@/lib/supabase'
+import { formatDateTime } from '@/lib/utils'
 
 type Action = Database['public']['Tables']['actions']['Row']
 
@@ -24,10 +25,10 @@ interface ActionViewModalProps {
   contactName: string
 }
 
-// Helper to format YYYY-MM-DD as YYYY-MM-DD (strip time if present)
-function formatDateString(dateString: string | null | undefined) {
+// Helper to format datetime string for display
+function formatDateTimeString(dateString: string | null | undefined) {
   if (!dateString) return 'Not set'
-  return dateString.split('T')[0]
+  return formatDateTime(dateString)
 }
 
 function getStatusDisplay(status: string | null) {
@@ -137,27 +138,27 @@ export default function ActionViewModal({ isOpen, onClose, action, contactName }
             <div className="flex items-center space-x-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium">Start:</span>
-              <span className="text-sm">{formatDateString(action.start_date)}</span>
+              <span className="text-sm">{formatDateTimeString(action.start_date)}</span>
             </div>
             <div className="flex items-center space-x-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium">End:</span>
-              <span className="text-sm">{formatDateString(action.end_date)}</span>
+              <span className="text-sm">{formatDateTimeString(action.end_date)}</span>
             </div>
             <div className="flex items-center space-x-2">
               <Check className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium">Completed:</span>
-              <span className="text-sm">{formatDateString(action.completed_date)}</span>
+              <span className="text-sm">{formatDateTimeString(action.completed_date)}</span>
             </div>
             <div className="flex items-center space-x-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium">Created:</span>
-              <span className="text-sm">{formatDateString(action.created_at)}</span>
+              <span className="text-sm">{formatDateTimeString(action.created_at)}</span>
             </div>
             <div className="flex items-center space-x-2">
               <Clock className="h-4 w-4 text-muted-foreground" />
               <span className="text-sm font-medium">Updated:</span>
-              <span className="text-sm">{formatDateString(action.updated_at)}</span>
+              <span className="text-sm">{formatDateTimeString(action.updated_at)}</span>
             </div>
           </div>
         </div>

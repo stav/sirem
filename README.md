@@ -123,13 +123,23 @@ Imports only activity data for existing contacts:
 The system uses the following main tables:
 
 - `contacts` - Main contact information
-- `activities` - Activity/interaction history
-- `reminders` - Task management
+- `actions` - Activity scheduling and history
 - `addresses`, `phones`, `emails` - Contact details
 - `tags`, `tag_categories` - Organization system
 - `lead_statuses` - Status tracking
 
 See `data/schema/` for complete schema definitions.
+
+### Date/Time Handling
+
+The system uses a simplified datetime approach without timezone complexity:
+
+- **Input**: HTML `datetime-local` inputs for date and time selection
+- **Storage**: ISO datetime strings stored in PostgreSQL `timestamp with time zone` fields
+- **Display**: Local time formatting (YYYY-MM-DD HH:MM) without timezone indicators
+- **Timezone**: All times are treated as local time without conversion
+
+This approach keeps the implementation simple while providing full datetime functionality for action scheduling and tracking.
 
 ## License
 
