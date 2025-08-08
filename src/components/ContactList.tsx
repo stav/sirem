@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react'
-import { Plus, ArrowLeft, ChevronDown, ChevronUp, X, List } from 'lucide-react'
+import { Plus, ArrowLeft, ChevronDown, ChevronUp, X, List, Filter } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import ContactCard from './ContactCard'
+import FilterHelper from './FilterHelper'
 import { getT65Days, formatLocalDate, calculateAge, getDaysPast65 } from '@/lib/contact-utils'
 import { getPrimaryAddress } from '@/lib/address-utils'
 import type { Database } from '@/lib/supabase'
@@ -44,6 +45,7 @@ export default function ContactList({
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [filter, setFilter] = useState('')
   const [showListModal, setShowListModal] = useState(false)
+  const [showFilterHelper, setShowFilterHelper] = useState(false)
   const [isCSVFormat, setIsCSVFormat] = useState(false)
 
   // Load collapsed state from localStorage on component mount
@@ -59,6 +61,13 @@ export default function ContactList({
     setIsCollapsed(newState)
     // Save to localStorage
     localStorage.setItem('contactListCollapsed', JSON.stringify(newState))
+  }
+
+  const handleAddFilter = (filterText: string) => {
+    // Add the new filter to the existing filter string
+    const currentFilter = filter.trim()
+    const newFilter = currentFilter ? `${currentFilter} ${filterText}` : filterText
+    setFilter(newFilter)
   }
 
   // Enhanced multi-filter: parse space-separated terms with different behaviors
@@ -332,23 +341,42 @@ export default function ContactList({
             {!singleContactView && (
               <div className="flex space-x-2">
                 {contacts.length > 0 && (
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          onClick={() => setShowListModal(true)}
-                          size="sm"
-                          variant="outline"
-                          className="cursor-pointer"
-                        >
-                          <List className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Copy contact list for printing</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
+                  <>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={() => setShowFilterHelper(!showFilterHelper)}
+                            size="sm"
+                            variant={showFilterHelper ? 'default' : 'outline'}
+                            className="cursor-pointer"
+                          >
+                            <Filter className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Filter helper</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={() => setShowListModal(true)}
+                            size="sm"
+                            variant="outline"
+                            className="cursor-pointer"
+                          >
+                            <List className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Copy contact list for printing</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  </>
                 )}
                 <TooltipProvider>
                   <Tooltip>
@@ -365,6 +393,9 @@ export default function ContactList({
               </div>
             )}
           </div>
+          {!singleContactView && showFilterHelper && (
+            <FilterHelper isOpen={showFilterHelper} onAddFilter={handleAddFilter} />
+          )}
         </CardHeader>
         {!isCollapsed && (
           <CardContent>
