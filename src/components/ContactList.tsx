@@ -44,6 +44,7 @@ export default function ContactList({
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [filter, setFilter] = useState('')
   const [showListModal, setShowListModal] = useState(false)
+  const [isCSVFormat, setIsCSVFormat] = useState(false)
 
   // Load collapsed state from localStorage on component mount
   useEffect(() => {
@@ -144,6 +145,10 @@ export default function ContactList({
 
   // Format contacts for printing/copying
   const formatContactsForPrint = () => {
+    if (isCSVFormat) {
+      return formatContactsAsCSV()
+    }
+
     return filteredContacts
       .map((contact) => {
         const fullName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim()
@@ -178,6 +183,69 @@ export default function ContactList({
         return `${nameWithStatus}: ${dateInfo}; ${addressInfo}`
       })
       .join('\n')
+  }
+
+  // Format contacts as CSV
+  const formatContactsAsCSV = () => {
+    const headers = [
+      'First Name',
+      'Last Name',
+      'Full Name',
+      'Status',
+      'Birthdate',
+      'Age',
+      'T65 Days',
+      'Address1',
+      'City',
+      'State',
+      'Postal Code',
+      'Phone',
+      'Email',
+    ].join(',')
+
+    const rows = filteredContacts.map((contact) => {
+      const age = contact.birthdate ? calculateAge(contact.birthdate) : ''
+      const t65Days = contact.birthdate ? getDaysPast65(contact.birthdate) : ''
+      const formattedDate = contact.birthdate ? formatLocalDate(contact.birthdate) : ''
+
+      // Get primary address
+      let address1 = ''
+      let city = ''
+      let state = ''
+      let postalCode = ''
+
+      if (contact.addresses && contact.addresses.length > 0) {
+        const primaryAddress = getPrimaryAddress(contact.addresses)
+        if (primaryAddress) {
+          address1 = primaryAddress.address1 || ''
+          city = primaryAddress.city || ''
+          state = primaryAddress.state_code || ''
+          postalCode = primaryAddress.postal_code || ''
+        }
+      }
+
+      const fullName = `${contact.first_name || ''} ${contact.last_name || ''}`.trim()
+
+      const row = [
+        contact.first_name || '',
+        contact.last_name || '',
+        fullName,
+        contact.status || '',
+        formattedDate,
+        age,
+        t65Days,
+        address1,
+        city,
+        state,
+        postalCode,
+        contact.phone || '',
+        contact.email || '',
+      ].map((field) => `"${String(field).replace(/"/g, '""')}"`) // Escape quotes in CSV
+
+      return row.join(',')
+    })
+
+    return [headers, ...rows].join('\n')
   }
 
   return (
@@ -350,13 +418,27 @@ export default function ContactList({
           <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-lg bg-white shadow-lg">
             <div className="flex items-center justify-between border-b p-4">
               <h2 className="text-lg font-semibold">Contact List for Printing</h2>
-              <Button variant="ghost" size="sm" className="cursor-pointer" onClick={() => setShowListModal(false)}>
-                <X className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <label className="text-sm font-medium">Format:</label>
+                  <select
+                    value={isCSVFormat ? 'csv' : 'text'}
+                    onChange={(e) => setIsCSVFormat(e.target.value === 'csv')}
+                    className="rounded border px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="text">Formatted Text</option>
+                    <option value="csv">CSV</option>
+                  </select>
+                </div>
+                <Button variant="ghost" size="sm" className="cursor-pointer" onClick={() => setShowListModal(false)}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
               <div className="mb-4 text-sm text-gray-600">
-                Copy the text below and paste it into your document for printing:
+                Copy the {isCSVFormat ? 'CSV data' : 'formatted text'} below and paste it into your document for
+                printing:
               </div>
               <textarea
                 readOnly
