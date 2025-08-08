@@ -325,17 +325,18 @@ export default function ContactForm({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="New">🆕 New</SelectItem>
-                <SelectItem value="Client">✅ Client</SelectItem>
                 <SelectItem value="Contacted">📞 Contacted</SelectItem>
                 <SelectItem value="Engaged">🤝 Engaged</SelectItem>
-                <SelectItem value="No response">❌ No response</SelectItem>
-                <SelectItem value="Already enrolled">🎓 Already enrolled</SelectItem>
-                <SelectItem value="Not interested">😐 Not interested</SelectItem>
-                <SelectItem value="Not eligible">🚫 Not eligible</SelectItem>
-                <SelectItem value="Other">📝 Other</SelectItem>
-                <SelectItem value="Loyal">💎 Loyal</SelectItem>
+                <SelectItem value="Client">✅ Client</SelectItem>
+                <SelectItem value="No-response">❌ No response</SelectItem>
+                <SelectItem value="Already-enrolled">🎓 Already enrolled</SelectItem>
+                <SelectItem value="Too-expensive">💰 Too expensive</SelectItem>
+                <SelectItem value="Not-interested">😐 Not interested</SelectItem>
+                <SelectItem value="Not-eligible">🚫 Not eligible</SelectItem>
+                <SelectItem value="Brandon">🚫 Brandon&apos;s client</SelectItem>
                 <SelectItem value="Retained">🔄 Retained</SelectItem>
-                <SelectItem value="Too expensive">💰 Too expensive</SelectItem>
+                <SelectItem value="Loyal">💎 Loyal</SelectItem>
+                <SelectItem value="Other">📝 Other</SelectItem>
               </SelectContent>
             </Select>
           </div>
