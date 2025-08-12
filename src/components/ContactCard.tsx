@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useMemo } from 'react'
 import { Edit, Trash2, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -12,7 +12,13 @@ import {
   getDaysPast65,
   getT65Days,
 } from '@/lib/contact-utils'
+import { formatDateTime } from '@/lib/utils'
 import { getPrimaryAddress } from '@/lib/address-utils'
+import { usePlanEnrollments } from '@/hooks/usePlanEnrollments'
+
+type Plan = Database['public']['Tables']['plans']['Row']
+type Enrollment = Database['public']['Tables']['enrollments']['Row']
+type EnrollmentWithPlan = Enrollment & { plans?: Plan }
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
   addresses?: Database['public']['Tables']['addresses']['Row'][]
@@ -26,6 +32,7 @@ interface ContactCardProps {
   onEdit: (contact: Contact) => void
   onDelete: (contactId: string) => void
   onView: (contact: Contact) => void
+  refreshTimestamp?: number
 }
 
 export default function ContactCard({
@@ -36,7 +43,14 @@ export default function ContactCard({
   onEdit,
   onDelete,
   onView,
+  refreshTimestamp, // eslint-disable-line @typescript-eslint/no-unused-vars
 }: ContactCardProps) {
+  const { enrollments } = usePlanEnrollments(contact.id)
+
+  const enrollmentItems = useMemo<EnrollmentWithPlan[]>(() => {
+    return (enrollments ?? []) as EnrollmentWithPlan[]
+  }, [enrollments])
+
   return (
     <div
       className={`rounded-lg border p-4 transition-colors ${
@@ -49,26 +63,28 @@ export default function ContactCard({
       }}
     >
       {/* Header: Name/Status (left), Action Buttons (right) */}
-      <div className="mb-3 flex items-start justify-between">
-        <h3 className="flex items-center space-x-2 font-medium">
-          {(() => {
-            const statusBadge = getStatusBadge(contact.status)
-            if (!statusBadge) return null
+      <div className="flex items-start justify-between">
+        <div>
+          <h3 className="flex items-center space-x-2 font-medium">
+            {(() => {
+              const statusBadge = getStatusBadge(contact.status)
+              if (!statusBadge) return null
 
-            if (statusBadge.variant) {
-              return (
-                <Badge variant={statusBadge.variant} className={statusBadge.className}>
-                  {statusBadge.text}
-                </Badge>
-              )
-            } else {
-              return <span className={statusBadge.className}>{statusBadge.text}</span>
-            }
-          })()}
-          <span>
-            {contact.first_name} {contact.last_name}
-          </span>
-        </h3>
+              if (statusBadge.variant) {
+                return (
+                  <Badge variant={statusBadge.variant} className={statusBadge.className}>
+                    {statusBadge.text}
+                  </Badge>
+                )
+              } else {
+                return <span className={statusBadge.className}>{statusBadge.text}</span>
+              }
+            })()}
+            <span>
+              {contact.first_name} {contact.last_name}
+            </span>
+          </h3>
+        </div>
 
         {/* Action Buttons (header right) */}
         <div className="flex items-center space-x-1">
@@ -128,12 +144,12 @@ export default function ContactCard({
 
       {/* Main Content */}
       <div>
-        <div className="flex items-center space-x-4">
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           {/* Birthdate display */}
           {contact.birthdate && (
             <Tooltip>
               <TooltipTrigger asChild>
-                <div className="flex items-center space-x-1">
+                <div className="flex items-center space-x-1 whitespace-nowrap">
                   <span className="text-sm text-muted-foreground">🎂</span>
                   <span className="text-sm text-muted-foreground">
                     {formatLocalDate(contact.birthdate)}
@@ -158,14 +174,14 @@ export default function ContactCard({
           )}
           {/* Phone number display */}
           {contact.phone && (
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-1 whitespace-nowrap">
               <span className="text-sm text-muted-foreground">📞</span>
               <span className="text-sm text-muted-foreground">{formatPhoneNumber(contact.phone)}</span>
             </div>
           )}
           {/* Email display */}
           {contact.email && (
-            <div className="flex items-center space-x-1">
+            <div className="flex items-center space-x-1 whitespace-nowrap">
               <span className="text-sm text-muted-foreground">✉️</span>
               <span className="text-sm text-muted-foreground">{contact.email}</span>
             </div>
@@ -183,13 +199,39 @@ export default function ContactCard({
             if (parts.length === 0) return null
 
             return (
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center space-x-1 whitespace-nowrap">
                 <span className="text-sm text-muted-foreground">📍</span>
                 <span className="text-sm text-muted-foreground">{parts.join(', ')}</span>
               </div>
             )
           })()}
         </div>
+
+        {/* Enrollments */}
+        {enrollmentItems.length > 0 && (
+          <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
+            {enrollmentItems.map((enr) => {
+              const plan = enr.plans
+              const effectiveDateOnly = enr.coverage_effective_date
+                ? formatDateTime(enr.coverage_effective_date).split(' ')[0]
+                : ''
+              const parts = [
+                plan?.carrier,
+                plan?.name,
+                plan?.cms_id ? `(${plan.cms_id})` : '',
+                plan?.plan_type,
+                effectiveDateOnly,
+                `(${enr.enrollment_status})`,
+              ].filter(Boolean)
+              return (
+                <li key={enr.id} className="whitespace-nowrap">
+                  {parts.join(' ')}
+                </li>
+              )
+            })}
+          </ol>
+        )}
+
         {/* Notes display */}
         {contact.notes && <p className="mt-2 text-sm text-muted-foreground">{contact.notes}</p>}
       </div>

@@ -55,6 +55,9 @@ const tables = [
   'contact_tags',
   'reminders',
   'activities',
+  'actions',
+  'plans',
+  'enrollments',
 ]
 
 async function dumpTable(tableName) {

@@ -49,12 +49,17 @@ export default function ManagePage() {
   const {
     contacts,
     loading: contactsLoading,
-    fetchContacts,
+    fetchContacts: originalFetchContacts,
     createContact,
     updateContact,
     deleteContact,
   } = useContacts()
 
+  // Wrap fetchContacts to add debugging
+  const fetchContacts = async () => {
+    await originalFetchContacts()
+    setRefreshTimestamp(Date.now())
+  }
   // UI state
   const [showContactForm, setShowContactForm] = useState(false)
   const [showActionForm, setShowActionForm] = useState(false)
@@ -67,6 +72,7 @@ export default function ManagePage() {
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
   const [singleContactView, setSingleContactView] = useState(false)
   const [isSubmittingContact, setIsSubmittingContact] = useState(false)
+  const [refreshTimestamp, setRefreshTimestamp] = useState<number>(Date.now())
 
   // Update selectedContact when contacts list changes
   useEffect(() => {
@@ -466,6 +472,7 @@ export default function ManagePage() {
               onDeleteContact={handleDeleteContact}
               onViewContact={handleViewContact}
               onBackToAll={handleBackToAll}
+              refreshTimestamp={refreshTimestamp}
             />
 
             {/* Actions Section */}
@@ -536,6 +543,7 @@ export default function ManagePage() {
               // Keep view modal open and open edit modal on top
               handleEditContact(contact)
             }}
+            onRefresh={fetchContacts}
           />
         </div>
       </div>

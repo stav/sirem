@@ -29,6 +29,7 @@ interface ContactListProps {
   onDeleteContact: (contactId: string) => void
   onViewContact: (contact: Contact) => void
   onBackToAll: () => void
+  refreshTimestamp?: number
 }
 
 export default function ContactList({
@@ -41,6 +42,7 @@ export default function ContactList({
   onDeleteContact,
   onViewContact,
   onBackToAll,
+  refreshTimestamp,
 }: ContactListProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [filter, setFilter] = useState('')
@@ -419,7 +421,7 @@ export default function ContactList({
               <div className="space-y-3">
                 {(singleContactView && selectedContact ? [selectedContact] : filteredContacts).map((contact) => (
                   <ContactCard
-                    key={contact.id}
+                    key={`${contact.id}-${refreshTimestamp || 0}`}
                     contact={contact}
                     isSelected={selectedContact?.id === contact.id}
                     isSingleView={singleContactView}
@@ -427,6 +429,7 @@ export default function ContactList({
                     onEdit={onEditContact}
                     onDelete={onDeleteContact}
                     onView={onViewContact}
+                    refreshTimestamp={refreshTimestamp}
                   />
                 ))}
               </div>

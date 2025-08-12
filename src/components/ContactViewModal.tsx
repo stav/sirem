@@ -11,6 +11,7 @@ import {
   ContactMedicareInfo,
   ContactStatusFlags,
   ContactAdditionalInfo,
+  ContactPlans,
 } from './ContactViewModal/index'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
@@ -46,9 +47,10 @@ interface ContactViewModalProps {
   onClose: () => void
   contact: Contact | null
   onEdit?: (contact: Contact) => void
+  onRefresh?: () => void
 }
 
-export default function ContactViewModal({ isOpen, onClose, contact, onEdit }: ContactViewModalProps) {
+export default function ContactViewModal({ isOpen, onClose, contact, onEdit, onRefresh }: ContactViewModalProps) {
   const [addresses, setAddresses] = useState<Address[]>([])
   const [addressesLoading, setAddressesLoading] = useState(false)
   const [tags, setTags] = useState<TagWithCategory[]>([])
@@ -164,6 +166,7 @@ export default function ContactViewModal({ isOpen, onClose, contact, onEdit }: C
         <ContactMedicareInfo contact={contact} />
         <ContactStatusFlags contact={contact} />
         <ContactAdditionalInfo contact={contact} />
+        <ContactPlans contact={contact} onRefresh={onRefresh} />
       </div>
     </ModalForm>
   )

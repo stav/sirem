@@ -1,8 +1,9 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Upload, FileText, AlertCircle, CheckCircle, Loader2, Activity, Tag } from 'lucide-react'
+import { Upload, FileText, AlertCircle, CheckCircle, Loader2, Activity, Tag, ClipboardList } from 'lucide-react'
 import { importIntegrityData, importActivitiesData, importTagsData } from '@/lib/integrity-import'
+import { importPlansCsv } from '@/lib/plans-import'
 import Navigation from '@/components/Navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -27,7 +28,7 @@ interface IntegrityLeadPreview {
 export default function ImportPage() {
   const [file, setFile] = useState<File | null>(null)
   const [isImporting, setIsImporting] = useState(false)
-  const [importType, setImportType] = useState<'full' | 'activities' | 'tags'>('full')
+  const [importType, setImportType] = useState<'full' | 'activities' | 'tags' | 'plans'>('full')
   const [importResult, setImportResult] = useState<{
     success: boolean
     message: string
@@ -62,48 +63,53 @@ export default function ImportPage() {
     setFile(selectedFile)
     setImportResult(null)
 
-    // Preview the file
-    try {
-      const text = await selectedFile.text()
-      const data = JSON.parse(text)
+    // Preview the file (JSON-only flows). Skip preview for plans CSV.
+    if (importType !== 'plans') {
+      try {
+        const text = await selectedFile.text()
+        const data = JSON.parse(text)
 
-      if (data.result && Array.isArray(data.result)) {
-        const totalActivities = data.result.reduce(
-          (sum: number, lead: { activities?: Array<{ activitySubject: string }> }) =>
-            sum + (lead.activities?.length || 0),
-          0
-        )
+        if (data.result && Array.isArray(data.result)) {
+          const totalActivities = data.result.reduce(
+            (sum: number, lead: { activities?: Array<{ activitySubject: string }> }) =>
+              sum + (lead.activities?.length || 0),
+            0
+          )
 
-        const totalTags = data.result.reduce(
-          (sum: number, lead: { leadTags?: Array<{ tag: { tagLabel: string } }> }) =>
-            sum + (lead.leadTags?.length || 0),
-          0
-        )
+          const totalTags = data.result.reduce(
+            (sum: number, lead: { leadTags?: Array<{ tag: { tagLabel: string } }> }) =>
+              sum + (lead.leadTags?.length || 0),
+            0
+          )
 
-        const sampleLeads = data.result.slice(0, 5).map((lead: IntegrityLeadPreview) => ({
-          firstName: lead.firstName,
-          lastName: lead.lastName,
-          status: lead.statusName,
-          tags: lead.leadTags?.map((tag: { tag: { tagLabel: string } }) => tag.tag.tagLabel) || [],
-          activities:
-            lead.activities?.map(
-              (activity: { activitySubject: string; activityTypeName: string; activityNote: string | null }) => ({
-                subject: activity.activitySubject,
-                type: activity.activityTypeName,
-                note: activity.activityNote,
-              })
-            ) || [],
-        }))
+          const sampleLeads = data.result.slice(0, 5).map((lead: IntegrityLeadPreview) => ({
+            firstName: lead.firstName,
+            lastName: lead.lastName,
+            status: lead.statusName,
+            tags: lead.leadTags?.map((tag: { tag: { tagLabel: string } }) => tag.tag.tagLabel) || [],
+            activities:
+              lead.activities?.map(
+                (activity: { activitySubject: string; activityTypeName: string; activityNote: string | null }) => ({
+                  subject: activity.activitySubject,
+                  type: activity.activityTypeName,
+                  note: activity.activityNote,
+                })
+              ) || [],
+          }))
 
-        setPreview({
-          totalLeads: data.result.length,
-          totalActivities,
-          totalTags,
-          sampleLeads,
-        })
+          setPreview({
+            totalLeads: data.result.length,
+            totalActivities,
+            totalTags,
+            sampleLeads,
+          })
+        }
+      } catch (error) {
+        console.error('Error previewing file:', error)
+        setPreview(null)
       }
-    } catch (error) {
-      console.error('Error previewing file:', error)
+    } else {
+      // No preview for CSV; user will get post-import stats
       setPreview(null)
     }
   }
@@ -121,6 +127,8 @@ export default function ImportPage() {
         result = await importActivitiesData(text)
       } else if (importType === 'tags') {
         result = await importTagsData(text)
+      } else if (importType === 'plans') {
+        result = await importPlansCsv(text)
       } else {
         result = await importIntegrityData(text)
       }
@@ -168,7 +176,7 @@ export default function ImportPage() {
                           type="radio"
                           value="full"
                           checked={importType === 'full'}
-                          onChange={(e) => setImportType(e.target.value as 'full' | 'activities' | 'tags')}
+                          onChange={(e) => setImportType(e.target.value as 'full' | 'activities' | 'tags' | 'plans')}
                           className="text-primary"
                         />
                         <span className="text-sm">Full Import (Leads + Activities)</span>
@@ -178,7 +186,7 @@ export default function ImportPage() {
                           type="radio"
                           value="activities"
                           checked={importType === 'activities'}
-                          onChange={(e) => setImportType(e.target.value as 'full' | 'activities' | 'tags')}
+                          onChange={(e) => setImportType(e.target.value as 'full' | 'activities' | 'tags' | 'plans')}
                           className="text-primary"
                         />
                         <span className="text-sm">Activities Only</span>
@@ -188,10 +196,20 @@ export default function ImportPage() {
                           type="radio"
                           value="tags"
                           checked={importType === 'tags'}
-                          onChange={(e) => setImportType(e.target.value as 'full' | 'activities' | 'tags')}
+                          onChange={(e) => setImportType(e.target.value as 'full' | 'activities' | 'tags' | 'plans')}
                           className="text-primary"
                         />
                         <span className="text-sm">Tags Only</span>
+                      </label>
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          value="plans"
+                          checked={importType === 'plans'}
+                          onChange={(e) => setImportType(e.target.value as 'full' | 'activities' | 'tags' | 'plans')}
+                          className="text-primary"
+                        />
+                        <span className="text-sm">Plans (CSV)</span>
                       </label>
                     </div>
                   </div>
@@ -199,7 +217,7 @@ export default function ImportPage() {
                   <div className="rounded-lg border-2 border-dashed border-muted-foreground/25 p-6 text-center">
                     <input
                       type="file"
-                      accept=".json"
+                      accept={importType === 'plans' ? '.csv' : '.json'}
                       onChange={handleFileSelect}
                       className="hidden"
                       id="file-upload"
@@ -230,6 +248,8 @@ export default function ImportPage() {
                               <Activity className="mr-2 h-4 w-4" />
                             ) : importType === 'tags' ? (
                               <Tag className="mr-2 h-4 w-4" />
+                            ) : importType === 'plans' ? (
+                              <ClipboardList className="mr-2 h-4 w-4" />
                             ) : (
                               <Upload className="mr-2 h-4 w-4" />
                             )}
@@ -237,7 +257,9 @@ export default function ImportPage() {
                               ? 'Import Activities'
                               : importType === 'tags'
                                 ? 'Import Tags'
-                                : 'Import Data'}
+                                : importType === 'plans'
+                                  ? 'Import Plans'
+                                  : 'Import Data'}
                           </>
                         )}
                       </Button>

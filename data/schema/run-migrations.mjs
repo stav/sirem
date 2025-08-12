@@ -16,7 +16,7 @@ async function runMigrations() {
     const files = await fs.readdir(schemaDir)
 
     // Filter for SQL files and sort by name (numerical order)
-    const sqlFiles = files.filter((file) => file.endsWith('.sql') && !file.includes('README')).sort()
+    const sqlFiles = files.filter((file) => file.endsWith('.sql') && !file.includes('current-schema')).sort()
 
     console.log(`Found ${sqlFiles.length} migration files:`)
     sqlFiles.forEach((file) => console.log(`  - ${file}`))

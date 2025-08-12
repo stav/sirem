@@ -34,9 +34,9 @@ export default function DateInput({ id, label, value, onChange, required = false
           onChange={(e) => onChange(e.target.value)}
           required={required}
           placeholder={placeholder}
-          className="pr-20"
+          className="pr-18"
         />
-        <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center space-x-1">
+        <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center space-x-2">
           {value && (
             <Button
               type="button"

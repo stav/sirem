@@ -180,6 +180,78 @@ export type Database = {
           },
         ]
       }
+      enrollments: {
+        Row: {
+          agent_notes: string | null
+          application_id: string | null
+          contact_id: string
+          coverage_effective_date: string | null
+          coverage_end_date: string | null
+          created_at: string
+          disenrollment_reason: string | null
+          enrollment_status: Database['public']['Enums']['enrollment_status'] | null
+          id: string
+          metadata: Json | null
+          pcp_id: string | null
+          pcp_name: string | null
+          plan_id: string
+          premium_monthly_at_enrollment: number | null
+          signed_up_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          agent_notes?: string | null
+          application_id?: string | null
+          contact_id: string
+          coverage_effective_date?: string | null
+          coverage_end_date?: string | null
+          created_at?: string
+          disenrollment_reason?: string | null
+          enrollment_status?: Database['public']['Enums']['enrollment_status'] | null
+          id?: string
+          metadata?: Json | null
+          pcp_id?: string | null
+          pcp_name?: string | null
+          plan_id: string
+          premium_monthly_at_enrollment?: number | null
+          signed_up_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agent_notes?: string | null
+          application_id?: string | null
+          contact_id?: string
+          coverage_effective_date?: string | null
+          coverage_end_date?: string | null
+          created_at?: string
+          disenrollment_reason?: string | null
+          enrollment_status?: Database['public']['Enums']['enrollment_status'] | null
+          id?: string
+          metadata?: Json | null
+          pcp_id?: string | null
+          pcp_name?: string | null
+          plan_id?: string
+          premium_monthly_at_enrollment?: number | null
+          signed_up_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'enrollments_contact_id_fkey'
+            columns: ['contact_id']
+            isOneToOne: false
+            referencedRelation: 'contacts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'enrollments_plan_id_fkey'
+            columns: ['plan_id']
+            isOneToOne: false
+            referencedRelation: 'plans'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       contact_tags: {
         Row: {
           contact_id: string
@@ -224,6 +296,108 @@ export type Database = {
             referencedColumns: ['id']
           },
         ]
+      }
+      plans: {
+        Row: {
+          ambulance_copay: number | null
+          carrier: Database['public']['Enums']['carrier'] | null
+          cms_contract_number: string | null
+          cms_id: string | null
+          cms_plan_number: string | null
+          counties: string[] | null
+          created_at: string
+          dental_benefit_yearly: number | null
+          effective_end: string | null
+          effective_start: string | null
+          emergency_room_copay: number | null
+          giveback_monthly: number | null
+          hearing_benefit_yearly: number | null
+          hospital_inpatient_days: number | null
+          hospital_inpatient_per_stay_copay: number | null
+          id: string
+          metadata: Json | null
+          moop_annual: number | null
+          name: string
+          notes: string | null
+          otc_benefit_quarterly: number | null
+          pharmacy_benefit: string | null
+          plan_type: Database['public']['Enums']['plan_type'] | null
+          plan_year: number | null
+          premium_monthly: number | null
+          primary_care_copay: number | null
+          service_area: string | null
+          specialist_copay: number | null
+          updated_at: string
+          urgent_care_copay: number | null
+          vision_benefit_yearly: number | null
+        }
+        Insert: {
+          ambulance_copay?: number | null
+          carrier?: Database['public']['Enums']['carrier'] | null
+          cms_contract_number?: string | null
+          cms_id?: string | null
+          cms_plan_number?: string | null
+          counties?: string[] | null
+          created_at?: string
+          dental_benefit_yearly?: number | null
+          effective_end?: string | null
+          effective_start?: string | null
+          emergency_room_copay?: number | null
+          giveback_monthly?: number | null
+          hearing_benefit_yearly?: number | null
+          hospital_inpatient_days?: number | null
+          hospital_inpatient_per_stay_copay?: number | null
+          id?: string
+          metadata?: Json | null
+          moop_annual?: number | null
+          name: string
+          notes?: string | null
+          otc_benefit_quarterly?: number | null
+          pharmacy_benefit?: string | null
+          plan_type?: Database['public']['Enums']['plan_type'] | null
+          plan_year?: number | null
+          premium_monthly?: number | null
+          primary_care_copay?: number | null
+          service_area?: string | null
+          specialist_copay?: number | null
+          updated_at?: string
+          urgent_care_copay?: number | null
+          vision_benefit_yearly?: number | null
+        }
+        Update: {
+          ambulance_copay?: number | null
+          carrier?: Database['public']['Enums']['carrier'] | null
+          cms_contract_number?: string | null
+          cms_id?: string | null
+          cms_plan_number?: string | null
+          counties?: string[] | null
+          created_at?: string
+          dental_benefit_yearly?: number | null
+          effective_end?: string | null
+          effective_start?: string | null
+          emergency_room_copay?: number | null
+          giveback_monthly?: number | null
+          hearing_benefit_yearly?: number | null
+          hospital_inpatient_days?: number | null
+          hospital_inpatient_per_stay_copay?: number | null
+          id?: string
+          metadata?: Json | null
+          moop_annual?: number | null
+          name?: string
+          notes?: string | null
+          otc_benefit_quarterly?: number | null
+          pharmacy_benefit?: string | null
+          plan_type?: Database['public']['Enums']['plan_type'] | null
+          plan_year?: number | null
+          premium_monthly?: number | null
+          primary_care_copay?: number | null
+          service_area?: string | null
+          specialist_copay?: number | null
+          updated_at?: string
+          urgent_care_copay?: number | null
+          vision_benefit_yearly?: number | null
+        }
+        Relationships: []
       }
       contacts: {
         Row: {
@@ -572,7 +746,31 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      plan_type:
+        | 'HMO'
+        | 'HMO-POS'
+        | 'HMO-POS-D-SNP'
+        | 'HMO-POS-C-SNP'
+        | 'PPO'
+        | 'D-SNP'
+        | 'C-SNP'
+        | 'PDP'
+        | 'Supplement'
+      carrier:
+        | 'United'
+        | 'Humana'
+        | 'Devoted'
+        | 'Anthem'
+        | 'MedMutual'
+        | 'Aetna'
+        | 'GTL'
+        | 'Medico'
+        | 'CareSource'
+        | 'SummaCare'
+        | 'Cigna'
+        | 'Heartland'
+        | 'Other'
+      enrollment_status: 'pending' | 'active' | 'cancelled' | 'terminated' | 'declined'
     }
     CompositeTypes: {
       [_ in never]: never
