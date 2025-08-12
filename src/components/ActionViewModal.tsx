@@ -34,26 +34,45 @@ function formatDateTimeString(dateString: string | null | undefined) {
 function getStatusDisplay(status: string | null) {
   switch (status) {
     case 'in_progress':
-      return { text: 'In Progress', className: 'text-blue-600 bg-blue-50 border-blue-200' }
+      return {
+        text: 'In Progress',
+        className:
+          'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800',
+      }
     case 'cancelled':
-      return { text: 'Cancelled', className: 'text-gray-400 bg-gray-100 border-gray-200' }
+      return { text: 'Cancelled', className: 'text-muted-foreground bg-muted border-border' }
     case 'completed':
-      return { text: 'Completed', className: 'text-green-600 bg-green-50 border-green-200' }
+      return {
+        text: 'Completed',
+        className:
+          'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/50 border-green-200 dark:border-green-800',
+      }
     default:
-      return { text: status || 'No Status', className: 'text-gray-600 bg-gray-50 border-gray-200' }
+      return { text: status || 'No Status', className: 'text-muted-foreground bg-muted/50 border-border' }
   }
 }
 
 function getPriorityDisplay(priority: string | null) {
   switch (priority) {
     case 'high':
-      return { text: 'High', className: 'bg-red-100 text-red-800 border-red-200' }
+      return {
+        text: 'High',
+        className: 'bg-red-100 dark:bg-red-950/50 text-red-800 dark:text-red-400 border-red-200 dark:border-red-800',
+      }
     case 'medium':
-      return { text: 'Medium', className: 'bg-yellow-100 text-yellow-800 border-yellow-200' }
+      return {
+        text: 'Medium',
+        className:
+          'bg-yellow-100 dark:bg-yellow-950/50 text-yellow-800 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800',
+      }
     case 'low':
-      return { text: 'Low', className: 'bg-green-100 text-green-800 border-green-200' }
+      return {
+        text: 'Low',
+        className:
+          'bg-green-100 dark:bg-green-950/50 text-green-800 dark:text-green-400 border-green-200 dark:border-green-800',
+      }
     default:
-      return { text: 'None', className: 'bg-gray-100 text-gray-800 border-gray-200' }
+      return { text: 'None', className: 'bg-muted text-muted-foreground border-border' }
   }
 }
 

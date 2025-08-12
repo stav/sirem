@@ -51,7 +51,7 @@ export default function FilterHelper({ isOpen, onAddFilter }: FilterHelperProps)
   if (!isOpen) return null
 
   return (
-    <div className="mt-2 rounded-md border bg-gray-50 p-3">
+    <div className="mt-2 rounded-md border bg-muted/50 p-3">
       <div className="mb-2 text-sm font-medium text-gray-700">Quick Status Filters:</div>
 
       {loading ? (

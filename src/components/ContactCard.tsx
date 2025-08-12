@@ -81,7 +81,7 @@ export default function ContactCard({
                   e.stopPropagation()
                   onView(contact)
                 }}
-                className="h-8 w-8 cursor-pointer p-0 hover:bg-gray-50 hover:text-gray-600"
+                className="h-8 w-8 cursor-pointer p-0 hover:bg-muted hover:text-muted-foreground"
                 aria-label="View contact"
               >
                 <Eye className="h-4 w-4" />
@@ -98,7 +98,7 @@ export default function ContactCard({
                   e.stopPropagation()
                   onEdit(contact)
                 }}
-                className="h-8 w-8 cursor-pointer p-0 hover:bg-blue-50 hover:text-blue-600"
+                className="h-8 w-8 cursor-pointer p-0 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/50 dark:hover:text-blue-400"
                 aria-label="Edit contact"
               >
                 <Edit className="h-4 w-4" />
@@ -115,7 +115,7 @@ export default function ContactCard({
                   e.stopPropagation()
                   onDelete(contact.id)
                 }}
-                className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600"
+                className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50 dark:hover:text-red-400"
                 aria-label="Delete contact"
               >
                 <Trash2 className="h-4 w-4" />

@@ -38,6 +38,22 @@ export const getUserTheme = (userPreference: 'light' | 'dark' | 'auto'): string 
   }
 }
 
+// Helper function to get theme based on current document class
+export const getCurrentTheme = (): string => {
+  if (typeof document !== 'undefined') {
+    const htmlElement = document.documentElement
+    if (htmlElement.classList.contains('dark')) {
+      return AG_GRID_THEMES.quartzDark
+    } else if (htmlElement.classList.contains('light')) {
+      return AG_GRID_THEMES.quartz
+    } else {
+      // If no class is set, check system preference
+      return getSystemTheme()
+    }
+  }
+  return AG_GRID_THEMES.quartz
+}
+
 // Example usage in your component:
 // import { AG_GRID_THEMES, getUserTheme } from '@/lib/ag-grid-themes'
 //

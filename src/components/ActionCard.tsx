@@ -8,7 +8,6 @@ import {
   Edit,
   Trash2,
   Check,
-  X,
   Clock,
   Calendar,
   User,
@@ -64,48 +63,18 @@ function getStatusIndicator(action: Action) {
 
   // If completed, always gray
   const isCompleted = !!action.completed_date
-  let overdueLevel: 'future' | 'orange' | 'red' | 'gray' = 'future'
+  let overdueLevel: 'future' | 'orange' | 'red' | 'gray' | 'today' = 'future'
   if (isCompleted) overdueLevel = 'gray'
+  else if (daysDiff === 0) overdueLevel = 'today'
   else if (daysDiff < 0 && daysDiff >= -6) overdueLevel = 'orange'
   else if (daysDiff <= -7) overdueLevel = 'red'
 
   const isPending = daysDiff >= 0
 
-  if (status === '' || status === null) {
-    return {
-      icon: HelpCircle,
-      className: 'text-gray-600 bg-gray-50 border-gray-200',
-      text: 'No Status',
-      daysDiff,
-      isPending,
-      overdueLevel,
-    }
-  }
-  if (status === 'in_progress') {
-    return {
-      icon: Clock,
-      className: 'text-blue-600 bg-blue-50 border-blue-200',
-      text: 'In Progress',
-      daysDiff,
-      isPending,
-      overdueLevel,
-    }
-  }
-  if (status === 'cancelled') {
-    return {
-      icon: X,
-      className: 'text-gray-400 bg-gray-100 border-gray-200',
-      text: 'Cancelled',
-      daysDiff,
-      isPending,
-      overdueLevel,
-    }
-  }
-  // fallback for any other status
   return {
     icon: HelpCircle,
-    className: 'text-gray-600 bg-gray-50 border-gray-200',
-    text: 'No Status',
+    className: 'text-accent border-blue-200 dark:border-blue-800',
+    text: status || 'No Status',
     daysDiff,
     isPending,
     overdueLevel,
@@ -115,13 +84,13 @@ function getStatusIndicator(action: Action) {
 function getPriorityColor(priority: string | null) {
   switch (priority) {
     case 'high':
-      return 'bg-red-100 text-red-800 border-red-200'
+      return 'bg-destructive text-destructive-foreground border-destructive/50 dark:border-destructive/30'
     case 'medium':
-      return 'bg-yellow-100 text-yellow-800 border-yellow-200'
+      return 'bg-accent text-accent-foreground border-accent/50 dark:border-accent/30'
     case 'low':
-      return 'bg-green-100 text-green-800 border-green-200'
+      return 'bg-secondary text-secondary-foreground border-secondary/50 dark:border-secondary/30'
     default:
-      return 'bg-gray-100 text-gray-800 border-gray-200'
+      return 'bg-muted text-muted-foreground border-border'
   }
 }
 
@@ -156,10 +125,12 @@ const ActionCard = React.memo(function ActionCard({
   return (
     <Card
       className={`border-l-4 ${statusIndicator.className} transition-all
-      ${statusIndicator.overdueLevel === 'future' ? 'bg-blue-50 hover:bg-blue-100' : ''}
-      ${statusIndicator.overdueLevel === 'orange' ? 'bg-orange-50 hover:bg-orange-100' : ''}
-      ${statusIndicator.overdueLevel === 'red' ? 'bg-red-50 hover:bg-red-100' : ''}
-      ${statusIndicator.overdueLevel === 'gray' ? 'bg-gray-50 hover:bg-gray-100' : ''}
+      ${statusIndicator.overdueLevel === 'future' ? 'bg-primary/10 hover:bg-primary/20 dark:bg-primary/20 dark:hover:bg-primary/30' : ''}
+      ${statusIndicator.overdueLevel === 'today' ? 'bg-accent/50 hover:bg-accent/70 dark:bg-accent/30 dark:hover:bg-accent/50' : ''}
+      ${statusIndicator.overdueLevel === 'orange' ? 'bg-accent/50 hover:bg-accent/70 dark:bg-accent/30 dark:hover:bg-accent/50' : ''}
+      ${statusIndicator.overdueLevel === 'red' ? 'bg-destructive/10 hover:bg-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30' : ''}
+      ${statusIndicator.overdueLevel === 'gray' ? 'bg-muted/50 hover:bg-muted/70' : ''}
+      ${!['future', 'today', 'orange', 'red', 'gray'].includes(statusIndicator.overdueLevel) ? 'bg-card' : ''}
     `}
     >
       <CardContent className="p-4">
@@ -255,8 +226,8 @@ const ActionCard = React.memo(function ActionCard({
 
         {/* Outcome */}
         {action.outcome && (
-          <div className="mt-2 rounded-md bg-blue-50 p-2">
-            <p className="text-sm text-blue-800">
+          <div className="mt-2 rounded-md bg-primary/10 p-2 dark:bg-primary/20">
+            <p className="text-sm text-primary dark:text-primary">
               <span className="font-medium">Outcome:</span> {action.outcome}
             </p>
           </div>
@@ -282,10 +253,10 @@ const ActionCard = React.memo(function ActionCard({
                   variant="ghost"
                   size="sm"
                   onClick={() => onToggleComplete(action)}
-                  className={`h-8 w-8 cursor-pointer p-0 ${
+                  className={`h-8 w-8 cursor-pointer p-0 text-foreground/70 dark:text-foreground/80 ${
                     action.completed_date
-                      ? 'hover:bg-red-50 hover:text-red-600'
-                      : 'hover:bg-green-50 hover:text-green-600'
+                      ? 'hover:bg-destructive/10 hover:text-destructive dark:hover:bg-destructive/20 dark:hover:text-destructive'
+                      : 'hover:bg-primary/10 hover:text-primary dark:hover:bg-primary/20 dark:hover:text-primary'
                   }`}
                   aria-label={action.completed_date ? 'Mark as incomplete' : 'Mark as complete'}
                 >
@@ -300,7 +271,7 @@ const ActionCard = React.memo(function ActionCard({
                   variant="ghost"
                   size="sm"
                   onClick={() => onView(action)}
-                  className="h-8 w-8 cursor-pointer p-0 hover:bg-gray-50 hover:text-gray-600"
+                  className="h-8 w-8 cursor-pointer p-0 text-foreground/70 hover:bg-muted hover:text-foreground dark:text-foreground/80"
                   aria-label="View action"
                 >
                   <Eye className="h-4 w-4" />
@@ -314,7 +285,7 @@ const ActionCard = React.memo(function ActionCard({
                   variant="ghost"
                   size="sm"
                   onClick={() => onEdit(action)}
-                  className="h-8 w-8 cursor-pointer p-0 hover:bg-blue-50 hover:text-blue-600"
+                  className="h-8 w-8 cursor-pointer p-0 text-foreground/70 hover:bg-primary/10 hover:text-primary dark:text-foreground/80 dark:hover:bg-primary/20 dark:hover:text-primary"
                   aria-label="Edit action"
                 >
                   <Edit className="h-4 w-4" />
@@ -328,7 +299,7 @@ const ActionCard = React.memo(function ActionCard({
                   variant="ghost"
                   size="sm"
                   onClick={() => onDelete(action.id)}
-                  className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600"
+                  className="h-8 w-8 p-0 text-foreground/70 hover:bg-destructive/10 hover:text-destructive dark:text-foreground/80 dark:hover:bg-destructive/20 dark:hover:text-destructive"
                   aria-label="Delete action"
                 >
                   <Trash2 className="h-4 w-4" />

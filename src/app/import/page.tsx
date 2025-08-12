@@ -244,18 +244,28 @@ export default function ImportPage() {
 
                       {importResult && (
                         <Alert
-                          className={importResult.success ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'}
+                          className={
+                            importResult.success
+                              ? 'border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950/50'
+                              : 'border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950/50'
+                          }
                         >
                           {importResult.success ? (
-                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                           ) : (
-                            <AlertCircle className="h-4 w-4 text-red-600" />
+                            <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400" />
                           )}
-                          <AlertDescription className={importResult.success ? 'text-green-800' : 'text-red-800'}>
+                          <AlertDescription
+                            className={
+                              importResult.success
+                                ? 'text-green-800 dark:text-green-400'
+                                : 'text-red-800 dark:text-red-400'
+                            }
+                          >
                             {importResult.message}
                           </AlertDescription>
                           {importResult.stats && (
-                            <div className="mt-2 text-xs text-green-700">
+                            <div className="mt-2 text-xs text-green-700 dark:text-green-400">
                               <div>Total: {importResult.stats.total}</div>
                               <div>Imported: {importResult.stats.imported}</div>
                               <div>Skipped: {importResult.stats.skipped}</div>

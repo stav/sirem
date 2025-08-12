@@ -80,7 +80,8 @@ function getStatusIndicator(reminder: Reminder) {
 
     return {
       icon: Check,
-      className: 'text-green-600 bg-green-50 border-green-200',
+      className:
+        'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-950/50 border-green-200 dark:border-green-800',
       text: 'Completed',
       daysDiff: completedDiffDays,
     }
@@ -89,7 +90,7 @@ function getStatusIndicator(reminder: Reminder) {
   if (isOverdue) {
     return {
       icon: AlertCircle,
-      className: 'text-red-600 bg-red-50 border-red-200',
+      className: 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/50 border-red-200 dark:border-red-800',
       text: 'Overdue',
       daysDiff,
     }
@@ -98,7 +99,8 @@ function getStatusIndicator(reminder: Reminder) {
   if (isToday) {
     return {
       icon: Clock,
-      className: 'text-orange-600 bg-orange-50 border-orange-200',
+      className:
+        'text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/50 border-orange-200 dark:border-orange-800',
       text: 'Due Today',
       daysDiff: 0,
     }
@@ -107,7 +109,7 @@ function getStatusIndicator(reminder: Reminder) {
   if (isUpcoming) {
     return {
       icon: Clock,
-      className: 'text-blue-600 bg-blue-50 border-blue-200',
+      className: 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-800',
       text: 'Due Soon',
       daysDiff,
     }
@@ -115,7 +117,7 @@ function getStatusIndicator(reminder: Reminder) {
 
   return {
     icon: Calendar,
-    className: 'text-gray-600 bg-gray-50 border-gray-200',
+    className: 'text-muted-foreground bg-muted/50 border-border',
     text: 'Upcoming',
     daysDiff,
   }
@@ -135,7 +137,7 @@ export default function ReminderCard({
 
   return (
     <Card
-      className={`transition-all duration-200 hover:shadow-md ${reminder.is_complete ? 'bg-gray-50 opacity-75' : ''}`}
+      className={`transition-all duration-200 hover:shadow-md ${reminder.is_complete ? 'bg-muted/50 opacity-75' : ''}`}
     >
       <CardContent className="p-4">
         {/* Header with contact info and status */}
@@ -232,7 +234,7 @@ export default function ReminderCard({
                   <Badge
                     key={badgeIndex}
                     variant="outline"
-                    className="border border-blue-200 bg-blue-50 px-2 py-1 text-xs text-blue-700"
+                    className="border border-blue-200 bg-blue-50 px-2 py-1 text-xs text-blue-700 dark:border-blue-800 dark:bg-blue-950/50 dark:text-blue-400"
                   >
                     {badge}
                   </Badge>
@@ -247,7 +249,7 @@ export default function ReminderCard({
                   variant="ghost"
                   size="sm"
                   onClick={() => onToggleComplete(reminder)}
-                  className="h-8 w-8 cursor-pointer p-0 hover:bg-green-50 hover:text-green-600"
+                  className="h-8 w-8 cursor-pointer p-0 hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-950/50 dark:hover:text-green-400"
                   aria-label={reminder.is_complete ? 'Mark as incomplete' : 'Mark as complete'}
                 >
                   {reminder.is_complete ? <X className="h-4 w-4" /> : <Check className="h-4 w-4" />}
@@ -262,7 +264,7 @@ export default function ReminderCard({
                   variant="ghost"
                   size="sm"
                   onClick={() => onEdit(reminder)}
-                  className="h-8 w-8 cursor-pointer p-0 hover:bg-blue-50 hover:text-blue-600"
+                  className="h-8 w-8 cursor-pointer p-0 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/50 dark:hover:text-blue-400"
                   aria-label="Edit reminder"
                 >
                   <Edit className="h-4 w-4" />
@@ -277,7 +279,7 @@ export default function ReminderCard({
                   variant="ghost"
                   size="sm"
                   onClick={() => onDelete(reminder.id)}
-                  className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600"
+                  className="h-8 w-8 p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50 dark:hover:text-red-400"
                   aria-label="Delete reminder"
                 >
                   <Trash2 className="h-4 w-4" />
