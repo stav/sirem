@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { generateUUID } from '@/lib/utils'
 
 export interface LogMessage {
   id: string
@@ -26,7 +27,7 @@ export const useLogger = create<LoggerStore>((set, get) => ({
     details?: Record<string, unknown>
   ) => {
     const newMessage: LogMessage = {
-      id: crypto.randomUUID(),
+      id: generateUUID(),
       message,
       type,
       timestamp: new Date(),
