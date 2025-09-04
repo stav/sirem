@@ -294,13 +294,13 @@ export default function SheetsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="bg-background min-h-screen">
         <Navigation pageTitle="Sheets" />
         <div className="p-6">
           <div className="mx-auto max-w-7xl">
             <div className="animate-pulse">
-              <div className="mb-8 h-8 w-1/4 rounded bg-muted"></div>
-              <div className="h-96 rounded bg-muted"></div>
+              <div className="bg-muted mb-8 h-8 w-1/4 rounded"></div>
+              <div className="bg-muted h-96 rounded"></div>
             </div>
           </div>
         </div>
@@ -309,7 +309,7 @@ export default function SheetsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background min-h-screen">
       <Navigation pageTitle="Sheets" />
 
       <div className="p-6">
@@ -330,7 +330,7 @@ export default function SheetsPage() {
               enableBrowserTooltips={true}
             />
             {/* Custom Status Bar with Search */}
-            <div className="flex w-full items-center justify-between border-t bg-muted px-4 py-2 text-sm">
+            <div className="bg-muted flex w-full items-center justify-between border-t px-4 py-2 text-sm">
               <div className="flex items-center space-x-4">
                 <span className="text-muted-foreground">Total: {contacts.length} contacts</span>
                 {searchTerm && (
@@ -349,7 +349,7 @@ export default function SheetsPage() {
                   {searchTerm && (
                     <button
                       onClick={() => setSearchTerm('')}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 transform text-xs text-muted-foreground transition-colors hover:text-foreground"
+                      className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2 transform text-xs transition-colors"
                     >
                       ✕
                     </button>

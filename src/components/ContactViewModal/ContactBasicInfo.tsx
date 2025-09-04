@@ -29,9 +29,9 @@ export default function ContactBasicInfo({ contact, tags, tagsLoading }: Contact
     <div className="space-y-4">
       {/* Name */}
       <div>
-        <Label className="text-sm font-medium text-muted-foreground">Full Name</Label>
+        <Label className="text-muted-foreground text-sm font-medium">Full Name</Label>
         <div className="mt-1 flex items-center space-x-2">
-          <User className="h-4 w-4 text-muted-foreground" />
+          <User className="text-muted-foreground h-4 w-4" />
           <p className="text-base font-semibold">
             {[contact.prefix, contact.first_name, contact.middle_name, contact.last_name, contact.suffix]
               .filter(Boolean)
@@ -42,9 +42,9 @@ export default function ContactBasicInfo({ contact, tags, tagsLoading }: Contact
 
       {/* Tags */}
       <div className="space-y-3">
-        <Label className="text-sm font-medium text-muted-foreground">Tags</Label>
+        <Label className="text-muted-foreground text-sm font-medium">Tags</Label>
         {tagsLoading ? (
-          <div className="text-sm text-muted-foreground">Loading tags...</div>
+          <div className="text-muted-foreground text-sm">Loading tags...</div>
         ) : tags.length > 0 ? (
           <div className="flex flex-wrap gap-2">
             {tags.map((tag) => (
@@ -65,24 +65,24 @@ export default function ContactBasicInfo({ contact, tags, tagsLoading }: Contact
             ))}
           </div>
         ) : (
-          <div className="text-sm text-muted-foreground">No tags assigned</div>
+          <div className="text-muted-foreground text-sm">No tags assigned</div>
         )}
       </div>
 
       {/* Contact Information */}
       <div className="space-y-3">
-        <Label className="text-sm font-medium text-muted-foreground">Contact Information</Label>
+        <Label className="text-muted-foreground text-sm font-medium">Contact Information</Label>
         <div className="space-y-2">
           {contact.phone && (
             <div className="flex items-center space-x-2">
-              <Phone className="h-4 w-4 text-muted-foreground" />
+              <Phone className="text-muted-foreground h-4 w-4" />
               <span className="text-sm font-medium">Phone:</span>
               <span className="text-sm">{formatPhoneNumber(contact.phone)}</span>
             </div>
           )}
           {contact.email && (
             <div className="flex items-center space-x-2">
-              <Mail className="h-4 w-4 text-muted-foreground" />
+              <Mail className="text-muted-foreground h-4 w-4" />
               <span className="text-sm font-medium">Email:</span>
               <span className="text-sm">{contact.email}</span>
             </div>

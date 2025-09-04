@@ -29,13 +29,13 @@ export function Toast({ id, title, description, variant = 'default', onDismiss }
 
   return (
     <div
-      className={`fixed right-4 top-4 z-50 w-full max-w-sm rounded-lg border p-4 shadow-lg ${getBackgroundColor()} animate-in slide-in-from-right-full duration-300`}
+      className={`fixed top-4 right-4 z-50 w-full max-w-sm rounded-lg border p-4 shadow-lg ${getBackgroundColor()} animate-in slide-in-from-right-full duration-300`}
     >
       <div className="flex items-start space-x-3">
         <div className="mt-0.5 flex-shrink-0">{getIcon()}</div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-medium text-foreground">{title}</p>
-          {description && <p className="mt-1 text-sm text-muted-foreground">{description}</p>}
+          <p className="text-foreground text-sm font-medium">{title}</p>
+          {description && <p className="text-muted-foreground mt-1 text-sm">{description}</p>}
         </div>
         <Button variant="ghost" size="sm" onClick={() => onDismiss(id)} className="h-6 w-6 flex-shrink-0 p-0">
           <X className="h-3 w-3" />

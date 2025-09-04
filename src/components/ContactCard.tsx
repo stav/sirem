@@ -54,7 +54,7 @@ export default function ContactCard({
   return (
     <div
       className={`rounded-lg border p-4 transition-colors ${
-        isSelected ? 'border-primary bg-primary/5' : isSingleView ? '' : 'cursor-pointer hover:bg-muted/50'
+        isSelected ? 'border-primary bg-primary/5' : isSingleView ? '' : 'hover:bg-muted/50 cursor-pointer'
       }`}
       onClick={() => {
         if (!isSingleView) {
@@ -97,7 +97,7 @@ export default function ContactCard({
                   e.stopPropagation()
                   onView(contact)
                 }}
-                className="h-8 w-8 cursor-pointer p-0 hover:bg-muted hover:text-muted-foreground"
+                className="hover:bg-muted hover:text-muted-foreground h-8 w-8 cursor-pointer p-0"
                 aria-label="View contact"
               >
                 <Eye className="h-4 w-4" />
@@ -150,8 +150,8 @@ export default function ContactCard({
             <Tooltip>
               <TooltipTrigger asChild>
                 <div className="flex items-center space-x-1 whitespace-nowrap">
-                  <span className="text-sm text-muted-foreground">🎂</span>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-muted-foreground text-sm">🎂</span>
+                  <span className="text-muted-foreground text-sm">
                     {formatLocalDate(contact.birthdate)}
                     {(() => {
                       const age = calculateAge(contact.birthdate)
@@ -175,15 +175,15 @@ export default function ContactCard({
           {/* Phone number display */}
           {contact.phone && (
             <div className="flex items-center space-x-1 whitespace-nowrap">
-              <span className="text-sm text-muted-foreground">📞</span>
-              <span className="text-sm text-muted-foreground">{formatPhoneNumber(contact.phone)}</span>
+              <span className="text-muted-foreground text-sm">📞</span>
+              <span className="text-muted-foreground text-sm">{formatPhoneNumber(contact.phone)}</span>
             </div>
           )}
           {/* Email display */}
           {contact.email && (
             <div className="flex items-center space-x-1 whitespace-nowrap">
-              <span className="text-sm text-muted-foreground">✉️</span>
-              <span className="text-sm text-muted-foreground">{contact.email}</span>
+              <span className="text-muted-foreground text-sm">✉️</span>
+              <span className="text-muted-foreground text-sm">{contact.email}</span>
             </div>
           )}
           {/* Address display */}
@@ -200,8 +200,8 @@ export default function ContactCard({
 
             return (
               <div className="flex items-center space-x-1 whitespace-nowrap">
-                <span className="text-sm text-muted-foreground">📍</span>
-                <span className="text-sm text-muted-foreground">{parts.join(', ')}</span>
+                <span className="text-muted-foreground text-sm">📍</span>
+                <span className="text-muted-foreground text-sm">{parts.join(', ')}</span>
               </div>
             )
           })()}
@@ -209,7 +209,7 @@ export default function ContactCard({
 
         {/* Enrollments */}
         {enrollmentItems.length > 0 && (
-          <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-muted-foreground">
+          <ol className="text-muted-foreground mt-2 list-decimal space-y-1 pl-5 text-sm">
             {enrollmentItems.map((enr) => {
               const plan = enr.plans
               const effectiveDateOnly = enr.coverage_effective_date
@@ -233,7 +233,7 @@ export default function ContactCard({
         )}
 
         {/* Notes display */}
-        {contact.notes && <p className="mt-2 text-sm text-muted-foreground">{contact.notes}</p>}
+        {contact.notes && <p className="text-muted-foreground mt-2 text-sm">{contact.notes}</p>}
       </div>
     </div>
   )

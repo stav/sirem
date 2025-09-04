@@ -364,7 +364,7 @@ export default function PlansPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background min-h-screen">
       <Navigation pageTitle="Plans" />
 
       <div className="p-6">
@@ -388,7 +388,7 @@ export default function PlansPage() {
                 <div className="space-y-1">
                   <Label className="text-xs">Plan Type</Label>
                   <select
-                    className="w-full rounded border bg-background p-2 text-sm"
+                    className="bg-background w-full rounded border p-2 text-sm"
                     value={form.plan_type}
                     onChange={(e) => setForm((f) => ({ ...f, plan_type: e.target.value as PlanType }))}
                   >
@@ -403,7 +403,7 @@ export default function PlansPage() {
                 <div className="space-y-1">
                   <Label className="text-xs">Carrier</Label>
                   <select
-                    className="w-full rounded border bg-background p-2 text-sm"
+                    className="bg-background w-full rounded border p-2 text-sm"
                     value={form.carrier}
                     onChange={(e) => setForm((f) => ({ ...f, carrier: e.target.value as Carrier }))}
                   >
@@ -609,9 +609,9 @@ export default function PlansPage() {
 
           {/* Plans list (AG Grid) */}
           <div className="rounded border">
-            {loading && <div className="p-3 text-sm text-muted-foreground">Loading plans…</div>}
+            {loading && <div className="text-muted-foreground p-3 text-sm">Loading plans…</div>}
             {!loading && sortedPlans.length === 0 && (
-              <div className="p-3 text-sm text-muted-foreground">No plans found</div>
+              <div className="text-muted-foreground p-3 text-sm">No plans found</div>
             )}
             <div className="w-full" style={{ height: '70vh' }}>
               <AgGridReact
@@ -652,7 +652,7 @@ export default function PlansPage() {
               <div className="space-y-1">
                 <Label className="text-xs">Plan Type</Label>
                 <select
-                  className="w-full rounded border bg-background p-2 text-sm"
+                  className="bg-background w-full rounded border p-2 text-sm"
                   value={editForm.plan_type}
                   onChange={(e) => setEditForm((f) => ({ ...f, plan_type: e.target.value as PlanType }))}
                 >
@@ -668,7 +668,7 @@ export default function PlansPage() {
               <div className="space-y-1">
                 <Label className="text-xs">Carrier</Label>
                 <select
-                  className="w-full rounded border bg-background p-2 text-sm"
+                  className="bg-background w-full rounded border p-2 text-sm"
                   value={editForm.carrier}
                   onChange={(e) => setEditForm((f) => ({ ...f, carrier: e.target.value as Carrier }))}
                 >
@@ -866,7 +866,7 @@ export default function PlansPage() {
             </div>
           </ModalForm>
 
-          {error && <div className="text-sm text-destructive">{error}</div>}
+          {error && <div className="text-destructive text-sm">{error}</div>}
         </div>
       </div>
     </div>

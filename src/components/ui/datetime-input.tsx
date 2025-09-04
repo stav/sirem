@@ -72,14 +72,14 @@ export default function DateTimeInput({
           placeholder={placeholder}
           className="pr-20"
         />
-        <div className="absolute right-1 top-1/2 flex -translate-y-1/2 items-center space-x-1">
+        <div className="absolute top-1/2 right-1 flex -translate-y-1/2 items-center space-x-1">
           {value && (
             <Button
               type="button"
               variant="ghost"
               size="sm"
               onClick={handleClear}
-              className="h-6 w-6 p-0 hover:bg-muted"
+              className="hover:bg-muted h-6 w-6 p-0"
               aria-label="Clear datetime"
             >
               <X className="h-3 w-3" />
@@ -90,7 +90,7 @@ export default function DateTimeInput({
             variant="ghost"
             size="sm"
             onClick={handleNow}
-            className="h-6 w-6 p-0 hover:bg-muted"
+            className="hover:bg-muted h-6 w-6 p-0"
             aria-label="Set to now"
           >
             <Clock className="h-3 w-3" />

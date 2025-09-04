@@ -156,7 +156,7 @@ export default function ActionList({
             <CardTitle>
               Actions
               {selectedContact && (
-                <span className="ml-2 text-sm font-normal text-muted-foreground">
+                <span className="text-muted-foreground ml-2 text-sm font-normal">
                   for {selectedContact.first_name} {selectedContact.last_name}
                 </span>
               )}
@@ -202,11 +202,11 @@ export default function ActionList({
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-muted-foreground">
+            <span className="text-muted-foreground text-sm">
               {displayActions.length} / {actions.length}
             </span>
             {totalPages > 1 && (
-              <span className="text-sm text-muted-foreground">
+              <span className="text-muted-foreground text-sm">
                 (Page {currentPage} of {totalPages})
               </span>
             )}

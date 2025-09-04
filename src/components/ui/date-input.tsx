@@ -36,14 +36,14 @@ export default function DateInput({ id, label, value, onChange, required = false
           placeholder={placeholder}
           className="pr-18"
         />
-        <div className="absolute right-2 top-1/2 flex -translate-y-1/2 items-center space-x-2">
+        <div className="absolute top-1/2 right-2 flex -translate-y-1/2 items-center space-x-2">
           {value && (
             <Button
               type="button"
               variant="ghost"
               size="sm"
               onClick={handleClear}
-              className="h-6 w-6 p-0 hover:bg-muted"
+              className="hover:bg-muted h-6 w-6 p-0"
               aria-label="Clear date"
             >
               <X className="h-3 w-3" />
@@ -54,7 +54,7 @@ export default function DateInput({ id, label, value, onChange, required = false
             variant="ghost"
             size="sm"
             onClick={handleToday}
-            className="h-6 w-6 p-0 hover:bg-muted"
+            className="hover:bg-muted h-6 w-6 p-0"
             aria-label="Set to today"
           >
             <Calendar className="h-3 w-3" />

@@ -157,13 +157,13 @@ function renderContactInfo(contact: DashboardContact) {
 
   return (
     <div className="flex items-center space-x-2">
-      <span className="text-sm text-foreground">
+      <span className="text-foreground text-sm">
         {contact.first_name} {contact.last_name}
       </span>
       {renderStatusBadge(contact.status)}
-      {contact.phone && <Phone className="h-3 w-3 text-muted-foreground" />}
-      {contact.email && <Mail className="h-3 w-3 text-muted-foreground" />}
-      {hasValidAddress && <MapPin className="h-3 w-3 text-muted-foreground" />}
+      {contact.phone && <Phone className="text-muted-foreground h-3 w-3" />}
+      {contact.email && <Mail className="text-muted-foreground h-3 w-3" />}
+      {hasValidAddress && <MapPin className="text-muted-foreground h-3 w-3" />}
     </div>
   )
 }
@@ -186,7 +186,7 @@ function renderContactRow(
   return (
     <div
       key={contact.id}
-      className="flex cursor-pointer items-center justify-between py-1 transition-colors hover:bg-muted/70"
+      className="hover:bg-muted/70 flex cursor-pointer items-center justify-between py-1 transition-colors"
       onClick={() => {
         router.push(`/manage?contact=${contact.id}`)
       }}
@@ -194,7 +194,7 @@ function renderContactRow(
       {renderContactInfo(contact)}
       {showDate && (
         <div className="flex items-center space-x-2">
-          <span className="text-xs text-muted-foreground">{formatLocalDate(contact.birthdate!)}</span>
+          <span className="text-muted-foreground text-xs">{formatLocalDate(contact.birthdate!)}</span>
           <Badge variant={badgeVariant} className="text-xs">
             {getBadgeText()}
           </Badge>
@@ -319,29 +319,29 @@ export default function Home() {
   // Early return if still loading or no data
   if (loading || !dashboardData) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="bg-background min-h-screen">
         <Navigation pageTitle="Dashboard" />
         <div className="p-6">
           <div className="mx-auto max-w-7xl">
             {loading ? (
               <div className="animate-pulse">
-                <div className="mb-8 h-8 w-1/4 rounded bg-muted"></div>
+                <div className="bg-muted mb-8 h-8 w-1/4 rounded"></div>
                 <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
                   {[...Array(4)].map((_, i) => (
-                    <div key={i} className="rounded-lg bg-card p-6 shadow">
-                      <div className="mb-2 h-4 w-1/2 rounded bg-muted"></div>
-                      <div className="h-8 w-1/3 rounded bg-muted"></div>
+                    <div key={i} className="bg-card rounded-lg p-6 shadow">
+                      <div className="bg-muted mb-2 h-4 w-1/2 rounded"></div>
+                      <div className="bg-muted h-8 w-1/3 rounded"></div>
                     </div>
                   ))}
                 </div>
                 <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
                   <div className="space-y-8 lg:col-span-2">
                     {[...Array(2)].map((_, i) => (
-                      <div key={i} className="rounded-lg bg-card p-6 shadow">
-                        <div className="mb-4 h-6 w-1/3 rounded bg-muted"></div>
+                      <div key={i} className="bg-card rounded-lg p-6 shadow">
+                        <div className="bg-muted mb-4 h-6 w-1/3 rounded"></div>
                         <div className="space-y-3">
                           {[...Array(4)].map((_, j) => (
-                            <div key={j} className="h-4 rounded bg-muted"></div>
+                            <div key={j} className="bg-muted h-4 rounded"></div>
                           ))}
                         </div>
                       </div>
@@ -349,11 +349,11 @@ export default function Home() {
                   </div>
                   <div className="space-y-6">
                     {[...Array(2)].map((_, i) => (
-                      <div key={i} className="rounded-lg bg-card p-6 shadow">
-                        <div className="mb-4 h-6 w-1/2 rounded bg-muted"></div>
+                      <div key={i} className="bg-card rounded-lg p-6 shadow">
+                        <div className="bg-muted mb-4 h-6 w-1/2 rounded"></div>
                         <div className="space-y-3">
                           {[...Array(3)].map((_, j) => (
-                            <div key={j} className="h-4 rounded bg-muted"></div>
+                            <div key={j} className="bg-muted h-4 rounded"></div>
                           ))}
                         </div>
                       </div>
@@ -386,30 +386,30 @@ export default function Home() {
   } = dashboardData
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background min-h-screen">
       <Navigation pageTitle="Dashboard" />
 
       <div className="p-6">
         <div className="mx-auto max-w-7xl">
           {loading ? (
             <div className="animate-pulse">
-              <div className="mb-8 h-8 w-1/4 rounded bg-muted"></div>
+              <div className="bg-muted mb-8 h-8 w-1/4 rounded"></div>
               <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
                 {[...Array(4)].map((_, i) => (
-                  <div key={i} className="rounded-lg bg-card p-6 shadow">
-                    <div className="mb-2 h-4 w-1/2 rounded bg-muted"></div>
-                    <div className="h-8 w-1/3 rounded bg-muted"></div>
+                  <div key={i} className="bg-card rounded-lg p-6 shadow">
+                    <div className="bg-muted mb-2 h-4 w-1/2 rounded"></div>
+                    <div className="bg-muted h-8 w-1/3 rounded"></div>
                   </div>
                 ))}
               </div>
               <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
                 <div className="space-y-8 lg:col-span-2">
                   {[...Array(2)].map((_, i) => (
-                    <div key={i} className="rounded-lg bg-card p-6 shadow">
-                      <div className="mb-4 h-6 w-1/3 rounded bg-muted"></div>
+                    <div key={i} className="bg-card rounded-lg p-6 shadow">
+                      <div className="bg-muted mb-4 h-6 w-1/3 rounded"></div>
                       <div className="space-y-3">
                         {[...Array(4)].map((_, j) => (
-                          <div key={j} className="h-4 rounded bg-muted"></div>
+                          <div key={j} className="bg-muted h-4 rounded"></div>
                         ))}
                       </div>
                     </div>
@@ -417,11 +417,11 @@ export default function Home() {
                 </div>
                 <div className="space-y-6">
                   {[...Array(2)].map((_, i) => (
-                    <div key={i} className="rounded-lg bg-card p-6 shadow">
-                      <div className="mb-4 h-6 w-1/2 rounded bg-muted"></div>
+                    <div key={i} className="bg-card rounded-lg p-6 shadow">
+                      <div className="bg-muted mb-4 h-6 w-1/2 rounded"></div>
                       <div className="space-y-3">
                         {[...Array(3)].map((_, j) => (
-                          <div key={j} className="h-4 rounded bg-muted"></div>
+                          <div key={j} className="bg-muted h-4 rounded"></div>
                         ))}
                       </div>
                     </div>
@@ -440,8 +440,8 @@ export default function Home() {
                         <Users className="h-6 w-6 text-blue-600" />
                       </div>
                       <div className="ml-4">
-                        <p className="text-sm font-medium text-muted-foreground">Total Contacts</p>
-                        <p className="text-2xl font-bold text-foreground">{totalContacts}</p>
+                        <p className="text-muted-foreground text-sm font-medium">Total Contacts</p>
+                        <p className="text-foreground text-2xl font-bold">{totalContacts}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -454,8 +454,8 @@ export default function Home() {
                         <Bell className="h-6 w-6 text-orange-600" />
                       </div>
                       <div className="ml-4">
-                        <p className="text-sm font-medium text-muted-foreground">Pending Reminders</p>
-                        <p className="text-2xl font-bold text-foreground">{pendingReminders}</p>
+                        <p className="text-muted-foreground text-sm font-medium">Pending Reminders</p>
+                        <p className="text-foreground text-2xl font-bold">{pendingReminders}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -468,8 +468,8 @@ export default function Home() {
                         <AlertTriangle className="h-6 w-6 text-red-600" />
                       </div>
                       <div className="ml-4">
-                        <p className="text-sm font-medium text-muted-foreground">Overdue</p>
-                        <p className="text-2xl font-bold text-foreground">{overdueReminders}</p>
+                        <p className="text-muted-foreground text-sm font-medium">Overdue</p>
+                        <p className="text-foreground text-2xl font-bold">{overdueReminders}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -482,8 +482,8 @@ export default function Home() {
                         <CheckCircle className="h-6 w-6 text-green-600" />
                       </div>
                       <div className="ml-4">
-                        <p className="text-sm font-medium text-muted-foreground">Completed</p>
-                        <p className="text-2xl font-bold text-foreground">{completedReminders}</p>
+                        <p className="text-muted-foreground text-sm font-medium">Completed</p>
+                        <p className="text-foreground text-2xl font-bold">{completedReminders}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -501,11 +501,11 @@ export default function Home() {
                     <CardContent>
                       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                         {/* Upcoming 65 */}
-                        <div className="relative md:after:absolute md:after:bottom-0 md:after:right-[-12px] md:after:top-0 md:after:w-px md:after:bg-border">
-                          <h4 className="mb-3 text-sm font-medium text-muted-foreground">Upcoming</h4>
+                        <div className="md:after:bg-border relative md:after:absolute md:after:top-0 md:after:right-[-12px] md:after:bottom-0 md:after:w-px">
+                          <h4 className="text-muted-foreground mb-3 text-sm font-medium">Upcoming</h4>
                           {upcoming65.length === 0 ? (
                             <div className="py-4 text-center">
-                              <p className="text-sm text-muted-foreground">No upcoming 65th birthdays</p>
+                              <p className="text-muted-foreground text-sm">No upcoming 65th birthdays</p>
                             </div>
                           ) : (
                             <div className="max-h-48 space-y-1 overflow-y-auto">
@@ -516,10 +516,10 @@ export default function Home() {
 
                         {/* Recent 65 */}
                         <div className="relative">
-                          <h4 className="mb-3 text-sm font-medium text-muted-foreground">Recent</h4>
+                          <h4 className="text-muted-foreground mb-3 text-sm font-medium">Recent</h4>
                           {recent65.length === 0 ? (
                             <div className="py-4 text-center">
-                              <p className="text-sm text-muted-foreground">No recent 65th birthdays</p>
+                              <p className="text-muted-foreground text-sm">No recent 65th birthdays</p>
                             </div>
                           ) : (
                             <div className="max-h-48 space-y-1 overflow-y-auto">
@@ -539,11 +539,11 @@ export default function Home() {
                     <CardContent>
                       <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                         {/* Upcoming Birthdays */}
-                        <div className="relative md:after:absolute md:after:bottom-0 md:after:right-[-12px] md:after:top-0 md:after:w-px md:after:bg-border">
-                          <h4 className="mb-3 text-sm font-medium text-muted-foreground">Upcoming</h4>
+                        <div className="md:after:bg-border relative md:after:absolute md:after:top-0 md:after:right-[-12px] md:after:bottom-0 md:after:w-px">
+                          <h4 className="text-muted-foreground mb-3 text-sm font-medium">Upcoming</h4>
                           {upcomingBirthdays.length === 0 ? (
                             <div className="py-4 text-center">
-                              <p className="text-sm text-muted-foreground">No upcoming birthdays</p>
+                              <p className="text-muted-foreground text-sm">No upcoming birthdays</p>
                             </div>
                           ) : (
                             <div className="max-h-48 space-y-1 overflow-y-auto">
@@ -554,10 +554,10 @@ export default function Home() {
 
                         {/* Recent Birthdays */}
                         <div className="relative">
-                          <h4 className="mb-3 text-sm font-medium text-muted-foreground">Recent</h4>
+                          <h4 className="text-muted-foreground mb-3 text-sm font-medium">Recent</h4>
                           {pastBirthdays.length === 0 ? (
                             <div className="py-4 text-center">
-                              <p className="text-sm text-muted-foreground">No recent birthdays</p>
+                              <p className="text-muted-foreground text-sm">No recent birthdays</p>
                             </div>
                           ) : (
                             <div className="max-h-48 space-y-1 overflow-y-auto">
@@ -576,7 +576,7 @@ export default function Home() {
                     <CardHeader>
                       <div className="flex items-center justify-between">
                         <CardTitle>Upcoming Reminders</CardTitle>
-                        <Link href="/manage" className="flex items-center text-sm text-primary hover:text-primary/80">
+                        <Link href="/manage" className="text-primary hover:text-primary/80 flex items-center text-sm">
                           View all <ArrowRight className="ml-1 h-4 w-4" />
                         </Link>
                       </div>
@@ -584,11 +584,11 @@ export default function Home() {
                     <CardContent>
                       {upcomingReminders.length === 0 ? (
                         <div className="py-8 text-center">
-                          <Bell className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                          <Bell className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
                           <p className="text-muted-foreground">No upcoming reminders</p>
                           <Link
                             href="/manage"
-                            className="mt-2 inline-flex items-center text-primary hover:text-primary/80"
+                            className="text-primary hover:text-primary/80 mt-2 inline-flex items-center"
                           >
                             <Plus className="mr-1 h-4 w-4" />
                             Add a reminder
@@ -599,7 +599,7 @@ export default function Home() {
                           {upcomingReminders.map((reminder) => (
                             <div
                               key={reminder.id}
-                              className="cursor-pointer rounded-lg bg-muted/50 p-2 transition-colors hover:bg-muted/70"
+                              className="bg-muted/50 hover:bg-muted/70 cursor-pointer rounded-lg p-2 transition-colors"
                               onClick={() => {
                                 // Navigate to manage page with reminder selected
                                 router.push(`/manage?reminder=${reminder.id}`)
@@ -607,7 +607,7 @@ export default function Home() {
                             >
                               <div className="flex items-start justify-between">
                                 <div className="flex-1">
-                                  <h4 className="font-medium text-foreground">{reminder.title}</h4>
+                                  <h4 className="text-foreground font-medium">{reminder.title}</h4>
                                   <div className="mt-1 flex items-center space-x-2">
                                     <Badge
                                       variant={
@@ -621,20 +621,20 @@ export default function Home() {
                                     >
                                       {reminder.priority}
                                     </Badge>
-                                    <span className="ml-2 text-xs text-muted-foreground">
+                                    <span className="text-muted-foreground ml-2 text-xs">
                                       {formatLocalDate(reminder.reminder_date)}
                                     </span>
-                                    <span className="ml-2 flex items-center text-xs text-muted-foreground">
+                                    <span className="text-muted-foreground ml-2 flex items-center text-xs">
                                       <Users className="mr-1 h-3 w-3" />
                                       {reminder.contact?.first_name} {reminder.contact?.last_name}
                                     </span>
                                   </div>
                                   {reminder.description && (
-                                    <p className="mt-1 text-sm text-muted-foreground">{reminder.description}</p>
+                                    <p className="text-muted-foreground mt-1 text-sm">{reminder.description}</p>
                                   )}
                                 </div>
                                 <div className="ml-2">
-                                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                                  <ArrowRight className="text-muted-foreground h-4 w-4" />
                                 </div>
                               </div>
                             </div>

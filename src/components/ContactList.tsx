@@ -284,20 +284,20 @@ export default function ContactList({
                       value={filter}
                       onChange={(e) => setFilter(e.target.value)}
                       placeholder="Multi-filter: name, T65 days, t:tag, s:status (e.g., john 180 t:n2m s:client)..."
-                      className="rounded border px-2 py-1 pr-8 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
+                      className="focus:ring-primary rounded border px-2 py-1 pr-8 text-sm focus:ring-2 focus:outline-none"
                       style={{ minWidth: 0, width: '280px' }}
                     />
                     {filter && (
                       <button
                         onClick={() => setFilter('')}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-gray-600"
+                        className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-gray-600"
                       >
                         <X className="h-3 w-3" />
                       </button>
                     )}
                   </div>
                   <div className="flex items-center space-x-2">
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">
                       {filteredContacts.length}/{contacts.length}
                     </span>
                     {filter && (
@@ -458,7 +458,7 @@ export default function ContactList({
                   <select
                     value={isCSVFormat ? 'csv' : 'text'}
                     onChange={(e) => setIsCSVFormat(e.target.value === 'csv')}
-                    className="rounded border px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="rounded border px-2 py-1 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                   >
                     <option value="text">Formatted Text</option>
                     <option value="csv">CSV</option>
@@ -477,7 +477,7 @@ export default function ContactList({
               <textarea
                 readOnly
                 value={formatContactsForPrint()}
-                className="h-64 w-full resize-none rounded-md border p-3 font-mono text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="h-64 w-full resize-none rounded-md border p-3 font-mono text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none"
                 onClick={(e) => (e.target as HTMLTextAreaElement).select()}
               />
               <div className="mt-4 flex items-center justify-between text-sm text-gray-500">

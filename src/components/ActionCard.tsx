@@ -151,14 +151,14 @@ const ActionCard = React.memo(function ActionCard({
           <div className="flex items-center space-x-2">
             <Tooltip>
               <TooltipTrigger asChild>
-                <span className="cursor-help text-xs text-muted-foreground">{daysDiffText}</span>
+                <span className="text-muted-foreground cursor-help text-xs">{daysDiffText}</span>
               </TooltipTrigger>
               <TooltipContent>{formatDateTimeString(displayDate)}</TooltipContent>
             </Tooltip>
             {action.status && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge className={`${statusIndicator.className} cursor-help hover:bg-opacity-100`}>
+                  <Badge className={`${statusIndicator.className} hover:bg-opacity-100 cursor-help`}>
                     <Activity className="mr-1 inline h-3 w-3" />
                     {statusIndicator.text}
                   </Badge>
@@ -169,7 +169,7 @@ const ActionCard = React.memo(function ActionCard({
             {action.priority && (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Badge className={`${priorityColor} cursor-help hover:bg-opacity-100`}>
+                  <Badge className={`${priorityColor} hover:bg-opacity-100 cursor-help`}>
                     <AlertTriangle className="mr-1 inline h-3 w-3" />
                     {action.priority}
                   </Badge>
@@ -177,18 +177,18 @@ const ActionCard = React.memo(function ActionCard({
                 <TooltipContent>Priority</TooltipContent>
               </Tooltip>
             )}
-            <span className="text-xs text-muted-foreground">#{index}</span>
+            <span className="text-muted-foreground text-xs">#{index}</span>
           </div>
         </div>
 
         {/* Main Content: Title & Description */}
         <div className="mt-2">
-          <h4 className={`text-base font-semibold leading-tight text-foreground`}>{action.title}</h4>
-          {action.description && <p className="mt-1 text-sm text-muted-foreground">{action.description}</p>}
+          <h4 className={`text-foreground text-base leading-tight font-semibold`}>{action.title}</h4>
+          {action.description && <p className="text-muted-foreground mt-1 text-sm">{action.description}</p>}
         </div>
 
         {/* Dates */}
-        <div className="mt-2 grid grid-cols-1 gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+        <div className="text-muted-foreground mt-2 grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
           {action.start_date && (
             <div className="flex items-center space-x-1">
               <Calendar className="h-3 w-3" />
@@ -226,8 +226,8 @@ const ActionCard = React.memo(function ActionCard({
 
         {/* Outcome */}
         {action.outcome && (
-          <div className="mt-2 rounded-md bg-primary/10 p-2 dark:bg-primary/20">
-            <p className="text-sm text-primary dark:text-primary">
+          <div className="bg-primary/10 dark:bg-primary/20 mt-2 rounded-md p-2">
+            <p className="text-primary dark:text-primary text-sm">
               <span className="font-medium">Outcome:</span> {action.outcome}
             </p>
           </div>
@@ -253,7 +253,7 @@ const ActionCard = React.memo(function ActionCard({
                   variant="ghost"
                   size="sm"
                   onClick={() => onToggleComplete(action)}
-                  className={`h-8 w-8 cursor-pointer p-0 text-foreground/70 dark:text-foreground/80 ${
+                  className={`text-foreground/70 dark:text-foreground/80 h-8 w-8 cursor-pointer p-0 ${
                     action.completed_date
                       ? 'hover:bg-destructive/10 hover:text-destructive dark:hover:bg-destructive/20 dark:hover:text-destructive'
                       : 'hover:bg-primary/10 hover:text-primary dark:hover:bg-primary/20 dark:hover:text-primary'
@@ -271,7 +271,7 @@ const ActionCard = React.memo(function ActionCard({
                   variant="ghost"
                   size="sm"
                   onClick={() => onView(action)}
-                  className="h-8 w-8 cursor-pointer p-0 text-foreground/70 hover:bg-muted hover:text-foreground dark:text-foreground/80"
+                  className="text-foreground/70 hover:bg-muted hover:text-foreground dark:text-foreground/80 h-8 w-8 cursor-pointer p-0"
                   aria-label="View action"
                 >
                   <Eye className="h-4 w-4" />
@@ -285,7 +285,7 @@ const ActionCard = React.memo(function ActionCard({
                   variant="ghost"
                   size="sm"
                   onClick={() => onEdit(action)}
-                  className="h-8 w-8 cursor-pointer p-0 text-foreground/70 hover:bg-primary/10 hover:text-primary dark:text-foreground/80 dark:hover:bg-primary/20 dark:hover:text-primary"
+                  className="text-foreground/70 hover:bg-primary/10 hover:text-primary dark:text-foreground/80 dark:hover:bg-primary/20 dark:hover:text-primary h-8 w-8 cursor-pointer p-0"
                   aria-label="Edit action"
                 >
                   <Edit className="h-4 w-4" />
@@ -299,7 +299,7 @@ const ActionCard = React.memo(function ActionCard({
                   variant="ghost"
                   size="sm"
                   onClick={() => onDelete(action.id)}
-                  className="h-8 w-8 p-0 text-foreground/70 hover:bg-destructive/10 hover:text-destructive dark:text-foreground/80 dark:hover:bg-destructive/20 dark:hover:text-destructive"
+                  className="text-foreground/70 hover:bg-destructive/10 hover:text-destructive dark:text-foreground/80 dark:hover:bg-destructive/20 dark:hover:text-destructive h-8 w-8 p-0"
                   aria-label="Delete action"
                 >
                   <Trash2 className="h-4 w-4" />

@@ -57,7 +57,7 @@ export default function ModalForm({
           <Button
             variant="ghost"
             size="sm"
-            className="absolute right-2 top-2 h-12 w-12 cursor-pointer p-0"
+            className="absolute top-2 right-2 h-12 w-12 cursor-pointer p-0"
             onClick={onCancel}
           >
             <X className="h-8 w-8" />

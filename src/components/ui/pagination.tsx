@@ -41,7 +41,7 @@ export default function Pagination({
     <div className={`flex items-center justify-between ${className}`}>
       {showItemCount && (
         <div className="flex items-center space-x-2">
-          <span className="text-sm text-muted-foreground">
+          <span className="text-muted-foreground text-sm">
             Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} items
           </span>
           {showItemsPerPage && (
@@ -62,7 +62,7 @@ export default function Pagination({
                   <SelectItem value="all">All</SelectItem>
                 </SelectContent>
               </Select>
-              {isLoading && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+              {isLoading && <Loader2 className="text-primary h-4 w-4 animate-spin" />}
             </div>
           )}
         </div>
@@ -80,7 +80,7 @@ export default function Pagination({
             <ChevronLeft className="h-4 w-4" />
             Previous
           </Button>
-          <span className="text-sm text-muted-foreground">
+          <span className="text-muted-foreground text-sm">
             Page {currentPage} of {totalPages}
           </span>
           <Button

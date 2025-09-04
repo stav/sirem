@@ -144,13 +144,13 @@ export default function ImportPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background min-h-screen">
       <Navigation pageTitle="Import" />
 
       <div className="p-6">
         <div className="mx-auto max-w-4xl">
           <div className="mb-8">
-            <h1 className="mb-2 text-3xl font-bold text-foreground">Import Integrity Data</h1>
+            <h1 className="text-foreground mb-2 text-3xl font-bold">Import Integrity Data</h1>
             <p className="text-muted-foreground">
               Upload your Integrity export file to import leads, contacts, reminders, and activities into your CRM.
             </p>
@@ -169,7 +169,7 @@ export default function ImportPage() {
                 <div className="space-y-4">
                   {/* Import Type Selection */}
                   <div className="space-y-2">
-                    <label className="text-sm font-medium text-foreground">Import Type:</label>
+                    <label className="text-foreground text-sm font-medium">Import Type:</label>
                     <div className="flex flex-col space-y-2">
                       <label className="flex items-center space-x-2">
                         <input
@@ -214,7 +214,7 @@ export default function ImportPage() {
                     </div>
                   </div>
 
-                  <div className="rounded-lg border-2 border-dashed border-muted-foreground/25 p-6 text-center">
+                  <div className="border-muted-foreground/25 rounded-lg border-2 border-dashed p-6 text-center">
                     <input
                       type="file"
                       accept={importType === 'plans' ? '.csv' : '.json'}
@@ -224,11 +224,11 @@ export default function ImportPage() {
                       disabled={isImporting}
                     />
                     <label htmlFor="file-upload" className="flex cursor-pointer flex-col items-center">
-                      <FileText className="mb-4 h-12 w-12 text-muted-foreground" />
-                      <span className="text-sm font-medium text-foreground">
+                      <FileText className="text-muted-foreground mb-4 h-12 w-12" />
+                      <span className="text-foreground text-sm font-medium">
                         {file ? file.name : 'Click to select JSON file'}
                       </span>
-                      <span className="mt-1 text-xs text-muted-foreground">
+                      <span className="text-muted-foreground mt-1 text-xs">
                         {file ? 'Click to change file' : 'Supports .json files only'}
                       </span>
                     </label>
@@ -310,32 +310,32 @@ export default function ImportPage() {
               <CardContent>
                 {preview ? (
                   <div className="space-y-4">
-                    <div className="rounded-lg bg-muted/50 p-4">
-                      <div className="text-sm font-medium text-foreground">
+                    <div className="bg-muted/50 rounded-lg p-4">
+                      <div className="text-foreground text-sm font-medium">
                         Total Leads: {preview.totalLeads.toLocaleString()}
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-muted-foreground text-sm">
                         Total Activities: {preview.totalActivities.toLocaleString()}
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-muted-foreground text-sm">
                         Total Tags: {preview.totalTags.toLocaleString()}
                       </div>
                     </div>
 
                     <div>
-                      <h4 className="mb-2 text-sm font-medium text-foreground">Sample Leads:</h4>
+                      <h4 className="text-foreground mb-2 text-sm font-medium">Sample Leads:</h4>
                       <div className="space-y-2">
                         {preview.sampleLeads.map((lead, index) => (
-                          <div key={index} className="rounded-lg border bg-card p-3">
+                          <div key={index} className="bg-card rounded-lg border p-3">
                             <div className="text-sm font-medium">
                               {lead.firstName} {lead.lastName}
                             </div>
-                            <div className="text-xs text-muted-foreground">Status: {lead.status}</div>
+                            <div className="text-muted-foreground text-xs">Status: {lead.status}</div>
                             {lead.tags.length > 0 && (
-                              <div className="mt-1 text-xs text-muted-foreground">Tags: {lead.tags.join(', ')}</div>
+                              <div className="text-muted-foreground mt-1 text-xs">Tags: {lead.tags.join(', ')}</div>
                             )}
                             {lead.activities.length > 0 && (
-                              <div className="mt-1 text-xs text-muted-foreground">
+                              <div className="text-muted-foreground mt-1 text-xs">
                                 Activities: {lead.activities.length} (
                                 {lead.activities
                                   .slice(0, 2)
@@ -350,7 +350,7 @@ export default function ImportPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="text-center text-muted-foreground">
+                  <div className="text-muted-foreground text-center">
                     <FileText className="mx-auto mb-4 h-12 w-12 opacity-50" />
                     <p className="text-sm">Select a file to preview its contents</p>
                   </div>

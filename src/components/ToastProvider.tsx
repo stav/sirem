@@ -105,7 +105,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
 
       {/* Toast Notifications */}
-      <div className="fixed right-4 top-4 z-50 space-y-2">
+      <div className="fixed top-4 right-4 z-50 space-y-2">
         {toasts.map((toast, index) => (
           <div key={toast.id} style={{ top: `${index * 80 + 16}px` }} className="absolute right-0">
             <Toast
@@ -122,7 +122,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       </div>
 
       {/* Message History Button */}
-      <div className="fixed bottom-4 right-4 z-50">
+      <div className="fixed right-4 bottom-4 z-50">
         <Button onClick={() => setShowHistory(true)} size="sm" className="cursor-pointer rounded-full shadow-lg">
           <History className="mr-2 h-4 w-4" />
           History ({messages.length})
@@ -145,23 +145,23 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               </CardHeader>
               <CardContent className="max-h-[60vh] overflow-y-auto">
                 {messages.length === 0 ? (
-                  <div className="py-8 text-center text-muted-foreground">No messages yet</div>
+                  <div className="text-muted-foreground py-8 text-center">No messages yet</div>
                 ) : (
                   <div className="space-y-3">
                     {messages.map((message) => (
-                      <div key={message.id} className="flex items-start space-x-3 rounded-lg border bg-card p-3">
+                      <div key={message.id} className="bg-card flex items-start space-x-3 rounded-lg border p-3">
                         <div className="mt-1 flex-shrink-0">{getIcon(message.type)}</div>
                         <div className="min-w-0 flex-1">
                           <div className="mb-1 flex items-center space-x-2">
-                            <p className="text-sm font-medium text-foreground">{message.message}</p>
+                            <p className="text-foreground text-sm font-medium">{message.message}</p>
                             <Badge variant={getBadgeVariant(message.type)}>{message.type}</Badge>
                           </div>
-                          <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <div className="text-muted-foreground flex items-center justify-between text-xs">
                             <span>
                               {formatDate(message.timestamp)} at {formatTime(message.timestamp)}
                             </span>
                             {message.action && (
-                              <span className="rounded bg-muted px-2 py-1 font-mono">{message.action}</span>
+                              <span className="bg-muted rounded px-2 py-1 font-mono">{message.action}</span>
                             )}
                           </div>
                         </div>

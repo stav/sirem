@@ -89,7 +89,7 @@ export default function ReminderList({
             <CardTitle>
               Reminders
               {selectedContact && (
-                <span className="ml-2 text-sm font-normal text-muted-foreground">
+                <span className="text-muted-foreground ml-2 text-sm font-normal">
                   for {selectedContact.first_name} {selectedContact.last_name}
                 </span>
               )}
@@ -132,7 +132,7 @@ export default function ReminderList({
             </div>
           </div>
           <div className="flex items-center">
-            <span className="mr-2 text-sm text-muted-foreground">
+            <span className="text-muted-foreground mr-2 text-sm">
               {displayReminders.length} / {reminders.length}
             </span>
             {selectedContact && (

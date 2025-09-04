@@ -434,15 +434,15 @@ export default function ManagePage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="bg-background min-h-screen">
         <Navigation pageTitle="Manage" />
         <div className="p-6">
           <div className="mx-auto max-w-7xl">
             <div className="animate-pulse">
-              <div className="mb-8 h-8 w-1/4 rounded bg-muted"></div>
+              <div className="bg-muted mb-8 h-8 w-1/4 rounded"></div>
               <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-                <div className="h-96 rounded bg-muted"></div>
-                <div className="h-96 rounded bg-muted"></div>
+                <div className="bg-muted h-96 rounded"></div>
+                <div className="bg-muted h-96 rounded"></div>
               </div>
             </div>
           </div>
@@ -452,7 +452,7 @@ export default function ManagePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background min-h-screen">
       <Navigation pageTitle="Manage" />
 
       <div className="p-6">

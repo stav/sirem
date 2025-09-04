@@ -83,7 +83,7 @@ export default function ContactForm({
   const submitText = editingContact ? 'Update' : 'Create'
 
   const editingInfo = editingContact && (
-    <div className="mb-4 text-xs text-muted-foreground">
+    <div className="text-muted-foreground mb-4 text-xs">
       Last updated: {new Date(editingContact.updated_at).toLocaleString()}
     </div>
   )
@@ -266,7 +266,7 @@ export default function ContactForm({
               placeholder="1EG4-TE5-MK73"
               maxLength={13}
             />
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="text-muted-foreground mt-1 text-xs">
               Format: XXXX-XXXX-XXXX (11 characters, hyphens optional)
             </p>
           </div>
@@ -296,7 +296,7 @@ export default function ContactForm({
               placeholder="123-45-6789"
               maxLength={11}
             />
-            <p className="mt-1 text-xs text-muted-foreground">Format: XXX-XX-XXXX (Social Security Number)</p>
+            <p className="text-muted-foreground mt-1 text-xs">Format: XXX-XX-XXXX (Social Security Number)</p>
           </div>
           <div>
             <Label htmlFor="notes">Notes</Label>
@@ -345,7 +345,7 @@ export default function ContactForm({
           {editingContact && (
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium text-muted-foreground">Addresses</Label>
+                <Label className="text-muted-foreground text-sm font-medium">Addresses</Label>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -368,7 +368,7 @@ export default function ContactForm({
                     <div key={address.id} className="rounded-lg border border-gray-200 p-3">
                       <div className="mb-2 flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          <MapPin className="h-4 w-4 text-muted-foreground" />
+                          <MapPin className="text-muted-foreground h-4 w-4" />
                           <span className="text-sm font-medium">Address</span>
                           {address.address_type && (
                             <Badge variant="outline" className="text-xs">
@@ -414,7 +414,7 @@ export default function ContactForm({
                   ))}
                 </div>
               ) : (
-                <div className="text-sm text-muted-foreground">No addresses found</div>
+                <div className="text-muted-foreground text-sm">No addresses found</div>
               )}
             </div>
           )}

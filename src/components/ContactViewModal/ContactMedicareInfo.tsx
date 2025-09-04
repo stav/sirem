@@ -24,39 +24,39 @@ export default function ContactMedicareInfo({ contact }: ContactMedicareInfoProp
 
   return (
     <div className="space-y-3">
-      <Label className="text-sm font-medium text-muted-foreground">Medicare Information</Label>
+      <Label className="text-muted-foreground text-sm font-medium">Medicare Information</Label>
       <div className="space-y-2">
         {contact.medicare_beneficiary_id && (
           <div className="flex items-center space-x-2">
-            <Shield className="h-4 w-4 text-muted-foreground" />
+            <Shield className="text-muted-foreground h-4 w-4" />
             <span className="text-sm font-medium">MBI:</span>
             <span className="text-sm">{formatMBI(contact.medicare_beneficiary_id)}</span>
           </div>
         )}
         {contact.ssn && (
           <div className="flex items-center space-x-2">
-            <Shield className="h-4 w-4 text-muted-foreground" />
+            <Shield className="text-muted-foreground h-4 w-4" />
             <span className="text-sm font-medium">SSN:</span>
             <span className="text-sm">{formatSSN(contact.ssn)}</span>
           </div>
         )}
         {contact.part_a_status && (
           <div className="flex items-center space-x-2">
-            <Shield className="h-4 w-4 text-muted-foreground" />
+            <Shield className="text-muted-foreground h-4 w-4" />
             <span className="text-sm font-medium">Part A Status:</span>
             <span className="text-sm">{contact.part_a_status}</span>
           </div>
         )}
         {contact.part_b_status && (
           <div className="flex items-center space-x-2">
-            <Shield className="h-4 w-4 text-muted-foreground" />
+            <Shield className="text-muted-foreground h-4 w-4" />
             <span className="text-sm font-medium">Part B Status:</span>
             <span className="text-sm">{contact.part_b_status}</span>
           </div>
         )}
         {contact.subsidy_level && (
           <div className="flex items-center space-x-2">
-            <Shield className="h-4 w-4 text-muted-foreground" />
+            <Shield className="text-muted-foreground h-4 w-4" />
             <span className="text-sm font-medium">Subsidy Level:</span>
             <span className="text-sm">{contact.subsidy_level}</span>
           </div>

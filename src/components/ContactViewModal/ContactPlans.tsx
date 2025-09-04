@@ -84,13 +84,13 @@ export default function ContactPlans({ contact, onRefresh }: ContactPlansProps) 
 
   return (
     <div className="space-y-3">
-      <Label className="text-sm font-medium text-muted-foreground">Plans & Enrollments</Label>
+      <Label className="text-muted-foreground text-sm font-medium">Plans & Enrollments</Label>
 
       {/* List existing enrollments */}
       <div className="space-y-3">
-        {loading && <div className="text-sm text-muted-foreground">Loading enrollments…</div>}
+        {loading && <div className="text-muted-foreground text-sm">Loading enrollments…</div>}
         {!loading && enrollments.length === 0 && (
-          <div className="text-sm text-muted-foreground">No enrollments found</div>
+          <div className="text-muted-foreground text-sm">No enrollments found</div>
         )}
         {!loading && enrollments.length > 0 && (
           <div className="divide-y rounded border">
@@ -101,7 +101,7 @@ export default function ContactPlans({ contact, onRefresh }: ContactPlansProps) 
                   <div className="flex items-start justify-between gap-2">
                     <div className="space-y-1">
                       <div className="text-sm font-medium">{plan ? renderPlanLabel(plan) : 'Plan'}</div>
-                      <div className="text-xs text-muted-foreground">Status: {enr.enrollment_status || '—'}</div>
+                      <div className="text-muted-foreground text-xs">Status: {enr.enrollment_status || '—'}</div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Button
@@ -168,7 +168,7 @@ export default function ContactPlans({ contact, onRefresh }: ContactPlansProps) 
             <div className="space-y-1 md:col-span-2">
               <Label className="text-xs">Plan</Label>
               <select
-                className="w-full rounded border bg-background p-2 text-sm"
+                className="bg-background w-full rounded border p-2 text-sm"
                 value={form.plan_id}
                 onChange={(e) => setForm((f) => ({ ...f, plan_id: e.target.value }))}
               >
@@ -184,7 +184,7 @@ export default function ContactPlans({ contact, onRefresh }: ContactPlansProps) 
             <div className="space-y-1">
               <Label className="text-xs">Status</Label>
               <select
-                className="w-full rounded border bg-background p-2 text-sm"
+                className="bg-background w-full rounded border p-2 text-sm"
                 value={form.enrollment_status}
                 onChange={(e) => setForm((f) => ({ ...f, enrollment_status: e.target.value as EnrollmentStatus }))}
               >

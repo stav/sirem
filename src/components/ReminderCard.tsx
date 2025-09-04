@@ -142,12 +142,12 @@ export default function ReminderCard({
       <CardContent className="p-4">
         {/* Header with contact info and status */}
         <div className="mb-3 flex items-start justify-between">
-          <div className="flex items-center space-x-1 text-sm text-muted-foreground">
+          <div className="text-muted-foreground flex items-center space-x-1 text-sm">
             <User className="h-3 w-3" />
             {onSelectContact ? (
               <button
                 onClick={() => onSelectContact(reminder.contact_id)}
-                className="cursor-pointer font-medium transition-colors hover:text-primary hover:underline"
+                className="hover:text-primary cursor-pointer font-medium transition-colors hover:underline"
                 aria-label={`Select contact ${contactName}`}
               >
                 {contactName}
@@ -158,7 +158,7 @@ export default function ReminderCard({
           </div>
           <div className="flex items-center space-x-2">
             {statusIndicator.daysDiff !== null && (
-              <span className="text-xs font-bold text-muted-foreground">
+              <span className="text-muted-foreground text-xs font-bold">
                 {formatTimeDelta(statusIndicator.daysDiff, reminder.is_complete)}
               </span>
             )}
@@ -167,7 +167,7 @@ export default function ReminderCard({
               {statusIndicator.text}
             </Badge>
             {getPriorityBadge(reminder.priority)}
-            <span className="text-xs font-medium text-muted-foreground">#{index}</span>
+            <span className="text-muted-foreground text-xs font-medium">#{index}</span>
           </div>
         </div>
 
@@ -176,7 +176,7 @@ export default function ReminderCard({
           {/* Title and description */}
           <div>
             <h4
-              className={`text-base font-semibold leading-tight ${
+              className={`text-base leading-tight font-semibold ${
                 reminder.is_complete ? 'text-muted-foreground line-through' : 'text-foreground'
               }`}
             >
@@ -194,7 +194,7 @@ export default function ReminderCard({
           </div>
 
           {/* Date information */}
-          <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+          <div className="text-muted-foreground grid grid-cols-1 gap-2 text-xs sm:grid-cols-2">
             <div className="flex items-center space-x-1">
               <Calendar className="h-3 w-3" />
               <span className="font-medium">Due:</span>

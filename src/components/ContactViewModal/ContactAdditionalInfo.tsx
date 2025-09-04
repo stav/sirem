@@ -31,11 +31,11 @@ export default function ContactAdditionalInfo({ contact }: ContactAdditionalInfo
       {/* Policy Counts */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Life Policies</Label>
+          <Label className="text-muted-foreground text-sm font-medium">Life Policies</Label>
           <p className="mt-1 text-sm">{contact.life_policy_count || 0}</p>
         </div>
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Health Policies</Label>
+          <Label className="text-muted-foreground text-sm font-medium">Health Policies</Label>
           <p className="mt-1 text-sm">{contact.health_policy_count || 0}</p>
         </div>
       </div>
@@ -43,10 +43,10 @@ export default function ContactAdditionalInfo({ contact }: ContactAdditionalInfo
       {/* Lead Information */}
       {contact.lead_source && (
         <div className="space-y-3">
-          <Label className="text-sm font-medium text-muted-foreground">Lead Information</Label>
+          <Label className="text-muted-foreground text-sm font-medium">Lead Information</Label>
           <div className="space-y-2">
             <div className="flex items-center space-x-2">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <MapPin className="text-muted-foreground h-4 w-4" />
               <span className="text-sm font-medium">Source:</span>
               <span className="text-sm">{contact.lead_source}</span>
             </div>
@@ -56,21 +56,21 @@ export default function ContactAdditionalInfo({ contact }: ContactAdditionalInfo
 
       {/* Notes */}
       <div>
-        <Label className="text-sm font-medium text-muted-foreground">Notes</Label>
-        <p className="mt-1 whitespace-pre-wrap text-sm">{contact.notes || 'No notes'}</p>
+        <Label className="text-muted-foreground text-sm font-medium">Notes</Label>
+        <p className="mt-1 text-sm whitespace-pre-wrap">{contact.notes || 'No notes'}</p>
       </div>
 
       {/* Dates */}
       <div className="space-y-3">
-        <Label className="text-sm font-medium text-muted-foreground">Dates</Label>
+        <Label className="text-muted-foreground text-sm font-medium">Dates</Label>
         <div className="space-y-2">
           <div className="flex items-center space-x-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <Clock className="text-muted-foreground h-4 w-4" />
             <span className="text-sm font-medium">Created:</span>
             <span className="text-sm">{formatDateString(contact.created_at)}</span>
           </div>
           <div className="flex items-center space-x-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <Clock className="text-muted-foreground h-4 w-4" />
             <span className="text-sm font-medium">Updated:</span>
             <span className="text-sm">{formatDateString(contact.updated_at)}</span>
           </div>

@@ -62,7 +62,7 @@ export default function ContactStatusFlags({ contact }: ContactStatusFlagsProps)
       {/* Status and Flags */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Status</Label>
+          <Label className="text-muted-foreground text-sm font-medium">Status</Label>
           <div className="mt-1">
             {statusDisplay ? (
               <Badge className={statusDisplay.className}>
@@ -70,12 +70,12 @@ export default function ContactStatusFlags({ contact }: ContactStatusFlagsProps)
                 {statusDisplay.text}
               </Badge>
             ) : (
-              <span className="text-sm text-muted-foreground">No status</span>
+              <span className="text-muted-foreground text-sm">No status</span>
             )}
           </div>
         </div>
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Record Type</Label>
+          <Label className="text-muted-foreground text-sm font-medium">Record Type</Label>
           <div className="mt-1">
             <Badge className={recordTypeDisplay.className}>
               <FileText className="mr-1 h-3 w-3" />
@@ -88,7 +88,7 @@ export default function ContactStatusFlags({ contact }: ContactStatusFlagsProps)
       {/* Health Flags */}
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Has Medicaid</Label>
+          <Label className="text-muted-foreground text-sm font-medium">Has Medicaid</Label>
           <div className="mt-1">
             <Badge className={medicaidDisplay.className}>
               {contact.has_medicaid ? <CheckCircle className="mr-1 h-3 w-3" /> : <XCircle className="mr-1 h-3 w-3" />}
@@ -97,7 +97,7 @@ export default function ContactStatusFlags({ contact }: ContactStatusFlagsProps)
           </div>
         </div>
         <div>
-          <Label className="text-sm font-medium text-muted-foreground">Tobacco User</Label>
+          <Label className="text-muted-foreground text-sm font-medium">Tobacco User</Label>
           <div className="mt-1">
             <Badge className={tobaccoDisplay.className}>
               {contact.is_tobacco_user ? (
@@ -113,7 +113,7 @@ export default function ContactStatusFlags({ contact }: ContactStatusFlagsProps)
 
       {/* Communication Preferences */}
       <div>
-        <Label className="text-sm font-medium text-muted-foreground">Primary Communication</Label>
+        <Label className="text-muted-foreground text-sm font-medium">Primary Communication</Label>
         <div className="mt-1">
           <Badge className={communicationDisplay.className}>
             <CommunicationIcon className="mr-1 h-3 w-3" />
@@ -124,7 +124,7 @@ export default function ContactStatusFlags({ contact }: ContactStatusFlagsProps)
 
       {/* Active Status */}
       <div>
-        <Label className="text-sm font-medium text-muted-foreground">Active Status</Label>
+        <Label className="text-muted-foreground text-sm font-medium">Active Status</Label>
         <div className="mt-1">
           <Badge className={inactiveDisplay.className}>
             {contact.inactive ? <XCircle className="mr-1 h-3 w-3" /> : <CheckCircle className="mr-1 h-3 w-3" />}

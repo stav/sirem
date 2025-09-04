@@ -17,12 +17,12 @@ const pages = [
 
 export default function Navigation({ pageTitle }: NavigationProps) {
   return (
-    <nav className="border-b bg-background shadow-sm">
+    <nav className="bg-background border-b shadow-sm">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 justify-between">
           <div className="flex items-center space-x-6">
-            <h1 className="text-xl font-semibold text-foreground">Sirem CRM</h1>
-            <span className="text-lg font-medium text-muted-foreground">{pageTitle}</span>
+            <h1 className="text-foreground text-xl font-semibold">Sirem CRM</h1>
+            <span className="text-muted-foreground text-lg font-medium">{pageTitle}</span>
           </div>
           <div className="flex items-center space-x-4">
             {pages.map((page) => {
@@ -35,7 +35,7 @@ export default function Navigation({ pageTitle }: NavigationProps) {
                   href={page.path}
                   className={`flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                     isActive
-                      ? 'border border-primary/20 bg-primary/10 text-primary'
+                      ? 'border-primary/20 bg-primary/10 text-primary border'
                       : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
                   }`}
                 >
