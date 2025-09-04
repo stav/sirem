@@ -114,7 +114,6 @@ export function useActions() {
         priority: actionData.priority || null,
         duration: actionData.duration || null,
         outcome: actionData.outcome || null,
-        updated_at: getLocalTimeAsUTC(), // Always update the updated_at field
       }
 
       const { error } = await supabase.from('actions').update(updateData).eq('id', actionId)
@@ -159,7 +158,6 @@ export function useActions() {
         .update({
           status: newStatus,
           completed_date: completedDate,
-          updated_at: getLocalTimeAsUTC(),
         })
         .eq('id', action.id)
 

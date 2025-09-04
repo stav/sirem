@@ -124,7 +124,6 @@ export function useAddresses(contactId?: string) {
           longitude: addressData.longitude || null,
           address_type: addressData.address_type || AddressType.PRIMARY,
           source: addressData.source || null,
-          updated_at: new Date().toISOString(),
         })
         .eq('id', addressId)
 

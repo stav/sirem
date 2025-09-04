@@ -62,7 +62,6 @@ export function usePlanEnrollments(contactId?: string) {
     try {
       const updateData: EnrollmentUpdate = {
         ...form,
-        updated_at: new Date().toISOString(),
       }
       const { data, error } = await supabase
         .from('enrollments')

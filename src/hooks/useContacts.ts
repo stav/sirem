@@ -118,7 +118,6 @@ export function useContacts() {
           status: contactData.status,
           medicare_beneficiary_id: contactData.medicare_beneficiary_id || null,
           ssn: contactData.ssn || null,
-          updated_at: new Date().toISOString(),
         })
         .eq('id', contactId)
         .select()

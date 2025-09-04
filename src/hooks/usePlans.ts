@@ -54,7 +54,6 @@ export function usePlans() {
     try {
       const updateData: PlanUpdate = {
         ...form,
-        updated_at: new Date().toISOString(),
       }
       const { error } = await supabase.from('plans').update(updateData).eq('id', planId)
       if (error) throw error
