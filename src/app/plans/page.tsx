@@ -45,6 +45,7 @@ const planTypeOptions: PlanType[] = [
   'C-SNP',
   'PDP',
   'Supplement',
+  'Ancillary',
 ]
 
 export default function PlansPage() {

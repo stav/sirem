@@ -756,6 +756,7 @@ export type Database = {
         | 'C-SNP'
         | 'PDP'
         | 'Supplement'
+        | 'Ancillary'
       carrier:
         | 'United'
         | 'Humana'
