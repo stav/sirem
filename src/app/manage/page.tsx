@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import Navigation from '@/components/Navigation'
 import ContactList from '@/components/ContactList'
 import ActionList from '@/components/ActionList'
@@ -13,11 +13,21 @@ import { useActions } from '@/hooks/useActions'
 import type { Database } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 import { logger } from '@/lib/logger'
+import { RoleData, RoleType } from '@/types/roles'
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
   addresses?: Database['public']['Tables']['addresses']['Row'][]
+  contact_roles?: Database['public']['Tables']['contact_roles']['Row'][]
 }
 type Action = Database['public']['Tables']['actions']['Row']
+
+// Type for a role that hasn't been saved to the database yet
+type PendingRole = {
+  id: string // temporary ID for React key
+  role_type: RoleType
+  role_data: RoleData
+  is_primary: boolean
+}
 
 interface ContactFormData {
   first_name: string
@@ -73,6 +83,14 @@ export default function ManagePage() {
   const [singleContactView, setSingleContactView] = useState(false)
   const [isSubmittingContact, setIsSubmittingContact] = useState(false)
   const [refreshTimestamp, setRefreshTimestamp] = useState<number>(Date.now())
+  const [roleRefreshTrigger, setRoleRefreshTrigger] = useState<number>(0)
+  const [pendingRoles, setPendingRoles] = useState<PendingRole[]>([])
+  const [filteredContacts, setFilteredContacts] = useState<Contact[]>([])
+
+  // Memoize the callback to prevent infinite re-renders
+  const handleFilteredContactsChange = useCallback((contacts: Contact[]) => {
+    setFilteredContacts(contacts)
+  }, [])
 
   // Update selectedContact when contacts list changes
   useEffect(() => {
@@ -90,6 +108,7 @@ export default function ManagePage() {
     updateAction,
     deleteAction,
     toggleActionComplete,
+    completeActionWithCreatedDate,
   } = useActions()
   const { toast } = useToast()
 
@@ -163,6 +182,7 @@ export default function ManagePage() {
       medicare_beneficiary_id: '',
       ssn: '',
     })
+    setPendingRoles([])
     setShowContactForm(true)
   }
 
@@ -189,7 +209,7 @@ export default function ManagePage() {
     try {
       const result = editingContact
         ? await updateContact(editingContact.id, contactForm)
-        : await createContact(contactForm)
+        : await createContact(contactForm, pendingRoles)
 
       if (result) {
         const contactName = `${contactForm.first_name} ${contactForm.last_name}`
@@ -216,6 +236,9 @@ export default function ManagePage() {
             setViewingContact(result)
           }
         }
+
+        // Refresh the contacts list to get updated data
+        await fetchContacts()
 
         toast({
           title: `Contact ${action}`,
@@ -376,6 +399,20 @@ export default function ManagePage() {
     }
   }
 
+  const handleCompleteActionWithCreatedDate = async (action: Action) => {
+    const success = await completeActionWithCreatedDate(action)
+    if (success) {
+      const contact = contacts.find((c) => c.id === action.contact_id)
+      const contactName = contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
+
+      toast({
+        title: 'Action completed',
+        description: `"${action.title}" for ${contactName} was marked as complete using the created date.`,
+      })
+      logger.info(`Action completed with created date: ${action.title} for ${contactName}`, 'action_complete_created')
+    }
+  }
+
   // Individual modal close handlers
   const closeContactForm = () => {
     setShowContactForm(false)
@@ -391,6 +428,7 @@ export default function ManagePage() {
       medicare_beneficiary_id: '',
       ssn: '',
     })
+    setPendingRoles([])
   }
 
   const closeActionForm = () => {
@@ -473,6 +511,7 @@ export default function ManagePage() {
               onViewContact={handleViewContact}
               onBackToAll={handleBackToAll}
               refreshTimestamp={refreshTimestamp}
+              onFilteredContactsChange={handleFilteredContactsChange}
             />
 
             {/* Actions Section */}
@@ -480,8 +519,10 @@ export default function ManagePage() {
               actions={actions}
               contacts={contacts}
               selectedContact={selectedContact}
+              filteredContacts={filteredContacts}
               onAddAction={handleAddAction}
               onToggleComplete={handleToggleActionComplete}
+              onCompleteWithCreatedDate={handleCompleteActionWithCreatedDate}
               onEditAction={handleEditAction}
               onViewAction={handleViewAction}
               onDeleteAction={handleDeleteAction}
@@ -506,7 +547,12 @@ export default function ManagePage() {
             onSubmit={handleContactSubmit}
             onCancel={closeContactForm}
             isLoading={isSubmittingContact}
-            onRefreshContact={fetchContacts}
+            onRefreshContact={() => {
+              fetchContacts()
+              setRoleRefreshTrigger(Date.now())
+            }}
+            onPendingRolesChange={setPendingRoles}
+            roleRefreshTrigger={roleRefreshTrigger}
           />
 
           {/* Action Form Modal */}
@@ -544,6 +590,7 @@ export default function ManagePage() {
               handleEditContact(contact)
             }}
             onRefresh={fetchContacts}
+            roleRefreshTrigger={roleRefreshTrigger}
           />
         </div>
       </div>

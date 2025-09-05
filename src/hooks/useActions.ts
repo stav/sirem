@@ -174,6 +174,32 @@ export function useActions() {
     }
   }
 
+  const completeActionWithCreatedDate = async (action: Action) => {
+    try {
+      // Use the created_at date as the completed_date
+      const completedDate = action.created_at
+
+      const { error } = await supabase
+        .from('actions')
+        .update({
+          status: 'completed',
+          completed_date: completedDate,
+        })
+        .eq('id', action.id)
+
+      if (error) {
+        console.error('Error updating action:', error)
+        return false
+      }
+
+      await fetchActions()
+      return true
+    } catch (error) {
+      console.error('Error updating action:', error)
+      return false
+    }
+  }
+
   // Helper functions for filtering
   const getPlannedActions = () =>
     actions.filter((action) => action.status && ['planned', 'overdue'].includes(action.status))
@@ -195,6 +221,7 @@ export function useActions() {
     updateAction,
     deleteAction,
     toggleActionComplete,
+    completeActionWithCreatedDate,
     getPlannedActions,
     getCompletedActions,
     getOverdueActions,

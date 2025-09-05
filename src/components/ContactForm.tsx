@@ -12,10 +12,34 @@ import { MapPin, Plus, Edit, Trash2 } from 'lucide-react'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import type { Database } from '@/lib/supabase'
 import { supabase } from '@/lib/supabase'
+import type { Json } from '@/lib/supabase-types'
 import { AddressType } from '@/lib/address-types'
+import ContactRoleManager from './ContactRoleManager'
+import RoleForm from './RoleForm'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 type Address = Database['public']['Tables']['addresses']['Row']
+
+import { RoleData, RoleType } from '@/types/roles'
+
+// Type for a role that hasn't been saved to the database yet
+type PendingRole = {
+  id: string // temporary ID for React key
+  role_type: RoleType
+  role_data: RoleData
+  is_primary: boolean
+}
+
+// Type for a role from the database
+type ContactRole = {
+  id: string
+  contact_id: string
+  role_type: RoleType
+  role_data: Record<string, unknown>
+  is_primary: boolean
+  created_at: string
+  updated_at: string
+}
 
 interface ContactFormData {
   first_name: string
@@ -49,6 +73,8 @@ interface ContactFormProps {
   onCancel: () => void
   isLoading?: boolean
   onRefreshContact?: () => void
+  onPendingRolesChange?: (roles: PendingRole[]) => void
+  roleRefreshTrigger?: number
 }
 
 export default function ContactForm({
@@ -60,6 +86,8 @@ export default function ContactForm({
   onCancel,
   isLoading = false,
   onRefreshContact,
+  onPendingRolesChange,
+  roleRefreshTrigger: parentRoleRefreshTrigger,
 }: ContactFormProps) {
   // Address management state
   const [addresses, setAddresses] = useState<Address[]>([])
@@ -76,6 +104,21 @@ export default function ContactForm({
     source: '',
   })
   const [addressSubmitting, setAddressSubmitting] = useState(false)
+  const [pendingRoles, setPendingRoles] = useState<PendingRole[]>([])
+
+  // Role form state
+  const [roleFormOpen, setRoleFormOpen] = useState(false)
+  const [editingRole, setEditingRole] = useState<ContactRole | PendingRole | null>(null)
+  const [roleFormData, setRoleFormData] = useState<{
+    role_type: RoleType
+    role_data: RoleData
+    is_primary: boolean
+  }>({
+    role_type: 'medicare_client',
+    role_data: {},
+    is_primary: false,
+  })
+  const [roleSubmitting, setRoleSubmitting] = useState(false)
 
   const { createAddress, updateAddress, deleteAddress } = useAddresses()
 
@@ -109,12 +152,44 @@ export default function ContactForm({
     }
   }, [editingContact])
 
+  // Clear all state when opening modal for new contact
+  useEffect(() => {
+    if (isOpen && !editingContact) {
+      // Clear all role-related state for new contact
+      setPendingRoles([])
+
+      // Clear address-related state
+      setAddresses([])
+      setAddressFormOpen(false)
+      setEditingAddress(null)
+      setAddressFormData({
+        address1: '',
+        address2: '',
+        city: '',
+        state_code: '',
+        postal_code: '',
+        county: '',
+        address_type: AddressType.PRIMARY,
+        source: '',
+      })
+      setAddressSubmitting(false)
+    }
+  }, [isOpen, editingContact])
+
   // Fetch addresses when editing a contact
   useEffect(() => {
     if (editingContact && isOpen) {
       fetchAddresses()
     }
   }, [editingContact, isOpen, fetchAddresses])
+
+  // Clear state when modal is closed
+  useEffect(() => {
+    if (!isOpen) {
+      // Close any open sub-modals
+      setAddressFormOpen(false)
+    }
+  }, [isOpen])
 
   const handleAddAddress = () => {
     setEditingAddress(null)
@@ -187,6 +262,67 @@ export default function ContactForm({
     }
   }
 
+  const handleRoleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setRoleSubmitting(true)
+    try {
+      if (editingRole && 'contact_id' in editingRole) {
+        // Update existing role in database
+        const { error } = await supabase
+          .from('contact_roles')
+          .update({
+            role_type: roleFormData.role_type,
+            role_data: roleFormData.role_data as Json,
+            is_primary: roleFormData.is_primary,
+          })
+          .eq('id', editingRole.id)
+
+        if (error) {
+          console.error('Error updating role:', error)
+          return
+        }
+
+        onRefreshContact?.()
+      } else {
+        // Add new role to pending roles (for new contacts) or database (for existing contacts)
+        if (editingContact) {
+          // Existing contact - save to database
+          const { error } = await supabase.from('contact_roles').insert({
+            contact_id: editingContact.id,
+            role_type: roleFormData.role_type,
+            role_data: roleFormData.role_data as Json,
+            is_primary: roleFormData.is_primary,
+          })
+
+          if (error) {
+            console.error('Error creating role:', error)
+            return
+          }
+
+          onRefreshContact?.()
+        } else {
+          // New contact - add to pending roles
+          const newRole: PendingRole = {
+            id: `temp-${Date.now()}`,
+            role_type: roleFormData.role_type,
+            role_data: roleFormData.role_data,
+            is_primary: roleFormData.is_primary,
+          }
+
+          const updatedRoles = [...pendingRoles, newRole]
+          setPendingRoles(updatedRoles)
+          onPendingRolesChange?.(updatedRoles)
+        }
+      }
+
+      setRoleFormOpen(false)
+    } catch (error) {
+      console.error('Error saving role:', error)
+    } finally {
+      setRoleSubmitting(false)
+    }
+  }
+
   // Field labels for address display
   const fieldLabels: Record<string, string> = {
     address1: 'Address Line 1',
@@ -240,7 +376,6 @@ export default function ContactForm({
               id="phone"
               value={formData.phone}
               onChange={(e) => onFormDataChange({ ...formData, phone: e.target.value })}
-              placeholder="(555) 123-4567"
             />
           </div>
           <div>
@@ -250,8 +385,55 @@ export default function ContactForm({
               type="email"
               value={formData.email}
               onChange={(e) => onFormDataChange({ ...formData, email: e.target.value })}
-              placeholder="john.doe@example.com"
             />
+          </div>
+
+          {/* Contact Roles Management */}
+          <ContactRoleManager
+            editingContact={editingContact}
+            onRefreshContact={onRefreshContact}
+            pendingRoles={pendingRoles}
+            onPendingRolesChange={onPendingRolesChange}
+            onRoleFormOpenChange={setRoleFormOpen}
+            onEditingRoleChange={setEditingRole}
+            onRoleFormDataChange={setRoleFormData}
+            refreshTrigger={parentRoleRefreshTrigger}
+          />
+
+          <div>
+            <Label htmlFor="status">Status</Label>
+            <Select value={formData.status} onValueChange={(value) => onFormDataChange({ ...formData, status: value })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="New">🆕 New</SelectItem>
+                <SelectItem value="Contacted">📞 Contacted</SelectItem>
+                <SelectItem value="Engaged">🤝 Engaged</SelectItem>
+                <SelectItem value="Client">✅ Client</SelectItem>
+                <SelectItem value="No-response">❌ No response</SelectItem>
+                <SelectItem value="Already-enrolled">🎓 Already enrolled</SelectItem>
+                <SelectItem value="Too-expensive">💰 Too expensive</SelectItem>
+                <SelectItem value="Not-interested">😐 Not interested</SelectItem>
+                <SelectItem value="Not-eligible">🚫 Not eligible</SelectItem>
+                <SelectItem value="Brandon">🚫 Brandon&apos;s client</SelectItem>
+                <SelectItem value="Retained">🔄 Retained</SelectItem>
+                <SelectItem value="Loyal">💎 Loyal</SelectItem>
+                <SelectItem value="Other">📝 Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => onFormDataChange({ ...formData, notes: e.target.value })}
+              rows={3}
+            />
+          </div>
+          <div className="text-muted-foreground my-8">
+            <hr />
           </div>
           <div>
             <Label htmlFor="medicare_beneficiary_id">Medicare Beneficiary ID (MBI)</Label>
@@ -263,12 +445,8 @@ export default function ContactForm({
                 const value = e.target.value.replace(/[^A-Z0-9-]/gi, '')
                 onFormDataChange({ ...formData, medicare_beneficiary_id: value })
               }}
-              placeholder="1EG4-TE5-MK73"
               maxLength={13}
             />
-            <p className="text-muted-foreground mt-1 text-xs">
-              Format: XXXX-XXXX-XXXX (11 characters, hyphens optional)
-            </p>
           </div>
           <div>
             <Label htmlFor="ssn">Social Security Number (SSN)</Label>
@@ -293,19 +471,7 @@ export default function ContactForm({
 
                 onFormDataChange({ ...formData, ssn: formatted })
               }}
-              placeholder="123-45-6789"
               maxLength={11}
-            />
-            <p className="text-muted-foreground mt-1 text-xs">Format: XXX-XX-XXXX (Social Security Number)</p>
-          </div>
-          <div>
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => onFormDataChange({ ...formData, notes: e.target.value })}
-              rows={3}
-              placeholder="Add any additional notes about this contact..."
             />
           </div>
           <div>
@@ -317,35 +483,12 @@ export default function ContactForm({
               onChange={(e) => onFormDataChange({ ...formData, birthdate: e.target.value })}
             />
           </div>
-          <div>
-            <Label htmlFor="status">Status</Label>
-            <Select value={formData.status} onValueChange={(value) => onFormDataChange({ ...formData, status: value })}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="New">🆕 New</SelectItem>
-                <SelectItem value="Contacted">📞 Contacted</SelectItem>
-                <SelectItem value="Engaged">🤝 Engaged</SelectItem>
-                <SelectItem value="Client">✅ Client</SelectItem>
-                <SelectItem value="No-response">❌ No response</SelectItem>
-                <SelectItem value="Already-enrolled">🎓 Already enrolled</SelectItem>
-                <SelectItem value="Too-expensive">💰 Too expensive</SelectItem>
-                <SelectItem value="Not-interested">😐 Not interested</SelectItem>
-                <SelectItem value="Not-eligible">🚫 Not eligible</SelectItem>
-                <SelectItem value="Brandon">🚫 Brandon&apos;s client</SelectItem>
-                <SelectItem value="Retained">🔄 Retained</SelectItem>
-                <SelectItem value="Loyal">💎 Loyal</SelectItem>
-                <SelectItem value="Other">📝 Other</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
 
           {/* Address Management Section */}
-          {editingContact && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <Label className="text-muted-foreground text-sm font-medium">Addresses</Label>
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Addresses</Label>
+              {editingContact && (
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -360,12 +503,17 @@ export default function ContactForm({
                   </TooltipTrigger>
                   <TooltipContent>Add address</TooltipContent>
                 </Tooltip>
-              </div>
+              )}
+            </div>
 
-              {addresses.length > 0 ? (
+            {editingContact ? (
+              addresses.length > 0 ? (
                 <div className="space-y-2">
                   {addresses.map((address) => (
-                    <div key={address.id} className="rounded-lg border border-gray-200 p-3">
+                    <div
+                      key={address.id}
+                      className="rounded-lg border border-l-4 border-gray-200 border-l-blue-500 p-3"
+                    >
                       <div className="mb-2 flex items-center justify-between">
                         <div className="flex items-center space-x-2">
                           <MapPin className="text-muted-foreground h-4 w-4" />
@@ -415,9 +563,11 @@ export default function ContactForm({
                 </div>
               ) : (
                 <div className="text-muted-foreground text-sm">No addresses found</div>
-              )}
-            </div>
-          )}
+              )
+            ) : (
+              <div className="text-muted-foreground text-sm">Addresses can be added after the contact is created.</div>
+            )}
+          </div>
         </div>
       </ModalForm>
 
@@ -430,6 +580,17 @@ export default function ContactForm({
         formData={addressFormData}
         setFormData={setAddressFormData}
         isSubmitting={addressSubmitting}
+      />
+
+      {/* Role Form Modal */}
+      <RoleForm
+        isOpen={roleFormOpen}
+        onClose={() => setRoleFormOpen(false)}
+        onSubmit={handleRoleSubmit}
+        editingRole={editingRole}
+        formData={roleFormData}
+        setFormData={setRoleFormData}
+        isSubmitting={roleSubmitting}
       />
     </>
   )

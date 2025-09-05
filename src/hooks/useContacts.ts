@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { logger } from '@/lib/logger'
 import type { Database } from '@/lib/supabase'
+import { RoleData, RoleType } from '@/types/roles'
+import type { Json } from '@/lib/supabase-types'
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
   addresses?: Database['public']['Tables']['addresses']['Row'][]
@@ -11,6 +13,7 @@ type Contact = Database['public']['Tables']['contacts']['Row'] & {
       label: string
     }
   }[]
+  contact_roles?: Database['public']['Tables']['contact_roles']['Row'][]
 }
 
 interface ContactForm {
@@ -23,6 +26,13 @@ interface ContactForm {
   status: string
   medicare_beneficiary_id: string
   ssn: string
+}
+
+interface PendingRole {
+  id: string
+  role_type: RoleType
+  role_data: RoleData
+  is_primary: boolean
 }
 
 export function useContacts() {
@@ -58,6 +68,16 @@ export function useContacts() {
               id,
               label
             )
+          ),
+          contact_roles (
+            id,
+            contact_id,
+            role_type,
+            role_data,
+            is_active,
+            is_primary,
+            created_at,
+            updated_at
           )
         `
         )
@@ -76,28 +96,52 @@ export function useContacts() {
     }
   }
 
-  const createContact = async (contactData: ContactForm) => {
+  const createContact = async (contactData: ContactForm, pendingRoles: PendingRole[] = []) => {
     try {
-      const { error } = await supabase.from('contacts').insert({
-        first_name: contactData.first_name,
-        last_name: contactData.last_name,
-        phone: contactData.phone,
-        email: contactData.email,
-        notes: contactData.notes,
-        birthdate: contactData.birthdate || null,
-        status: contactData.status,
-        medicare_beneficiary_id: contactData.medicare_beneficiary_id || null,
-        ssn: contactData.ssn || null,
-      })
+      // First, create the contact
+      const { data: contactResult, error: contactError } = await supabase
+        .from('contacts')
+        .insert({
+          first_name: contactData.first_name,
+          last_name: contactData.last_name,
+          phone: contactData.phone,
+          email: contactData.email,
+          notes: contactData.notes,
+          birthdate: contactData.birthdate || null,
+          status: contactData.status,
+          medicare_beneficiary_id: contactData.medicare_beneficiary_id || null,
+          ssn: contactData.ssn || null,
+        })
+        .select()
 
-      if (error) {
-        console.error('Error creating contact:', error)
+      if (contactError) {
+        console.error('Error creating contact:', contactError)
         return false
+      }
+
+      const newContact = contactResult[0]
+
+      // Then, create the roles if any
+      if (pendingRoles.length > 0) {
+        const rolesToInsert = pendingRoles.map((role) => ({
+          contact_id: newContact.id,
+          role_type: role.role_type,
+          role_data: role.role_data as Json, // Cast to Json type for Supabase
+          is_primary: role.is_primary,
+          is_active: true,
+        }))
+
+        const { error: rolesError } = await supabase.from('contact_roles').insert(rolesToInsert)
+
+        if (rolesError) {
+          console.error('Error creating contact roles:', rolesError)
+          // Contact was created but roles failed - we could rollback here if needed
+        }
       }
 
       logger.contactCreated(`${contactData.first_name} ${contactData.last_name}`)
       await fetchContacts()
-      return true
+      return newContact
     } catch (error) {
       console.error('Error creating contact:', error)
       return false

@@ -8,6 +8,7 @@ import {
   Edit,
   Trash2,
   Check,
+  CheckCircle,
   Clock,
   Calendar,
   User,
@@ -39,6 +40,7 @@ interface ActionCardProps {
   contactName: string
   index: number
   onToggleComplete: (action: Action) => void
+  onCompleteWithCreatedDate: (action: Action) => void
   onEdit: (action: Action) => void
   onView: (action: Action) => void
   onDelete: (actionId: string) => void
@@ -99,6 +101,7 @@ const ActionCard = React.memo(function ActionCard({
   contactName,
   index,
   onToggleComplete,
+  onCompleteWithCreatedDate,
   onEdit,
   onView,
   onDelete,
@@ -265,6 +268,22 @@ const ActionCard = React.memo(function ActionCard({
               </TooltipTrigger>
               <TooltipContent>{action.completed_date ? 'Mark as incomplete' : 'Mark as complete'}</TooltipContent>
             </Tooltip>
+            {!action.completed_date && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onCompleteWithCreatedDate(action)}
+                    className="text-foreground/70 dark:text-foreground/80 h-8 w-8 cursor-pointer p-0 hover:bg-green-500/10 hover:text-green-600 dark:hover:bg-green-500/20 dark:hover:text-green-400"
+                    aria-label="Mark as complete with created date"
+                  >
+                    <CheckCircle className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Mark as complete using created date</TooltipContent>
+              </Tooltip>
+            )}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button

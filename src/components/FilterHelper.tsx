@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { supabase } from '@/lib/supabase'
+import { getAllRoleTypes } from '@/lib/role-config'
 
 interface FilterHelperProps {
   isOpen: boolean
@@ -10,6 +11,9 @@ interface FilterHelperProps {
 export default function FilterHelper({ isOpen, onAddFilter }: FilterHelperProps) {
   const [statuses, setStatuses] = useState<string[]>([])
   const [loading, setLoading] = useState(false)
+
+  // Get available role types
+  const roleTypes = getAllRoleTypes()
 
   // Fetch unique statuses from the database
   useEffect(() => {
@@ -48,31 +52,57 @@ export default function FilterHelper({ isOpen, onAddFilter }: FilterHelperProps)
     onAddFilter(`s:${status.toLowerCase()}`)
   }
 
+  const handleRoleClick = (roleType: string) => {
+    onAddFilter(`r:${roleType.toLowerCase()}`)
+  }
+
   if (!isOpen) return null
 
   return (
     <div className="bg-muted/50 mt-2 rounded-md border p-3">
-      <div className="mb-2 text-sm font-medium text-gray-700">Quick Status Filters:</div>
+      <div className="mb-3 text-sm font-medium text-gray-700">Quick Filters:</div>
 
-      {loading ? (
-        <div className="text-sm text-gray-500">Loading statuses...</div>
-      ) : statuses.length === 0 ? (
-        <div className="text-sm text-gray-500">No statuses found</div>
-      ) : (
+      {/* Status Filters */}
+      <div className="mb-3">
+        <div className="mb-2 text-xs font-medium text-gray-600">Status:</div>
+        {loading ? (
+          <div className="text-sm text-gray-500">Loading statuses...</div>
+        ) : statuses.length === 0 ? (
+          <div className="text-sm text-gray-500">No statuses found</div>
+        ) : (
+          <div className="flex flex-wrap gap-1">
+            {statuses.map((status) => (
+              <Button
+                key={status}
+                variant="outline"
+                size="sm"
+                onClick={() => handleStatusClick(status)}
+                className="cursor-pointer text-xs"
+              >
+                {status}
+              </Button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Role Filters */}
+      <div>
+        <div className="mb-2 text-xs font-medium text-gray-600">Roles:</div>
         <div className="flex flex-wrap gap-1">
-          {statuses.map((status) => (
+          {roleTypes.map((roleType) => (
             <Button
-              key={status}
+              key={roleType}
               variant="outline"
               size="sm"
-              onClick={() => handleStatusClick(status)}
+              onClick={() => handleRoleClick(roleType)}
               className="cursor-pointer text-xs"
             >
-              {status}
+              {roleType.replace('_', ' ')}
             </Button>
           ))}
         </div>
-      )}
+      </div>
     </div>
   )
 }

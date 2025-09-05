@@ -9,12 +9,12 @@ type Action = Database['public']['Tables']['actions']['Row']
  * 3. created_at - When the action was created (fallback)
  */
 export function getDisplayDate(action: Action): string {
-  if (action.completed_date) {
-    return action.completed_date // When it happened
-  } else if (action.end_date) {
-    return action.end_date // When it was due
+  if (action.end_date) {
+    return action.end_date // When it ended
   } else if (action.start_date) {
-    return action.start_date // When it was scheduled to start
+    return action.start_date // When it started
+  } else if (action.completed_date) {
+    return action.completed_date // When it was completed
   }
   return action.created_at // Fallback
 }

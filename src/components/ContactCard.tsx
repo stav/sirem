@@ -16,12 +16,52 @@ import { formatDateTime } from '@/lib/utils'
 import { getPrimaryAddress } from '@/lib/address-utils'
 import { usePlanEnrollments } from '@/hooks/usePlanEnrollments'
 
+import { getRoleDisplayInfo, roleIconMap } from '@/lib/role-config'
+import {
+  RoleType,
+  ReferralPartnerData,
+  PresentationPartnerData,
+  TireShopData,
+  DentistData,
+  OtherRoleData,
+} from '@/types/roles'
+
+// Utility function to extract organization name from role data
+const getOrganizationName = (
+  roleType: string,
+  roleData: Database['public']['Tables']['contact_roles']['Row']['role_data']
+): string | null => {
+  if (!roleData || typeof roleData !== 'object') return null
+
+  switch (roleType) {
+    case 'referral_partner':
+      return (roleData as ReferralPartnerData)?.company || null
+    case 'presentation_partner':
+      return (roleData as PresentationPartnerData)?.organization_name || null
+    case 'tire_shop':
+      return (roleData as TireShopData)?.shop_name || null
+    case 'dentist':
+      return (roleData as DentistData)?.practice_name || null
+    case 'other':
+      return (roleData as OtherRoleData)?.role_description || null
+    default:
+      return null
+  }
+}
+
+// Utility function to format organization name for display
+const formatOrgNameForDisplay = (orgName: string, maxLength: number = 20): string => {
+  if (orgName.length <= maxLength) return orgName
+  return `${orgName.substring(0, maxLength)}...`
+}
+
 type Plan = Database['public']['Tables']['plans']['Row']
 type Enrollment = Database['public']['Tables']['enrollments']['Row']
 type EnrollmentWithPlan = Enrollment & { plans?: Plan }
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
   addresses?: Database['public']['Tables']['addresses']['Row'][]
+  contact_roles?: Database['public']['Tables']['contact_roles']['Row'][]
 }
 
 interface ContactCardProps {
@@ -83,6 +123,33 @@ export default function ContactCard({
             <span>
               {contact.first_name} {contact.last_name}
             </span>
+
+            {/* Role Badges - inline with name */}
+            {contact.contact_roles && contact.contact_roles.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {contact.contact_roles.map((role) => {
+                  const config = getRoleDisplayInfo(role.role_type as RoleType)
+                  const IconComponent = roleIconMap[role.role_type as RoleType] || roleIconMap.other
+                  const orgName = getOrganizationName(role.role_type, role.role_data)
+
+                  return (
+                    <Tooltip key={role.id}>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className={`text-xs ${config.color.split(' ')[1]}`}>
+                          <IconComponent className="mr-1 h-3 w-3" />
+                          {orgName ? formatOrgNameForDisplay(orgName, 30) : config.label}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>
+                          {config.label} {orgName ? `at ${orgName}` : ''}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  )
+                })}
+              </div>
+            )}
           </h3>
         </div>
 

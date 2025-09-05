@@ -13,6 +13,7 @@ import {
   ContactAdditionalInfo,
   ContactPlans,
 } from './ContactViewModal/index'
+import ContactRolesDisplay from './ContactViewModal/ContactRolesDisplay'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 type Address = Database['public']['Tables']['addresses']['Row']
@@ -48,9 +49,17 @@ interface ContactViewModalProps {
   contact: Contact | null
   onEdit?: (contact: Contact) => void
   onRefresh?: () => void
+  roleRefreshTrigger?: number
 }
 
-export default function ContactViewModal({ isOpen, onClose, contact, onEdit, onRefresh }: ContactViewModalProps) {
+export default function ContactViewModal({
+  isOpen,
+  onClose,
+  contact,
+  onEdit,
+  onRefresh,
+  roleRefreshTrigger,
+}: ContactViewModalProps) {
   const [addresses, setAddresses] = useState<Address[]>([])
   const [addressesLoading, setAddressesLoading] = useState(false)
   const [tags, setTags] = useState<TagWithCategory[]>([])
@@ -161,6 +170,7 @@ export default function ContactViewModal({ isOpen, onClose, contact, onEdit, onR
     >
       <div className="space-y-4">
         <ContactBasicInfo contact={contact} tags={tags} tagsLoading={tagsLoading} />
+        <ContactRolesDisplay contact={contact} refreshTrigger={roleRefreshTrigger} />
         <ContactAddresses addresses={addresses} addressesLoading={addressesLoading} />
         <ContactPersonalInfo contact={contact} />
         <ContactMedicareInfo contact={contact} />

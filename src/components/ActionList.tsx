@@ -16,8 +16,10 @@ interface ActionListProps {
   actions: Action[]
   contacts: Contact[]
   selectedContact: Contact | null
+  filteredContacts?: Contact[] // New prop for filtered contacts
   onAddAction: () => void
   onToggleComplete: (action: Action) => void
+  onCompleteWithCreatedDate: (action: Action) => void
   onEditAction: (action: Action) => void
   onViewAction: (action: Action) => void
   onDeleteAction: (actionId: string) => void
@@ -30,8 +32,10 @@ export default function ActionList({
   actions,
   contacts,
   selectedContact,
+  filteredContacts,
   onAddAction,
   onToggleComplete,
+  onCompleteWithCreatedDate,
   onEditAction,
   onViewAction,
   onDeleteAction,
@@ -118,8 +122,15 @@ export default function ActionList({
     let filteredActions = actions
 
     if (selectedContact) {
+      // When a specific contact is selected, show only that contact's actions
       filteredActions = filteredActions.filter((a) => String(a.contact_id) === String(selectedContact.id))
+    } else if (filteredContacts && filteredContacts.length > 0) {
+      // When no contact is selected but we have filtered contacts, show only actions for those contacts
+      const filteredContactIds = new Set(filteredContacts.map((c) => c.id))
+      filteredActions = filteredActions.filter((a) => filteredContactIds.has(a.contact_id))
     }
+    // If no contact is selected and no filtered contacts, show all actions (original behavior)
+
     if (!showCompletedActions) {
       filteredActions = filteredActions.filter((a) => {
         // Check if action is completed based on status or completed_date
@@ -140,7 +151,7 @@ export default function ActionList({
       const dateB = getDisplayDate(b)
       return new Date(dateA).getTime() - new Date(dateB).getTime()
     })
-  }, [actions, selectedContact, showCompletedActions, showWeekRange])
+  }, [actions, selectedContact, filteredContacts, showCompletedActions, showWeekRange])
 
   // Pagination logic
   const totalPages = Math.ceil(displayActions.length / itemsPerPage)
@@ -260,6 +271,7 @@ export default function ActionList({
                   })()}
                   index={index + 1}
                   onToggleComplete={onToggleComplete}
+                  onCompleteWithCreatedDate={onCompleteWithCreatedDate}
                   onEdit={onEditAction}
                   onView={onViewAction}
                   onDelete={onDeleteAction}
@@ -287,6 +299,7 @@ export default function ActionList({
                     contactName={contactName}
                     index={index + 1}
                     onToggleComplete={onToggleComplete}
+                    onCompleteWithCreatedDate={onCompleteWithCreatedDate}
                     onEdit={onEditAction}
                     onView={onViewAction}
                     onDelete={onDeleteAction}
