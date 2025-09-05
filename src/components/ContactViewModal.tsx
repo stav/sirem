@@ -13,6 +13,7 @@ import {
   ContactAdditionalInfo,
   ContactPlans,
 } from './ContactViewModal/index'
+import ContactRolesDisplay from './ContactViewModal/ContactRolesDisplay'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 type Address = Database['public']['Tables']['addresses']['Row']
@@ -161,6 +162,7 @@ export default function ContactViewModal({ isOpen, onClose, contact, onEdit, onR
     >
       <div className="space-y-4">
         <ContactBasicInfo contact={contact} tags={tags} tagsLoading={tagsLoading} />
+        <ContactRolesDisplay contact={contact} />
         <ContactAddresses addresses={addresses} addressesLoading={addressesLoading} />
         <ContactPersonalInfo contact={contact} />
         <ContactMedicareInfo contact={contact} />
