@@ -1,6 +1,42 @@
-export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
+export type Json =
+  | string
+  | number
+  | boolean
+  | null
+  | { [key: string]: Json | undefined }
+  | Json[]
 
 export type Database = {
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: '12.2.3 (519615d)'
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       actions: {
@@ -120,9 +156,9 @@ export type Database = {
       }
       addresses: {
         Row: {
+          address_type: string | null
           address1: string | null
           address2: string | null
-          address_type: string
           city: string | null
           contact_id: string
           county: string | null
@@ -137,9 +173,9 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          address_type?: string | null
           address1?: string | null
           address2?: string | null
-          address_type?: string
           city?: string | null
           contact_id: string
           county?: string | null
@@ -154,9 +190,9 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          address_type?: string | null
           address1?: string | null
           address2?: string | null
-          address_type?: string
           city?: string | null
           contact_id?: string
           county?: string | null
@@ -180,74 +216,43 @@ export type Database = {
           },
         ]
       }
-      enrollments: {
+      contact_roles: {
         Row: {
-          agent_notes: string | null
-          application_id: string | null
           contact_id: string
-          coverage_effective_date: string | null
-          coverage_end_date: string | null
           created_at: string
-          disenrollment_reason: string | null
-          enrollment_status: Database['public']['Enums']['enrollment_status'] | null
           id: string
-          metadata: Json | null
-          pcp_id: string | null
-          pcp_name: string | null
-          plan_id: string
-          premium_monthly_at_enrollment: number | null
-          signed_up_at: string | null
+          is_active: boolean | null
+          is_primary: boolean | null
+          role_data: Json | null
+          role_type: string
           updated_at: string
         }
         Insert: {
-          agent_notes?: string | null
-          application_id?: string | null
           contact_id: string
-          coverage_effective_date?: string | null
-          coverage_end_date?: string | null
           created_at?: string
-          disenrollment_reason?: string | null
-          enrollment_status?: Database['public']['Enums']['enrollment_status'] | null
           id?: string
-          metadata?: Json | null
-          pcp_id?: string | null
-          pcp_name?: string | null
-          plan_id: string
-          premium_monthly_at_enrollment?: number | null
-          signed_up_at?: string | null
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          role_data?: Json | null
+          role_type: string
           updated_at?: string
         }
         Update: {
-          agent_notes?: string | null
-          application_id?: string | null
           contact_id?: string
-          coverage_effective_date?: string | null
-          coverage_end_date?: string | null
           created_at?: string
-          disenrollment_reason?: string | null
-          enrollment_status?: Database['public']['Enums']['enrollment_status'] | null
           id?: string
-          metadata?: Json | null
-          pcp_id?: string | null
-          pcp_name?: string | null
-          plan_id?: string
-          premium_monthly_at_enrollment?: number | null
-          signed_up_at?: string | null
+          is_active?: boolean | null
+          is_primary?: boolean | null
+          role_data?: Json | null
+          role_type?: string
           updated_at?: string
         }
         Relationships: [
           {
-            foreignKeyName: 'enrollments_contact_id_fkey'
+            foreignKeyName: 'contact_roles_contact_id_fkey'
             columns: ['contact_id']
             isOneToOne: false
             referencedRelation: 'contacts'
-            referencedColumns: ['id']
-          },
-          {
-            foreignKeyName: 'enrollments_plan_id_fkey'
-            columns: ['plan_id']
-            isOneToOne: false
-            referencedRelation: 'plans'
             referencedColumns: ['id']
           },
         ]
@@ -296,108 +301,6 @@ export type Database = {
             referencedColumns: ['id']
           },
         ]
-      }
-      plans: {
-        Row: {
-          ambulance_copay: number | null
-          carrier: Database['public']['Enums']['carrier'] | null
-          cms_contract_number: string | null
-          cms_id: string | null
-          cms_plan_number: string | null
-          counties: string[] | null
-          created_at: string
-          dental_benefit_yearly: number | null
-          effective_end: string | null
-          effective_start: string | null
-          emergency_room_copay: number | null
-          giveback_monthly: number | null
-          hearing_benefit_yearly: number | null
-          hospital_inpatient_days: number | null
-          hospital_inpatient_per_stay_copay: number | null
-          id: string
-          metadata: Json | null
-          moop_annual: number | null
-          name: string
-          notes: string | null
-          otc_benefit_quarterly: number | null
-          pharmacy_benefit: string | null
-          plan_type: Database['public']['Enums']['plan_type'] | null
-          plan_year: number | null
-          premium_monthly: number | null
-          primary_care_copay: number | null
-          service_area: string | null
-          specialist_copay: number | null
-          updated_at: string
-          urgent_care_copay: number | null
-          vision_benefit_yearly: number | null
-        }
-        Insert: {
-          ambulance_copay?: number | null
-          carrier?: Database['public']['Enums']['carrier'] | null
-          cms_contract_number?: string | null
-          cms_id?: string | null
-          cms_plan_number?: string | null
-          counties?: string[] | null
-          created_at?: string
-          dental_benefit_yearly?: number | null
-          effective_end?: string | null
-          effective_start?: string | null
-          emergency_room_copay?: number | null
-          giveback_monthly?: number | null
-          hearing_benefit_yearly?: number | null
-          hospital_inpatient_days?: number | null
-          hospital_inpatient_per_stay_copay?: number | null
-          id?: string
-          metadata?: Json | null
-          moop_annual?: number | null
-          name: string
-          notes?: string | null
-          otc_benefit_quarterly?: number | null
-          pharmacy_benefit?: string | null
-          plan_type?: Database['public']['Enums']['plan_type'] | null
-          plan_year?: number | null
-          premium_monthly?: number | null
-          primary_care_copay?: number | null
-          service_area?: string | null
-          specialist_copay?: number | null
-          updated_at?: string
-          urgent_care_copay?: number | null
-          vision_benefit_yearly?: number | null
-        }
-        Update: {
-          ambulance_copay?: number | null
-          carrier?: Database['public']['Enums']['carrier'] | null
-          cms_contract_number?: string | null
-          cms_id?: string | null
-          cms_plan_number?: string | null
-          counties?: string[] | null
-          created_at?: string
-          dental_benefit_yearly?: number | null
-          effective_end?: string | null
-          effective_start?: string | null
-          emergency_room_copay?: number | null
-          giveback_monthly?: number | null
-          hearing_benefit_yearly?: number | null
-          hospital_inpatient_days?: number | null
-          hospital_inpatient_per_stay_copay?: number | null
-          id?: string
-          metadata?: Json | null
-          moop_annual?: number | null
-          name?: string
-          notes?: string | null
-          otc_benefit_quarterly?: number | null
-          pharmacy_benefit?: string | null
-          plan_type?: Database['public']['Enums']['plan_type'] | null
-          plan_year?: number | null
-          premium_monthly?: number | null
-          primary_care_copay?: number | null
-          service_area?: string | null
-          specialist_copay?: number | null
-          updated_at?: string
-          urgent_care_copay?: number | null
-          vision_benefit_yearly?: number | null
-        }
-        Relationships: []
       }
       contacts: {
         Row: {
@@ -547,6 +450,78 @@ export type Database = {
           },
         ]
       }
+      enrollments: {
+        Row: {
+          agent_notes: string | null
+          application_id: string | null
+          contact_id: string
+          coverage_effective_date: string | null
+          coverage_end_date: string | null
+          created_at: string
+          disenrollment_reason: string | null
+          enrollment_status: Database['public']['Enums']['enrollment_status'] | null
+          id: string
+          metadata: Json | null
+          pcp_id: string | null
+          pcp_name: string | null
+          plan_id: string
+          premium_monthly_at_enrollment: number | null
+          signed_up_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          agent_notes?: string | null
+          application_id?: string | null
+          contact_id: string
+          coverage_effective_date?: string | null
+          coverage_end_date?: string | null
+          created_at?: string
+          disenrollment_reason?: string | null
+          enrollment_status?: Database['public']['Enums']['enrollment_status'] | null
+          id?: string
+          metadata?: Json | null
+          pcp_id?: string | null
+          pcp_name?: string | null
+          plan_id: string
+          premium_monthly_at_enrollment?: number | null
+          signed_up_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          agent_notes?: string | null
+          application_id?: string | null
+          contact_id?: string
+          coverage_effective_date?: string | null
+          coverage_end_date?: string | null
+          created_at?: string
+          disenrollment_reason?: string | null
+          enrollment_status?: Database['public']['Enums']['enrollment_status'] | null
+          id?: string
+          metadata?: Json | null
+          pcp_id?: string | null
+          pcp_name?: string | null
+          plan_id?: string
+          premium_monthly_at_enrollment?: number | null
+          signed_up_at?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'enrollments_contact_id_fkey'
+            columns: ['contact_id']
+            isOneToOne: false
+            referencedRelation: 'contacts'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'enrollments_plan_id_fkey'
+            columns: ['plan_id']
+            isOneToOne: false
+            referencedRelation: 'plans'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       lead_statuses: {
         Row: {
           color: string | null
@@ -611,6 +586,108 @@ export type Database = {
             referencedColumns: ['id']
           },
         ]
+      }
+      plans: {
+        Row: {
+          ambulance_copay: number | null
+          carrier: Database['public']['Enums']['carrier'] | null
+          cms_contract_number: string | null
+          cms_id: string | null
+          cms_plan_number: string | null
+          counties: string[] | null
+          created_at: string
+          dental_benefit_yearly: number | null
+          effective_end: string | null
+          effective_start: string | null
+          emergency_room_copay: number | null
+          giveback_monthly: number | null
+          hearing_benefit_yearly: number | null
+          hospital_inpatient_days: number | null
+          hospital_inpatient_per_stay_copay: number | null
+          id: string
+          metadata: Json | null
+          moop_annual: number | null
+          name: string
+          notes: string | null
+          otc_benefit_quarterly: number | null
+          pharmacy_benefit: string | null
+          plan_type: Database['public']['Enums']['plan_type'] | null
+          plan_year: number | null
+          premium_monthly: number | null
+          primary_care_copay: number | null
+          service_area: string | null
+          specialist_copay: number | null
+          updated_at: string
+          urgent_care_copay: number | null
+          vision_benefit_yearly: number | null
+        }
+        Insert: {
+          ambulance_copay?: number | null
+          carrier?: Database['public']['Enums']['carrier'] | null
+          cms_contract_number?: string | null
+          cms_id?: string | null
+          cms_plan_number?: string | null
+          counties?: string[] | null
+          created_at?: string
+          dental_benefit_yearly?: number | null
+          effective_end?: string | null
+          effective_start?: string | null
+          emergency_room_copay?: number | null
+          giveback_monthly?: number | null
+          hearing_benefit_yearly?: number | null
+          hospital_inpatient_days?: number | null
+          hospital_inpatient_per_stay_copay?: number | null
+          id?: string
+          metadata?: Json | null
+          moop_annual?: number | null
+          name: string
+          notes?: string | null
+          otc_benefit_quarterly?: number | null
+          pharmacy_benefit?: string | null
+          plan_type?: Database['public']['Enums']['plan_type'] | null
+          plan_year?: number | null
+          premium_monthly?: number | null
+          primary_care_copay?: number | null
+          service_area?: string | null
+          specialist_copay?: number | null
+          updated_at?: string
+          urgent_care_copay?: number | null
+          vision_benefit_yearly?: number | null
+        }
+        Update: {
+          ambulance_copay?: number | null
+          carrier?: Database['public']['Enums']['carrier'] | null
+          cms_contract_number?: string | null
+          cms_id?: string | null
+          cms_plan_number?: string | null
+          counties?: string[] | null
+          created_at?: string
+          dental_benefit_yearly?: number | null
+          effective_end?: string | null
+          effective_start?: string | null
+          emergency_room_copay?: number | null
+          giveback_monthly?: number | null
+          hearing_benefit_yearly?: number | null
+          hospital_inpatient_days?: number | null
+          hospital_inpatient_per_stay_copay?: number | null
+          id?: string
+          metadata?: Json | null
+          moop_annual?: number | null
+          name?: string
+          notes?: string | null
+          otc_benefit_quarterly?: number | null
+          pharmacy_benefit?: string | null
+          plan_type?: Database['public']['Enums']['plan_type'] | null
+          plan_year?: number | null
+          premium_monthly?: number | null
+          primary_care_copay?: number | null
+          service_area?: string | null
+          specialist_copay?: number | null
+          updated_at?: string
+          urgent_care_copay?: number | null
+          vision_benefit_yearly?: number | null
+        }
+        Relationships: []
       }
       reminders: {
         Row: {
@@ -746,17 +823,6 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      plan_type:
-        | 'HMO'
-        | 'HMO-POS'
-        | 'HMO-POS-D-SNP'
-        | 'HMO-POS-C-SNP'
-        | 'PPO'
-        | 'D-SNP'
-        | 'C-SNP'
-        | 'PDP'
-        | 'Supplement'
-        | 'Ancillary'
       carrier:
         | 'United'
         | 'Humana'
@@ -772,6 +838,17 @@ export type Database = {
         | 'Heartland'
         | 'Other'
       enrollment_status: 'pending' | 'active' | 'cancelled' | 'terminated' | 'declined'
+      plan_type:
+        | 'HMO'
+        | 'HMO-POS'
+        | 'HMO-POS-D-SNP'
+        | 'HMO-POS-C-SNP'
+        | 'PPO'
+        | 'D-SNP'
+        | 'C-SNP'
+        | 'PDP'
+        | 'Supplement'
+        | 'Ancillary'
     }
     CompositeTypes: {
       [_ in never]: never
@@ -779,21 +856,25 @@ export type Database = {
   }
 }
 
-type DefaultSchema = Database[Extract<keyof Database, 'public'>]
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
     | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
-    | { schema: keyof Database },
+    | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-        Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
-      Database[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
       Row: infer R
     }
     ? R
@@ -807,14 +888,16 @@ export type Tables<
     : never
 
 export type TablesInsert<
-  DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables'] | { schema: keyof Database },
+  DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Insert: infer I
     }
     ? I
@@ -828,14 +911,16 @@ export type TablesInsert<
     : never
 
 export type TablesUpdate<
-  DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables'] | { schema: keyof Database },
+  DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaTableNameOrOptions['schema']]['Tables']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Update: infer U
     }
     ? U
@@ -849,33 +934,71 @@ export type TablesUpdate<
     : never
 
 export type Enums<
-  DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums'] | { schema: keyof Database },
+  DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums'] | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
     : never = never,
-> = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
-  ? Database[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
     ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
-  PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes'] | { schema: keyof Database },
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema['CompositeTypes']
+    | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
-    schema: keyof Database
+    schema: keyof DatabaseWithoutInternals
   }
-    ? keyof Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
     : never = never,
-> = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
-  ? Database[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
     ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {
-  public: {
+  graphql_public: {
     Enums: {},
+  },
+  public: {
+    Enums: {
+      carrier: [
+        'United',
+        'Humana',
+        'Devoted',
+        'Anthem',
+        'MedMutual',
+        'Aetna',
+        'GTL',
+        'Medico',
+        'CareSource',
+        'SummaCare',
+        'Cigna',
+        'Heartland',
+        'Other',
+      ],
+      enrollment_status: ['pending', 'active', 'cancelled', 'terminated', 'declined'],
+      plan_type: [
+        'HMO',
+        'HMO-POS',
+        'HMO-POS-D-SNP',
+        'HMO-POS-C-SNP',
+        'PPO',
+        'D-SNP',
+        'C-SNP',
+        'PDP',
+        'Supplement',
+        'Ancillary',
+      ],
+    },
   },
 } as const

@@ -49,6 +49,7 @@ const tables = [
   'tags',
   'lead_statuses',
   'contacts',
+  'contact_roles',
   'addresses',
   'phones',
   'emails',
@@ -64,15 +65,38 @@ async function dumpTable(tableName) {
   console.log(`Dumping table: ${tableName}`)
 
   try {
-    const { data, error } = await supabase.from(tableName).select('*')
+    let allData = []
+    let from = 0
+    const batchSize = 1000
+    let hasMore = true
 
-    if (error) {
-      console.error(`Error dumping ${tableName}:`, error)
-      return null
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from(tableName)
+        .select('*')
+        .range(from, from + batchSize - 1)
+
+      if (error) {
+        console.error(`Error dumping ${tableName}:`, error)
+        return null
+      }
+
+      if (data && data.length > 0) {
+        allData = allData.concat(data)
+        from += batchSize
+        console.log(`  - Fetched ${allData.length} records so far...`)
+
+        // If we got less than batchSize, we've reached the end
+        if (data.length < batchSize) {
+          hasMore = false
+        }
+      } else {
+        hasMore = false
+      }
     }
 
-    console.log(`  - Found ${data.length} records`)
-    return data
+    console.log(`  - Found ${allData.length} total records`)
+    return allData
   } catch (err) {
     console.error(`Exception dumping ${tableName}:`, err)
     return null
