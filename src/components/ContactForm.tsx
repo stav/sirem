@@ -254,6 +254,56 @@ export default function ContactForm({
               placeholder="john.doe@example.com"
             />
           </div>
+
+          {/* Contact Roles Management - Only show when editing an existing contact */}
+          {editingContact && (
+            <div className="space-y-2">
+              <ContactRoleManagement
+                contact={editingContact}
+                onRoleChange={() => {
+                  // Refresh the contact data when roles change
+                  onRefreshContact?.()
+                }}
+              />
+            </div>
+          )}
+
+          <div>
+            <Label htmlFor="status">Status</Label>
+            <Select value={formData.status} onValueChange={(value) => onFormDataChange({ ...formData, status: value })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="New">🆕 New</SelectItem>
+                <SelectItem value="Contacted">📞 Contacted</SelectItem>
+                <SelectItem value="Engaged">🤝 Engaged</SelectItem>
+                <SelectItem value="Client">✅ Client</SelectItem>
+                <SelectItem value="No-response">❌ No response</SelectItem>
+                <SelectItem value="Already-enrolled">🎓 Already enrolled</SelectItem>
+                <SelectItem value="Too-expensive">💰 Too expensive</SelectItem>
+                <SelectItem value="Not-interested">😐 Not interested</SelectItem>
+                <SelectItem value="Not-eligible">🚫 Not eligible</SelectItem>
+                <SelectItem value="Brandon">🚫 Brandon&apos;s client</SelectItem>
+                <SelectItem value="Retained">🔄 Retained</SelectItem>
+                <SelectItem value="Loyal">💎 Loyal</SelectItem>
+                <SelectItem value="Other">📝 Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div>
+            <Label htmlFor="notes">Notes</Label>
+            <Textarea
+              id="notes"
+              value={formData.notes}
+              onChange={(e) => onFormDataChange({ ...formData, notes: e.target.value })}
+              rows={3}
+              placeholder="Add any additional notes about this contact..."
+            />
+          </div>
+          <div className="text-muted-foreground my-8">
+            <hr />
+          </div>
           <div>
             <Label htmlFor="medicare_beneficiary_id">Medicare Beneficiary ID (MBI)</Label>
             <Input
@@ -300,16 +350,6 @@ export default function ContactForm({
             <p className="text-muted-foreground mt-1 text-xs">Format: XXX-XX-XXXX (Social Security Number)</p>
           </div>
           <div>
-            <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => onFormDataChange({ ...formData, notes: e.target.value })}
-              rows={3}
-              placeholder="Add any additional notes about this contact..."
-            />
-          </div>
-          <div>
             <Label htmlFor="birthdate">Birthday</Label>
             <Input
               id="birthdate"
@@ -317,29 +357,6 @@ export default function ContactForm({
               value={formData.birthdate}
               onChange={(e) => onFormDataChange({ ...formData, birthdate: e.target.value })}
             />
-          </div>
-          <div>
-            <Label htmlFor="status">Status</Label>
-            <Select value={formData.status} onValueChange={(value) => onFormDataChange({ ...formData, status: value })}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="New">🆕 New</SelectItem>
-                <SelectItem value="Contacted">📞 Contacted</SelectItem>
-                <SelectItem value="Engaged">🤝 Engaged</SelectItem>
-                <SelectItem value="Client">✅ Client</SelectItem>
-                <SelectItem value="No-response">❌ No response</SelectItem>
-                <SelectItem value="Already-enrolled">🎓 Already enrolled</SelectItem>
-                <SelectItem value="Too-expensive">💰 Too expensive</SelectItem>
-                <SelectItem value="Not-interested">😐 Not interested</SelectItem>
-                <SelectItem value="Not-eligible">🚫 Not eligible</SelectItem>
-                <SelectItem value="Brandon">🚫 Brandon&apos;s client</SelectItem>
-                <SelectItem value="Retained">🔄 Retained</SelectItem>
-                <SelectItem value="Loyal">💎 Loyal</SelectItem>
-                <SelectItem value="Other">📝 Other</SelectItem>
-              </SelectContent>
-            </Select>
           </div>
 
           {/* Address Management Section */}
@@ -417,19 +434,6 @@ export default function ContactForm({
               ) : (
                 <div className="text-muted-foreground text-sm">No addresses found</div>
               )}
-            </div>
-          )}
-
-          {/* Contact Roles Management - Only show when editing an existing contact */}
-          {editingContact && (
-            <div className="space-y-2">
-              <ContactRoleManagement
-                contact={editingContact}
-                onRoleChange={() => {
-                  // Refresh the contact data when roles change
-                  onRefreshContact?.()
-                }}
-              />
             </div>
           )}
         </div>
