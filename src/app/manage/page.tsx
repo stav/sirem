@@ -16,6 +16,7 @@ import { logger } from '@/lib/logger'
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
   addresses?: Database['public']['Tables']['addresses']['Row'][]
+  contact_roles?: Database['public']['Tables']['contact_roles']['Row'][]
 }
 type Action = Database['public']['Tables']['actions']['Row']
 

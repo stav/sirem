@@ -11,6 +11,7 @@ type Contact = Database['public']['Tables']['contacts']['Row'] & {
       label: string
     }
   }[]
+  contact_roles?: Database['public']['Tables']['contact_roles']['Row'][]
 }
 
 interface ContactForm {
@@ -58,6 +59,13 @@ export function useContacts() {
               id,
               label
             )
+          ),
+          contact_roles (
+            id,
+            role_type,
+            role_data,
+            created_at,
+            updated_at
           )
         `
         )

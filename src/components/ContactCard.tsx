@@ -16,12 +16,42 @@ import { formatDateTime } from '@/lib/utils'
 import { getPrimaryAddress } from '@/lib/address-utils'
 import { usePlanEnrollments } from '@/hooks/usePlanEnrollments'
 
+// Role configuration for badges
+const roleConfig = {
+  medicare_client: {
+    label: 'Medicare Client',
+    icon: '🏥',
+    color: 'bg-blue-100 text-blue-800',
+  },
+  referral_partner: {
+    label: 'Referral Partner',
+    icon: '🤝',
+    color: 'bg-green-100 text-green-800',
+  },
+  tire_shop: {
+    label: 'Tire Shop',
+    icon: '🚗',
+    color: 'bg-orange-100 text-orange-800',
+  },
+  dentist: {
+    label: 'Dentist',
+    icon: '🦷',
+    color: 'bg-purple-100 text-purple-800',
+  },
+  other: {
+    label: 'Other',
+    icon: '👤',
+    color: 'bg-gray-100 text-gray-800',
+  },
+}
+
 type Plan = Database['public']['Tables']['plans']['Row']
 type Enrollment = Database['public']['Tables']['enrollments']['Row']
 type EnrollmentWithPlan = Enrollment & { plans?: Plan }
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
   addresses?: Database['public']['Tables']['addresses']['Row'][]
+  contact_roles?: Database['public']['Tables']['contact_roles']['Row'][]
 }
 
 interface ContactCardProps {
@@ -83,6 +113,21 @@ export default function ContactCard({
             <span>
               {contact.first_name} {contact.last_name}
             </span>
+
+            {/* Role Badges - inline with name */}
+            {contact.contact_roles && contact.contact_roles.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {contact.contact_roles.map((role) => {
+                  const config = roleConfig[role.role_type as keyof typeof roleConfig] || roleConfig.other
+                  return (
+                    <Badge key={role.id} variant="outline" className={`text-xs ${config.color}`}>
+                      <span className="mr-1">{config.icon}</span>
+                      {config.label}
+                    </Badge>
+                  )
+                })}
+              </div>
+            )}
           </h3>
         </div>
 
