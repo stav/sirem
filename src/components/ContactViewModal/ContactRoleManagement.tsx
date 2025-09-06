@@ -97,13 +97,10 @@ export default function ContactRoleManagement({ contact, onRoleChange }: Contact
   const [editingRole, setEditingRole] = useState<string | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [newRoleType, setNewRoleType] = useState<RoleType>('medicare_client')
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [roleData, setRoleData] = useState<Record<string, any>>({})
 
-  useEffect(() => {
-    fetchRoles()
-  }, [contact])
-
-  const fetchRoles = async () => {
+  const fetchRoles = React.useCallback(async () => {
     if (!contact) return
 
     setLoading(true)
@@ -125,7 +122,11 @@ export default function ContactRoleManagement({ contact, onRoleChange }: Contact
     } finally {
       setLoading(false)
     }
-  }
+  }, [contact])
+
+  useEffect(() => {
+    fetchRoles()
+  }, [fetchRoles])
 
   const handleAddRole = async (e?: React.MouseEvent) => {
     e?.preventDefault()
@@ -194,7 +195,8 @@ export default function ContactRoleManagement({ contact, onRoleChange }: Contact
   const startEditing = (role: ContactRole, e?: React.MouseEvent) => {
     e?.preventDefault()
     setEditingRole(role.id)
-    setRoleData(role.role_data || {})
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    setRoleData((role.role_data as Record<string, any>) || {})
   }
 
   const cancelEditing = (e?: React.MouseEvent) => {
@@ -203,7 +205,13 @@ export default function ContactRoleManagement({ contact, onRoleChange }: Contact
     setRoleData({})
   }
 
-  const renderField = (field: any, value: any, onChange: (key: string, value: any) => void) => {
+  const renderField = (
+    field: { key: string; label: string; type: string; options?: string[] },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    value: any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onChange: (key: string, value: any) => void
+  ) => {
     const fieldKey = field.key
     const fieldValue = value || ''
 
@@ -402,14 +410,15 @@ export default function ContactRoleManagement({ contact, onRoleChange }: Contact
               ) : (
                 <div className="space-y-2">
                   {config.fields.map((field) => {
-                    const value = role.role_data?.[field.key]
+                    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                    const value = (role.role_data as Record<string, any>)?.[field.key]
                     if (!value && field.type !== 'checkbox') return null
 
                     return (
                       <div key={field.key} className="flex justify-between">
                         <span className="text-sm text-gray-600">{field.label}:</span>
                         <span className="text-sm font-medium">
-                          {field.type === 'checkbox' ? (value ? 'Yes' : 'No') : value || 'N/A'}
+                          {field.type === 'checkbox' ? (value ? 'Yes' : 'No') : String(value || 'N/A')}
                         </span>
                       </div>
                     )
@@ -424,7 +433,7 @@ export default function ContactRoleManagement({ contact, onRoleChange }: Contact
       {roles.length === 0 && !showAddForm && (
         <div className="py-8 text-center text-gray-500">
           <p>No roles assigned to this contact.</p>
-          <p className="text-sm">Click "Add Role" to get started.</p>
+          <p className="text-sm">Click &quot;Add Role&quot; to get started.</p>
         </div>
       )}
     </div>
