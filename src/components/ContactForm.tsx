@@ -13,6 +13,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import type { Database } from '@/lib/supabase'
 import { supabase } from '@/lib/supabase'
 import { AddressType } from '@/lib/address-types'
+import ContactRoleManagement from './ContactViewModal/ContactRoleManagement'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 type Address = Database['public']['Tables']['addresses']['Row']
@@ -416,6 +417,19 @@ export default function ContactForm({
               ) : (
                 <div className="text-muted-foreground text-sm">No addresses found</div>
               )}
+            </div>
+          )}
+
+          {/* Contact Roles Management - Only show when editing an existing contact */}
+          {editingContact && (
+            <div className="space-y-2">
+              <ContactRoleManagement
+                contact={editingContact}
+                onRoleChange={() => {
+                  // Refresh the contact data when roles change
+                  onRefreshContact?.()
+                }}
+              />
             </div>
           )}
         </div>
