@@ -16,7 +16,7 @@ import { formatDateTime } from '@/lib/utils'
 import { getPrimaryAddress } from '@/lib/address-utils'
 import { usePlanEnrollments } from '@/hooks/usePlanEnrollments'
 
-import { getRoleDisplayInfo } from '@/lib/role-config'
+import { getRoleDisplayInfo, roleIconMap } from '@/lib/role-config'
 import { RoleType } from '@/types/roles'
 
 type Plan = Database['public']['Tables']['plans']['Row']
@@ -93,9 +93,10 @@ export default function ContactCard({
               <div className="flex flex-wrap gap-1">
                 {contact.contact_roles.map((role) => {
                   const config = getRoleDisplayInfo(role.role_type as RoleType)
+                  const IconComponent = roleIconMap[role.role_type as RoleType] || roleIconMap.other
                   return (
                     <Badge key={role.id} variant="outline" className={`text-xs ${config.color}`}>
-                      <span className="mr-1">{config.icon}</span>
+                      <IconComponent className="mr-1 h-3 w-3" />
                       {config.label}
                     </Badge>
                   )

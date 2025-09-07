@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Plus, Edit, Trash2, Save, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase'
-import { getRoleConfig, getAllRoleTypes } from '@/lib/role-config'
+import { getRoleConfig, getAllRoleTypes, roleIconMap } from '@/lib/role-config'
 import { RoleType, RoleField } from '@/types/roles'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
@@ -239,7 +239,7 @@ export default function ContactRoleManagement({ contact, onRoleChange }: Contact
                   const config = getRoleConfig(roleType)
                   return (
                     <option key={roleType} value={roleType}>
-                      {config.icon} {config.label}
+                      {config.label}
                     </option>
                   )
                 })}
@@ -290,7 +290,9 @@ export default function ContactRoleManagement({ contact, onRoleChange }: Contact
             <div key={role.id} className="rounded-lg border border-gray-200 p-4">
               <div className="mb-3 flex items-center justify-between">
                 <div className="flex items-center space-x-2">
-                  <span className="text-lg">{config.icon}</span>
+                  {React.createElement(roleIconMap[role.role_type as RoleType] || roleIconMap.other, {
+                    className: 'h-4 w-4',
+                  })}
                   <span className={`rounded-full px-2 py-1 text-xs font-medium ${config.color}`}>{config.label}</span>
                 </div>
                 <div className="flex space-x-1">

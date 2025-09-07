@@ -2,11 +2,11 @@ import React, { useState, useEffect } from 'react'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Shield, User, Stethoscope, Wrench } from 'lucide-react'
+import { Shield, User } from 'lucide-react'
 import { formatMBI } from '@/lib/contact-utils'
 import type { Database } from '@/lib/supabase'
 import { supabase } from '@/lib/supabase'
-import { getRoleDisplayInfo } from '@/lib/role-config'
+import { getRoleDisplayInfo, roleIconMap } from '@/lib/role-config'
 import { RoleType } from '@/types/roles'
 
 // Helper function to format date as YYYY-MM
@@ -45,14 +45,7 @@ interface ContactRolesDisplayProps {
   contact: Contact
 }
 
-// Icon mapping for role types (using Lucide icons for better consistency)
-const roleIconMap: Record<RoleType, React.ComponentType<{ className?: string }>> = {
-  medicare_client: Shield,
-  referral_partner: User,
-  tire_shop: Wrench,
-  dentist: Stethoscope,
-  other: User,
-}
+// Using centralized icon mapping from role-config.ts
 
 // Helper component for displaying a single field
 function FieldDisplay({

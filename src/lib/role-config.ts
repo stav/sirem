@@ -1,9 +1,11 @@
 import { RoleConfigs, RoleType, RoleConfig } from '@/types/roles'
+import { Shield, User, Stethoscope, Wrench } from 'lucide-react'
 
 export const roleConfig: RoleConfigs = {
   medicare_client: {
     label: 'Medicare Client',
     icon: '🏥',
+    iconComponent: Shield,
     color: 'bg-blue-100 text-blue-800',
     fields: [
       { key: 'gender', label: 'Gender', type: 'select', options: ['male', 'female', 'other'] },
@@ -31,6 +33,7 @@ export const roleConfig: RoleConfigs = {
   referral_partner: {
     label: 'Referral Partner',
     icon: '🤝',
+    iconComponent: User,
     color: 'bg-green-100 text-green-800',
     fields: [
       { key: 'company', label: 'Company', type: 'text' },
@@ -47,6 +50,7 @@ export const roleConfig: RoleConfigs = {
   tire_shop: {
     label: 'Tire Shop',
     icon: '🚗',
+    iconComponent: Wrench,
     color: 'bg-orange-100 text-orange-800',
     fields: [
       { key: 'shop_name', label: 'Shop Name', type: 'text' },
@@ -58,6 +62,7 @@ export const roleConfig: RoleConfigs = {
   dentist: {
     label: 'Dentist',
     icon: '🦷',
+    iconComponent: Stethoscope,
     color: 'bg-purple-100 text-purple-800',
     fields: [
       { key: 'practice_name', label: 'Practice Name', type: 'text' },
@@ -69,6 +74,7 @@ export const roleConfig: RoleConfigs = {
   other: {
     label: 'Other',
     icon: '👤',
+    iconComponent: User,
     color: 'bg-gray-100 text-gray-800',
     fields: [
       { key: 'role_description', label: 'Role Description', type: 'text' },
@@ -102,4 +108,18 @@ export const getRoleFields = (roleType: RoleType) => {
 
 export const isValidRoleType = (roleType: string): roleType is RoleType => {
   return roleType in roleConfig
+}
+
+// Get icon component for a role type
+export const getRoleIcon = (roleType: RoleType): React.ComponentType<{ className?: string }> => {
+  return getRoleConfig(roleType).iconComponent
+}
+
+// Icon mapping for role types (extracted from roleConfig for convenience)
+export const roleIconMap: Record<RoleType, React.ComponentType<{ className?: string }>> = {
+  medicare_client: getRoleIcon('medicare_client'),
+  referral_partner: getRoleIcon('referral_partner'),
+  tire_shop: getRoleIcon('tire_shop'),
+  dentist: getRoleIcon('dentist'),
+  other: getRoleIcon('other'),
 }
