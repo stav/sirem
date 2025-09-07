@@ -16,34 +16,8 @@ import { formatDateTime } from '@/lib/utils'
 import { getPrimaryAddress } from '@/lib/address-utils'
 import { usePlanEnrollments } from '@/hooks/usePlanEnrollments'
 
-// Role configuration for badges
-const roleConfig = {
-  medicare_client: {
-    label: 'Medicare Client',
-    icon: '🏥',
-    color: 'bg-blue-100 text-blue-800',
-  },
-  referral_partner: {
-    label: 'Referral Partner',
-    icon: '🤝',
-    color: 'bg-green-100 text-green-800',
-  },
-  tire_shop: {
-    label: 'Tire Shop',
-    icon: '🚗',
-    color: 'bg-orange-100 text-orange-800',
-  },
-  dentist: {
-    label: 'Dentist',
-    icon: '🦷',
-    color: 'bg-purple-100 text-purple-800',
-  },
-  other: {
-    label: 'Other',
-    icon: '👤',
-    color: 'bg-gray-100 text-gray-800',
-  },
-}
+import { getRoleDisplayInfo } from '@/lib/role-config'
+import { RoleType } from '@/types/roles'
 
 type Plan = Database['public']['Tables']['plans']['Row']
 type Enrollment = Database['public']['Tables']['enrollments']['Row']
@@ -118,7 +92,7 @@ export default function ContactCard({
             {contact.contact_roles && contact.contact_roles.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {contact.contact_roles.map((role) => {
-                  const config = roleConfig[role.role_type as keyof typeof roleConfig] || roleConfig.other
+                  const config = getRoleDisplayInfo(role.role_type as RoleType)
                   return (
                     <Badge key={role.id} variant="outline" className={`text-xs ${config.color}`}>
                       <span className="mr-1">{config.icon}</span>

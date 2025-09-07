@@ -3,6 +3,8 @@ import { Button } from '@/components/ui/button'
 import { Plus, Edit, Trash2, Save, X } from 'lucide-react'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase'
+import { getRoleConfig, getAllRoleTypes } from '@/lib/role-config'
+import { RoleType, RoleField } from '@/types/roles'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 type ContactRole = Database['public']['Tables']['contact_roles']['Row']
@@ -10,85 +12,6 @@ type ContactRole = Database['public']['Tables']['contact_roles']['Row']
 interface ContactRoleManagementProps {
   contact: Contact
   onRoleChange?: () => void
-}
-
-type RoleType = 'medicare_client' | 'referral_partner' | 'tire_shop' | 'dentist' | 'other'
-
-const roleConfig = {
-  medicare_client: {
-    label: 'Medicare Client',
-    icon: '🏥',
-    color: 'bg-blue-100 text-blue-800',
-    fields: [
-      { key: 'gender', label: 'Gender', type: 'select', options: ['male', 'female', 'other'] },
-      { key: 'height', label: 'Height', type: 'text' },
-      { key: 'weight', label: 'Weight', type: 'text' },
-      { key: 'has_medicaid', label: 'Has Medicaid', type: 'checkbox' },
-      { key: 'part_a_effective', label: 'Part A Effective', type: 'date' },
-      { key: 'part_b_effective', label: 'Part B Effective', type: 'date' },
-      {
-        key: 'subsidy_level',
-        label: 'Subsidy Level',
-        type: 'select',
-        options: ['Yes', 'No', 'Not Answered', "I Don't Know"],
-      },
-      {
-        key: 'marital_status',
-        label: 'Marital Status',
-        type: 'select',
-        options: ['Single', 'Married', 'Divorced', 'Widowed', 'Unknown'],
-      },
-      { key: 'is_tobacco_user', label: 'Tobacco User', type: 'checkbox' },
-      { key: 'medicare_beneficiary_id', label: 'Medicare Beneficiary ID', type: 'text' },
-    ],
-  },
-  referral_partner: {
-    label: 'Referral Partner',
-    icon: '🤝',
-    color: 'bg-green-100 text-green-800',
-    fields: [
-      { key: 'company', label: 'Company', type: 'text' },
-      {
-        key: 'referral_type',
-        label: 'Referral Type',
-        type: 'select',
-        options: ['Library', 'Healthcare', 'Community', 'Other'],
-      },
-      { key: 'commission_rate', label: 'Commission Rate', type: 'text' },
-      { key: 'notes', label: 'Notes', type: 'textarea' },
-    ],
-  },
-  tire_shop: {
-    label: 'Tire Shop',
-    icon: '🚗',
-    color: 'bg-orange-100 text-orange-800',
-    fields: [
-      { key: 'shop_name', label: 'Shop Name', type: 'text' },
-      { key: 'location', label: 'Location', type: 'text' },
-      { key: 'services', label: 'Services', type: 'textarea' },
-      { key: 'contact_person', label: 'Contact Person', type: 'text' },
-    ],
-  },
-  dentist: {
-    label: 'Dentist',
-    icon: '🦷',
-    color: 'bg-purple-100 text-purple-800',
-    fields: [
-      { key: 'practice_name', label: 'Practice Name', type: 'text' },
-      { key: 'specialty', label: 'Specialty', type: 'text' },
-      { key: 'accepts_medicaid', label: 'Accepts Medicaid', type: 'checkbox' },
-      { key: 'notes', label: 'Notes', type: 'textarea' },
-    ],
-  },
-  other: {
-    label: 'Other',
-    icon: '👤',
-    color: 'bg-gray-100 text-gray-800',
-    fields: [
-      { key: 'role_description', label: 'Role Description', type: 'text' },
-      { key: 'notes', label: 'Notes', type: 'textarea' },
-    ],
-  },
 }
 
 export default function ContactRoleManagement({ contact, onRoleChange }: ContactRoleManagementProps) {
@@ -312,16 +235,19 @@ export default function ContactRoleManagement({ contact, onRoleChange }: Contact
                 onChange={(e) => setNewRoleType(e.target.value as RoleType)}
                 className="w-full rounded-md border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:outline-none"
               >
-                {Object.entries(roleConfig).map(([key, config]) => (
-                  <option key={key} value={key}>
-                    {config.icon} {config.label}
-                  </option>
-                ))}
+                {getAllRoleTypes().map((roleType) => {
+                  const config = getRoleConfig(roleType)
+                  return (
+                    <option key={roleType} value={roleType}>
+                      {config.icon} {config.label}
+                    </option>
+                  )
+                })}
               </select>
             </div>
 
             <div className="space-y-3">
-              {roleConfig[newRoleType].fields.map((field) => (
+              {getRoleConfig(newRoleType).fields.map((field: RoleField) => (
                 <div key={field.key}>
                   <label className="mb-1 block text-sm font-medium text-gray-700">{field.label}</label>
                   {renderField(field, roleData[field.key], (key, value) => {
@@ -357,7 +283,7 @@ export default function ContactRoleManagement({ contact, onRoleChange }: Contact
       {/* Existing Roles */}
       <div className="space-y-3">
         {roles.map((role) => {
-          const config = roleConfig[role.role_type as RoleType] || roleConfig.other
+          const config = getRoleConfig(role.role_type as RoleType)
           const isEditing = editingRole === role.id
 
           return (
@@ -398,7 +324,7 @@ export default function ContactRoleManagement({ contact, onRoleChange }: Contact
 
               {isEditing ? (
                 <div className="space-y-3">
-                  {config.fields.map((field) => (
+                  {config.fields.map((field: RoleField) => (
                     <div key={field.key}>
                       <label className="mb-1 block text-sm font-medium text-gray-700">{field.label}</label>
                       {renderField(field, roleData[field.key], (key, value) => {
@@ -409,7 +335,7 @@ export default function ContactRoleManagement({ contact, onRoleChange }: Contact
                 </div>
               ) : (
                 <div className="space-y-2">
-                  {config.fields.map((field) => {
+                  {config.fields.map((field: RoleField) => {
                     // eslint-disable-next-line @typescript-eslint/no-explicit-any
                     const value = (role.role_data as Record<string, any>)?.[field.key]
                     if (!value && field.type !== 'checkbox') return null

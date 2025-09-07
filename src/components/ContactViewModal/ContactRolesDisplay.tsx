@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Shield, User, Building, Stethoscope, Wrench } from 'lucide-react'
+import { Shield, User, Stethoscope, Wrench } from 'lucide-react'
 import { formatMBI } from '@/lib/contact-utils'
 import type { Database } from '@/lib/supabase'
 import { supabase } from '@/lib/supabase'
+import { getRoleDisplayInfo } from '@/lib/role-config'
+import { RoleType } from '@/types/roles'
 
 // Helper function to format date as YYYY-MM
 function formatYearMonth(dateString: string): string {
@@ -43,38 +45,13 @@ interface ContactRolesDisplayProps {
   contact: Contact
 }
 
-// Role-specific icons and colors
-const roleConfig = {
-  medicare_client: {
-    icon: Shield,
-    color: 'bg-blue-100 text-blue-800 border-blue-200',
-    label: 'Medicare Client',
-  },
-  referral_partner: {
-    icon: User,
-    color: 'bg-green-100 text-green-800 border-green-200',
-    label: 'Referral Partner',
-  },
-  tire_shop: {
-    icon: Wrench,
-    color: 'bg-orange-100 text-orange-800 border-orange-200',
-    label: 'Tire Shop',
-  },
-  dentist: {
-    icon: Stethoscope,
-    color: 'bg-purple-100 text-purple-800 border-purple-200',
-    label: 'Dentist',
-  },
-  doctor: {
-    icon: Stethoscope,
-    color: 'bg-purple-100 text-purple-800 border-purple-200',
-    label: 'Doctor',
-  },
-  business_contact: {
-    icon: Building,
-    color: 'bg-gray-100 text-gray-800 border-gray-200',
-    label: 'Business Contact',
-  },
+// Icon mapping for role types (using Lucide icons for better consistency)
+const roleIconMap: Record<RoleType, React.ComponentType<{ className?: string }>> = {
+  medicare_client: Shield,
+  referral_partner: User,
+  tire_shop: Wrench,
+  dentist: Stethoscope,
+  other: User,
 }
 
 // Helper component for displaying a single field
@@ -247,13 +224,14 @@ export default function ContactRolesDisplay({ contact }: ContactRolesDisplayProp
       <Label className="text-muted-foreground text-sm font-medium">Roles</Label>
       <div className="space-y-3">
         {roles.map((role) => {
-          const config = roleConfig[role.role_type as keyof typeof roleConfig] || {
-            icon: User,
-            color: 'bg-gray-100 text-gray-800 border-gray-200',
-            label: role.role_type.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()),
+          const roleType = role.role_type as RoleType
+          const displayInfo = getRoleDisplayInfo(roleType)
+          const IconComponent = roleIconMap[roleType] || User
+          const config = {
+            icon: IconComponent,
+            color: `${displayInfo.color} border-gray-200`,
+            label: displayInfo.label,
           }
-
-          const IconComponent = config.icon
           const roleData = (role.role_data as Record<string, unknown>) || {}
 
           return (

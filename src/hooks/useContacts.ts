@@ -62,8 +62,11 @@ export function useContacts() {
           ),
           contact_roles (
             id,
+            contact_id,
             role_type,
             role_data,
+            is_active,
+            is_primary,
             created_at,
             updated_at
           )
