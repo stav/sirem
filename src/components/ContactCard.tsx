@@ -19,6 +19,28 @@ import { usePlanEnrollments } from '@/hooks/usePlanEnrollments'
 import { getRoleDisplayInfo, roleIconMap } from '@/lib/role-config'
 import { RoleType } from '@/types/roles'
 
+// Utility function to extract organization name from role data
+const getOrganizationName = (roleType: string, roleData: any): string | null => {
+  switch (roleType) {
+    case 'referral_partner':
+      return roleData?.company
+    case 'presentation_partner':
+      return roleData?.organization_name
+    case 'tire_shop':
+      return roleData?.shop_name
+    case 'dentist':
+      return roleData?.practice_name
+    default:
+      return null
+  }
+}
+
+// Utility function to format organization name for display
+const formatOrgNameForDisplay = (orgName: string, maxLength: number = 20): string => {
+  if (orgName.length <= maxLength) return orgName
+  return `${orgName.substring(0, maxLength)}...`
+}
+
 type Plan = Database['public']['Tables']['plans']['Row']
 type Enrollment = Database['public']['Tables']['enrollments']['Row']
 type EnrollmentWithPlan = Enrollment & { plans?: Plan }
@@ -94,11 +116,22 @@ export default function ContactCard({
                 {contact.contact_roles.map((role) => {
                   const config = getRoleDisplayInfo(role.role_type as RoleType)
                   const IconComponent = roleIconMap[role.role_type as RoleType] || roleIconMap.other
+                  const orgName = getOrganizationName(role.role_type, role.role_data)
+
                   return (
-                    <Badge key={role.id} variant="outline" className={`text-xs ${config.color}`}>
-                      <IconComponent className="mr-1 h-3 w-3" />
-                      {config.label}
-                    </Badge>
+                    <Tooltip key={role.id}>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className={`text-xs ${config.color.split(' ')[1]}`}>
+                          <IconComponent className="mr-1 h-3 w-3" />
+                          {orgName ? formatOrgNameForDisplay(orgName, 30) : config.label}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>
+                          {config.label} {orgName ? `at ${orgName}` : ''}
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
                   )
                 })}
               </div>
