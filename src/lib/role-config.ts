@@ -4,7 +4,6 @@ import { Shield, User, Stethoscope, Wrench } from 'lucide-react'
 export const roleConfig: RoleConfigs = {
   medicare_client: {
     label: 'Medicare Client',
-    icon: '🏥',
     iconComponent: Shield,
     color: 'bg-blue-100 text-blue-800',
     fields: [
@@ -32,7 +31,6 @@ export const roleConfig: RoleConfigs = {
   },
   referral_partner: {
     label: 'Referral Partner',
-    icon: '🤝',
     iconComponent: User,
     color: 'bg-green-100 text-green-800',
     fields: [
@@ -49,7 +47,6 @@ export const roleConfig: RoleConfigs = {
   },
   tire_shop: {
     label: 'Tire Shop',
-    icon: '🚗',
     iconComponent: Wrench,
     color: 'bg-orange-100 text-orange-800',
     fields: [
@@ -61,7 +58,6 @@ export const roleConfig: RoleConfigs = {
   },
   dentist: {
     label: 'Dentist',
-    icon: '🦷',
     iconComponent: Stethoscope,
     color: 'bg-purple-100 text-purple-800',
     fields: [
@@ -73,7 +69,6 @@ export const roleConfig: RoleConfigs = {
   },
   other: {
     label: 'Other',
-    icon: '👤',
     iconComponent: User,
     color: 'bg-gray-100 text-gray-800',
     fields: [
@@ -97,7 +92,6 @@ export const getRoleDisplayInfo = (roleType: RoleType) => {
   const config = getRoleConfig(roleType)
   return {
     label: config.label,
-    icon: config.icon,
     color: config.color,
   }
 }

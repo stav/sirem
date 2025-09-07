@@ -9,7 +9,6 @@ export interface RoleField {
 
 export interface RoleConfig {
   label: string
-  icon: string
   iconComponent: React.ComponentType<{ className?: string }>
   color: string
   fields: RoleField[]
