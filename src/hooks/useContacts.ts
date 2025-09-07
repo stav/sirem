@@ -26,6 +26,13 @@ interface ContactForm {
   ssn: string
 }
 
+interface PendingRole {
+  id: string
+  role_type: string
+  role_data: Record<string, any>
+  is_primary: boolean
+}
+
 export function useContacts() {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [loading, setLoading] = useState(true)
@@ -87,28 +94,52 @@ export function useContacts() {
     }
   }
 
-  const createContact = async (contactData: ContactForm) => {
+  const createContact = async (contactData: ContactForm, pendingRoles: PendingRole[] = []) => {
     try {
-      const { error } = await supabase.from('contacts').insert({
-        first_name: contactData.first_name,
-        last_name: contactData.last_name,
-        phone: contactData.phone,
-        email: contactData.email,
-        notes: contactData.notes,
-        birthdate: contactData.birthdate || null,
-        status: contactData.status,
-        medicare_beneficiary_id: contactData.medicare_beneficiary_id || null,
-        ssn: contactData.ssn || null,
-      })
+      // First, create the contact
+      const { data: contactResult, error: contactError } = await supabase
+        .from('contacts')
+        .insert({
+          first_name: contactData.first_name,
+          last_name: contactData.last_name,
+          phone: contactData.phone,
+          email: contactData.email,
+          notes: contactData.notes,
+          birthdate: contactData.birthdate || null,
+          status: contactData.status,
+          medicare_beneficiary_id: contactData.medicare_beneficiary_id || null,
+          ssn: contactData.ssn || null,
+        })
+        .select()
 
-      if (error) {
-        console.error('Error creating contact:', error)
+      if (contactError) {
+        console.error('Error creating contact:', contactError)
         return false
+      }
+
+      const newContact = contactResult[0]
+
+      // Then, create the roles if any
+      if (pendingRoles.length > 0) {
+        const rolesToInsert = pendingRoles.map((role) => ({
+          contact_id: newContact.id,
+          role_type: role.role_type,
+          role_data: role.role_data,
+          is_primary: role.is_primary,
+          is_active: true,
+        }))
+
+        const { error: rolesError } = await supabase.from('contact_roles').insert(rolesToInsert)
+
+        if (rolesError) {
+          console.error('Error creating contact roles:', rolesError)
+          // Contact was created but roles failed - we could rollback here if needed
+        }
       }
 
       logger.contactCreated(`${contactData.first_name} ${contactData.last_name}`)
       await fetchContacts()
-      return true
+      return newContact
     } catch (error) {
       console.error('Error creating contact:', error)
       return false

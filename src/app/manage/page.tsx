@@ -75,6 +75,7 @@ export default function ManagePage() {
   const [isSubmittingContact, setIsSubmittingContact] = useState(false)
   const [refreshTimestamp, setRefreshTimestamp] = useState<number>(Date.now())
   const [roleRefreshTrigger, setRoleRefreshTrigger] = useState<number>(0)
+  const [pendingRoles, setPendingRoles] = useState<any[]>([])
 
   // Update selectedContact when contacts list changes
   useEffect(() => {
@@ -165,6 +166,7 @@ export default function ManagePage() {
       medicare_beneficiary_id: '',
       ssn: '',
     })
+    setPendingRoles([])
     setShowContactForm(true)
   }
 
@@ -191,7 +193,7 @@ export default function ManagePage() {
     try {
       const result = editingContact
         ? await updateContact(editingContact.id, contactForm)
-        : await createContact(contactForm)
+        : await createContact(contactForm, pendingRoles)
 
       if (result) {
         const contactName = `${contactForm.first_name} ${contactForm.last_name}`
@@ -393,6 +395,7 @@ export default function ManagePage() {
       medicare_beneficiary_id: '',
       ssn: '',
     })
+    setPendingRoles([])
   }
 
   const closeActionForm = () => {
@@ -512,6 +515,7 @@ export default function ManagePage() {
               fetchContacts()
               setRoleRefreshTrigger(Date.now())
             }}
+            onPendingRolesChange={setPendingRoles}
           />
 
           {/* Action Form Modal */}

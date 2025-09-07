@@ -14,9 +14,18 @@ import type { Database } from '@/lib/supabase'
 import { supabase } from '@/lib/supabase'
 import { AddressType } from '@/lib/address-types'
 import ContactRoleManagement from './ContactViewModal/ContactRoleManagement'
+import ContactRoleManagementNew from './ContactRoleManagementNew'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 type Address = Database['public']['Tables']['addresses']['Row']
+
+// Type for a role that hasn't been saved to the database yet
+type PendingRole = {
+  id: string // temporary ID for React key
+  role_type: string
+  role_data: Record<string, any>
+  is_primary: boolean
+}
 
 interface ContactFormData {
   first_name: string
@@ -50,6 +59,7 @@ interface ContactFormProps {
   onCancel: () => void
   isLoading?: boolean
   onRefreshContact?: () => void
+  onPendingRolesChange?: (roles: PendingRole[]) => void
 }
 
 export default function ContactForm({
@@ -61,6 +71,7 @@ export default function ContactForm({
   onCancel,
   isLoading = false,
   onRefreshContact,
+  onPendingRolesChange,
 }: ContactFormProps) {
   // Address management state
   const [addresses, setAddresses] = useState<Address[]>([])
@@ -77,6 +88,7 @@ export default function ContactForm({
     source: '',
   })
   const [addressSubmitting, setAddressSubmitting] = useState(false)
+  const [pendingRoles, setPendingRoles] = useState<PendingRole[]>([])
 
   const { createAddress, updateAddress, deleteAddress } = useAddresses()
 
@@ -255,9 +267,9 @@ export default function ContactForm({
             />
           </div>
 
-          {/* Contact Roles Management - Only show when editing an existing contact */}
-          {editingContact && (
-            <div className="space-y-2">
+          {/* Contact Roles Management */}
+          <div className="space-y-2">
+            {editingContact ? (
               <ContactRoleManagement
                 contact={editingContact}
                 onRoleChange={() => {
@@ -265,8 +277,16 @@ export default function ContactForm({
                   onRefreshContact?.()
                 }}
               />
-            </div>
-          )}
+            ) : (
+              <ContactRoleManagementNew
+                roles={pendingRoles}
+                onRolesChange={(roles) => {
+                  setPendingRoles(roles)
+                  onPendingRolesChange?.(roles)
+                }}
+              />
+            )}
+          </div>
 
           <div>
             <Label htmlFor="status">Status</Label>
