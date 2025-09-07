@@ -1,4 +1,10 @@
-export type RoleType = 'medicare_client' | 'referral_partner' | 'tire_shop' | 'dentist' | 'other'
+export type RoleType =
+  | 'medicare_client'
+  | 'referral_partner'
+  | 'tire_shop'
+  | 'dentist'
+  | 'presentation_partner'
+  | 'other'
 
 export interface RoleField {
   key: string
@@ -53,9 +59,24 @@ export interface DentistData {
   notes?: string
 }
 
+export interface PresentationPartnerData {
+  organization_name?: string
+  presentation_type?: string
+  contact_person?: string
+  presentation_topics?: string
+  audience_size?: string
+  notes?: string
+}
+
 export interface OtherRoleData {
   role_description?: string
   notes?: string
 }
 
-export type RoleData = MedicareClientData | ReferralPartnerData | TireShopData | DentistData | OtherRoleData
+export type RoleData =
+  | MedicareClientData
+  | ReferralPartnerData
+  | TireShopData
+  | DentistData
+  | PresentationPartnerData
+  | OtherRoleData

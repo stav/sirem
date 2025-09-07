@@ -1,5 +1,5 @@
 import { RoleConfigs, RoleType, RoleConfig } from '@/types/roles'
-import { Shield, User, Stethoscope, Wrench } from 'lucide-react'
+import { Shield, User, Stethoscope, Wrench, Presentation } from 'lucide-react'
 
 export const roleConfig: RoleConfigs = {
   medicare_client: {
@@ -42,6 +42,29 @@ export const roleConfig: RoleConfigs = {
         options: ['Library', 'Healthcare', 'Community', 'Other'],
       },
       { key: 'commission_rate', label: 'Commission Rate', type: 'text' },
+      { key: 'notes', label: 'Notes', type: 'textarea' },
+    ],
+  },
+  presentation_partner: {
+    label: 'Presentation Partner',
+    iconComponent: Presentation,
+    color: 'bg-indigo-100 text-indigo-800',
+    fields: [
+      { key: 'organization_name', label: 'Organization Name', type: 'text' },
+      {
+        key: 'presentation_type',
+        label: 'Presentation Type',
+        type: 'select',
+        options: ['Educational', 'Marketing', 'Informational', 'Training', 'Other'],
+      },
+      { key: 'contact_person', label: 'Contact Person', type: 'text' },
+      { key: 'presentation_topics', label: 'Presentation Topics', type: 'textarea' },
+      {
+        key: 'audience_size',
+        label: 'Audience Size',
+        type: 'select',
+        options: ['Small (1-10)', 'Medium (11-50)', 'Large (51-100)', 'Very Large (100+)'],
+      },
       { key: 'notes', label: 'Notes', type: 'textarea' },
     ],
   },
@@ -115,5 +138,6 @@ export const roleIconMap: Record<RoleType, React.ComponentType<{ className?: str
   referral_partner: getRoleIcon('referral_partner'),
   tire_shop: getRoleIcon('tire_shop'),
   dentist: getRoleIcon('dentist'),
+  presentation_partner: getRoleIcon('presentation_partner'),
   other: getRoleIcon('other'),
 }
