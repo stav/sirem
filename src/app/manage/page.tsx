@@ -74,6 +74,7 @@ export default function ManagePage() {
   const [singleContactView, setSingleContactView] = useState(false)
   const [isSubmittingContact, setIsSubmittingContact] = useState(false)
   const [refreshTimestamp, setRefreshTimestamp] = useState<number>(Date.now())
+  const [roleRefreshTrigger, setRoleRefreshTrigger] = useState<number>(0)
 
   // Update selectedContact when contacts list changes
   useEffect(() => {
@@ -507,7 +508,10 @@ export default function ManagePage() {
             onSubmit={handleContactSubmit}
             onCancel={closeContactForm}
             isLoading={isSubmittingContact}
-            onRefreshContact={fetchContacts}
+            onRefreshContact={() => {
+              fetchContacts()
+              setRoleRefreshTrigger(Date.now())
+            }}
           />
 
           {/* Action Form Modal */}
@@ -545,6 +549,7 @@ export default function ManagePage() {
               handleEditContact(contact)
             }}
             onRefresh={fetchContacts}
+            roleRefreshTrigger={roleRefreshTrigger}
           />
         </div>
       </div>

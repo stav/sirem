@@ -43,6 +43,7 @@ type GenericRoleData = Record<string, unknown>
 
 interface ContactRolesDisplayProps {
   contact: Contact
+  refreshTrigger?: number
 }
 
 // Using centralized icon mapping from role-config.ts
@@ -160,39 +161,46 @@ function GenericRoleDisplay({ roleData }: { roleData: GenericRoleData }) {
   )
 }
 
-export default function ContactRolesDisplay({ contact }: ContactRolesDisplayProps) {
+export default function ContactRolesDisplay({ contact, refreshTrigger }: ContactRolesDisplayProps) {
   const [roles, setRoles] = useState<ContactRole[]>([])
   const [loading, setLoading] = useState(false)
 
-  useEffect(() => {
+  const fetchRoles = React.useCallback(async () => {
     if (!contact?.id) return
 
-    const fetchRoles = async () => {
-      setLoading(true)
-      try {
-        const { data, error } = await supabase
-          .from('contact_roles')
-          .select('*')
-          .eq('contact_id', contact.id)
-          .eq('is_active', true)
-          .order('is_primary', { ascending: false })
-          .order('created_at', { ascending: true })
+    setLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('contact_roles')
+        .select('*')
+        .eq('contact_id', contact.id)
+        .eq('is_active', true)
+        .order('is_primary', { ascending: false })
+        .order('created_at', { ascending: true })
 
-        if (error) {
-          console.error('Error fetching contact roles:', error)
-          return
-        }
-
-        setRoles(data || [])
-      } catch (error) {
+      if (error) {
         console.error('Error fetching contact roles:', error)
-      } finally {
-        setLoading(false)
+        return
       }
-    }
 
-    fetchRoles()
+      setRoles(data || [])
+    } catch (error) {
+      console.error('Error fetching contact roles:', error)
+    } finally {
+      setLoading(false)
+    }
   }, [contact?.id])
+
+  useEffect(() => {
+    fetchRoles()
+  }, [fetchRoles])
+
+  // Listen for refresh trigger from parent component
+  useEffect(() => {
+    if (refreshTrigger && refreshTrigger > 0) {
+      fetchRoles()
+    }
+  }, [refreshTrigger, fetchRoles])
 
   if (loading) {
     return (
