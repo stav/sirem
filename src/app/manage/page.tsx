@@ -102,6 +102,7 @@ export default function ManagePage() {
     updateAction,
     deleteAction,
     toggleActionComplete,
+    completeActionWithCreatedDate,
   } = useActions()
   const { toast } = useToast()
 
@@ -389,6 +390,20 @@ export default function ManagePage() {
     }
   }
 
+  const handleCompleteActionWithCreatedDate = async (action: Action) => {
+    const success = await completeActionWithCreatedDate(action)
+    if (success) {
+      const contact = contacts.find((c) => c.id === action.contact_id)
+      const contactName = contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
+
+      toast({
+        title: 'Action completed',
+        description: `"${action.title}" for ${contactName} was marked as complete using the created date.`,
+      })
+      logger.info(`Action completed with created date: ${action.title} for ${contactName}`, 'action_complete_created')
+    }
+  }
+
   // Individual modal close handlers
   const closeContactForm = () => {
     setShowContactForm(false)
@@ -496,6 +511,7 @@ export default function ManagePage() {
               selectedContact={selectedContact}
               onAddAction={handleAddAction}
               onToggleComplete={handleToggleActionComplete}
+              onCompleteWithCreatedDate={handleCompleteActionWithCreatedDate}
               onEditAction={handleEditAction}
               onViewAction={handleViewAction}
               onDeleteAction={handleDeleteAction}

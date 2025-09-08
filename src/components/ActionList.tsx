@@ -18,6 +18,7 @@ interface ActionListProps {
   selectedContact: Contact | null
   onAddAction: () => void
   onToggleComplete: (action: Action) => void
+  onCompleteWithCreatedDate: (action: Action) => void
   onEditAction: (action: Action) => void
   onViewAction: (action: Action) => void
   onDeleteAction: (actionId: string) => void
@@ -32,6 +33,7 @@ export default function ActionList({
   selectedContact,
   onAddAction,
   onToggleComplete,
+  onCompleteWithCreatedDate,
   onEditAction,
   onViewAction,
   onDeleteAction,
@@ -260,6 +262,7 @@ export default function ActionList({
                   })()}
                   index={index + 1}
                   onToggleComplete={onToggleComplete}
+                  onCompleteWithCreatedDate={onCompleteWithCreatedDate}
                   onEdit={onEditAction}
                   onView={onViewAction}
                   onDelete={onDeleteAction}
@@ -287,6 +290,7 @@ export default function ActionList({
                     contactName={contactName}
                     index={index + 1}
                     onToggleComplete={onToggleComplete}
+                    onCompleteWithCreatedDate={onCompleteWithCreatedDate}
                     onEdit={onEditAction}
                     onView={onViewAction}
                     onDelete={onDeleteAction}
