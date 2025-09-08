@@ -19,11 +19,13 @@ import ContactRoleManagementNew from './ContactRoleManagementNew'
 type Contact = Database['public']['Tables']['contacts']['Row']
 type Address = Database['public']['Tables']['addresses']['Row']
 
+import { RoleData, RoleType } from '@/types/roles'
+
 // Type for a role that hasn't been saved to the database yet
 type PendingRole = {
   id: string // temporary ID for React key
-  role_type: string
-  role_data: Record<string, any>
+  role_type: RoleType
+  role_data: RoleData
   is_primary: boolean
 }
 

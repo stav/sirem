@@ -17,19 +17,33 @@ import { getPrimaryAddress } from '@/lib/address-utils'
 import { usePlanEnrollments } from '@/hooks/usePlanEnrollments'
 
 import { getRoleDisplayInfo, roleIconMap } from '@/lib/role-config'
-import { RoleType } from '@/types/roles'
+import {
+  RoleType,
+  ReferralPartnerData,
+  PresentationPartnerData,
+  TireShopData,
+  DentistData,
+  OtherRoleData,
+} from '@/types/roles'
 
 // Utility function to extract organization name from role data
-const getOrganizationName = (roleType: string, roleData: any): string | null => {
+const getOrganizationName = (
+  roleType: string,
+  roleData: Database['public']['Tables']['contact_roles']['Row']['role_data']
+): string | null => {
+  if (!roleData || typeof roleData !== 'object') return null
+
   switch (roleType) {
     case 'referral_partner':
-      return roleData?.company
+      return (roleData as ReferralPartnerData)?.company || null
     case 'presentation_partner':
-      return roleData?.organization_name
+      return (roleData as PresentationPartnerData)?.organization_name || null
     case 'tire_shop':
-      return roleData?.shop_name
+      return (roleData as TireShopData)?.shop_name || null
     case 'dentist':
-      return roleData?.practice_name
+      return (roleData as DentistData)?.practice_name || null
+    case 'other':
+      return (roleData as OtherRoleData)?.role_description || null
     default:
       return null
   }

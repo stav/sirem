@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { logger } from '@/lib/logger'
 import type { Database } from '@/lib/supabase'
+import { RoleData, RoleType } from '@/types/roles'
+import type { Json } from '@/lib/supabase-types'
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
   addresses?: Database['public']['Tables']['addresses']['Row'][]
@@ -28,8 +30,8 @@ interface ContactForm {
 
 interface PendingRole {
   id: string
-  role_type: string
-  role_data: Record<string, any>
+  role_type: RoleType
+  role_data: RoleData
   is_primary: boolean
 }
 
@@ -124,7 +126,7 @@ export function useContacts() {
         const rolesToInsert = pendingRoles.map((role) => ({
           contact_id: newContact.id,
           role_type: role.role_type,
-          role_data: role.role_data,
+          role_data: role.role_data as Json, // Cast to Json type for Supabase
           is_primary: role.is_primary,
           is_active: true,
         }))

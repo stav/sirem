@@ -9,8 +9,10 @@ export type RoleType =
 export interface RoleField {
   key: string
   label: string
-  type: 'text' | 'textarea' | 'select' | 'checkbox' | 'date'
+  type: 'text' | 'textarea' | 'select' | 'checkbox' | 'date' | 'email' | 'number'
   options?: string[]
+  placeholder?: string
+  required?: boolean
 }
 
 export interface RoleConfig {

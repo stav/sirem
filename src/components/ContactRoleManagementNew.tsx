@@ -2,7 +2,7 @@ import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Plus, Edit, Trash2, Save, X } from 'lucide-react'
 import { getRoleConfig, getAllRoleTypes, roleIconMap } from '@/lib/role-config'
-import { RoleType, RoleField } from '@/types/roles'
+import { RoleType, RoleField, RoleData } from '@/types/roles'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
@@ -14,7 +14,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 type PendingRole = {
   id: string // temporary ID for React key
   role_type: RoleType
-  role_data: Record<string, any>
+  role_data: RoleData
   is_primary: boolean
 }
 
@@ -27,8 +27,7 @@ export default function ContactRoleManagementNew({ roles, onRolesChange }: Conta
   const [editingRole, setEditingRole] = useState<string | null>(null)
   const [showAddForm, setShowAddForm] = useState(false)
   const [newRoleType, setNewRoleType] = useState<RoleType>('medicare_client')
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [roleData, setRoleData] = useState<Record<string, any>>({})
+  const [roleData, setRoleData] = useState<RoleData>({})
   const [isPrimary, setIsPrimary] = useState(false)
 
   const handleAddRole = (e?: React.MouseEvent) => {
@@ -98,7 +97,12 @@ export default function ContactRoleManagementNew({ roles, onRolesChange }: Conta
     setIsPrimary(false)
   }
 
-  const renderField = (field: RoleField, value: any, onChange: (value: any) => void, disabled = false) => {
+  const renderField = (
+    field: RoleField,
+    value: string | boolean | number | undefined,
+    onChange: (value: string | boolean | number) => void,
+    disabled = false
+  ) => {
     const fieldId = `role-${field.key}`
 
     switch (field.type) {
@@ -106,7 +110,7 @@ export default function ContactRoleManagementNew({ roles, onRolesChange }: Conta
         return (
           <Input
             id={fieldId}
-            value={value || ''}
+            value={String(value || '')}
             onChange={(e) => onChange(e.target.value)}
             placeholder={field.placeholder}
             disabled={disabled}
@@ -117,7 +121,7 @@ export default function ContactRoleManagementNew({ roles, onRolesChange }: Conta
           <Input
             id={fieldId}
             type="email"
-            value={value || ''}
+            value={String(value || '')}
             onChange={(e) => onChange(e.target.value)}
             placeholder={field.placeholder}
             disabled={disabled}
@@ -128,7 +132,7 @@ export default function ContactRoleManagementNew({ roles, onRolesChange }: Conta
           <Input
             id={fieldId}
             type="number"
-            value={value || ''}
+            value={String(value || '')}
             onChange={(e) => onChange(e.target.value)}
             placeholder={field.placeholder}
             disabled={disabled}
@@ -139,14 +143,14 @@ export default function ContactRoleManagementNew({ roles, onRolesChange }: Conta
           <Input
             id={fieldId}
             type="date"
-            value={value || ''}
+            value={String(value || '')}
             onChange={(e) => onChange(e.target.value)}
             disabled={disabled}
           />
         )
       case 'select':
         return (
-          <Select value={value || ''} onValueChange={onChange} disabled={disabled}>
+          <Select value={String(value || '')} onValueChange={(val) => onChange(val)} disabled={disabled}>
             <SelectTrigger>
               <SelectValue placeholder={field.placeholder} />
             </SelectTrigger>
@@ -163,7 +167,7 @@ export default function ContactRoleManagementNew({ roles, onRolesChange }: Conta
         return (
           <textarea
             id={fieldId}
-            value={value || ''}
+            value={String(value || '')}
             onChange={(e) => onChange(e.target.value)}
             placeholder={field.placeholder}
             disabled={disabled}
@@ -173,7 +177,12 @@ export default function ContactRoleManagementNew({ roles, onRolesChange }: Conta
       case 'checkbox':
         return (
           <div className="flex items-center space-x-2">
-            <Switch id={fieldId} checked={value || false} onCheckedChange={onChange} disabled={disabled} />
+            <Switch
+              id={fieldId}
+              checked={Boolean(value)}
+              onCheckedChange={(checked) => onChange(checked)}
+              disabled={disabled}
+            />
             <Label htmlFor={fieldId} className="text-sm">
               {value ? 'Yes' : 'No'}
             </Label>
@@ -183,7 +192,7 @@ export default function ContactRoleManagementNew({ roles, onRolesChange }: Conta
         return (
           <Input
             id={fieldId}
-            value={value || ''}
+            value={String(value || '')}
             onChange={(e) => onChange(e.target.value)}
             placeholder={field.placeholder}
             disabled={disabled}
@@ -222,8 +231,8 @@ export default function ContactRoleManagementNew({ roles, onRolesChange }: Conta
               </Label>
               {renderField(
                 field,
-                roleData[field.key],
-                (value) => setRoleData({ ...roleData, [field.key]: value }),
+                (roleData as Record<string, unknown>)[field.key] as string | boolean | number | undefined,
+                (value) => setRoleData({ ...roleData, [field.key]: value } as RoleData),
                 false
               )}
             </div>

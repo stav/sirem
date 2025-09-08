@@ -13,12 +13,21 @@ import { useActions } from '@/hooks/useActions'
 import type { Database } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 import { logger } from '@/lib/logger'
+import { RoleData, RoleType } from '@/types/roles'
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
   addresses?: Database['public']['Tables']['addresses']['Row'][]
   contact_roles?: Database['public']['Tables']['contact_roles']['Row'][]
 }
 type Action = Database['public']['Tables']['actions']['Row']
+
+// Type for a role that hasn't been saved to the database yet
+type PendingRole = {
+  id: string // temporary ID for React key
+  role_type: RoleType
+  role_data: RoleData
+  is_primary: boolean
+}
 
 interface ContactFormData {
   first_name: string
@@ -75,7 +84,7 @@ export default function ManagePage() {
   const [isSubmittingContact, setIsSubmittingContact] = useState(false)
   const [refreshTimestamp, setRefreshTimestamp] = useState<number>(Date.now())
   const [roleRefreshTrigger, setRoleRefreshTrigger] = useState<number>(0)
-  const [pendingRoles, setPendingRoles] = useState<any[]>([])
+  const [pendingRoles, setPendingRoles] = useState<PendingRole[]>([])
 
   // Update selectedContact when contacts list changes
   useEffect(() => {
