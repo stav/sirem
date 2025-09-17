@@ -108,6 +108,19 @@ export default function ContactList({
             }
           })
         }
+      } else if (trimmedTerm.startsWith('r:')) {
+        // Role filtering: r:role_type
+        const roleQuery = trimmedTerm.substring(2).toLowerCase()
+        if (roleQuery) {
+          contacts.forEach((contact) => {
+            const contactRoles = contact.contact_roles || []
+            if (
+              contactRoles.some((role) => role.role_type?.toLowerCase().includes(roleQuery) && role.is_active !== false)
+            ) {
+              matchingContactIds.add(contact.id)
+            }
+          })
+        }
       } else {
         const numericValue = parseInt(trimmedTerm, 10)
         if (!isNaN(numericValue) && numericValue > 0 && numericValue.toString() === trimmedTerm) {
