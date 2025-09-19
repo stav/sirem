@@ -7,7 +7,19 @@ export const roleConfig: RoleConfigs = {
     iconComponent: Shield,
     color: 'bg-blue-100 text-blue-800',
     fields: [
-      { key: 'gender', label: 'Gender', type: 'select', options: ['male', 'female', 'other'] },
+      {
+        key: 'gender',
+        label: 'Gender',
+        type: 'select',
+        options: ['male', 'female'],
+      },
+      {
+        key: 'medicare_beneficiary_id',
+        label: 'Medicare Beneficiary ID',
+        type: 'text',
+      },
+      { key: 'part_a_effective', label: 'Part A Effective', type: 'date' },
+      { key: 'part_b_effective', label: 'Part B Effective', type: 'date' },
       { key: 'height', label: 'Height', type: 'text' },
       { key: 'weight', label: 'Weight', type: 'text' },
       {
@@ -16,13 +28,11 @@ export const roleConfig: RoleConfigs = {
         type: 'select',
         options: ['Yes', 'No'],
       },
-      { key: 'part_a_effective', label: 'Part A Effective', type: 'date' },
-      { key: 'part_b_effective', label: 'Part B Effective', type: 'date' },
       {
         key: 'subsidy_level',
         label: 'Subsidy Level',
         type: 'select',
-        options: ['Yes', 'No', 'Not Answered', "I Don't Know"],
+        options: ['Yes', 'No', 'LIS', 'LIS-1', 'LIS-2', 'LIS-3'],
       },
       {
         key: 'marital_status',
@@ -36,7 +46,6 @@ export const roleConfig: RoleConfigs = {
         type: 'select',
         options: ['Yes', 'No'],
       },
-      { key: 'medicare_beneficiary_id', label: 'Medicare Beneficiary ID', type: 'text' },
     ],
   },
   referral_partner: {
@@ -44,15 +53,16 @@ export const roleConfig: RoleConfigs = {
     iconComponent: User,
     color: 'bg-green-100 text-green-800',
     fields: [
-      { key: 'company', label: 'Company', type: 'text' },
+      { key: 'company', label: 'Company', type: 'text', placeholder: 'Enter company name' },
       {
         key: 'referral_type',
         label: 'Referral Type',
         type: 'select',
         options: ['Library', 'Healthcare', 'Community', 'Other'],
+        placeholder: 'Select Referral Type',
       },
-      { key: 'commission_rate', label: 'Commission Rate', type: 'text' },
-      { key: 'notes', label: 'Notes', type: 'textarea' },
+      { key: 'commission_rate', label: 'Commission Rate', type: 'text', placeholder: 'Enter commission rate' },
+      { key: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Enter notes' },
     ],
   },
   presentation_partner: {
@@ -60,22 +70,29 @@ export const roleConfig: RoleConfigs = {
     iconComponent: Presentation,
     color: 'bg-indigo-100 text-indigo-800',
     fields: [
-      { key: 'organization_name', label: 'Organization Name', type: 'text' },
+      { key: 'organization_name', label: 'Organization Name', type: 'text', placeholder: 'Enter organization name' },
       {
         key: 'presentation_type',
         label: 'Presentation Type',
         type: 'select',
         options: ['Educational', 'Marketing', 'Informational', 'Training', 'Other'],
+        placeholder: 'Select Presentation Type',
       },
-      { key: 'contact_person', label: 'Contact Person', type: 'text' },
-      { key: 'presentation_topics', label: 'Presentation Topics', type: 'textarea' },
+      { key: 'contact_person', label: 'Contact Person', type: 'text', placeholder: 'Enter contact person' },
+      {
+        key: 'presentation_topics',
+        label: 'Presentation Topics',
+        type: 'textarea',
+        placeholder: 'Enter presentation topics',
+      },
       {
         key: 'audience_size',
         label: 'Audience Size',
         type: 'select',
         options: ['Small (1-10)', 'Medium (11-50)', 'Large (51-100)', 'Very Large (100+)'],
+        placeholder: 'Select Audience Size',
       },
-      { key: 'notes', label: 'Notes', type: 'textarea' },
+      { key: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Enter notes' },
     ],
   },
   tire_shop: {
@@ -83,10 +100,10 @@ export const roleConfig: RoleConfigs = {
     iconComponent: Wrench,
     color: 'bg-orange-100 text-orange-800',
     fields: [
-      { key: 'shop_name', label: 'Shop Name', type: 'text' },
-      { key: 'location', label: 'Location', type: 'text' },
-      { key: 'services', label: 'Services', type: 'textarea' },
-      { key: 'contact_person', label: 'Contact Person', type: 'text' },
+      { key: 'shop_name', label: 'Shop Name', type: 'text', placeholder: 'Enter shop name' },
+      { key: 'location', label: 'Location', type: 'text', placeholder: 'Enter location' },
+      { key: 'services', label: 'Services', type: 'textarea', placeholder: 'Enter services offered' },
+      { key: 'contact_person', label: 'Contact Person', type: 'text', placeholder: 'Enter contact person' },
     ],
   },
   dentist: {
@@ -94,15 +111,16 @@ export const roleConfig: RoleConfigs = {
     iconComponent: Stethoscope,
     color: 'bg-purple-100 text-purple-800',
     fields: [
-      { key: 'practice_name', label: 'Practice Name', type: 'text' },
-      { key: 'specialty', label: 'Specialty', type: 'text' },
+      { key: 'practice_name', label: 'Practice Name', type: 'text', placeholder: 'Enter practice name' },
+      { key: 'specialty', label: 'Specialty', type: 'text', placeholder: 'Enter specialty' },
       {
         key: 'accepts_medicaid',
         label: 'Accepts Medicaid',
         type: 'select',
         options: ['Yes', 'No'],
+        placeholder: 'Select Medicaid Acceptance',
       },
-      { key: 'notes', label: 'Notes', type: 'textarea' },
+      { key: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Enter notes' },
     ],
   },
   other: {
@@ -110,8 +128,8 @@ export const roleConfig: RoleConfigs = {
     iconComponent: User,
     color: 'bg-gray-100 text-gray-800',
     fields: [
-      { key: 'role_description', label: 'Role Description', type: 'text' },
-      { key: 'notes', label: 'Notes', type: 'textarea' },
+      { key: 'role_description', label: 'Role Description', type: 'text', placeholder: 'Enter role description' },
+      { key: 'notes', label: 'Notes', type: 'textarea', placeholder: 'Enter notes' },
     ],
   },
 }

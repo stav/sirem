@@ -237,6 +237,9 @@ export default function ManagePage() {
           }
         }
 
+        // Refresh the contacts list to get updated data
+        await fetchContacts()
+
         toast({
           title: `Contact ${action}`,
           description: `${contactName} was successfully ${action}.`,
@@ -549,6 +552,7 @@ export default function ManagePage() {
               setRoleRefreshTrigger(Date.now())
             }}
             onPendingRolesChange={setPendingRoles}
+            roleRefreshTrigger={roleRefreshTrigger}
           />
 
           {/* Action Form Modal */}

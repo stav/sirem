@@ -14,6 +14,12 @@ export function usePlanEnrollments(contactId?: string) {
   const [error, setError] = useState<string | null>(null)
 
   const fetchEnrollments = async (id: string) => {
+    if (!id) {
+      console.warn('fetchEnrollments called with empty contact ID')
+      setEnrollments([])
+      return
+    }
+
     setLoading(true)
     setError(null)
     try {
@@ -32,7 +38,13 @@ export function usePlanEnrollments(contactId?: string) {
       if (error) throw error
       setEnrollments((data as Enrollment[]) || [])
     } catch (err) {
-      console.error('Error fetching enrollments:', err)
+      console.error('Error fetching enrollments:', {
+        error: err,
+        contactId: id,
+        errorType: typeof err,
+        errorMessage: err instanceof Error ? err.message : 'Unknown error',
+        errorStack: err instanceof Error ? err.stack : undefined,
+      })
       setError(err instanceof Error ? err.message : 'Failed to fetch enrollments')
     } finally {
       setLoading(false)
@@ -101,7 +113,13 @@ export function usePlanEnrollments(contactId?: string) {
   }
 
   useEffect(() => {
-    if (contactId) fetchEnrollments(contactId)
+    if (contactId) {
+      console.log('usePlanEnrollments: Fetching enrollments for contact:', contactId)
+      fetchEnrollments(contactId)
+    } else {
+      console.log('usePlanEnrollments: No contactId provided, clearing enrollments')
+      setEnrollments([])
+    }
   }, [contactId])
 
   return { enrollments, loading, error, fetchEnrollments, createEnrollment, updateEnrollment, deleteEnrollment }

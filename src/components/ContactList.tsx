@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react'
+import React, { useState, useEffect, useMemo } from 'react'
 import { Plus, ArrowLeft, ChevronDown, ChevronUp, X, List, Filter } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -17,6 +17,7 @@ type Contact = Database['public']['Tables']['contacts']['Row'] & {
       label: string
     }
   }[]
+  contact_roles?: Database['public']['Tables']['contact_roles']['Row'][]
 }
 
 interface ContactListProps {
