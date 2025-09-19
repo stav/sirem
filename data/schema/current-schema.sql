@@ -83,6 +83,21 @@ CREATE TYPE public.plan_type AS ENUM (
 );
 
 
+--
+-- Name: update_updated_at_column(); Type: FUNCTION; Schema: public; Owner: -
+--
+
+CREATE FUNCTION public.update_updated_at_column() RETURNS trigger
+    LANGUAGE plpgsql SECURITY DEFINER
+    SET search_path TO 'public', 'extensions'
+    AS $$
+BEGIN
+  NEW.updated_at := timezone('America/New_York'::text, now());
+  RETURN NEW;
+END;
+$$;
+
+
 SET default_tablespace = '';
 
 SET default_table_access_method = heap;
@@ -93,8 +108,8 @@ SET default_table_access_method = heap;
 
 CREATE TABLE public.actions (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    created_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL,
+    updated_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL,
     contact_id uuid NOT NULL,
     title text NOT NULL,
     description text,
@@ -117,8 +132,8 @@ CREATE TABLE public.actions (
 
 CREATE TABLE public.activities (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    created_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL,
+    updated_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL,
     contact_id uuid NOT NULL,
     activity_type text NOT NULL,
     title text NOT NULL,
@@ -136,8 +151,8 @@ CREATE TABLE public.activities (
 
 CREATE TABLE public.addresses (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    created_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL,
+    updated_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL,
     contact_id uuid NOT NULL,
     address1 text,
     address2 text,
@@ -178,8 +193,8 @@ CREATE TABLE public.contact_roles (
     role_data jsonb DEFAULT '{}'::jsonb,
     is_primary boolean DEFAULT false,
     is_active boolean DEFAULT true,
-    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL
+    created_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL,
+    updated_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL
 );
 
 
@@ -217,7 +232,7 @@ COMMENT ON COLUMN public.contact_roles.is_primary IS 'Whether this is the primar
 
 CREATE TABLE public.contact_tags (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    created_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL,
     contact_id uuid NOT NULL,
     tag_id uuid NOT NULL,
     metadata jsonb,
@@ -232,8 +247,8 @@ CREATE TABLE public.contact_tags (
 
 CREATE TABLE public.contacts (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    created_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL,
+    updated_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL,
     prefix text,
     first_name text NOT NULL,
     last_name text NOT NULL,
@@ -278,8 +293,8 @@ COMMENT ON COLUMN public.contacts.ssn IS 'Social Security Number (stored as text
 
 CREATE TABLE public.emails (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    created_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL,
+    updated_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL,
     contact_id uuid NOT NULL,
     email_address text NOT NULL,
     email_label text,
@@ -293,8 +308,8 @@ CREATE TABLE public.emails (
 
 CREATE TABLE public.enrollments (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    created_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL,
+    updated_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL,
     contact_id uuid NOT NULL,
     plan_id uuid NOT NULL,
     enrollment_status public.enrollment_status,
@@ -317,7 +332,7 @@ CREATE TABLE public.enrollments (
 
 CREATE TABLE public.lead_statuses (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    created_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL,
     name text NOT NULL,
     description text,
     color text DEFAULT '#6B7280'::text
@@ -330,8 +345,8 @@ CREATE TABLE public.lead_statuses (
 
 CREATE TABLE public.phones (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    created_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL,
+    updated_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL,
     contact_id uuid NOT NULL,
     phone_number text NOT NULL,
     phone_label text,
@@ -346,8 +361,8 @@ CREATE TABLE public.phones (
 
 CREATE TABLE public.plans (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    created_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL,
+    updated_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL,
     name text NOT NULL,
     plan_type public.plan_type,
     carrier public.carrier,
@@ -385,8 +400,8 @@ CREATE TABLE public.plans (
 
 CREATE TABLE public.reminders (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
-    updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    created_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL,
+    updated_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL,
     contact_id uuid NOT NULL,
     title text NOT NULL,
     description text,
@@ -406,7 +421,7 @@ CREATE TABLE public.reminders (
 
 CREATE TABLE public.tag_categories (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    created_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL,
     name text NOT NULL,
     color text DEFAULT '#A9A9A9'::text,
     is_active boolean DEFAULT true NOT NULL,
@@ -420,7 +435,7 @@ CREATE TABLE public.tag_categories (
 
 CREATE TABLE public.tags (
     id uuid DEFAULT gen_random_uuid() NOT NULL,
-    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    created_at timestamp with time zone DEFAULT timezone('America/New_York'::text, now()) NOT NULL,
     label text NOT NULL,
     category_id uuid NOT NULL,
     icon_url text,
@@ -836,6 +851,69 @@ CREATE INDEX idx_reminders_contact_id ON public.reminders USING btree (contact_i
 --
 
 CREATE INDEX idx_reminders_date ON public.reminders USING btree (reminder_date);
+
+
+--
+-- Name: actions trigger_update_actions_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trigger_update_actions_updated_at BEFORE UPDATE ON public.actions FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: activities trigger_update_activities_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trigger_update_activities_updated_at BEFORE UPDATE ON public.activities FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: addresses trigger_update_addresses_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trigger_update_addresses_updated_at BEFORE UPDATE ON public.addresses FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: contacts trigger_update_contacts_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trigger_update_contacts_updated_at BEFORE UPDATE ON public.contacts FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: emails trigger_update_emails_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trigger_update_emails_updated_at BEFORE UPDATE ON public.emails FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: enrollments trigger_update_enrollments_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trigger_update_enrollments_updated_at BEFORE UPDATE ON public.enrollments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: phones trigger_update_phones_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trigger_update_phones_updated_at BEFORE UPDATE ON public.phones FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: plans trigger_update_plans_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trigger_update_plans_updated_at BEFORE UPDATE ON public.plans FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+
+
+--
+-- Name: reminders trigger_update_reminders_updated_at; Type: TRIGGER; Schema: public; Owner: -
+--
+
+CREATE TRIGGER trigger_update_reminders_updated_at BEFORE UPDATE ON public.reminders FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 
 --
