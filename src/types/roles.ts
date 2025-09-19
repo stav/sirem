@@ -31,12 +31,12 @@ export interface MedicareClientData {
   gender?: string
   height?: string
   weight?: string
-  has_medicaid?: boolean
+  has_medicaid?: string
   part_a_effective?: string
   part_b_effective?: string
   subsidy_level?: string
   marital_status?: string
-  is_tobacco_user?: boolean
+  is_tobacco_user?: string
   medicare_beneficiary_id?: string
 }
 
@@ -57,7 +57,7 @@ export interface TireShopData {
 export interface DentistData {
   practice_name?: string
   specialty?: string
-  accepts_medicaid?: boolean
+  accepts_medicaid?: string
   notes?: string
 }
 

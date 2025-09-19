@@ -10,7 +10,12 @@ export const roleConfig: RoleConfigs = {
       { key: 'gender', label: 'Gender', type: 'select', options: ['male', 'female', 'other'] },
       { key: 'height', label: 'Height', type: 'text' },
       { key: 'weight', label: 'Weight', type: 'text' },
-      { key: 'has_medicaid', label: 'Has Medicaid', type: 'checkbox' },
+      {
+        key: 'has_medicaid',
+        label: 'Has Medicaid',
+        type: 'select',
+        options: ['Yes', 'No'],
+      },
       { key: 'part_a_effective', label: 'Part A Effective', type: 'date' },
       { key: 'part_b_effective', label: 'Part B Effective', type: 'date' },
       {
@@ -25,7 +30,12 @@ export const roleConfig: RoleConfigs = {
         type: 'select',
         options: ['Single', 'Married', 'Divorced', 'Widowed', 'Unknown'],
       },
-      { key: 'is_tobacco_user', label: 'Tobacco User', type: 'checkbox' },
+      {
+        key: 'is_tobacco_user',
+        label: 'Tobacco User',
+        type: 'select',
+        options: ['Yes', 'No'],
+      },
       { key: 'medicare_beneficiary_id', label: 'Medicare Beneficiary ID', type: 'text' },
     ],
   },
@@ -86,7 +96,12 @@ export const roleConfig: RoleConfigs = {
     fields: [
       { key: 'practice_name', label: 'Practice Name', type: 'text' },
       { key: 'specialty', label: 'Specialty', type: 'text' },
-      { key: 'accepts_medicaid', label: 'Accepts Medicaid', type: 'checkbox' },
+      {
+        key: 'accepts_medicaid',
+        label: 'Accepts Medicaid',
+        type: 'select',
+        options: ['Yes', 'No'],
+      },
       { key: 'notes', label: 'Notes', type: 'textarea' },
     ],
   },

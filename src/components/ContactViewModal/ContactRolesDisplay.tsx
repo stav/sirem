@@ -30,8 +30,8 @@ type MedicareClientRoleData = {
   part_a_effective?: string | null
   part_b_effective?: string | null
   subsidy_level?: string | null
-  has_medicaid?: boolean | null
-  is_tobacco_user?: boolean | null
+  has_medicaid?: string | null
+  is_tobacco_user?: string | null
   height?: string | null
   weight?: string | null
   gender?: string | null
@@ -97,13 +97,11 @@ function MedicareClientRoleDisplay({ roleData }: { roleData: MedicareClientRoleD
       key: 'has_medicaid',
       label: 'Has Medicaid',
       value: roleData.has_medicaid,
-      formatter: (val: boolean) => (val ? 'Yes' : 'No'),
     },
     {
       key: 'is_tobacco_user',
       label: 'Tobacco User',
       value: roleData.is_tobacco_user,
-      formatter: (val: boolean) => (val ? 'Yes' : 'No'),
     },
     {
       key: 'height',
