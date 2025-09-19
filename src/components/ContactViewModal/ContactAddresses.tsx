@@ -37,7 +37,7 @@ export default function ContactAddresses({ addresses, addressesLoading }: Contac
       ) : addresses.length > 0 ? (
         <div className="space-y-3">
           {addresses.map((address) => (
-            <div key={address.id} className="rounded-lg border border-gray-200 p-3">
+            <div key={address.id} className="rounded-lg border border-l-4 border-gray-200 border-l-blue-500 p-3">
               <div className="mb-2 flex items-center space-x-2">
                 <MapPin className="text-muted-foreground h-4 w-4" />
                 <span className="text-sm font-medium">Address</span>
