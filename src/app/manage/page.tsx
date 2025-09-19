@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import Navigation from '@/components/Navigation'
 import ContactList from '@/components/ContactList'
 import ActionList from '@/components/ActionList'
@@ -85,6 +85,12 @@ export default function ManagePage() {
   const [refreshTimestamp, setRefreshTimestamp] = useState<number>(Date.now())
   const [roleRefreshTrigger, setRoleRefreshTrigger] = useState<number>(0)
   const [pendingRoles, setPendingRoles] = useState<PendingRole[]>([])
+  const [filteredContacts, setFilteredContacts] = useState<Contact[]>([])
+
+  // Memoize the callback to prevent infinite re-renders
+  const handleFilteredContactsChange = useCallback((contacts: Contact[]) => {
+    setFilteredContacts(contacts)
+  }, [])
 
   // Update selectedContact when contacts list changes
   useEffect(() => {
@@ -502,6 +508,7 @@ export default function ManagePage() {
               onViewContact={handleViewContact}
               onBackToAll={handleBackToAll}
               refreshTimestamp={refreshTimestamp}
+              onFilteredContactsChange={handleFilteredContactsChange}
             />
 
             {/* Actions Section */}
@@ -509,6 +516,7 @@ export default function ManagePage() {
               actions={actions}
               contacts={contacts}
               selectedContact={selectedContact}
+              filteredContacts={filteredContacts}
               onAddAction={handleAddAction}
               onToggleComplete={handleToggleActionComplete}
               onCompleteWithCreatedDate={handleCompleteActionWithCreatedDate}

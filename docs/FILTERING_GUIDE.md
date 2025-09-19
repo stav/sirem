@@ -4,7 +4,51 @@ This document provides a comprehensive guide to the filtering system used in the
 
 ## Overview
 
-The filtering system allows users to quickly find contacts using multiple filter types that can be combined for precise results. All filters use a space-separated format and support partial matching.
+The Sirem CRM application features two distinct filtering systems:
+
+1. **Contact Filtering** - A multi-filter text box that allows users to quickly find contacts using multiple filter types that can be combined for precise results. All filters use a space-separated format and support partial matching.
+
+2. **Action Filtering** - Toggle switches that filter actions based on completion status and date range, with the action list automatically updating to show only actions for the currently displayed contacts.
+
+## How the Two Filtering Systems Work Together
+
+When you use the contact filter box to narrow down the contact list, the action list automatically updates to show only actions for those filtered contacts. This creates an integrated filtering experience where:
+
+- **No contact selected + no contact filter**: Shows all actions from all contacts
+- **No contact selected + contact filter applied**: Shows only actions for the filtered contacts
+- **Specific contact selected**: Shows only actions for that specific contact
+- **Action filter switches**: Always apply to the current action set (whether filtered by contacts or not)
+
+## Action Filtering
+
+The action filtering system uses toggle switches to control which actions are displayed:
+
+### Show Completed Actions
+
+**Toggle**: "Show completed" switch  
+**Description**: Controls whether completed actions are displayed  
+**Default**: Off (completed actions are hidden)  
+**Behavior**: When off, only shows actions that are not completed (status is not 'completed' and completed_date is null)
+
+### Week Range Filter
+
+**Toggle**: "±1 week" switch  
+**Description**: Shows only actions within 1 week of today (before or after)  
+**Default**: Off (shows all actions regardless of date)  
+**Behavior**: When on, only shows actions where the display date is within 7 days of today
+
+### Combined Action Filtering
+
+Both action filters can be used together:
+
+- **Show completed + Week range**: Shows completed actions within ±1 week
+- **Hide completed + Week range**: Shows non-completed actions within ±1 week
+- **Show completed + No week range**: Shows all completed actions
+- **Hide completed + No week range**: Shows all non-completed actions (default)
+
+## Contact Filtering
+
+The contact filtering system uses a text input box with space-separated filter terms:
 
 ## Filter Types
 
@@ -190,41 +234,69 @@ Instead of the full `r:medicare_client s:new`
 
 ## Common Use Cases
 
-### Finding New Medicare Clients
+### Contact Filtering Examples
+
+#### Finding New Medicare Clients
 
 ```
 r:medicare_client s:new
 ```
 
-### Upcoming 65th Birthdays
+#### Upcoming 65th Birthdays
 
 ```
 30
 ```
 
-### High Priority Contacts
+#### High Priority Contacts
 
 ```
 t:priority s:urgent
 ```
 
-### Referral Partners to Follow Up
+#### Referral Partners to Follow Up
 
 ```
 r:referral_partner s:follow
 ```
 
-### All Active Contacts
+#### All Active Contacts
 
 ```
 s:active
 ```
 
-### Contacts with Specific Tags
+#### Contacts with Specific Tags
 
 ```
 t:follow t:priority
 ```
+
+### Combined Contact + Action Filtering Examples
+
+#### View Actions for Medicare Clients (with completed actions hidden)
+
+1. **Contact Filter**: `r:medicare_client`
+2. **Action Filter**: "Show completed" = Off
+3. **Result**: Shows only non-completed actions for Medicare clients
+
+#### View Recent Actions for High Priority Contacts
+
+1. **Contact Filter**: `t:priority`
+2. **Action Filter**: "±1 week" = On
+3. **Result**: Shows only actions within ±1 week for high-priority contacts
+
+#### View All Actions for Contacts Turning 65 Soon
+
+1. **Contact Filter**: `30` (within 30 days of 65th birthday)
+2. **Action Filter**: Both switches = Off (default)
+3. **Result**: Shows all actions for contacts turning 65 within 30 days
+
+#### View Completed Actions for Active Referral Partners
+
+1. **Contact Filter**: `r:referral_partner s:active`
+2. **Action Filter**: "Show completed" = On, "±1 week" = On
+3. **Result**: Shows completed actions within ±1 week for active referral partners
 
 ## Technical Notes
 

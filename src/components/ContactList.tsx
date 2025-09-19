@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { Plus, ArrowLeft, ChevronDown, ChevronUp, X, List, Filter } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -30,6 +30,7 @@ interface ContactListProps {
   onViewContact: (contact: Contact) => void
   onBackToAll: () => void
   refreshTimestamp?: number
+  onFilteredContactsChange?: (filteredContacts: Contact[]) => void
 }
 
 export default function ContactList({
@@ -43,6 +44,7 @@ export default function ContactList({
   onViewContact,
   onBackToAll,
   refreshTimestamp,
+  onFilteredContactsChange,
 }: ContactListProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [filter, setFilter] = useState('')
@@ -73,7 +75,7 @@ export default function ContactList({
   }
 
   // Enhanced multi-filter: parse space-separated terms with different behaviors
-  const filteredContacts = (() => {
+  const filteredContacts = useMemo(() => {
     if (filter.trim() === '') {
       return contacts
     }
@@ -165,7 +167,14 @@ export default function ContactList({
     }
 
     return filtered
-  })()
+  }, [contacts, filter])
+
+  // Notify parent component when filtered contacts change
+  useEffect(() => {
+    if (onFilteredContactsChange) {
+      onFilteredContactsChange(filteredContacts)
+    }
+  }, [filteredContacts, onFilteredContactsChange])
 
   // Format contacts for printing/copying
   const formatContactsForPrint = () => {
