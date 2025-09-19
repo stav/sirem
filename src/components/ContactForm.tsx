@@ -336,12 +336,8 @@ export default function ContactForm({
                 const value = e.target.value.replace(/[^A-Z0-9-]/gi, '')
                 onFormDataChange({ ...formData, medicare_beneficiary_id: value })
               }}
-              placeholder="1EG4-TE5-MK73"
               maxLength={13}
             />
-            <p className="text-muted-foreground mt-1 text-xs">
-              Format: XXXX-XXXX-XXXX (11 characters, hyphens optional)
-            </p>
           </div>
           <div>
             <Label htmlFor="ssn">Social Security Number (SSN)</Label>
@@ -366,10 +362,8 @@ export default function ContactForm({
 
                 onFormDataChange({ ...formData, ssn: formatted })
               }}
-              placeholder="123-45-6789"
               maxLength={11}
             />
-            <p className="text-muted-foreground mt-1 text-xs">Format: XXX-XX-XXXX (Social Security Number)</p>
           </div>
           <div>
             <Label htmlFor="birthdate">Birthday</Label>
