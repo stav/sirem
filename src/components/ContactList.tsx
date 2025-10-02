@@ -286,7 +286,8 @@ export default function ContactList({
     <>
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Title and collapse button */}
             <div className="flex items-center space-x-2">
               {singleContactView && selectedContact && (
                 <Button variant="ghost" size="sm" onClick={onBackToAll} className="cursor-pointer px-2">
@@ -295,74 +296,77 @@ export default function ContactList({
                 </Button>
               )}
               <CardTitle>{singleContactView && selectedContact ? <span>Contact Details</span> : 'Contacts'}</CardTitle>
-              <Button variant="ghost" size="sm" onClick={toggleCollapse} className="ml-2 cursor-pointer px-2">
+              <Button variant="ghost" size="sm" onClick={toggleCollapse} className="cursor-pointer px-2">
                 {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
               </Button>
-              {/* Show filter only when not in single contact view */}
-              {!singleContactView && (
-                <div className="ml-2 flex items-center space-x-2">
-                  <div className="relative">
-                    <input
-                      type="text"
-                      value={filter}
-                      onChange={(e) => setFilter(e.target.value)}
-                      placeholder="Multi-filter: name, T65 days, t:tag, s:status (e.g., john 180 t:n2m s:client)..."
-                      className="focus:ring-primary rounded border px-2 py-1 pr-8 text-sm focus:ring-2 focus:outline-none"
-                      style={{ minWidth: 0, width: '280px' }}
-                    />
-                    {filter && (
-                      <button
-                        onClick={() => setFilter('')}
-                        className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-gray-600"
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="text-muted-foreground text-xs">
-                      {filteredContacts.length}/{contacts.length}
-                    </span>
-                    {filter && (
-                      <span className="text-xs text-blue-600">
-                        {(() => {
-                          const terms = filter.trim().split(/\s+/)
-                          const filterTypes = []
-
-                          let hasT65 = false
-                          let hasName = false
-                          let hasTag = false
-                          let hasStatus = false
-
-                          terms.forEach((term) => {
-                            const trimmedTerm = term.trim()
-                            if (trimmedTerm.startsWith('t:')) {
-                              hasTag = true
-                            } else if (trimmedTerm.startsWith('s:')) {
-                              hasStatus = true
-                            } else {
-                              const numericValue = parseInt(trimmedTerm, 10)
-                              if (!isNaN(numericValue) && numericValue > 0 && numericValue.toString() === trimmedTerm) {
-                                hasT65 = true
-                              } else {
-                                hasName = true
-                              }
-                            }
-                          })
-
-                          if (hasT65) filterTypes.push('T65')
-                          if (hasName) filterTypes.push('Name')
-                          if (hasTag) filterTypes.push('Tag')
-                          if (hasStatus) filterTypes.push('Status')
-
-                          return filterTypes.join(' + ') + ' filter'
-                        })()}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              )}
             </div>
+
+            {/* Filter section - only when not in single contact view */}
+            {!singleContactView && (
+              <div className="flex items-center space-x-2">
+                <div className="relative">
+                  <input
+                    type="text"
+                    value={filter}
+                    onChange={(e) => setFilter(e.target.value)}
+                    placeholder="Multi-filter: name, T65 days, t:tag, s:status (e.g., john 180 t:n2m s:client)..."
+                    className="focus:ring-primary rounded border px-2 py-1 pr-8 text-sm focus:ring-2 focus:outline-none"
+                    style={{ minWidth: 0, width: '280px' }}
+                  />
+                  {filter && (
+                    <button
+                      onClick={() => setFilter('')}
+                      className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-gray-600"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+                <div className="flex items-center space-x-2">
+                  <span className="text-muted-foreground text-xs">
+                    {filteredContacts.length}/{contacts.length}
+                  </span>
+                  {filter && (
+                    <span className="text-xs text-blue-600">
+                      {(() => {
+                        const terms = filter.trim().split(/\s+/)
+                        const filterTypes = []
+
+                        let hasT65 = false
+                        let hasName = false
+                        let hasTag = false
+                        let hasStatus = false
+
+                        terms.forEach((term) => {
+                          const trimmedTerm = term.trim()
+                          if (trimmedTerm.startsWith('t:')) {
+                            hasTag = true
+                          } else if (trimmedTerm.startsWith('s:')) {
+                            hasStatus = true
+                          } else {
+                            const numericValue = parseInt(trimmedTerm, 10)
+                            if (!isNaN(numericValue) && numericValue > 0 && numericValue.toString() === trimmedTerm) {
+                              hasT65 = true
+                            } else {
+                              hasName = true
+                            }
+                          }
+                        })
+
+                        if (hasT65) filterTypes.push('T65')
+                        if (hasName) filterTypes.push('Name')
+                        if (hasTag) filterTypes.push('Tag')
+                        if (hasStatus) filterTypes.push('Status')
+
+                        return filterTypes.join(' + ') + ' filter'
+                      })()}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Action buttons - only when not in single contact view */}
             {!singleContactView && (
               <div className="flex space-x-2">
                 {contacts.length > 0 && (
