@@ -83,74 +83,57 @@ export default function ContactList({
 
     // Parse filter terms separated by spaces
     const terms = filter.trim().split(/\s+/)
-    const matchingContactIds = new Set<string>()
 
-    terms.forEach((term) => {
+    // Helper function to check if a contact matches a specific term
+    const contactMatchesTerm = (contact: Contact, term: string): boolean => {
       const trimmedTerm = term.trim()
-      if (!trimmedTerm) return
+      if (!trimmedTerm) return true
 
       // Check filter type and apply appropriate logic
       if (trimmedTerm.startsWith('t:')) {
         // Tag filtering: t:tagname
         const tagQuery = trimmedTerm.substring(2).toLowerCase()
         if (tagQuery) {
-          contacts.forEach((contact) => {
-            const contactTags = contact.contact_tags?.map((ct) => ct.tags.label.toLowerCase()) || []
-            if (contactTags.some((tag) => tag.includes(tagQuery))) {
-              matchingContactIds.add(contact.id)
-            }
-          })
+          const contactTags = contact.contact_tags?.map((ct) => ct.tags.label.toLowerCase()) || []
+          return contactTags.some((tag) => tag.includes(tagQuery))
         }
+        return true
       } else if (trimmedTerm.startsWith('s:')) {
         // Status filtering: s:statusname
         const statusQuery = trimmedTerm.substring(2).toLowerCase()
         if (statusQuery) {
-          contacts.forEach((contact) => {
-            if (contact.status?.toLowerCase().includes(statusQuery)) {
-              matchingContactIds.add(contact.id)
-            }
-          })
+          return contact.status?.toLowerCase().includes(statusQuery) || false
         }
+        return true
       } else if (trimmedTerm.startsWith('r:')) {
         // Role filtering: r:role_type
         const roleQuery = trimmedTerm.substring(2).toLowerCase()
         if (roleQuery) {
-          contacts.forEach((contact) => {
-            const contactRoles = contact.contact_roles || []
-            if (
-              contactRoles.some((role) => role.role_type?.toLowerCase().includes(roleQuery) && role.is_active !== false)
-            ) {
-              matchingContactIds.add(contact.id)
-            }
-          })
+          const contactRoles = contact.contact_roles || []
+          return contactRoles.some((role) => role.role_type?.toLowerCase().includes(roleQuery) && role.is_active !== false)
         }
+        return true
       } else {
         const numericValue = parseInt(trimmedTerm, 10)
         if (!isNaN(numericValue) && numericValue > 0 && numericValue.toString() === trimmedTerm) {
           // T65 days filtering: numeric values (both before and after 65th birthday)
-          contacts.forEach((contact) => {
-            const t65Days = getT65Days(contact.birthdate)
-            if (t65Days !== null && Math.abs(t65Days) <= numericValue) {
-              matchingContactIds.add(contact.id)
-            }
-          })
+          const t65Days = getT65Days(contact.birthdate)
+          return t65Days !== null && Math.abs(t65Days) <= numericValue
         } else {
           // Name filtering: alphabetic terms
           const lowerTerm = trimmedTerm.toLowerCase()
-          contacts.forEach((contact) => {
-            if (
-              contact.first_name?.toLowerCase().includes(lowerTerm) ||
-              contact.last_name?.toLowerCase().includes(lowerTerm)
-            ) {
-              matchingContactIds.add(contact.id)
-            }
-          })
+          return (
+            contact.first_name?.toLowerCase().includes(lowerTerm) ||
+            contact.last_name?.toLowerCase().includes(lowerTerm)
+          )
         }
       }
-    })
+    }
 
-    // Filter contacts that match any of the terms (OR logic)
-    const filtered = contacts.filter((contact) => matchingContactIds.has(contact.id))
+    // Filter contacts that match ALL terms (AND logic)
+    const filtered = contacts.filter((contact) => 
+      terms.every((term) => contactMatchesTerm(contact, term))
+    )
 
     // Apply T65 sorting whenever we have any T65 filters
     const hasT65Filter = terms.some((term) => {
