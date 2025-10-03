@@ -14,7 +14,7 @@ A modern Medicare CRM system built with Next.js, TypeScript, and Supabase.
 
 ## ✅ Enhanced Filter System
 
-The contact list features a powerful multi-filter system that supports combining different filter types with OR logic.
+The contact list features a powerful multi-filter system that supports combining different filter types with AND logic.
 
 ### Filter Types
 
@@ -44,17 +44,17 @@ The contact list features a powerful multi-filter system that supports combining
 - **`john`** → Shows contacts with "john" in first/last name
 - **`180`** → Shows contacts turning 65 within 180 days (T65 sorted)
 - **`t:n2m`** → Shows contacts tagged with "n2m"
-- **`mary 90 t:referral`** → Shows contacts matching ANY of:
-  - Name contains "mary" OR
-  - T65 days between 0 and -90 OR
+- **`mary 90 t:referral`** → Shows contacts matching ALL of:
+  - Name contains "mary" AND
+  - T65 days between 0 and -90 AND
   - Tagged with "referral"
-- **`s:client t:giant`** → Shows contacts matching ANY of:
-  - Status contains "client" OR
+- **`s:client t:giant`** → Shows contacts matching ALL of:
+  - Status contains "client" AND
   - Tagged with "giant"
 
 ### Smart Features
 
-- **OR Logic**: Contacts matching ANY filter term are included
+- **AND Logic**: Contacts matching ALL filter terms are included
 - **T65 Sorting**: Automatic sorting by T65 days when numeric filters are present
 - **Dynamic Indicators**: Shows active filter types (e.g., "T65 + Name + Tag + Status filter")
 - **Partial Matching**: All filters support partial text matching

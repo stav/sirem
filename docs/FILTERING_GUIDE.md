@@ -126,7 +126,7 @@ The contact filtering system uses a text input box with space-separated filter t
 
 ## Combining Filters
 
-Multiple filters can be combined using spaces. The system uses **OR logic** between different filter terms, meaning a contact will appear if it matches ANY of the specified criteria.
+Multiple filters can be combined using spaces. The system uses **AND logic** between different filter terms, meaning a contact will appear only if it matches ALL of the specified criteria.
 
 ### Basic Combinations
 
@@ -136,7 +136,7 @@ Multiple filters can be combined using spaces. The system uses **OR logic** betw
 john s:new
 ```
 
-Finds contacts named "John" OR contacts with "new" status
+Finds contacts named "John" AND with "new" status
 
 **Tag + Role**:
 
@@ -144,7 +144,7 @@ Finds contacts named "John" OR contacts with "new" status
 t:priority r:medicare_client
 ```
 
-Finds contacts with "priority" tag OR Medicare client role
+Finds contacts with "priority" tag AND Medicare client role
 
 **T65 + Status**:
 
@@ -152,7 +152,7 @@ Finds contacts with "priority" tag OR Medicare client role
 30 s:active
 ```
 
-Finds contacts within 30 days of 65th birthday OR contacts with "active" status
+Finds contacts within 30 days of 65th birthday AND with "active" status
 
 ### Complex Combinations
 
@@ -162,7 +162,7 @@ Finds contacts within 30 days of 65th birthday OR contacts with "active" status
 john t:priority s:new r:medicare_client
 ```
 
-Finds contacts that match ANY of:
+Finds contacts that match ALL of:
 
 - Name contains "john"
 - Has "priority" tag
@@ -175,7 +175,7 @@ Finds contacts that match ANY of:
 t:urgent r:referral_partner
 ```
 
-Finds contacts that are either urgent OR referral partners
+Finds contacts that are both urgent AND referral partners
 
 ## Filter Helper
 
@@ -304,13 +304,13 @@ t:follow t:priority
 
 1. Filters are parsed as space-separated terms
 2. Each term is processed according to its type (prefix-based)
-3. Contact IDs matching any term are collected
-4. Results are filtered to show only matching contacts
+3. Contacts are evaluated against each term individually
+4. Only contacts matching ALL terms are included in results
 5. T65 filters trigger special sorting by proximity to 65th birthday
 
 ### Performance Considerations
 
-- Filters use efficient Set-based matching
+- Filters use efficient term-by-term evaluation
 - T65 calculations are performed on-demand
 - Role filtering only considers active roles
 - Tag and status filtering use partial matching for flexibility
@@ -332,7 +332,7 @@ t:follow t:priority
 
 ### Unexpected Results
 
-- Remember that filters use OR logic between terms
+- Remember that filters use AND logic between terms
 - Check if T65 sorting is affecting the order
 - Verify that role filtering only considers active roles
 
