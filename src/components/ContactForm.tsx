@@ -16,6 +16,7 @@ import type { Json } from '@/lib/supabase-types'
 import { AddressType } from '@/lib/address-types'
 import ContactRoleManager from './ContactRoleManager'
 import RoleForm from './RoleForm'
+import ContactPlansManager from './ContactPlansManager'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 type Address = Database['public']['Tables']['addresses']['Row']
@@ -568,6 +569,11 @@ export default function ContactForm({
               <div className="text-muted-foreground text-sm">Addresses can be added after the contact is created.</div>
             )}
           </div>
+
+          {/* Plans Management Section */}
+          {editingContact && (
+            <ContactPlansManager contact={editingContact} onRefresh={onRefreshContact} />
+          )}
         </div>
       </ModalForm>
 

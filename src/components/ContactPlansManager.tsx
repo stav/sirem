@@ -8,21 +8,23 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import DateInput from '@/components/ui/date-input'
 import { formatDateTime } from '@/lib/utils'
+import { Edit, Trash2, Plus, X } from 'lucide-react'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 type Plan = Database['public']['Tables']['plans']['Row']
 type EnrollmentStatus = Enums<'enrollment_status'>
 
-interface ContactPlansProps {
+interface ContactPlansManagerProps {
   contact: Contact
   onRefresh?: () => void
 }
 
-export default function ContactPlans({ contact, onRefresh }: ContactPlansProps) {
-  const { enrollments, loading, createEnrollment, deleteEnrollment } = usePlanEnrollments(contact.id)
+export default function ContactPlansManager({ contact, onRefresh }: ContactPlansManagerProps) {
+  const { enrollments, loading, createEnrollment, updateEnrollment, deleteEnrollment } = usePlanEnrollments(contact.id)
   const { plans } = usePlans()
 
   const [isAdding, setIsAdding] = useState(false)
+  const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState({
     plan_id: '' as string,
     enrollment_status: 'active' as EnrollmentStatus,
@@ -44,6 +46,27 @@ export default function ContactPlans({ contact, onRefresh }: ContactPlansProps) 
     return sorted
   }, [plans])
 
+  const renderPlanLabel = (plan: Plan) => {
+    const parts = [plan.carrier, plan.name, plan.cms_id ? `(${plan.cms_id})` : ''].filter(Boolean)
+    return parts.join(' ')
+  }
+
+  const resetForm = () => {
+    setForm({
+      plan_id: '',
+      enrollment_status: 'active',
+      signed_up_at: '',
+      coverage_effective_date: '',
+      coverage_end_date: '',
+      premium_monthly_at_enrollment: '',
+      pcp_name: '',
+      pcp_id: '',
+      agent_notes: '',
+    })
+    setIsAdding(false)
+    setEditingId(null)
+  }
+
   const handleAdd = async () => {
     if (!form.plan_id) return
     const ok = await createEnrollment(contact.id, form.plan_id, {
@@ -61,25 +84,54 @@ export default function ContactPlans({ contact, onRefresh }: ContactPlansProps) 
       metadata: null,
     })
     if (ok) {
-      setForm({
-        plan_id: '',
-        enrollment_status: 'active',
-        signed_up_at: '',
-        coverage_effective_date: '',
-        coverage_end_date: '',
-        premium_monthly_at_enrollment: '',
-        pcp_name: '',
-        pcp_id: '',
-        agent_notes: '',
-      })
-      setIsAdding(false)
+      resetForm()
       onRefresh?.()
     }
   }
 
-  const renderPlanLabel = (plan: Plan) => {
-    const parts = [plan.carrier, plan.name, plan.cms_id ? `(${plan.cms_id})` : ''].filter(Boolean)
-    return parts.join(' ')
+  const handleEdit = (enrollment: any) => {
+    setEditingId(enrollment.id)
+    setForm({
+      plan_id: enrollment.plan_id,
+      enrollment_status: enrollment.enrollment_status || 'active',
+      signed_up_at: enrollment.signed_up_at ? enrollment.signed_up_at.split('T')[0] : '',
+      coverage_effective_date: enrollment.coverage_effective_date ? enrollment.coverage_effective_date.split('T')[0] : '',
+      coverage_end_date: enrollment.coverage_end_date ? enrollment.coverage_end_date.split('T')[0] : '',
+      premium_monthly_at_enrollment: enrollment.premium_monthly_at_enrollment?.toString() || '',
+      pcp_name: enrollment.pcp_name || '',
+      pcp_id: enrollment.pcp_id || '',
+      agent_notes: enrollment.agent_notes || '',
+    })
+    setIsAdding(true)
+  }
+
+  const handleUpdate = async () => {
+    if (!editingId || !form.plan_id) return
+    const ok = await updateEnrollment(editingId, {
+      enrollment_status: form.enrollment_status,
+      signed_up_at: form.signed_up_at || null,
+      coverage_effective_date: form.coverage_effective_date || null,
+      coverage_end_date: form.coverage_end_date || null,
+      premium_monthly_at_enrollment: form.premium_monthly_at_enrollment
+        ? Number(form.premium_monthly_at_enrollment)
+        : null,
+      pcp_name: form.pcp_name || null,
+      pcp_id: form.pcp_id || null,
+      agent_notes: form.agent_notes || null,
+      application_id: null,
+      metadata: null,
+    })
+    if (ok) {
+      resetForm()
+      onRefresh?.()
+    }
+  }
+
+  const handleDelete = async (enrollmentId: string) => {
+    if (confirm('Remove this enrollment?')) {
+      await deleteEnrollment(enrollmentId)
+      onRefresh?.()
+    }
   }
 
   return (
@@ -105,16 +157,22 @@ export default function ContactPlans({ contact, onRefresh }: ContactPlansProps) 
                     </div>
                     <div className="flex items-center gap-2">
                       <Button
-                        variant="destructive"
+                        type="button"
+                        variant="ghost"
                         size="sm"
-                        onClick={async () => {
-                          if (confirm('Remove this enrollment?')) {
-                            await deleteEnrollment(enr.id)
-                            onRefresh?.()
-                          }
-                        }}
+                        onClick={() => handleEdit(enr)}
+                        className="h-6 w-6 p-0"
                       >
-                        Delete
+                        <Edit className="h-3 w-3" />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDelete(enr.id)}
+                        className="h-6 w-6 p-0 text-red-600 hover:text-red-800"
+                      >
+                        <Trash2 className="h-3 w-3" />
                       </Button>
                     </div>
                   </div>
@@ -155,15 +213,31 @@ export default function ContactPlans({ contact, onRefresh }: ContactPlansProps) 
         )}
       </div>
 
-      {/* Add enrollment */}
+      {/* Add/Edit enrollment form */}
       {!isAdding ? (
         <div>
-          <Button size="sm" variant="outline" onClick={() => setIsAdding(true)}>
+          <Button type="button" size="sm" variant="outline" onClick={() => setIsAdding(true)}>
+            <Plus className="h-3 w-3 mr-1" />
             Add Enrollment
           </Button>
         </div>
       ) : (
         <div className="rounded border p-3 md:p-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h4 className="text-sm font-medium">
+              {editingId ? 'Edit Enrollment' : 'Add New Enrollment'}
+            </h4>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={resetForm}
+              className="h-6 w-6 p-0"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+          
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div className="space-y-1 md:col-span-2">
               <Label className="text-xs">Plan</Label>
@@ -200,8 +274,8 @@ export default function ContactPlans({ contact, onRefresh }: ContactPlansProps) 
               <DateInput
                 id="signed_up_at"
                 label="Signed up at"
-                value={form.signed_up_at ? form.signed_up_at.split('T')[0] : ''}
-                onChange={(v) => setForm((f) => ({ ...f, signed_up_at: v ? `${v}T00:00:00.000Z` : '' }))}
+                value={form.signed_up_at}
+                onChange={(v) => setForm((f) => ({ ...f, signed_up_at: v || '' }))}
               />
             </div>
 
@@ -209,8 +283,8 @@ export default function ContactPlans({ contact, onRefresh }: ContactPlansProps) 
               <DateInput
                 id="coverage_effective_date"
                 label="Coverage effective"
-                value={form.coverage_effective_date ? form.coverage_effective_date.split('T')[0] : ''}
-                onChange={(v) => setForm((f) => ({ ...f, coverage_effective_date: v ? `${v}T00:00:00.000Z` : '' }))}
+                value={form.coverage_effective_date}
+                onChange={(v) => setForm((f) => ({ ...f, coverage_effective_date: v || '' }))}
               />
             </div>
 
@@ -218,8 +292,8 @@ export default function ContactPlans({ contact, onRefresh }: ContactPlansProps) 
               <DateInput
                 id="coverage_end_date"
                 label="Coverage end"
-                value={form.coverage_end_date ? form.coverage_end_date.split('T')[0] : ''}
-                onChange={(v) => setForm((f) => ({ ...f, coverage_end_date: v ? `${v}T00:00:00.000Z` : '' }))}
+                value={form.coverage_end_date}
+                onChange={(v) => setForm((f) => ({ ...f, coverage_end_date: v || '' }))}
               />
             </div>
 
@@ -253,10 +327,15 @@ export default function ContactPlans({ contact, onRefresh }: ContactPlansProps) 
           </div>
 
           <div className="mt-3 flex items-center gap-2">
-            <Button size="sm" onClick={handleAdd} disabled={!form.plan_id}>
-              Save Enrollment
+            <Button 
+              type="button"
+              size="sm" 
+              onClick={editingId ? handleUpdate : handleAdd} 
+              disabled={!form.plan_id}
+            >
+              {editingId ? 'Update Enrollment' : 'Save Enrollment'}
             </Button>
-            <Button size="sm" variant="outline" onClick={() => setIsAdding(false)}>
+            <Button type="button" size="sm" variant="outline" onClick={resetForm}>
               Cancel
             </Button>
           </div>

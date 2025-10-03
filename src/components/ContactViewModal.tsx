@@ -11,7 +11,7 @@ import {
   ContactMedicareInfo,
   ContactStatusFlags,
   ContactAdditionalInfo,
-  ContactPlans,
+  ContactPlansDisplay,
 } from './ContactViewModal/index'
 import ContactRolesDisplay from './ContactViewModal/ContactRolesDisplay'
 
@@ -176,7 +176,7 @@ export default function ContactViewModal({
         <ContactMedicareInfo contact={contact} />
         <ContactStatusFlags contact={contact} />
         <ContactAdditionalInfo contact={contact} />
-        <ContactPlans contact={contact} onRefresh={onRefresh} />
+        <ContactPlansDisplay contact={contact} />
       </div>
     </ModalForm>
   )
