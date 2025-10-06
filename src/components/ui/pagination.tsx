@@ -1,5 +1,5 @@
 import React from 'react'
-import { ChevronLeft, ChevronRight, Loader2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
@@ -28,7 +28,7 @@ export default function Pagination({
   endIndex,
   onPageChange,
   onItemsPerPageChange,
-  pageSizeOptions = [25, 50, 100, 500],
+  pageSizeOptions = [5, 10, 25, 50, 100, 500],
   showItemsPerPage = true,
   showItemCount = true,
   className = '',
@@ -73,12 +73,22 @@ export default function Pagination({
           <Button
             variant="outline"
             size="sm"
+            onClick={() => onPageChange(1)}
+            disabled={currentPage === 1}
+            className="cursor-pointer"
+            title="First page"
+          >
+            <ChevronsLeft className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
             onClick={() => onPageChange(Math.max(1, currentPage - 1))}
             disabled={currentPage === 1}
             className="cursor-pointer"
+            title="Previous page"
           >
             <ChevronLeft className="h-4 w-4" />
-            Previous
           </Button>
           <span className="text-muted-foreground text-sm">
             Page {currentPage} of {totalPages}
@@ -89,9 +99,19 @@ export default function Pagination({
             onClick={() => onPageChange(Math.min(totalPages, currentPage + 1))}
             disabled={currentPage === totalPages}
             className="cursor-pointer"
+            title="Next page"
           >
-            Next
             <ChevronRight className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onPageChange(totalPages)}
+            disabled={currentPage === totalPages}
+            className="cursor-pointer"
+            title="Last page"
+          >
+            <ChevronsRight className="h-4 w-4" />
           </Button>
         </div>
       )}

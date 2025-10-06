@@ -79,13 +79,13 @@ export default function ActionList({
     localStorage.setItem('actionListCollapsed', JSON.stringify(newState))
   }
 
-  // Helper function to check if a date is within 1 week of today
+  // Helper function to check if a date is within 30 days of today
   const isWithinWeekRange = (dateString: string) => {
     const date = new Date(dateString)
     const today = new Date()
-    const oneWeekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000)
-    const oneWeekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000)
-    return date >= oneWeekAgo && date <= oneWeekFromNow
+    const thirtyDaysAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000)
+    const thirtyDaysFromNow = new Date(today.getTime() + 30 * 24 * 60 * 60 * 1000)
+    return date >= thirtyDaysAgo && date <= thirtyDaysFromNow
   }
 
   // Memoize contact lookup map for efficient contact name resolution
@@ -202,12 +202,12 @@ export default function ActionList({
                       <Switch checked={showWeekRange} onCheckedChange={toggleWeekRange} id="show-week-range-switch" />
                       {showWeekRange && (
                         <label htmlFor="show-week-range-switch" className="cursor-pointer text-sm">
-                          ±1 week
+                          ±30 days
                         </label>
                       )}
                     </span>
                   </TooltipTrigger>
-                  <TooltipContent>Show actions within 1 week of today.</TooltipContent>
+                  <TooltipContent>Show actions within 30 days of today.</TooltipContent>
                 </Tooltip>
               </div>
             </div>
