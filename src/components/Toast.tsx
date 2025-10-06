@@ -29,7 +29,7 @@ export function Toast({ id, title, description, variant = 'default', onDismiss }
 
   return (
     <div
-      className={`fixed top-4 right-4 z-50 w-full max-w-sm rounded-lg border p-4 shadow-lg ${getBackgroundColor()} animate-in slide-in-from-right-full duration-300`}
+      className={`w-full max-w-sm rounded-lg border p-4 shadow-lg ${getBackgroundColor()} animate-in slide-in-from-right-full duration-300`}
     >
       <div className="flex items-start space-x-3">
         <div className="mt-0.5 flex-shrink-0">{getIcon()}</div>

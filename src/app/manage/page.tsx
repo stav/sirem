@@ -589,7 +589,6 @@ export default function ManagePage() {
               // Keep view modal open and open edit modal on top
               handleEditContact(contact)
             }}
-            onRefresh={fetchContacts}
             roleRefreshTrigger={roleRefreshTrigger}
           />
         </div>

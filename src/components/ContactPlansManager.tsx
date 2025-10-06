@@ -89,7 +89,7 @@ export default function ContactPlansManager({ contact, onRefresh }: ContactPlans
     }
   }
 
-  const handleEdit = (enrollment: any) => {
+  const handleEdit = (enrollment: Database['public']['Tables']['enrollments']['Row']) => {
     setEditingId(enrollment.id)
     setForm({
       plan_id: enrollment.plan_id,

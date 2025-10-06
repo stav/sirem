@@ -106,8 +106,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 
       {/* Toast Notifications */}
       <div className="fixed top-4 right-4 z-50 space-y-2">
-        {toasts.map((toast, index) => (
-          <div key={toast.id} style={{ top: `${index * 80 + 16}px` }} className="absolute right-0">
+        {toasts.map((toast) => (
+          <div key={toast.id} className="relative">
             <Toast
               id={toast.id}
               title={toast.title}

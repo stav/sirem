@@ -48,7 +48,6 @@ interface ContactViewModalProps {
   onClose: () => void
   contact: Contact | null
   onEdit?: (contact: Contact) => void
-  onRefresh?: () => void
   roleRefreshTrigger?: number
 }
 
@@ -57,7 +56,6 @@ export default function ContactViewModal({
   onClose,
   contact,
   onEdit,
-  onRefresh,
   roleRefreshTrigger,
 }: ContactViewModalProps) {
   const [addresses, setAddresses] = useState<Address[]>([])
