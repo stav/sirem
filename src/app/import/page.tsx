@@ -152,7 +152,7 @@ export default function ImportPage() {
           <div className="mb-8">
             <h1 className="text-foreground mb-2 text-3xl font-bold">Import Integrity Data</h1>
             <p className="text-muted-foreground">
-              Upload your Integrity export file to import leads, contacts, reminders, and activities into your CRM.
+              Upload your Integrity export file to import leads, contacts, and activities into your CRM.
             </p>
           </div>
 

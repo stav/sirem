@@ -20,8 +20,8 @@ The manage page has been refactored from a single 900+ line file into a modular,
   - Handles edit/delete actions
   - Supports single contact view mode
 
-- **`src/components/ReminderCard.tsx`** - Individual reminder display
-  - Shows reminder details with priority badges
+- **`src/components/ActionCard.tsx`** - Individual action display
+  - Shows action details with priority badges
   - Handles complete/edit/delete actions
   - Displays timestamps and completion status
 
@@ -30,10 +30,10 @@ The manage page has been refactored from a single 900+ line file into a modular,
   - Handles empty states and add contact actions
   - Coordinates with ContactCard components
 
-- **`src/components/ReminderList.tsx`** - Reminder list container
-  - Manages reminder list display logic
-  - Filters reminders by selected contact
-  - Handles empty states and add reminder actions
+- **`src/components/ActionList.tsx`** - Action list container
+  - Manages action list display logic
+  - Filters actions by selected contact
+  - Handles empty states and add action actions
 
 ### Form Components
 
@@ -42,8 +42,8 @@ The manage page has been refactored from a single 900+ line file into a modular,
   - Handles form validation and submission
   - Modal with backdrop click to close
 
-- **`src/components/ReminderForm.tsx`** - Reminder add/edit modal
-  - Reusable form for creating and editing reminders
+- **`src/components/ActionForm.tsx`** - Action add/edit modal
+  - Reusable form for creating and editing actions
   - Handles form validation and submission
   - Modal with escape key and backdrop click to close
 
@@ -54,9 +54,9 @@ The manage page has been refactored from a single 900+ line file into a modular,
   - Handles loading states
   - Integrates with logging system
 
-- **`src/hooks/useReminders.ts`** - Reminder data management
-  - Fetches, creates, updates, and deletes reminders
-  - Handles reminder completion toggling
+- **`src/hooks/useActions.ts`** - Action data management
+  - Fetches, creates, updates, and deletes actions
+  - Handles action completion toggling
   - Manages loading states
 
 ### Utilities
@@ -103,13 +103,13 @@ The manage page has been refactored from a single 900+ line file into a modular,
 ```
 ManagePage (Orchestrator)
 ├── useContacts Hook (Data Management)
-├── useReminders Hook (Data Management)
+├── useActions Hook (Data Management)
 ├── ContactList Component
 │   └── ContactCard Components
-├── ReminderList Component
-│   └── ReminderCard Components
+├── ActionList Component
+│   └── ActionCard Components
 ├── ContactForm Component (Modal)
-└── ReminderForm Component (Modal)
+└── ActionForm Component (Modal)
 ```
 
 ## Adding New Features
@@ -121,12 +121,12 @@ ManagePage (Orchestrator)
 3. Update the database operations in `useContacts.ts`
 4. Display the field in `ContactCard.tsx`
 
-### To add a new reminder feature:
+### To add a new action feature:
 
-1. Update the `ReminderFormData` interface in `useReminders.ts`
-2. Add the field to `ReminderForm.tsx`
-3. Update the database operations in `useReminders.ts`
-4. Display the feature in `ReminderCard.tsx`
+1. Update the `ActionFormData` interface in `useActions.ts`
+2. Add the field to `ActionForm.tsx`
+3. Update the database operations in `useActions.ts`
+4. Display the feature in `ActionCard.tsx`
 
 ### To add a new page:
 

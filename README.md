@@ -6,7 +6,7 @@ A modern Medicare CRM system built with Next.js, TypeScript, and Supabase.
 
 - **Contact Management**: Complete contact profiles with Medicare-specific fields
 - **Activity Tracking**: Log and track all interactions with contacts
-- **Reminder System**: Task management with priority levels and due dates
+- **Action System**: Task management with priority levels and due dates
 - **Tagging System**: Hierarchical tags for organizing contacts
 - **Enhanced Multi-Filter**: Advanced filtering with T65 days, name search, and tag filtering
 - **Data Import**: Import data from Integrity CRM system
@@ -77,7 +77,7 @@ Imports complete lead records including:
 
 - Contact information (names, addresses, phones, emails)
 - Medicare-specific data (Part A/B status, beneficiary ID, etc.)
-- Reminders and tasks
+- Actions and tasks
 - Tags and tag categories
 - Lead statuses
 - Notes and additional metadata

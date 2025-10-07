@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide outlines what's involved in implementing the Integrity data functionality in your Medicare CRM system. The Integrity data contains comprehensive lead/contact information with Medicare-specific fields, reminders, activities, and a sophisticated tagging system.
+This guide outlines what's involved in implementing the Integrity data functionality in your Medicare CRM system. The Integrity data contains comprehensive lead/contact information with Medicare-specific fields, actions, activities, and a sophisticated tagging system.
 
 ## Data Structure Analysis
 
@@ -15,10 +15,10 @@ The Integrity data contains the following key entities:
 - **Demographics**: Height, weight, gender, marital status, birthdate
 - **Business Data**: Lead source, record type, policy counts, notes
 
-### 2. Reminders/Tasks
+### 2. Actions/Tasks
 
 - Due dates and completion status
-- Reminder types and sources
+- Action types and sources
 - Notes and descriptions
 - Priority levels
 
@@ -62,7 +62,7 @@ The Integrity data contains the following key entities:
 ### Enhanced Tables
 
 1. **`contacts`** - Added Medicare-specific fields and business data
-2. **`reminders`** - Enhanced with source, type, and completion tracking
+2. **`actions`** - Enhanced with source, type, and completion tracking
 
 ### Key Features
 
@@ -125,7 +125,7 @@ The Integrity data contains the following key entities:
 ### Phase 4: Testing & Validation
 
 1. Test all CRM functionality with imported data
-2. Verify relationships between contacts, reminders, and tags
+2. Verify relationships between contacts, actions, and tags
 3. Check that Medicare-specific fields are properly stored
 4. Validate that the tagging system works correctly
 
@@ -144,14 +144,14 @@ The Integrity data contains the following key entities:
 | `hasMedicAid`           | `has_medicaid`            | Boolean conversion  |
 | `birthdate`             | `birthdate`               | Date conversion     |
 
-### Reminder Fields
+### Action Fields
 
 | Integrity Field        | Database Field   | Notes |
 | ---------------------- | ---------------- | ----- |
 | `reminderTitle`        | `title`          |       |
 | `reminderNote`         | `description`    |       |
-| `reminderDate`         | `reminder_date`  |       |
-| `isComplete`           | `is_complete`    |       |
+| `reminderDate`         | `start_date`     |       |
+| `isComplete`           | `status`         |       |
 | `reminderCompleteDate` | `completed_date` |       |
 
 ## Performance Considerations

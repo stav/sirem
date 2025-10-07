@@ -345,17 +345,18 @@ export class IntegrityImporter {
       })
     }
 
-    // Import reminders
+    // Import reminders as actions
     for (const reminder of lead.reminders) {
-      await supabase.from('reminders').insert({
+      await supabase.from('actions').insert({
         contact_id: contact.id,
-        title: reminder.reminderTitle,
+        title: reminder.reminderTitle || 'Imported Reminder',
         description: reminder.reminderNote,
-        reminder_date: reminder.reminderDate,
-        reminder_source: reminder.reminderSource,
-        reminder_type: reminder.reminderType,
-        is_complete: reminder.isComplete,
-        completed_date: reminder.reminderCompleteDate,
+        start_date: reminder.reminderDate,
+        completed_date: reminder.isComplete ? reminder.reminderCompleteDate : null,
+        status: reminder.isComplete ? 'completed' : 'pending',
+        priority: 'medium',
+        tags: reminder.reminderType ? `imported ${reminder.reminderType}` : 'imported reminder',
+        source: 'Import',
         created_at: reminder.createDate,
         updated_at: reminder.modifyDate || reminder.createDate,
       })

@@ -19,7 +19,7 @@ type DashboardContact = Pick<
   addresses?: Pick<Database['public']['Tables']['addresses']['Row'], 'address1' | 'city' | 'address_type'>[]
 }
 
-type Reminder = Database['public']['Tables']['reminders']['Row'] & {
+type Action = Database['public']['Tables']['actions']['Row'] & {
   contact: {
     id: string
     first_name: string
@@ -207,7 +207,7 @@ function renderContactRow(
 export default function Home() {
   const router = useRouter()
   const [contacts, setContacts] = useState<DashboardContact[]>([])
-  const [reminders, setReminders] = useState<Reminder[]>([])
+  const [actions, setActions] = useState<Action[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -216,7 +216,7 @@ export default function Home() {
 
   async function fetchData() {
     try {
-      const [contactsResponse, remindersResponse] = await Promise.all([
+      const [contactsResponse, actionsResponse] = await Promise.all([
         // Optimized contacts query - only fetch essential fields for dashboard
         supabase
           .from('contacts')
@@ -240,7 +240,7 @@ export default function Home() {
           )
           .order('created_at', { ascending: false }),
         supabase
-          .from('reminders')
+          .from('actions')
           .select(
             `
           *,
@@ -251,12 +251,12 @@ export default function Home() {
           )
         `
           )
-          .order('reminder_date', { ascending: true }),
+          .order('start_date', { ascending: true }),
       ])
 
       if (contactsResponse.data) setContacts(contactsResponse.data)
-      if (remindersResponse.data) {
-        setReminders(remindersResponse.data)
+      if (actionsResponse.data) {
+        setActions(actionsResponse.data)
       }
     } catch (error) {
       console.error('Error fetching data:', error)
@@ -271,28 +271,29 @@ export default function Home() {
 
     // Calculate metrics
     const totalContacts = contacts.length
-    const totalReminders = reminders.length
-    const completedReminders = reminders.filter((r) => r.is_complete).length
-    const pendingReminders = totalReminders - completedReminders
-    const overdueReminders = reminders.filter((r) => !r.is_complete && new Date(r.reminder_date) < new Date()).length
+    const totalActions = actions.length
+    const completedActions = actions.filter((a) => a.completed_date).length
+    const pendingActions = totalActions - completedActions
+    const overdueActions = actions.filter((a) => !a.completed_date && a.start_date && new Date(a.start_date) < new Date()).length
 
-    // Get upcoming reminders
-    const upcomingReminders = reminders
-      .filter((r) => {
-        if (r.is_complete) return false
-        const reminderDate = new Date(r.reminder_date)
+    // Get upcoming actions
+    const upcomingActions = actions
+      .filter((a) => {
+        if (a.completed_date) return false
+        if (!a.start_date) return false
+        const actionDate = new Date(a.start_date)
         const today = new Date()
-        reminderDate.setHours(0, 0, 0, 0)
+        actionDate.setHours(0, 0, 0, 0)
         today.setHours(0, 0, 0, 0)
-        return reminderDate >= today
+        return actionDate >= today
       })
       .slice(0, 5)
 
     // Get priority distribution
     const priorityStats = {
-      high: reminders.filter((r) => r.priority === 'high' && !r.is_complete).length,
-      medium: reminders.filter((r) => r.priority === 'medium' && !r.is_complete).length,
-      low: reminders.filter((r) => r.priority === 'low' && !r.is_complete).length,
+      high: actions.filter((a) => a.priority === 'high' && !a.completed_date).length,
+      medium: actions.filter((a) => a.priority === 'medium' && !a.completed_date).length,
+      low: actions.filter((a) => a.priority === 'low' && !a.completed_date).length,
     }
 
     // Calculate birthday data
@@ -303,18 +304,18 @@ export default function Home() {
 
     return {
       totalContacts,
-      totalReminders,
-      completedReminders,
-      pendingReminders,
-      overdueReminders,
-      upcomingReminders,
+      totalActions,
+      completedActions,
+      pendingActions,
+      overdueActions,
+      upcomingActions,
       priorityStats,
       upcoming65,
       recent65,
       upcomingBirthdays,
       pastBirthdays,
     }
-  }, [contacts, reminders, loading])
+  }, [contacts, actions, loading])
 
   // Early return if still loading or no data
   if (loading || !dashboardData) {
@@ -374,10 +375,10 @@ export default function Home() {
 
   const {
     totalContacts,
-    pendingReminders,
-    overdueReminders,
-    completedReminders,
-    upcomingReminders,
+    pendingActions,
+    overdueActions,
+    completedActions,
+    upcomingActions,
     priorityStats,
     upcoming65,
     recent65,
@@ -454,8 +455,8 @@ export default function Home() {
                         <Bell className="h-6 w-6 text-orange-600" />
                       </div>
                       <div className="ml-4">
-                        <p className="text-muted-foreground text-sm font-medium">Pending Reminders</p>
-                        <p className="text-foreground text-2xl font-bold">{pendingReminders}</p>
+                        <p className="text-muted-foreground text-sm font-medium">Pending Actions</p>
+                        <p className="text-foreground text-2xl font-bold">{pendingActions}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -469,7 +470,7 @@ export default function Home() {
                       </div>
                       <div className="ml-4">
                         <p className="text-muted-foreground text-sm font-medium">Overdue</p>
-                        <p className="text-foreground text-2xl font-bold">{overdueReminders}</p>
+                        <p className="text-foreground text-2xl font-bold">{overdueActions}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -483,7 +484,7 @@ export default function Home() {
                       </div>
                       <div className="ml-4">
                         <p className="text-muted-foreground text-sm font-medium">Completed</p>
-                        <p className="text-foreground text-2xl font-bold">{completedReminders}</p>
+                        <p className="text-foreground text-2xl font-bold">{completedActions}</p>
                       </div>
                     </div>
                   </CardContent>
@@ -570,67 +571,71 @@ export default function Home() {
                   </Card>
                 </div>
 
-                {/* Upcoming Reminders */}
+                {/* Upcoming Actions */}
                 <div>
                   <Card>
                     <CardHeader>
                       <div className="flex items-center justify-between">
-                        <CardTitle>Upcoming Reminders</CardTitle>
+                        <CardTitle>Upcoming Actions</CardTitle>
                         <Link href="/manage" className="text-primary hover:text-primary/80 flex items-center text-sm">
                           View all <ArrowRight className="ml-1 h-4 w-4" />
                         </Link>
                       </div>
                     </CardHeader>
                     <CardContent>
-                      {upcomingReminders.length === 0 ? (
+                      {upcomingActions.length === 0 ? (
                         <div className="py-8 text-center">
                           <Bell className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
-                          <p className="text-muted-foreground">No upcoming reminders</p>
+                          <p className="text-muted-foreground">No upcoming actions</p>
                           <Link
                             href="/manage"
                             className="text-primary hover:text-primary/80 mt-2 inline-flex items-center"
                           >
                             <Plus className="mr-1 h-4 w-4" />
-                            Add a reminder
+                            Add an action
                           </Link>
                         </div>
                       ) : (
                         <div className="space-y-2">
-                          {upcomingReminders.map((reminder) => (
+                          {upcomingActions.map((action) => (
                             <div
-                              key={reminder.id}
+                              key={action.id}
                               className="bg-muted/50 hover:bg-muted/70 cursor-pointer rounded-lg p-2 transition-colors"
                               onClick={() => {
-                                // Navigate to manage page with reminder selected
-                                router.push(`/manage?reminder=${reminder.id}`)
+                                // Navigate to manage page with action selected
+                                router.push(`/manage?action=${action.id}`)
                               }}
                             >
                               <div className="flex items-start justify-between">
                                 <div className="flex-1">
-                                  <h4 className="text-foreground font-medium">{reminder.title}</h4>
+                                  <h4 className="text-foreground font-medium">{action.title}</h4>
                                   <div className="mt-1 flex items-center space-x-2">
-                                    <Badge
-                                      variant={
-                                        reminder.priority === 'high'
-                                          ? 'destructive'
-                                          : reminder.priority === 'medium'
-                                            ? 'default'
-                                            : 'secondary'
-                                      }
-                                      className="text-xs"
-                                    >
-                                      {reminder.priority}
-                                    </Badge>
-                                    <span className="text-muted-foreground ml-2 text-xs">
-                                      {formatLocalDate(reminder.reminder_date)}
-                                    </span>
+                                    {action.priority && (
+                                      <Badge
+                                        variant={
+                                          action.priority === 'high'
+                                            ? 'destructive'
+                                            : action.priority === 'medium'
+                                              ? 'default'
+                                              : 'secondary'
+                                        }
+                                        className="text-xs"
+                                      >
+                                        {action.priority}
+                                      </Badge>
+                                    )}
+                                    {action.start_date && (
+                                      <span className="text-muted-foreground ml-2 text-xs">
+                                        {formatLocalDate(action.start_date)}
+                                      </span>
+                                    )}
                                     <span className="text-muted-foreground ml-2 flex items-center text-xs">
                                       <Users className="mr-1 h-3 w-3" />
-                                      {reminder.contact?.first_name} {reminder.contact?.last_name}
+                                      {action.contact?.first_name} {action.contact?.last_name}
                                     </span>
                                   </div>
-                                  {reminder.description && (
-                                    <p className="text-muted-foreground mt-1 text-sm">{reminder.description}</p>
+                                  {action.description && (
+                                    <p className="text-muted-foreground mt-1 text-sm">{action.description}</p>
                                   )}
                                 </div>
                                 <div className="ml-2">

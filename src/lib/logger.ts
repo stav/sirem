@@ -65,16 +65,16 @@ export const logger = {
     useLogger.getState().addMessage(`Contact deleted: ${contactName}`, 'warning', 'contact_delete', { contactName })
   },
 
-  reminderCreated: (reminderTitle: string) => {
+  actionCreated: (actionTitle: string) => {
     useLogger
       .getState()
-      .addMessage(`Reminder created: ${reminderTitle}`, 'success', 'reminder_create', { reminderTitle })
+      .addMessage(`Action created: ${actionTitle}`, 'success', 'action_create', { actionTitle })
   },
 
-  reminderCompleted: (reminderTitle: string) => {
+  actionCompleted: (actionTitle: string) => {
     useLogger
       .getState()
-      .addMessage(`Reminder completed: ${reminderTitle}`, 'success', 'reminder_complete', { reminderTitle })
+      .addMessage(`Action completed: ${actionTitle}`, 'success', 'action_complete', { actionTitle })
   },
 
   error: (message: string, action?: string) => {
