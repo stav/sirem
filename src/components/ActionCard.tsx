@@ -63,23 +63,26 @@ function getStatusIndicator(action: Action) {
   }
   const daysDiff = getDaysDifference()
 
-  // If completed, always gray
+  // Check if action is completed
   const isCompleted = !!action.completed_date
-  let overdueLevel: 'future' | 'orange' | 'red' | 'gray' | 'today' = 'future'
-  if (isCompleted) overdueLevel = 'gray'
-  else if (daysDiff === 0) overdueLevel = 'today'
-  else if (daysDiff < 0 && daysDiff >= -6) overdueLevel = 'orange'
-  else if (daysDiff <= -7) overdueLevel = 'red'
 
-  const isPending = daysDiff >= 0
+  // Determine border color based on completion and date
+  let borderColor = ''
+  if (isCompleted) {
+    borderColor = 'border-l-4 border-t border-r border-b border-gray-300 dark:border-gray-600' // All sides muted gray for completed
+  } else if (daysDiff < 0) {
+    borderColor = 'border-l-red-500' // Red border for past due
+  } else {
+    borderColor = 'border-l-blue-500' // Blue border for future
+  }
 
   return {
     icon: HelpCircle,
-    className: 'text-accent border-blue-200 dark:border-blue-800',
+    className: borderColor,
     text: status || 'No Status',
     daysDiff,
-    isPending,
-    overdueLevel,
+    isPending: daysDiff >= 0,
+    isCompleted,
   }
 }
 
@@ -128,12 +131,10 @@ const ActionCard = React.memo(function ActionCard({
   return (
     <Card
       className={`border-l-4 ${statusIndicator.className} transition-all
-      ${statusIndicator.overdueLevel === 'future' ? 'bg-primary/10 hover:bg-primary/20 dark:bg-primary/20 dark:hover:bg-primary/30' : ''}
-      ${statusIndicator.overdueLevel === 'today' ? 'bg-accent/50 hover:bg-accent/70 dark:bg-accent/30 dark:hover:bg-accent/50' : ''}
-      ${statusIndicator.overdueLevel === 'orange' ? 'bg-accent/50 hover:bg-accent/70 dark:bg-accent/30 dark:hover:bg-accent/50' : ''}
-      ${statusIndicator.overdueLevel === 'red' ? 'bg-destructive/10 hover:bg-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30' : ''}
-      ${statusIndicator.overdueLevel === 'gray' ? 'bg-muted/50 hover:bg-muted/70' : ''}
-      ${!['future', 'today', 'orange', 'red', 'gray'].includes(statusIndicator.overdueLevel) ? 'bg-card' : ''}
+      ${statusIndicator.isCompleted ? 'bg-muted hover:bg-muted/50 dark:bg-muted dark:hover:bg-muted/50' : 'hover:bg-muted/20 dark:hover:bg-muted/10'}
+      ${statusIndicator.isCompleted ? 'hover:border-l-4 hover:border-t hover:border-r hover:border-b hover:border-gray-500 dark:hover:border-gray-400' : ''}
+      ${!statusIndicator.isCompleted && statusIndicator.className.includes('red') ? 'hover:border-l-4 hover:border-t hover:border-r hover:border-b hover:border-red-500' : ''}
+      ${!statusIndicator.isCompleted && statusIndicator.className.includes('blue') ? 'hover:border-l-4 hover:border-t hover:border-r hover:border-b hover:border-blue-500' : ''}
     `}
     >
       <CardContent className="p-4">
