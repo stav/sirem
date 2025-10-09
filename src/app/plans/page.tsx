@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useMemo, useRef, useState } from 'react'
+import React, { useMemo, useRef, useState, useEffect } from 'react'
 import Navigation from '@/components/Navigation'
 import { usePlans } from '@/hooks/usePlans'
 import { Button } from '@/components/ui/button'
@@ -8,11 +8,12 @@ import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Enums } from '@/lib/supabase-types'
 import { AgGridReact } from 'ag-grid-react'
-import { AllCommunityModule, ColDef, GridReadyEvent, ICellRendererParams, ModuleRegistry } from 'ag-grid-community'
+import { AllCommunityModule, ColDef, GridReadyEvent, ICellRendererParams, ModuleRegistry, Theme, themeQuartz, colorSchemeDark } from 'ag-grid-community'
 import type { Database } from '@/lib/supabase'
 import { Pencil, Trash2, Scale } from 'lucide-react'
 import ModalForm from '@/components/ui/modal-form'
 import PlanComparisonModal from '@/components/PlanComparisonModal'
+import { useTheme } from '@/contexts/ThemeContext'
 
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule])
@@ -51,6 +52,18 @@ const planTypeOptions: PlanType[] = [
 
 export default function PlansPage() {
   const { plans, loading, error, createPlan, updatePlan, deletePlan } = usePlans()
+  const { theme } = useTheme()
+
+  // Create theme object for AG Grid v34+ Theming API (client-side only)
+  const [agGridTheme, setAgGridTheme] = useState<Theme | undefined>(undefined)
+  
+  useEffect(() => {
+    const isDark = theme === 'dark' || (theme === 'system' && 
+      window.matchMedia('(prefers-color-scheme: dark)').matches)
+    
+    // Use modern AG Grid v34+ Theming API
+    setAgGridTheme(isDark ? themeQuartz.withPart(colorSchemeDark) : themeQuartz)
+  }, [theme])
 
   const [isAdding, setIsAdding] = useState(false)
   const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([])
@@ -667,6 +680,7 @@ export default function PlansPage() {
             <div className="w-full" style={{ height: '70vh' }}>
               <AgGridReact
                 ref={gridRef}
+                theme={agGridTheme}
                 rowData={sortedPlans}
                 columnDefs={columnDefs}
                 defaultColDef={defaultColDef}
