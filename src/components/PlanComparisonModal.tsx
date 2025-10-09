@@ -1,0 +1,443 @@
+'use client'
+
+import React, { useState } from 'react'
+import { X, TrendingUp, TrendingDown, Minus, Calculator } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import type { Database } from '@/lib/supabase'
+
+type Plan = Database['public']['Tables']['plans']['Row']
+
+interface PlanComparisonModalProps {
+  isOpen: boolean
+  onClose: () => void
+  plans: Plan[]
+}
+
+interface UsageInputs {
+  primaryCareVisits: number
+  specialistVisits: number
+  emergencyRoomVisits: number
+  urgentCareVisits: number
+  hospitalStays: number
+  ambulanceUses: number
+}
+
+export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComparisonModalProps) {
+  const [usageInputs, setUsageInputs] = useState<UsageInputs>({
+    primaryCareVisits: 4,
+    specialistVisits: 2,
+    emergencyRoomVisits: 0,
+    urgentCareVisits: 1,
+    hospitalStays: 0,
+    ambulanceUses: 0,
+  })
+
+  const [showCalculator, setShowCalculator] = useState(false)
+
+  if (!isOpen) return null
+
+  // Helper to format currency
+  const formatCurrency = (value: number | null | undefined): string => {
+    if (value == null) return '—'
+    return `$${value.toFixed(2)}`
+  }
+
+  // Helper to format numbers
+  const formatNumber = (value: number | null | undefined): string => {
+    if (value == null) return '—'
+    return String(value)
+  }
+
+  // Calculate estimated annual costs
+  const calculateAnnualCost = (plan: Plan): number => {
+    const premium = (plan.premium_monthly ?? 0) * 12
+    const giveback = (plan.giveback_monthly ?? 0) * 12
+    
+    const primaryCareCosts = (plan.primary_care_copay ?? 0) * usageInputs.primaryCareVisits
+    const specialistCosts = (plan.specialist_copay ?? 0) * usageInputs.specialistVisits
+    const erCosts = (plan.emergency_room_copay ?? 0) * usageInputs.emergencyRoomVisits
+    const urgentCareCosts = (plan.urgent_care_copay ?? 0) * usageInputs.urgentCareVisits
+    const hospitalCosts = (plan.hospital_inpatient_per_stay_copay ?? 0) * usageInputs.hospitalStays
+    const ambulanceCosts = (plan.ambulance_copay ?? 0) * usageInputs.ambulanceUses
+
+    const totalCopays = primaryCareCosts + specialistCosts + erCosts + urgentCareCosts + hospitalCosts + ambulanceCosts
+
+    return premium - giveback + totalCopays
+  }
+
+  // Compare two values and return indicator
+  const getComparisonIndicator = (current: number | null, others: (number | null)[], lowerIsBetter: boolean = true) => {
+    if (current == null) return null
+    const validOthers = others.filter(v => v != null) as number[]
+    if (validOthers.length === 0) return null
+
+    const currentValue = current
+    const avgOthers = validOthers.reduce((a, b) => a + b, 0) / validOthers.length
+
+    if (Math.abs(currentValue - avgOthers) < 0.01) {
+      return <Minus className="h-4 w-4 text-gray-400 inline ml-1" />
+    }
+
+    const isBetter = lowerIsBetter ? currentValue < avgOthers : currentValue > avgOthers
+    
+    if (isBetter) {
+      return <span title="Better than average"><TrendingDown className="h-4 w-4 text-green-600 inline ml-1" /></span>
+    } else {
+      return <span title="Worse than average"><TrendingUp className="h-4 w-4 text-red-600 inline ml-1" /></span>
+    }
+  }
+
+  // Comparison field component
+  const ComparisonField = ({ 
+    label, 
+    values, 
+    lowerIsBetter = true,
+    formatter = formatCurrency 
+  }: { 
+    label: string
+    values: (number | null)[]
+    lowerIsBetter?: boolean
+    formatter?: (v: number | null) => string
+  }) => (
+    <tr className="border-b border-border">
+      <td className="py-2 px-3 font-medium text-sm bg-muted/30">{label}</td>
+      {values.map((value, idx) => {
+        const others = values.filter((_, i) => i !== idx)
+        return (
+          <td key={idx} className="py-2 px-3 text-center text-sm">
+            {formatter(value)}
+            {getComparisonIndicator(value, others, lowerIsBetter)}
+          </td>
+        )
+      })}
+    </tr>
+  )
+
+  const annualCosts = plans.map(calculateAnnualCost)
+  const lowestCost = Math.min(...annualCosts)
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+      <div
+        className="bg-background border border-border rounded-lg shadow-xl w-[95vw] max-w-7xl max-h-[90vh] overflow-hidden flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <h2 className="text-xl font-semibold">Compare Plans ({plans.length})</h2>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant={showCalculator ? 'default' : 'outline'}
+              onClick={() => setShowCalculator(!showCalculator)}
+            >
+              <Calculator className="h-4 w-4 mr-2" />
+              Cost Calculator
+            </Button>
+            <Button size="icon" variant="ghost" onClick={onClose}>
+              <X className="h-5 w-5" />
+            </Button>
+          </div>
+        </div>
+
+        {/* Cost Calculator Panel */}
+        {showCalculator && (
+          <div className="p-4 bg-muted/30 border-b border-border">
+            <h3 className="text-sm font-semibold mb-3">Estimate Annual Usage</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div>
+                <Label className="text-xs">Primary Care Visits</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={usageInputs.primaryCareVisits}
+                  onChange={(e) => setUsageInputs({ ...usageInputs, primaryCareVisits: Number(e.target.value) })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Specialist Visits</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={usageInputs.specialistVisits}
+                  onChange={(e) => setUsageInputs({ ...usageInputs, specialistVisits: Number(e.target.value) })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">ER Visits</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={usageInputs.emergencyRoomVisits}
+                  onChange={(e) => setUsageInputs({ ...usageInputs, emergencyRoomVisits: Number(e.target.value) })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Urgent Care Visits</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={usageInputs.urgentCareVisits}
+                  onChange={(e) => setUsageInputs({ ...usageInputs, urgentCareVisits: Number(e.target.value) })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Hospital Stays</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={usageInputs.hospitalStays}
+                  onChange={(e) => setUsageInputs({ ...usageInputs, hospitalStays: Number(e.target.value) })}
+                  className="mt-1"
+                />
+              </div>
+              <div>
+                <Label className="text-xs">Ambulance Uses</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  value={usageInputs.ambulanceUses}
+                  onChange={(e) => setUsageInputs({ ...usageInputs, ambulanceUses: Number(e.target.value) })}
+                  className="mt-1"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Comparison Table */}
+        <div className="flex-1 overflow-auto p-4">
+          <table className="w-full border-collapse">
+            <thead>
+              <tr className="border-b-2 border-border">
+                <th className="py-3 px-3 text-left font-semibold text-sm bg-muted/50 sticky top-0">Field</th>
+                {plans.map((plan, idx) => (
+                  <th key={idx} className="py-3 px-3 text-center font-semibold text-sm bg-muted/50 sticky top-0">
+                    <div className="font-bold">{plan.name}</div>
+                    <div className="text-xs font-normal text-muted-foreground">
+                      {plan.carrier} • {plan.plan_type}
+                    </div>
+                    {plan.plan_year && (
+                      <div className="text-xs font-normal text-muted-foreground">{plan.plan_year}</div>
+                    )}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {/* Basic Information */}
+              <tr className="bg-muted/50">
+                <td colSpan={plans.length + 1} className="py-2 px-3 font-semibold text-sm">
+                  Basic Information
+                </td>
+              </tr>
+              <tr className="border-b border-border">
+                <td className="py-2 px-3 font-medium text-sm bg-muted/30">CMS ID</td>
+                {plans.map((plan, idx) => (
+                  <td key={idx} className="py-2 px-3 text-center text-sm">
+                    {plan.cms_id || '—'}
+                  </td>
+                ))}
+              </tr>
+
+              {/* Monthly Costs */}
+              <tr className="bg-muted/50">
+                <td colSpan={plans.length + 1} className="py-2 px-3 font-semibold text-sm">
+                  Monthly Costs
+                </td>
+              </tr>
+              <ComparisonField
+                label="Premium (Monthly)"
+                values={plans.map(p => p.premium_monthly)}
+                lowerIsBetter={true}
+              />
+              <ComparisonField
+                label="Giveback (Monthly)"
+                values={plans.map(p => p.giveback_monthly)}
+                lowerIsBetter={false}
+              />
+              <ComparisonField
+                label="Net Monthly Cost"
+                values={plans.map(p => (p.premium_monthly ?? 0) - (p.giveback_monthly ?? 0))}
+                lowerIsBetter={true}
+              />
+
+              {/* Benefits */}
+              <tr className="bg-muted/50">
+                <td colSpan={plans.length + 1} className="py-2 px-3 font-semibold text-sm">
+                  Supplemental Benefits
+                </td>
+              </tr>
+              <ComparisonField
+                label="OTC Benefit (Quarterly)"
+                values={plans.map(p => p.otc_benefit_quarterly)}
+                lowerIsBetter={false}
+              />
+              <ComparisonField
+                label="Dental Benefit (Yearly)"
+                values={plans.map(p => p.dental_benefit_yearly)}
+                lowerIsBetter={false}
+              />
+              <ComparisonField
+                label="Hearing Benefit (Yearly)"
+                values={plans.map(p => p.hearing_benefit_yearly)}
+                lowerIsBetter={false}
+              />
+              <ComparisonField
+                label="Vision Benefit (Yearly)"
+                values={plans.map(p => p.vision_benefit_yearly)}
+                lowerIsBetter={false}
+              />
+
+              {/* Medical Copays */}
+              <tr className="bg-muted/50">
+                <td colSpan={plans.length + 1} className="py-2 px-3 font-semibold text-sm">
+                  Medical Copays
+                </td>
+              </tr>
+              <ComparisonField
+                label="Primary Care Copay"
+                values={plans.map(p => p.primary_care_copay)}
+                lowerIsBetter={true}
+              />
+              <ComparisonField
+                label="Specialist Copay"
+                values={plans.map(p => p.specialist_copay)}
+                lowerIsBetter={true}
+              />
+              <ComparisonField
+                label="Emergency Room Copay"
+                values={plans.map(p => p.emergency_room_copay)}
+                lowerIsBetter={true}
+              />
+              <ComparisonField
+                label="Urgent Care Copay"
+                values={plans.map(p => p.urgent_care_copay)}
+                lowerIsBetter={true}
+              />
+              <ComparisonField
+                label="Ambulance Copay"
+                values={plans.map(p => p.ambulance_copay)}
+                lowerIsBetter={true}
+              />
+
+              {/* Hospital */}
+              <tr className="bg-muted/50">
+                <td colSpan={plans.length + 1} className="py-2 px-3 font-semibold text-sm">
+                  Hospital Coverage
+                </td>
+              </tr>
+              <ComparisonField
+                label="Inpatient Copay (Per Stay)"
+                values={plans.map(p => p.hospital_inpatient_per_stay_copay)}
+                lowerIsBetter={true}
+              />
+              <ComparisonField
+                label="Inpatient Days Covered"
+                values={plans.map(p => p.hospital_inpatient_days)}
+                lowerIsBetter={false}
+                formatter={formatNumber}
+              />
+              <ComparisonField
+                label="MOOP (Annual)"
+                values={plans.map(p => p.moop_annual)}
+                lowerIsBetter={true}
+              />
+
+              {/* Estimated Annual Cost */}
+              {showCalculator && (
+                <>
+                  <tr className="bg-muted/50">
+                    <td colSpan={plans.length + 1} className="py-2 px-3 font-semibold text-sm">
+                      Estimated Annual Cost
+                    </td>
+                  </tr>
+                  <tr className="border-b-2 border-border bg-blue-50 dark:bg-blue-950/30">
+                    <td className="py-3 px-3 font-bold text-sm">Total Estimated Annual Cost</td>
+                    {annualCosts.map((cost, idx) => (
+                      <td key={idx} className={`py-3 px-3 text-center font-bold text-sm ${cost === lowestCost ? 'text-green-600' : ''}`}>
+                        {formatCurrency(cost)}
+                        {cost === lowestCost && ' ★'}
+                      </td>
+                    ))}
+                  </tr>
+                </>
+              )}
+
+              {/* Additional Info */}
+              <tr className="bg-muted/50">
+                <td colSpan={plans.length + 1} className="py-2 px-3 font-semibold text-sm">
+                  Additional Information
+                </td>
+              </tr>
+              <tr className="border-b border-border">
+                <td className="py-2 px-3 font-medium text-sm bg-muted/30">Service Area</td>
+                {plans.map((plan, idx) => (
+                  <td key={idx} className="py-2 px-3 text-center text-sm">
+                    {plan.service_area || '—'}
+                  </td>
+                ))}
+              </tr>
+              <tr className="border-b border-border">
+                <td className="py-2 px-3 font-medium text-sm bg-muted/30">Counties</td>
+                {plans.map((plan, idx) => (
+                  <td key={idx} className="py-2 px-3 text-center text-xs">
+                    {plan.counties?.join(', ') || '—'}
+                  </td>
+                ))}
+              </tr>
+              <tr className="border-b border-border">
+                <td className="py-2 px-3 font-medium text-sm bg-muted/30">Pharmacy Benefit</td>
+                {plans.map((plan, idx) => (
+                  <td key={idx} className="py-2 px-3 text-center text-sm">
+                    {plan.pharmacy_benefit || '—'}
+                  </td>
+                ))}
+              </tr>
+              <tr className="border-b border-border">
+                <td className="py-2 px-3 font-medium text-sm bg-muted/30">Notes</td>
+                {plans.map((plan, idx) => (
+                  <td key={idx} className="py-2 px-3 text-center text-xs">
+                    {plan.notes || '—'}
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        {/* Legend */}
+        <div className="p-4 border-t border-border bg-muted/30">
+          <div className="flex items-center gap-6 text-xs text-muted-foreground">
+            <div className="flex items-center gap-1">
+              <TrendingDown className="h-4 w-4 text-green-600" />
+              <span>Better than average</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <TrendingUp className="h-4 w-4 text-red-600" />
+              <span>Worse than average</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <Minus className="h-4 w-4 text-gray-400" />
+              <span>Same as average</span>
+            </div>
+            {showCalculator && (
+              <div className="ml-auto font-semibold">
+                ★ = Lowest estimated annual cost
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+
+

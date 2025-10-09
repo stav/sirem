@@ -10,8 +10,9 @@ import { Enums } from '@/lib/supabase-types'
 import { AgGridReact } from 'ag-grid-react'
 import { AllCommunityModule, ColDef, GridReadyEvent, ICellRendererParams, ModuleRegistry } from 'ag-grid-community'
 import type { Database } from '@/lib/supabase'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2, Scale } from 'lucide-react'
 import ModalForm from '@/components/ui/modal-form'
+import PlanComparisonModal from '@/components/PlanComparisonModal'
 
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule])
@@ -52,6 +53,8 @@ export default function PlansPage() {
   const { plans, loading, error, createPlan, updatePlan, deletePlan } = usePlans()
 
   const [isAdding, setIsAdding] = useState(false)
+  const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([])
+  const [showComparison, setShowComparison] = useState(false)
   const [form, setForm] = useState({
     name: '',
     plan_type: '' as PlanType | '',
@@ -123,8 +126,48 @@ export default function PlansPage() {
     })
   }, [plans])
 
+  const handleToggleSelection = (planId: string) => {
+    setSelectedPlanIds((prev) => {
+      if (prev.includes(planId)) {
+        return prev.filter((id) => id !== planId)
+      } else {
+        // Limit to 3 plans for comparison
+        if (prev.length >= 3) return prev
+        return [...prev, planId]
+      }
+    })
+  }
+
+  const selectedPlans = useMemo(() => {
+    return plans.filter((p) => selectedPlanIds.includes(p.id))
+  }, [plans, selectedPlanIds])
+
   const columnDefs: ColDef[] = useMemo(
     () => [
+      {
+        headerName: '',
+        field: 'select',
+        minWidth: 50,
+        maxWidth: 50,
+        checkboxSelection: false,
+        cellRenderer: (p: ICellRendererParams<Database['public']['Tables']['plans']['Row']>) => {
+          const planId = p.data?.id
+          if (!planId) return null
+          const isSelected = selectedPlanIds.includes(planId)
+          const isDisabled = !isSelected && selectedPlanIds.length >= 3
+          return (
+            <input
+              type="checkbox"
+              checked={isSelected}
+              disabled={isDisabled}
+              onChange={() => handleToggleSelection(planId)}
+              className="cursor-pointer disabled:cursor-not-allowed"
+              title={isDisabled ? 'Maximum 3 plans for comparison' : 'Select for comparison'}
+            />
+          )
+        },
+        pinned: 'left',
+      },
       {
         field: 'name',
         headerName: 'Plan',
@@ -230,7 +273,7 @@ export default function PlansPage() {
         pinned: 'right',
       },
     ],
-    [deletePlan]
+    [deletePlan, selectedPlanIds]
   )
 
   const defaultColDef = useMemo(
@@ -371,11 +414,19 @@ export default function PlansPage() {
         <div className="mx-auto max-w-7xl space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Plans Catalog</h2>
-            {!isAdding && (
-              <Button size="sm" onClick={() => setIsAdding(true)}>
-                Add Plan
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {selectedPlanIds.length >= 2 && (
+                <Button size="sm" variant="outline" onClick={() => setShowComparison(true)}>
+                  <Scale className="h-4 w-4 mr-2" />
+                  Compare ({selectedPlanIds.length})
+                </Button>
+              )}
+              {!isAdding && (
+                <Button size="sm" onClick={() => setIsAdding(true)}>
+                  Add Plan
+                </Button>
+              )}
+            </div>
           </div>
 
           {isAdding && (
@@ -869,6 +920,9 @@ export default function PlansPage() {
           {error && <div className="text-destructive text-sm">{error}</div>}
         </div>
       </div>
+
+      {/* Plan Comparison Modal */}
+      <PlanComparisonModal isOpen={showComparison} onClose={() => setShowComparison(false)} plans={selectedPlans} />
     </div>
   )
 }
