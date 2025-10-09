@@ -14,6 +14,7 @@ import {
   getT65Days,
 } from '@/lib/contact-utils'
 import { formatDateTime } from '@/lib/utils'
+import { calculateCmsId } from '@/lib/plan-utils'
 import { getPrimaryAddress } from '@/lib/address-utils'
 import { usePlanEnrollments } from '@/hooks/usePlanEnrollments'
 
@@ -298,7 +299,7 @@ export default function ContactCard({
               const parts = [
                 plan?.carrier,
                 plan?.name,
-                plan?.cms_id ? `(${plan.cms_id})` : '',
+                plan ? calculateCmsId(plan) ? `(${calculateCmsId(plan)})` : '' : '',
                 plan?.plan_type,
                 effectiveDateOnly,
                 `(${enr.enrollment_status})`,

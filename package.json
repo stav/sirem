@@ -12,6 +12,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "dump-data": "node scripts/supabase-dump.mjs",
+    "dump-types": "npx supabase gen types typescript --project-id $(grep SUPABASE_PROJECT_ID .env.local 2>/dev/null | cut -d'=' -f2 || echo) >| src/lib/supabase-types.ts",
     "show-migrations": "node data/schema/run-migrations.mjs",
     "clean": "rm -rf .next out",
     "analyze": "ANALYZE=true npm run build"
