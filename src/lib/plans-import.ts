@@ -35,7 +35,7 @@ function mapCarrier(value: string | null | undefined): Database['public']['Enums
     Medico: 'Medico',
     CareSource: 'CareSource',
     SummaCare: 'SummaCare',
-    Cigna: 'Cigna',
+    Zing: 'Zing',
     Heartland: 'Heartland',
     Other: 'Other',
   }
@@ -136,10 +136,20 @@ export async function importPlansCsv(text: string): Promise<{
     ambulance: idx('ambulance'),
     er: idx('er'),
     urgent: idx('urgent'),
-    moop: idx('moop'),
+    moop: header.findIndex((h) => h.includes('moop')),
     hospPerDay: header.findIndex((h) => h.startsWith('hospital /day')),
     hospDays: header.findIndex((h) => h.startsWith('hospital days')),
-    hospStay: header.findIndex((h) => h.startsWith('hospital stays')),
+    counties: idx('counties'),
+    // New fields from 2026 CSV (benefits is calculated, not imported)
+    card: idx('card'),
+    fitness: idx('fitness'),
+    trans: idx('trans'),
+    medDeduct: idx('med deduct'),
+    rxDeduct: idx('rx deduct tier345'),
+    medicaid: idx('medicaid'),
+    transitioned: idx('transitioned'),
+    rxCostShare: idx('rx cost share'),
+    summary: idx('summary'),
   }
 
   let imported = 0
@@ -153,18 +163,52 @@ export async function importPlansCsv(text: string): Promise<{
   for (const r of dataRows) {
     try {
       const { contract, plan } = parseCmsId(r[col.id] || null)
-      const hospitalStayCopay = toNumber(r[col.hospStay])
-      const perDay = toNumber(r[col.hospPerDay])
       const days = toNumber(r[col.hospDays])
-      const computedStay = perDay != null && days != null ? perDay * days : null
 
-      const record: PlanInsert = {
-        name: r[col.name] || 'Unnamed Plan',
-        plan_type: mapPlanType(r[col.type]),
-        carrier: mapCarrier(r[col.carrier]),
-        plan_year: toNumber(r[col.year]) ?? new Date().getUTCFullYear(),
-        cms_contract_number: contract,
-        cms_plan_number: plan,
+      // Parse counties if available
+      const countiesStr = col.counties >= 0 ? r[col.counties] : null
+      const counties = countiesStr
+        ? countiesStr
+            .split(',')
+            .map((c) => c.trim())
+            .filter(Boolean)
+        : null
+
+      // Extract year from description if not in year column (e.g., "2026 Aetna...")
+      let planYear = toNumber(r[col.year])
+      if (!planYear && col.description >= 0) {
+        const desc = r[col.description]
+        const yearMatch = desc?.match(/^(\d{4})\s/)
+        if (yearMatch) {
+          planYear = Number(yearMatch[1])
+        }
+      }
+      if (!planYear) {
+        planYear = new Date().getUTCFullYear()
+      }
+
+      // Build metadata object with additional fields
+      const metadata: Record<string, string> = {}
+      
+      // Note: total_benefits is calculated on the client, not imported
+      if (col.card >= 0 && r[col.card]) metadata.card_benefit = r[col.card]
+      if (col.fitness >= 0 && r[col.fitness]) metadata.fitness_benefit = r[col.fitness]
+      if (col.trans >= 0 && r[col.trans]) metadata.transportation_benefit = r[col.trans]
+      if (col.medDeduct >= 0 && r[col.medDeduct]) metadata.medical_deductible = r[col.medDeduct]
+      if (col.rxDeduct >= 0 && r[col.rxDeduct]) metadata.rx_deductible_tier345 = r[col.rxDeduct]
+      if (col.medicaid >= 0 && r[col.medicaid]) metadata.medicaid_eligibility = r[col.medicaid]
+      if (col.transitioned >= 0 && r[col.transitioned]) metadata.transitioned_from = r[col.transitioned]
+      if (col.rxCostShare >= 0 && r[col.rxCostShare]) metadata.rx_cost_share = r[col.rxCostShare]
+      if (col.summary >= 0 && r[col.summary]) metadata.summary = r[col.summary]
+
+          const record: PlanInsert = {
+            name: r[col.name] || 'Unnamed Plan',
+            plan_type: mapPlanType(r[col.type]),
+            carrier: mapCarrier(r[col.carrier]),
+            plan_year: planYear,
+            cms_contract_number: contract,
+            cms_plan_number: plan,
+            cms_geo_segment: '', // Default to empty string for CSV imports
         premium_monthly: toNumber(r[col.premium]),
         giveback_monthly: toNumber(r[col.giveback]),
         otc_benefit_quarterly: toNumber(r[col.otc]),
@@ -177,18 +221,18 @@ export async function importPlansCsv(text: string): Promise<{
         emergency_room_copay: toNumber(r[col.er]),
         urgent_care_copay: toNumber(r[col.urgent]),
         moop_annual: toNumber(r[col.moop]),
-        hospital_inpatient_per_stay_copay: hospitalStayCopay ?? computedStay,
+        hospital_inpatient_per_day_copay: toNumber(r[col.hospPerDay]),
         hospital_inpatient_days: days,
-        pharmacy_benefit: null,
+        pharmacy_benefit: col.rxCostShare >= 0 ? r[col.rxCostShare] : null,
         service_area: null,
-        counties: null,
+        counties: counties,
         notes: r[col.description] || null,
-        metadata: null,
+        metadata: Object.keys(metadata).length > 0 ? metadata : null,
         effective_start: null,
         effective_end: null,
       }
 
-      const key = `${record.cms_contract_number ?? ''}|${record.cms_plan_number ?? ''}|${record.plan_year ?? ''}`
+          const key = `${record.cms_contract_number ?? ''}|${record.cms_plan_number ?? ''}|${record.cms_geo_segment ?? ''}|${record.plan_year ?? ''}`
       dedup.set(key, record)
       imported++
     } catch {
@@ -199,10 +243,25 @@ export async function importPlansCsv(text: string): Promise<{
 
   const batch = Array.from(dedup.values())
   if (batch.length > 0) {
+    // Try inserting one record first to debug the issue
+    console.log('Sample record:', JSON.stringify(batch[0], null, 2))
+    
+    // Clear all existing plans for the year 2026 to avoid conflicts
+    const { error: deleteError } = await supabase
+      .from('plans')
+      .delete()
+      .eq('plan_year', 2026)
+    
+    if (deleteError) {
+      console.log('Delete warning (non-fatal):', deleteError)
+    }
+    
+    // Now insert the new plans
     const { error } = await supabase
       .from('plans')
-      .upsert(batch, { onConflict: 'cms_contract_number,cms_plan_number,plan_year' })
+      .insert(batch)
     if (error) {
+      console.error('Upsert error:', error)
       errors = batch.length
       return {
         success: false,
