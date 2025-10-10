@@ -815,7 +815,7 @@ export type Database = {
         | "Medico"
         | "CareSource"
         | "SummaCare"
-        | "Cigna"
+        | "Zing"
         | "Heartland"
         | "Other"
       enrollment_status:
@@ -824,6 +824,7 @@ export type Database = {
         | "cancelled"
         | "terminated"
         | "declined"
+        | "ended"
       plan_type:
         | "HMO"
         | "HMO-POS"
@@ -835,6 +836,7 @@ export type Database = {
         | "PDP"
         | "Supplement"
         | "Ancillary"
+        | "HMO-D-SNP"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -973,7 +975,7 @@ export const Constants = {
         "Medico",
         "CareSource",
         "SummaCare",
-        "Cigna",
+        "Zing",
         "Heartland",
         "Other",
       ],
@@ -983,6 +985,7 @@ export const Constants = {
         "cancelled",
         "terminated",
         "declined",
+        "ended",
       ],
       plan_type: [
         "HMO",
@@ -995,6 +998,7 @@ export const Constants = {
         "PDP",
         "Supplement",
         "Ancillary",
+        "HMO-D-SNP",
       ],
     },
   },

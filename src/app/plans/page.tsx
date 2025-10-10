@@ -23,32 +23,33 @@ type Carrier = Enums<'carrier'>
 type PlanType = Enums<'plan_type'>
 
 const carrierOptions: Carrier[] = [
-  'United',
-  'Humana',
-  'Devoted',
-  'Anthem',
-  'MedMutual',
   'Aetna',
-  'GTL',
-  'Medico',
+  'Anthem',
   'CareSource',
-  'SummaCare',
-  'Cigna',
+  'Devoted',
+  'GTL',
   'Heartland',
+  'Humana',
+  'Medico',
+  'MedMutual',
+  'SummaCare',
+  'United',
+  'Zing',
   'Other',
 ]
 
 const planTypeOptions: PlanType[] = [
-  'HMO',
-  'HMO-POS',
-  'HMO-POS-D-SNP',
-  'HMO-POS-C-SNP',
-  'PPO',
-  'D-SNP',
-  'C-SNP',
-  'PDP',
-  'Supplement',
   'Ancillary',
+  'C-SNP',
+  'D-SNP',
+  'HMO-D-SNP',
+  'HMO-POS-C-SNP',
+  'HMO-POS-D-SNP',
+  'HMO-POS',
+  'HMO',
+  'PDP',
+  'PPO',
+  'Supplement',
 ]
 
 export default function PlansPage() {
