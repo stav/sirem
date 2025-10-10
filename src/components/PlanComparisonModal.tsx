@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { Database } from '@/lib/supabase'
+import { calculateCmsId } from '@/lib/plan-utils'
 
 type Plan = Database['public']['Tables']['plans']['Row']
 
@@ -241,7 +242,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">CMS ID</td>
                 {plans.map((plan, idx) => (
                   <td key={idx} className="py-2 px-3 text-center text-sm">
-                    {plan.cms_id || '—'}
+                    {calculateCmsId(plan) || '—'}
                   </td>
                 ))}
               </tr>

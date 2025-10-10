@@ -3,6 +3,7 @@
 import React, { useMemo, useRef, useState, useEffect } from 'react'
 import Navigation from '@/components/Navigation'
 import { usePlans } from '@/hooks/usePlans'
+import { calculateCmsId } from '@/lib/plan-utils'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -212,11 +213,10 @@ export default function PlansPage() {
         valueFormatter: (p) => (p.value == null ? '—' : String(p.value)),
       },
       {
-        headerName: 'CMS',
+        headerName: 'CMS ID',
         minWidth: 150,
         valueGetter: (p) => {
-          const parts = [p.data?.cms_contract_number, p.data?.cms_plan_number].filter(Boolean)
-          return parts.length ? parts.join('-') : '—'
+          return calculateCmsId(p.data) || '—'
         },
       },
       {
