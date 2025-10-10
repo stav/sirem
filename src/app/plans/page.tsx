@@ -11,7 +11,7 @@ import { Enums } from '@/lib/supabase-types'
 import { AgGridReact } from 'ag-grid-react'
 import { AllCommunityModule, ColDef, GridReadyEvent, ICellRendererParams, ModuleRegistry, Theme, themeQuartz, colorSchemeDark } from 'ag-grid-community'
 import type { Database } from '@/lib/supabase'
-import { Pencil, Trash2, Scale } from 'lucide-react'
+import { Pencil, Trash2, Scale, Copy } from 'lucide-react'
 import ModalForm from '@/components/ui/modal-form'
 import PlanComparisonModal from '@/components/PlanComparisonModal'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -232,8 +232,8 @@ export default function PlansPage() {
       },
       {
         headerName: 'Actions',
-        minWidth: 120,
-        maxWidth: 140,
+        minWidth: 150,
+        maxWidth: 170,
         cellRenderer: (p: ICellRendererParams<Database['public']['Tables']['plans']['Row']>) => {
           const planId: string | undefined = p.data?.id
           if (!planId) return ''
@@ -276,8 +276,47 @@ export default function PlansPage() {
               await deletePlan(planId)
             }
           }
+          const handleCopy = () => {
+            const plan = p.data
+            if (!plan) return
+            
+            // Populate the add plan form with the plan data
+            setForm({
+              name: plan.name ?? '',
+              plan_type: (plan.plan_type as PlanType | null) ?? '',
+              carrier: (plan.carrier as Carrier | null) ?? '',
+              plan_year: plan.plan_year != null ? String(plan.plan_year + 1) : new Date().getUTCFullYear().toString(),
+              cms_contract_number: plan.cms_contract_number ?? '',
+              cms_plan_number: plan.cms_plan_number ?? '',
+              cms_geo_segment: plan.cms_geo_segment ?? '',
+              premium_monthly: plan.premium_monthly != null ? String(plan.premium_monthly) : '',
+              giveback_monthly: plan.giveback_monthly != null ? String(plan.giveback_monthly) : '',
+              otc_benefit_quarterly: plan.otc_benefit_quarterly != null ? String(plan.otc_benefit_quarterly) : '',
+              dental_benefit_yearly: plan.dental_benefit_yearly != null ? String(plan.dental_benefit_yearly) : '',
+              hearing_benefit_yearly: plan.hearing_benefit_yearly != null ? String(plan.hearing_benefit_yearly) : '',
+              vision_benefit_yearly: plan.vision_benefit_yearly != null ? String(plan.vision_benefit_yearly) : '',
+              primary_care_copay: plan.primary_care_copay != null ? String(plan.primary_care_copay) : '',
+              specialist_copay: plan.specialist_copay != null ? String(plan.specialist_copay) : '',
+              hospital_inpatient_per_stay_copay:
+                plan.hospital_inpatient_per_stay_copay != null ? String(plan.hospital_inpatient_per_stay_copay) : '',
+              hospital_inpatient_days: plan.hospital_inpatient_days != null ? String(plan.hospital_inpatient_days) : '',
+              moop_annual: plan.moop_annual != null ? String(plan.moop_annual) : '',
+              ambulance_copay: plan.ambulance_copay != null ? String(plan.ambulance_copay) : '',
+              emergency_room_copay: plan.emergency_room_copay != null ? String(plan.emergency_room_copay) : '',
+              urgent_care_copay: plan.urgent_care_copay != null ? String(plan.urgent_care_copay) : '',
+              pharmacy_benefit: plan.pharmacy_benefit ?? '',
+              service_area: plan.service_area ?? '',
+              counties: plan.counties?.join(', ') ?? '',
+              notes: plan.notes ?? '',
+            })
+            // Open the add plan form
+            setIsAdding(true)
+          }
           return (
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Button size="icon" variant="ghost" aria-label="Copy plan" title="Copy to next year" onClick={handleCopy}>
+                <Copy className="h-4 w-4" />
+              </Button>
               <Button size="icon" variant="ghost" aria-label="Edit plan" title="Edit" onClick={openEdit}>
                 <Pencil className="h-4 w-4" />
               </Button>
