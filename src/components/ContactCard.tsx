@@ -299,7 +299,7 @@ export default function ContactCard({
               const parts = [
                 plan?.carrier,
                 plan?.name,
-                calculateCmsId(plan) ? `(${calculateCmsId(plan)})` : '',
+                plan ? calculateCmsId(plan) ? `(${calculateCmsId(plan)})` : '' : '',
                 plan?.plan_type,
                 effectiveDateOnly,
                 `(${enr.enrollment_status})`,

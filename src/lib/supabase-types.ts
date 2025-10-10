@@ -573,6 +573,7 @@ export type Database = {
           ambulance_copay: number | null
           carrier: Database["public"]["Enums"]["carrier"] | null
           cms_contract_number: string | null
+          cms_geo_segment: string | null
           cms_plan_number: string | null
           counties: string[] | null
           created_at: string
@@ -605,6 +606,7 @@ export type Database = {
           ambulance_copay?: number | null
           carrier?: Database["public"]["Enums"]["carrier"] | null
           cms_contract_number?: string | null
+          cms_geo_segment?: string | null
           cms_plan_number?: string | null
           counties?: string[] | null
           created_at?: string
@@ -637,6 +639,7 @@ export type Database = {
           ambulance_copay?: number | null
           carrier?: Database["public"]["Enums"]["carrier"] | null
           cms_contract_number?: string | null
+          cms_geo_segment?: string | null
           cms_plan_number?: string | null
           counties?: string[] | null
           created_at?: string

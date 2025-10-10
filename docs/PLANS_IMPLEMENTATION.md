@@ -25,7 +25,7 @@ CREATE TABLE plans (
   -- CMS identifiers
   cms_contract_number TEXT,
   cms_plan_number TEXT,
-  cms_id TEXT GENERATED ALWAYS AS (COALESCE(cms_contract_number, '') || '-' || COALESCE(cms_plan_number, '')) STORED,
+  cms_geo_segment TEXT, -- Three-digit county identifier (e.g., "001")
 
   -- Plan period
   effective_start TIMESTAMP WITH TIME ZONE,
@@ -59,7 +59,7 @@ CREATE TABLE plans (
 ```
 
 **Key Features:**
-- **Auto-Generated CMS ID**: Combines contract and plan numbers for easy reference
+- **CMS ID Construction**: Dynamically combines contract, plan, and geo segment numbers in the UI
 - **Comprehensive Benefits**: Tracks all common Medicare Advantage benefits
 - **Flexible Data**: JSONB metadata field for additional custom data
 - **Timezone Handling**: All timestamps use UTC [[memory:5285941]]
@@ -161,8 +161,7 @@ Optimized indexes for performance:
 CREATE INDEX idx_plans_carrier ON plans(carrier);
 CREATE INDEX idx_plans_plan_type ON plans(plan_type);
 CREATE INDEX idx_plans_plan_year ON plans(plan_year);
-CREATE INDEX idx_plans_cms_id ON plans(cms_id);
-CREATE UNIQUE INDEX idx_plans_cms_unique ON plans(cms_contract_number, cms_plan_number, plan_year);
+CREATE UNIQUE INDEX idx_plans_cms_unique ON plans(plan_year, cms_contract_number, cms_plan_number, cms_geo_segment);
 
 -- Enrollments table
 CREATE INDEX idx_enrollments_contact_id ON enrollments(contact_id);
@@ -280,7 +279,7 @@ Main plans management interface featuring:
 - **Plan Selection**: Checkbox column for selecting up to 3 plans for comparison
 - Sortable, filterable columns
 - Plan name, carrier, type, year
-- CMS ID display (contract-plan number)
+- CMS ID display
 - Premium display with currency formatting
 - Inline edit/delete actions
 
@@ -460,7 +459,7 @@ Plans are typically version by year:
 
 ### Plan Data Management
 
-1. **Unique Identification**: Use CMS contract + plan + year for uniqueness
+1. **Unique Identification**: Use year + CMS contract + plan + geo segment for uniqueness
 2. **Historical Data**: Keep old plan years for enrollment history
 3. **Nullability**: All benefit fields are optional to handle partial data
 4. **Validation**: Validate numeric fields are positive

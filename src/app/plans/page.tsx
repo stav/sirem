@@ -76,6 +76,7 @@ export default function PlansPage() {
     plan_year: new Date().getUTCFullYear().toString(),
     cms_contract_number: '',
     cms_plan_number: '',
+    cms_geo_segment: '',
     premium_monthly: '',
     giveback_monthly: '',
     otc_benefit_quarterly: '',
@@ -107,6 +108,7 @@ export default function PlansPage() {
     plan_year: new Date().getUTCFullYear().toString(),
     cms_contract_number: '',
     cms_plan_number: '',
+    cms_geo_segment: '',
     premium_monthly: '',
     giveback_monthly: '',
     otc_benefit_quarterly: '',
@@ -245,6 +247,7 @@ export default function PlansPage() {
               plan_year: plan.plan_year != null ? String(plan.plan_year) : '',
               cms_contract_number: plan.cms_contract_number ?? '',
               cms_plan_number: plan.cms_plan_number ?? '',
+              cms_geo_segment: plan.cms_geo_segment ?? '',
               premium_monthly: plan.premium_monthly != null ? String(plan.premium_monthly) : '',
               giveback_monthly: plan.giveback_monthly != null ? String(plan.giveback_monthly) : '',
               otc_benefit_quarterly: plan.otc_benefit_quarterly != null ? String(plan.otc_benefit_quarterly) : '',
@@ -311,6 +314,7 @@ export default function PlansPage() {
       plan_year: form.plan_year ? Number(form.plan_year) : null,
       cms_contract_number: form.cms_contract_number || null,
       cms_plan_number: form.cms_plan_number || null,
+      cms_geo_segment: form.cms_geo_segment || null,
       premium_monthly: form.premium_monthly ? Number(form.premium_monthly) : null,
       giveback_monthly: form.giveback_monthly ? Number(form.giveback_monthly) : null,
       otc_benefit_quarterly: form.otc_benefit_quarterly ? Number(form.otc_benefit_quarterly) : null,
@@ -351,6 +355,7 @@ export default function PlansPage() {
         plan_year: new Date().getUTCFullYear().toString(),
         cms_contract_number: '',
         cms_plan_number: '',
+        cms_geo_segment: '',
         premium_monthly: '',
         giveback_monthly: '',
         otc_benefit_quarterly: '',
@@ -383,6 +388,7 @@ export default function PlansPage() {
       plan_year: editForm.plan_year ? Number(editForm.plan_year) : null,
       cms_contract_number: editForm.cms_contract_number || null,
       cms_plan_number: editForm.cms_plan_number || null,
+      cms_geo_segment: editForm.cms_geo_segment || null,
       premium_monthly: editForm.premium_monthly ? Number(editForm.premium_monthly) : null,
       giveback_monthly: editForm.giveback_monthly ? Number(editForm.giveback_monthly) : null,
       otc_benefit_quarterly: editForm.otc_benefit_quarterly ? Number(editForm.otc_benefit_quarterly) : null,
@@ -501,6 +507,13 @@ export default function PlansPage() {
                   <Input
                     value={form.cms_plan_number}
                     onChange={(e) => setForm((f) => ({ ...f, cms_plan_number: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">CMS Geo Segment</Label>
+                  <Input
+                    value={form.cms_geo_segment}
+                    onChange={(e) => setForm((f) => ({ ...f, cms_geo_segment: e.target.value }))}
                   />
                 </div>
 
@@ -767,6 +780,13 @@ export default function PlansPage() {
                 <Input
                   value={editForm.cms_plan_number}
                   onChange={(e) => setEditForm((f) => ({ ...f, cms_plan_number: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">CMS Geo Segment</Label>
+                <Input
+                  value={editForm.cms_geo_segment}
+                  onChange={(e) => setEditForm((f) => ({ ...f, cms_geo_segment: e.target.value }))}
                 />
               </div>
 

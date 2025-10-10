@@ -165,6 +165,7 @@ export async function importPlansCsv(text: string): Promise<{
         plan_year: toNumber(r[col.year]) ?? new Date().getUTCFullYear(),
         cms_contract_number: contract,
         cms_plan_number: plan,
+        cms_geo_segment: null, // Will be populated from CSV if available
         premium_monthly: toNumber(r[col.premium]),
         giveback_monthly: toNumber(r[col.giveback]),
         otc_benefit_quarterly: toNumber(r[col.otc]),
@@ -188,7 +189,7 @@ export async function importPlansCsv(text: string): Promise<{
         effective_end: null,
       }
 
-      const key = `${record.cms_contract_number ?? ''}|${record.cms_plan_number ?? ''}|${record.plan_year ?? ''}`
+      const key = `${record.cms_contract_number ?? ''}|${record.cms_plan_number ?? ''}|${record.cms_geo_segment ?? ''}|${record.plan_year ?? ''}`
       dedup.set(key, record)
       imported++
     } catch {
@@ -201,7 +202,7 @@ export async function importPlansCsv(text: string): Promise<{
   if (batch.length > 0) {
     const { error } = await supabase
       .from('plans')
-      .upsert(batch, { onConflict: 'cms_contract_number,cms_plan_number,plan_year' })
+      .upsert(batch, { onConflict: 'cms_contract_number,cms_plan_number,cms_geo_segment,plan_year' })
     if (error) {
       errors = batch.length
       return {
