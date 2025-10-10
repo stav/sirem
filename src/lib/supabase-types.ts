@@ -584,7 +584,7 @@ export type Database = {
           giveback_monthly: number | null
           hearing_benefit_yearly: number | null
           hospital_inpatient_days: number | null
-          hospital_inpatient_per_stay_copay: number | null
+          hospital_inpatient_per_day_copay: number | null
           id: string
           metadata: Json | null
           moop_annual: number | null
@@ -617,7 +617,7 @@ export type Database = {
           giveback_monthly?: number | null
           hearing_benefit_yearly?: number | null
           hospital_inpatient_days?: number | null
-          hospital_inpatient_per_stay_copay?: number | null
+          hospital_inpatient_per_day_copay?: number | null
           id?: string
           metadata?: Json | null
           moop_annual?: number | null
@@ -650,7 +650,7 @@ export type Database = {
           giveback_monthly?: number | null
           hearing_benefit_yearly?: number | null
           hospital_inpatient_days?: number | null
-          hospital_inpatient_per_stay_copay?: number | null
+          hospital_inpatient_per_day_copay?: number | null
           id?: string
           metadata?: Json | null
           moop_annual?: number | null
@@ -837,6 +837,7 @@ export type Database = {
         | "Supplement"
         | "Ancillary"
         | "HMO-D-SNP"
+        | "PPO-D-SNP"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -999,6 +1000,7 @@ export const Constants = {
         "Supplement",
         "Ancillary",
         "HMO-D-SNP",
+        "PPO-D-SNP",
       ],
     },
   },
