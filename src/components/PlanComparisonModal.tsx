@@ -99,6 +99,188 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
     return null
   }
 
+  // Map of metadata keys to their corresponding main table columns
+  const metadataToMainFieldMap: Record<string, keyof Plan> = {
+    'premium_monthly': 'premium_monthly',
+    'giveback_monthly': 'giveback_monthly',
+    'card_benefit': 'otc_benefit_quarterly',
+    'otc_benefit_quarterly': 'otc_benefit_quarterly',
+    'dental_benefit_yearly': 'dental_benefit_yearly',
+    'hearing_benefit_yearly': 'hearing_benefit_yearly',
+    'vision_benefit_yearly': 'vision_benefit_yearly',
+    'primary_care_copay': 'primary_care_copay',
+    'specialist_copay': 'specialist_copay',
+    'ambulance_copay': 'ambulance_copay',
+    'emergency_room_copay': 'emergency_room_copay',
+    'urgent_care_copay': 'urgent_care_copay',
+    'hospital_inpatient_per_stay_copay': 'hospital_inpatient_per_day_copay',
+    'hospital_inpatient_per_day_copay': 'hospital_inpatient_per_day_copay',
+    'hospital_inpatient_days': 'hospital_inpatient_days',
+    'moop_annual': 'moop_annual',
+  }
+
+  // Check if metadata value matches the main field value
+  const hasDiscrepancy = (plan: Plan, metadataKey: string): boolean => {
+    const mainFieldKey = metadataToMainFieldMap[metadataKey]
+    if (!mainFieldKey) return false
+
+    const metadataValue = parseMetadataNumber(getMetadata(plan, metadataKey))
+    const mainValue = plan[mainFieldKey] as number | null
+    
+    // Both null/undefined = no discrepancy
+    if (metadataValue == null && mainValue == null) return false
+    
+    // One is null, other isn't = discrepancy
+    if (metadataValue == null || mainValue == null) return true
+    
+    // Compare numeric values (allow small floating point differences)
+    return Math.abs(metadataValue - mainValue) > 0.01
+  }
+
+  // Check if ANY plan has a discrepancy for this metadata key
+  const hasAnyDiscrepancy = (metadataKey: string): boolean => {
+    return plans.some(plan => hasDiscrepancy(plan, metadataKey))
+  }
+
+  // Filter out metadata keys that exactly match main fields (no discrepancies)
+  const shouldDisplayMetadataKey = (key: string): boolean => {
+    const mainFieldKey = metadataToMainFieldMap[key]
+    if (!mainFieldKey) return true // Not mapped to a main field, always display
+    
+    // Only display if there's a discrepancy in at least one plan
+    return hasAnyDiscrepancy(key)
+  }
+
+  // Collect all unique metadata keys across all plans
+  const getAllMetadataKeys = (): string[] => {
+    const keysSet = new Set<string>()
+    plans.forEach(plan => {
+      if (plan.metadata && typeof plan.metadata === 'object') {
+        Object.keys(plan.metadata as Record<string, unknown>).forEach(key => keysSet.add(key))
+      }
+    })
+    return Array.from(keysSet).sort()
+  }
+
+  // Categorize metadata keys
+  const categorizeMetadataKeys = () => {
+    const allKeys = getAllMetadataKeys().filter(shouldDisplayMetadataKey)
+    const categories: Record<string, string[]> = {
+      'Deductibles & Cost Sharing': [],
+      'Additional Benefits': [],
+      'Copays & Coinsurance': [],
+      'Prescription Drug Details': [],
+      'Service Details': [],
+      'Optional Packages': [],
+      'Document Information': [],
+      'Other': []
+    }
+
+    allKeys.forEach(key => {
+      const lowerKey = key.toLowerCase()
+      
+      // Categorize based on key patterns
+      if (lowerKey.includes('deductible')) {
+        categories['Deductibles & Cost Sharing'].push(key)
+      } else if (lowerKey.includes('benefit') || lowerKey.includes('card_benefit') || 
+                 lowerKey.includes('fitness') || lowerKey.includes('transportation') ||
+                 lowerKey.includes('meals') || lowerKey.includes('telehealth') ||
+                 lowerKey.includes('livehealth') || lowerKey.includes('nurseline') ||
+                 lowerKey.includes('worldwide')) {
+        categories['Additional Benefits'].push(key)
+      } else if (lowerKey.includes('copay') || lowerKey.includes('coinsurance') ||
+                 lowerKey.includes('ambulance') || lowerKey.includes('emergency') ||
+                 lowerKey.includes('therapy') || lowerKey.includes('xray') ||
+                 lowerKey.includes('radiology') || lowerKey.includes('surgical') ||
+                 lowerKey.includes('lab') || lowerKey.includes('dme') ||
+                 lowerKey.includes('diabetic') || lowerKey.includes('hearing_exam') ||
+                 lowerKey.includes('podiatry') || lowerKey.includes('dialysis') ||
+                 lowerKey.includes('acupuncture') || lowerKey.includes('chiropractic')) {
+        categories['Copays & Coinsurance'].push(key)
+      } else if (lowerKey.includes('tier') || lowerKey.includes('insulin') ||
+                 lowerKey.includes('catastrophic') || lowerKey.includes('part_d') ||
+                 lowerKey.includes('rx') || lowerKey.includes('pharmacy')) {
+        categories['Prescription Drug Details'].push(key)
+      } else if (lowerKey.includes('inpatient') || lowerKey.includes('hospital') ||
+                 lowerKey.includes('mental_health') || lowerKey.includes('skilled_nursing') ||
+                 lowerKey.includes('home_health') || lowerKey.includes('cardiac') ||
+                 lowerKey.includes('pulmonary')) {
+        categories['Service Details'].push(key)
+      } else if (lowerKey.includes('osb') || lowerKey.includes('package') ||
+                 lowerKey.includes('supplemental')) {
+        categories['Optional Packages'].push(key)
+      } else if (lowerKey.includes('document') || lowerKey.includes('source') ||
+                 lowerKey.includes('star_rating') || lowerKey.includes('updated') ||
+                 lowerKey.includes('code') || lowerKey.includes('transitioned') ||
+                 lowerKey.includes('medicaid_eligibility')) {
+        categories['Document Information'].push(key)
+      } else {
+        categories['Other'].push(key)
+      }
+    })
+
+    // Remove empty categories
+    return Object.entries(categories).filter(([_, keys]) => keys.length > 0)
+  }
+
+  // Format metadata value for display
+  const formatMetadataValue = (value: string | number | null): string => {
+    if (value == null) return '—'
+    if (typeof value === 'number') return String(value)
+    if (value === 'n/a' || value === 'N/A') return '—'
+    return value
+  }
+
+  // Parse metadata value to number (for comparison)
+  const parseMetadataNumber = (value: string | number | null): number | null => {
+    if (value == null) return null
+    if (typeof value === 'number') return value
+    if (value === 'n/a' || value === 'N/A' || value === '') return null
+    
+    // Try to parse numeric values from strings
+    const cleaned = String(value).replace(/[$,%]/g, '').trim()
+    const parsed = parseFloat(cleaned)
+    return isNaN(parsed) ? null : parsed
+  }
+
+  // Check if a metadata field should be treated as numeric
+  const isNumericField = (key: string, values: (string | number | null)[]): boolean => {
+    // Check if key suggests it's numeric
+    const numericKeywords = ['copay', 'coinsurance', 'deductible', 'benefit', 'premium', 
+                            'cost', 'max', 'limit', 'allowance', 'moop']
+    const lowerKey = key.toLowerCase()
+    const hasNumericKeyword = numericKeywords.some(keyword => lowerKey.includes(keyword))
+    
+    // Check if values are mostly numeric
+    const numericValues = values.map(v => parseMetadataNumber(v)).filter(v => v !== null)
+    const hasNumericValues = numericValues.length > 0
+    
+    return hasNumericKeyword && hasNumericValues
+  }
+
+  // Determine if higher or lower is better for a field
+  const isLowerBetter = (key: string): boolean => {
+    const lowerBetterKeywords = ['copay', 'coinsurance', 'deductible', 'premium', 'cost']
+    const higherBetterKeywords = ['benefit', 'allowance', 'max', 'limit', 'giveback']
+    
+    const lowerKey = key.toLowerCase()
+    
+    if (higherBetterKeywords.some(kw => lowerKey.includes(kw))) return false
+    if (lowerBetterKeywords.some(kw => lowerKey.includes(kw))) return true
+    
+    // Default to lower is better for safety
+    return true
+  }
+
+  // Format label from snake_case
+  const formatLabel = (key: string): string => {
+    return key
+      .replace(/_/g, ' ')
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ')
+  }
+
   // Calculate estimated annual costs
   const calculateAnnualCost = (plan: Plan): number => {
     const premium = (plan.premium_monthly ?? 0) * 12
@@ -146,19 +328,26 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
     label, 
     values, 
     lowerIsBetter = true,
-    formatter = formatCurrency 
+    formatter = formatCurrency,
+    metadataKey
   }: { 
     label: string
     values: (number | null)[]
     lowerIsBetter?: boolean
     formatter?: (v: number | null) => string
+    metadataKey?: string
   }) => (
     <tr className="border-b border-border">
       <td className="py-2 px-3 font-medium text-sm bg-muted/30">{label}</td>
       {values.map((value, idx) => {
         const others = values.filter((_, i) => i !== idx)
+        const hasDiscrep = metadataKey ? hasDiscrepancy(plans[idx], metadataKey) : false
         return (
-          <td key={idx} className="py-2 px-3 text-center text-sm">
+          <td 
+            key={idx} 
+            className={`py-2 px-3 text-center text-sm ${hasDiscrep ? 'bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-500' : ''}`}
+            title={hasDiscrep ? `⚠️ Discrepancy: Metadata value differs from main field` : undefined}
+          >
             {formatter(value)}
             {getComparisonIndicator(value, others, lowerIsBetter)}
           </td>
@@ -390,37 +579,63 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                 lowerIsBetter={false}
               />
 
-              {/* Extended Benefits (from metadata) */}
-              <tr className="bg-muted/50">
-                <th className="py-2 px-3 font-semibold text-sm text-right">
-                  Extended Benefits
-                </th>
-                <td colSpan={plans.length}></td>
-              </tr>
-              <ComparisonField
-                label="Card Benefit"
-                values={plans.map(p => {
-                  const val = getMetadata(p, 'card_benefit')
-                  return typeof val === 'number' ? val : (typeof val === 'string' ? parseFloat(val.replace(/\$/g, '').replace(/,/g, '')) || null : null)
-                })}
-                lowerIsBetter={false}
-              />
-              <ComparisonField
-                label="Fitness Benefit"
-                values={plans.map(p => {
-                  const val = getMetadata(p, 'fitness_benefit')
-                  return typeof val === 'number' ? val : (typeof val === 'string' ? parseFloat(val.replace(/\$/g, '').replace(/,/g, '')) || null : null)
-                })}
-                lowerIsBetter={false}
-              />
-              <ComparisonField
-                label="Transportation Benefit"
-                values={plans.map(p => {
-                  const val = getMetadata(p, 'transportation_benefit')
-                  return typeof val === 'number' ? val : (typeof val === 'string' ? parseFloat(val.replace(/\$/g, '').replace(/,/g, '')) || null : null)
-                })}
-                lowerIsBetter={false}
-              />
+              {/* Dynamic Metadata Sections */}
+              {categorizeMetadataKeys().map(([categoryName, keys]) => (
+                <React.Fragment key={categoryName}>
+                  <tr className="bg-muted/50">
+                    <th className="py-2 px-3 font-semibold text-sm text-right">
+                      {categoryName}
+                    </th>
+                    <td colSpan={plans.length}></td>
+                  </tr>
+                  {keys.map(key => {
+                    const values = plans.map(p => getMetadata(p, key))
+                    const isNumeric = isNumericField(key, values)
+                    
+                    if (isNumeric) {
+                      // Render as numeric comparison field
+                      return (
+                        <ComparisonField
+                          key={key}
+                          label={formatLabel(key)}
+                          values={plans.map(p => parseMetadataNumber(getMetadata(p, key)))}
+                          lowerIsBetter={isLowerBetter(key)}
+                          metadataKey={key}
+                          formatter={(v) => {
+                            if (v == null) return '—'
+                            // Format based on key type
+                            if (key.toLowerCase().includes('coinsurance') || key.toLowerCase().includes('%')) {
+                              return `${v}%`
+                            }
+                            return formatCurrency(v)
+                          }}
+                        />
+                      )
+                    } else {
+                      // Render as text field
+                      return (
+                        <tr key={key} className="border-b border-border">
+                          <td className="py-2 px-3 font-medium text-sm bg-muted/30">
+                            {formatLabel(key)}
+                          </td>
+                          {plans.map((plan, idx) => {
+                            const hasDiscrep = hasDiscrepancy(plan, key)
+                            return (
+                              <td 
+                                key={idx} 
+                                className={`py-2 px-3 text-center text-xs ${hasDiscrep ? 'bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-500' : ''}`}
+                                title={hasDiscrep ? `⚠️ Discrepancy: Metadata value differs from main field` : undefined}
+                              >
+                                {formatMetadataValue(getMetadata(plan, key))}
+                              </td>
+                            )
+                          })}
+                        </tr>
+                      )
+                    }
+                  })}
+                </React.Fragment>
+              ))}
 
               {/* Medical Copays */}
               <tr className="bg-muted/50">
@@ -486,49 +701,6 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                 lowerIsBetter={true}
               />
 
-              {/* Deductibles */}
-              <tr className="bg-muted/50">
-                <th className="py-2 px-3 font-semibold text-sm text-right">
-                  Deductibles
-                </th>
-                <td colSpan={plans.length}></td>
-              </tr>
-              <ComparisonField
-                label="Medical Deductible"
-                values={plans.map(p => {
-                  const val = getMetadata(p, 'medical_deductible')
-                  return typeof val === 'number' ? val : (typeof val === 'string' ? parseFloat(val.replace(/\$/g, '').replace(/,/g, '')) || null : null)
-                })}
-                lowerIsBetter={true}
-              />
-
-              {/* Prescription Drug Coverage */}
-              <tr className="bg-muted/50">
-                <th className="py-2 px-3 font-semibold text-sm text-right">
-                  Prescription Drug Coverage
-                </th>
-                <td colSpan={plans.length}></td>
-              </tr>
-              <ComparisonField
-                label="RX Deductible (Tier 3-4-5)"
-                values={plans.map(p => {
-                  const val = getMetadata(p, 'rx_deductible_tier345')
-                  return typeof val === 'number' ? val : (typeof val === 'string' ? parseFloat(val.replace(/\$/g, '').replace(/,/g, '')) || null : null)
-                })}
-                lowerIsBetter={true}
-              />
-              <tr className="border-b border-border">
-                <td className="py-2 px-3 font-medium text-sm bg-muted/30">RX Cost Share</td>
-                {plans.map((plan, idx) => {
-                  const metadataVal = getMetadata(plan, 'rx_cost_share')
-                  const displayVal = metadataVal || plan.pharmacy_benefit
-                  return (
-                    <td key={idx} className="py-2 px-3 text-center text-xs">
-                      {formatText(displayVal as string)}
-                    </td>
-                  )
-                })}
-              </tr>
 
               {/* Estimated Annual Cost */}
               {showCalculator && (
@@ -551,10 +723,10 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                 </>
               )}
 
-              {/* Additional Info */}
+              {/* Service Area & Notes */}
               <tr className="bg-muted/50">
                 <th className="py-2 px-3 font-semibold text-sm text-right">
-                  Additional Information
+                  Service Area & Notes
                 </th>
                 <td colSpan={plans.length}></td>
               </tr>
@@ -569,40 +741,20 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
               <tr className="border-b border-border">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">Counties</td>
                 {plans.map((plan, idx) => (
-                  <td key={idx} className="py-2 px-3 text-center text-xs">
-                    {plan.counties?.join(', ') || '—'}
-                  </td>
-                ))}
-              </tr>
-              <tr className="border-b border-border">
-                <td className="py-2 px-3 font-medium text-sm bg-muted/30">Medicaid Eligibility</td>
-                {plans.map((plan, idx) => (
-                  <td key={idx} className="py-2 px-3 text-center text-sm">
-                    {formatText(getMetadata(plan, 'medicaid_eligibility') as string)}
-                  </td>
-                ))}
-              </tr>
-              <tr className="border-b border-border">
-                <td className="py-2 px-3 font-medium text-sm bg-muted/30">Transitioned From</td>
-                {plans.map((plan, idx) => (
-                  <td key={idx} className="py-2 px-3 text-center text-sm">
-                    {formatText(getMetadata(plan, 'transitioned_from') as string)}
-                  </td>
-                ))}
-              </tr>
-              <tr className="border-b border-border">
-                <td className="py-2 px-3 font-medium text-sm bg-muted/30">Summary</td>
-                {plans.map((plan, idx) => (
-                  <td key={idx} className="py-2 px-3 text-center text-xs">
-                    {formatText(getMetadata(plan, 'summary') as string)}
+                  <td key={idx} className="py-2 px-3 text-center text-xs max-w-xs overflow-hidden">
+                    <div className="line-clamp-3" title={plan.counties?.join(', ')}>
+                      {plan.counties?.join(', ') || '—'}
+                    </div>
                   </td>
                 ))}
               </tr>
               <tr className="border-b border-border">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">Notes</td>
                 {plans.map((plan, idx) => (
-                  <td key={idx} className="py-2 px-3 text-center text-xs">
-                    {plan.notes || '—'}
+                  <td key={idx} className="py-2 px-3 text-center text-xs max-w-xs overflow-hidden">
+                    <div className="line-clamp-3" title={plan.notes || undefined}>
+                      {plan.notes || '—'}
+                    </div>
                   </td>
                 ))}
               </tr>
@@ -620,6 +772,10 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
             <div className="flex items-center gap-1">
               <TrendingDown className="h-4 w-4 text-red-600" />
               <span>Worse than average</span>
+            </div>
+            <div className="flex items-center gap-1">
+              <span className="inline-block w-4 h-4 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-500 rounded"></span>
+              <span>⚠️ Discrepancy with main field</span>
             </div>
             {showCalculator && (
               <div className="ml-auto font-semibold">
