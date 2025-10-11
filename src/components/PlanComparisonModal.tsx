@@ -314,11 +314,22 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
       return null
     }
 
+    const isHigher = currentValue > avgOthers
     const isBetter = lowerIsBetter ? currentValue < avgOthers : currentValue > avgOthers
     
-    if (isBetter) {
+    // For inbound (benefits): higher = green up, lower = red down
+    // For outbound (expenses): lower = green down, higher = red up
+    if (isBetter && isHigher) {
+      // Higher and it's good (benefits)
       return <span title="Better than average"><TrendingUp className="h-4 w-4 text-green-600 inline ml-1" /></span>
+    } else if (isBetter && !isHigher) {
+      // Lower and it's good (expenses)
+      return <span title="Better than average"><TrendingDown className="h-4 w-4 text-green-600 inline ml-1" /></span>
+    } else if (!isBetter && isHigher) {
+      // Higher and it's bad (expenses)
+      return <span title="Worse than average"><TrendingUp className="h-4 w-4 text-red-600 inline ml-1" /></span>
     } else {
+      // Lower and it's bad (benefits)
       return <span title="Worse than average"><TrendingDown className="h-4 w-4 text-red-600 inline ml-1" /></span>
     }
   }
