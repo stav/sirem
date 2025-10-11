@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState } from 'react'
-import { X, TrendingUp, TrendingDown, Minus, Calculator } from 'lucide-react'
+import { X, TrendingUp, TrendingDown, Calculator } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -110,8 +110,9 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
     const currentValue = current
     const avgOthers = validOthers.reduce((a, b) => a + b, 0) / validOthers.length
 
+    // Only show indicators when there's a meaningful difference (no dash for equal values)
     if (Math.abs(currentValue - avgOthers) < 0.01) {
-      return <Minus className="h-4 w-4 text-gray-400 inline ml-1" />
+      return null
     }
 
     const isBetter = lowerIsBetter ? currentValue < avgOthers : currentValue > avgOthers
@@ -267,9 +268,10 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
             <tbody>
               {/* Basic Information */}
               <tr className="bg-muted/50">
-                <td colSpan={plans.length + 1} className="py-2 px-3 font-semibold text-sm">
+                <th className="py-2 px-3 font-semibold text-sm text-right">
                   Basic Information
-                </td>
+                </th>
+                <td colSpan={plans.length}></td>
               </tr>
               <tr className="border-b border-border">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">CMS ID (Full)</td>
@@ -322,9 +324,10 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
 
               {/* Monthly Costs */}
               <tr className="bg-muted/50">
-                <td colSpan={plans.length + 1} className="py-2 px-3 font-semibold text-sm">
+                <th className="py-2 px-3 font-semibold text-sm text-right">
                   Monthly Costs
-                </td>
+                </th>
+                <td colSpan={plans.length}></td>
               </tr>
               <ComparisonField
                 label="Premium (Monthly)"
@@ -344,9 +347,10 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
 
               {/* Benefits */}
               <tr className="bg-muted/50">
-                <td colSpan={plans.length + 1} className="py-2 px-3 font-semibold text-sm">
+                <th className="py-2 px-3 font-semibold text-sm text-right">
                   Supplemental Benefits
-                </td>
+                </th>
+                <td colSpan={plans.length}></td>
               </tr>
               <ComparisonField
                 label="OTC Benefit (Quarterly)"
@@ -371,9 +375,10 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
 
               {/* Extended Benefits (from metadata) */}
               <tr className="bg-muted/50">
-                <td colSpan={plans.length + 1} className="py-2 px-3 font-semibold text-sm">
+                <th className="py-2 px-3 font-semibold text-sm text-right">
                   Extended Benefits
-                </td>
+                </th>
+                <td colSpan={plans.length}></td>
               </tr>
               <ComparisonField
                 label="Card Benefit"
@@ -402,9 +407,10 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
 
               {/* Medical Copays */}
               <tr className="bg-muted/50">
-                <td colSpan={plans.length + 1} className="py-2 px-3 font-semibold text-sm">
+                <th className="py-2 px-3 font-semibold text-sm text-right">
                   Medical Copays
-                </td>
+                </th>
+                <td colSpan={plans.length}></td>
               </tr>
               <ComparisonField
                 label="Primary Care Copay"
@@ -434,9 +440,10 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
 
               {/* Hospital */}
               <tr className="bg-muted/50">
-                <td colSpan={plans.length + 1} className="py-2 px-3 font-semibold text-sm">
+                <th className="py-2 px-3 font-semibold text-sm text-right">
                   Hospital Coverage
-                </td>
+                </th>
+                <td colSpan={plans.length}></td>
               </tr>
               <ComparisonField
                 label="Inpatient Copay (Per Day)"
@@ -464,9 +471,10 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
 
               {/* Deductibles */}
               <tr className="bg-muted/50">
-                <td colSpan={plans.length + 1} className="py-2 px-3 font-semibold text-sm">
+                <th className="py-2 px-3 font-semibold text-sm text-right">
                   Deductibles
-                </td>
+                </th>
+                <td colSpan={plans.length}></td>
               </tr>
               <ComparisonField
                 label="Medical Deductible"
@@ -479,9 +487,10 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
 
               {/* Prescription Drug Coverage */}
               <tr className="bg-muted/50">
-                <td colSpan={plans.length + 1} className="py-2 px-3 font-semibold text-sm">
+                <th className="py-2 px-3 font-semibold text-sm text-right">
                   Prescription Drug Coverage
-                </td>
+                </th>
+                <td colSpan={plans.length}></td>
               </tr>
               <ComparisonField
                 label="RX Deductible (Tier 3-4-5)"
@@ -508,9 +517,10 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
               {showCalculator && (
                 <>
                   <tr className="bg-muted/50">
-                    <td colSpan={plans.length + 1} className="py-2 px-3 font-semibold text-sm">
+                    <th className="py-2 px-3 font-semibold text-sm text-right">
                       Estimated Annual Cost
-                    </td>
+                    </th>
+                    <td colSpan={plans.length}></td>
                   </tr>
                   <tr className="border-b-2 border-border bg-blue-50 dark:bg-blue-950/30">
                     <td className="py-3 px-3 font-bold text-sm">Total Estimated Annual Cost</td>
@@ -526,9 +536,10 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
 
               {/* Additional Info */}
               <tr className="bg-muted/50">
-                <td colSpan={plans.length + 1} className="py-2 px-3 font-semibold text-sm">
+                <th className="py-2 px-3 font-semibold text-sm text-right">
                   Additional Information
-                </td>
+                </th>
+                <td colSpan={plans.length}></td>
               </tr>
               <tr className="border-b border-border">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">Service Area</td>
@@ -592,10 +603,6 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
             <div className="flex items-center gap-1">
               <TrendingDown className="h-4 w-4 text-red-600" />
               <span>Worse than average</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Minus className="h-4 w-4 text-gray-400" />
-              <span>Same as average</span>
             </div>
             {showCalculator && (
               <div className="ml-auto font-semibold">

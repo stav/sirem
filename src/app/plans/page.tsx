@@ -148,24 +148,7 @@ export default function PlansPage() {
     
     const selectedNodes = gridRef.current.api.getSelectedNodes()
     const selectedIds = selectedNodes.map(node => node.data?.id).filter(Boolean) as string[]
-    
-    // If more than 3 are selected, deselect all and keep only the first 3
-    if (selectedIds.length > 3) {
-      // Deselect all first
-      gridRef.current.api.deselectAll()
-      
-      // Then select only the first 3
-      selectedIds.slice(0, 3).forEach(id => {
-        const node = gridRef.current?.api.getRowNode(id)
-        if (node) {
-          node.setSelected(true)
-        }
-      })
-      
-      setSelectedPlanIds(selectedIds.slice(0, 3))
-    } else {
-      setSelectedPlanIds(selectedIds)
-    }
+    setSelectedPlanIds(selectedIds)
   }
 
   const selectedPlans = useMemo(() => {
@@ -219,6 +202,8 @@ export default function PlansPage() {
         valueGetter: (p) => {
           return calculateCmsId(p.data) || '—'
         },
+        sortable: true, // Selecting a row has the side-effect of resetting sort
+        filter: true,
       },
       {
         field: 'premium_monthly',
@@ -743,12 +728,6 @@ export default function PlansPage() {
                 enableBrowserTooltips={true}
                 rowSelection="multiple"
                 onSelectionChanged={onSelectionChanged}
-                isRowSelectable={(rowNode) => {
-                  const currentSelected = gridRef.current?.api.getSelectedNodes().length || 0
-                  const isCurrentlySelected = rowNode.isSelected() ?? false
-                  // Allow selection if less than 3 total OR if this row is already selected
-                  return currentSelected < 3 || isCurrentlySelected
-                }}
               />
             </div>
           </div>

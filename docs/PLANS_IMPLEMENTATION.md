@@ -367,7 +367,7 @@ Provides side-by-side comparison of 2-3 plans with visual indicators and cost ca
 - **Visual Indicators**: Shows which plan has better/worse values
   - 🟢 Green arrow up = Better than average
   - 🔴 Red arrow down = Worse than average
-  - ⚪ Gray dash = Same as average
+  - No indicator = Same as average (clean display)
 - **Organized Categories**:
   - Basic Information (CMS ID Full, CMS Contract Number, CMS Plan Number, CMS Geo Segment, Effective Start, Effective End)
   - Monthly Costs (Premium, Giveback, Net Cost)
@@ -581,7 +581,7 @@ AND plan_year = 2025;
 **Visual Indicators in Comparison:**
 - Green arrow up (↑): This plan's value is better than average
 - Red arrow down (↓): This plan's value is worse than average
-- Gray dash (–): This plan's value matches the average
+- No indicator: This plan's value matches the average (cleaner display)
 
 **Cost Calculator Usage:**
 Enter expected annual usage for:

@@ -35,7 +35,7 @@ function mapCarrier(value: string | null | undefined): Database['public']['Enums
     Medico: 'Medico',
     CareSource: 'CareSource',
     SummaCare: 'SummaCare',
-    Cigna: 'Cigna',
+    Zing: 'Zing',
     Heartland: 'Heartland',
     Other: 'Other',
   }
