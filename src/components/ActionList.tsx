@@ -216,11 +216,6 @@ export default function ActionList({
             <span className="text-muted-foreground text-sm">
               {displayActions.length} / {actions.length}
             </span>
-            {totalPages > 1 && (
-              <span className="text-muted-foreground text-sm">
-                (Page {currentPage} of {totalPages})
-              </span>
-            )}
             {selectedContact && (
               <Tooltip>
                 <TooltipTrigger asChild>

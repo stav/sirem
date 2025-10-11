@@ -91,7 +91,7 @@ export default function Pagination({
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <span className="text-muted-foreground text-sm">
-            Page {currentPage} of {totalPages}
+            {currentPage}/{totalPages}
           </span>
           <Button
             variant="outline"
