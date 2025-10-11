@@ -745,7 +745,7 @@ export default function PlansPage() {
                 onSelectionChanged={onSelectionChanged}
                 isRowSelectable={(rowNode) => {
                   const currentSelected = gridRef.current?.api.getSelectedNodes().length || 0
-                  const isCurrentlySelected = rowNode.isSelected()
+                  const isCurrentlySelected = rowNode.isSelected() ?? false
                   // Allow selection if less than 3 total OR if this row is already selected
                   return currentSelected < 3 || isCurrentlySelected
                 }}

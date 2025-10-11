@@ -51,6 +51,37 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
     return String(value)
   }
 
+  // Helper to format dates
+  const formatDate = (value: string | null | undefined): string => {
+    if (!value) return '—'
+    try {
+      return new Date(value).toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        timeZone: 'UTC'
+      })
+    } catch {
+      return '—'
+    }
+  }
+
+  // Helper to format text values
+  const formatText = (value: string | null | undefined): string => {
+    return value || '—'
+  }
+
+  // Helper to get metadata field
+  const getMetadata = (plan: Plan, key: string): string | number | null => {
+    if (!plan.metadata || typeof plan.metadata !== 'object') return null
+    const metadata = plan.metadata as Record<string, unknown>
+    const value = metadata[key]
+    if (typeof value === 'string' || typeof value === 'number') {
+      return value
+    }
+    return null
+  }
+
   // Calculate estimated annual costs
   const calculateAnnualCost = (plan: Plan): number => {
     const premium = (plan.premium_monthly ?? 0) * 12
@@ -60,7 +91,9 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
     const specialistCosts = (plan.specialist_copay ?? 0) * usageInputs.specialistVisits
     const erCosts = (plan.emergency_room_copay ?? 0) * usageInputs.emergencyRoomVisits
     const urgentCareCosts = (plan.urgent_care_copay ?? 0) * usageInputs.urgentCareVisits
-    const hospitalCosts = (plan.hospital_inpatient_per_stay_copay ?? 0) * usageInputs.hospitalStays
+    // Hospital cost = daily copay * days covered per stay * number of stays
+    const daysPerStay = plan.hospital_inpatient_days ?? 0
+    const hospitalCosts = (plan.hospital_inpatient_per_day_copay ?? 0) * daysPerStay * usageInputs.hospitalStays
     const ambulanceCosts = (plan.ambulance_copay ?? 0) * usageInputs.ambulanceUses
 
     const totalCopays = primaryCareCosts + specialistCosts + erCosts + urgentCareCosts + hospitalCosts + ambulanceCosts
@@ -239,10 +272,50 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                 </td>
               </tr>
               <tr className="border-b border-border">
-                <td className="py-2 px-3 font-medium text-sm bg-muted/30">CMS ID</td>
+                <td className="py-2 px-3 font-medium text-sm bg-muted/30">CMS ID (Full)</td>
                 {plans.map((plan, idx) => (
                   <td key={idx} className="py-2 px-3 text-center text-sm">
                     {calculateCmsId(plan) || '—'}
+                  </td>
+                ))}
+              </tr>
+              <tr className="border-b border-border">
+                <td className="py-2 px-3 font-medium text-sm bg-muted/30">CMS Contract Number</td>
+                {plans.map((plan, idx) => (
+                  <td key={idx} className="py-2 px-3 text-center text-sm">
+                    {formatText(plan.cms_contract_number)}
+                  </td>
+                ))}
+              </tr>
+              <tr className="border-b border-border">
+                <td className="py-2 px-3 font-medium text-sm bg-muted/30">CMS Plan Number</td>
+                {plans.map((plan, idx) => (
+                  <td key={idx} className="py-2 px-3 text-center text-sm">
+                    {formatText(plan.cms_plan_number)}
+                  </td>
+                ))}
+              </tr>
+              <tr className="border-b border-border">
+                <td className="py-2 px-3 font-medium text-sm bg-muted/30">CMS Geo Segment</td>
+                {plans.map((plan, idx) => (
+                  <td key={idx} className="py-2 px-3 text-center text-sm">
+                    {formatText(plan.cms_geo_segment)}
+                  </td>
+                ))}
+              </tr>
+              <tr className="border-b border-border">
+                <td className="py-2 px-3 font-medium text-sm bg-muted/30">Effective Start</td>
+                {plans.map((plan, idx) => (
+                  <td key={idx} className="py-2 px-3 text-center text-sm">
+                    {formatDate(plan.effective_start)}
+                  </td>
+                ))}
+              </tr>
+              <tr className="border-b border-border">
+                <td className="py-2 px-3 font-medium text-sm bg-muted/30">Effective End</td>
+                {plans.map((plan, idx) => (
+                  <td key={idx} className="py-2 px-3 text-center text-sm">
+                    {formatDate(plan.effective_end)}
                   </td>
                 ))}
               </tr>
@@ -296,6 +369,37 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                 lowerIsBetter={false}
               />
 
+              {/* Extended Benefits (from metadata) */}
+              <tr className="bg-muted/50">
+                <td colSpan={plans.length + 1} className="py-2 px-3 font-semibold text-sm">
+                  Extended Benefits
+                </td>
+              </tr>
+              <ComparisonField
+                label="Card Benefit"
+                values={plans.map(p => {
+                  const val = getMetadata(p, 'card_benefit')
+                  return typeof val === 'number' ? val : (typeof val === 'string' ? parseFloat(val.replace(/\$/g, '').replace(/,/g, '')) || null : null)
+                })}
+                lowerIsBetter={false}
+              />
+              <ComparisonField
+                label="Fitness Benefit"
+                values={plans.map(p => {
+                  const val = getMetadata(p, 'fitness_benefit')
+                  return typeof val === 'number' ? val : (typeof val === 'string' ? parseFloat(val.replace(/\$/g, '').replace(/,/g, '')) || null : null)
+                })}
+                lowerIsBetter={false}
+              />
+              <ComparisonField
+                label="Transportation Benefit"
+                values={plans.map(p => {
+                  const val = getMetadata(p, 'transportation_benefit')
+                  return typeof val === 'number' ? val : (typeof val === 'string' ? parseFloat(val.replace(/\$/g, '').replace(/,/g, '')) || null : null)
+                })}
+                lowerIsBetter={false}
+              />
+
               {/* Medical Copays */}
               <tr className="bg-muted/50">
                 <td colSpan={plans.length + 1} className="py-2 px-3 font-semibold text-sm">
@@ -335,8 +439,8 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                 </td>
               </tr>
               <ComparisonField
-                label="Inpatient Copay (Per Stay)"
-                values={plans.map(p => p.hospital_inpatient_per_stay_copay)}
+                label="Inpatient Copay (Per Day)"
+                values={plans.map(p => p.hospital_inpatient_per_day_copay)}
                 lowerIsBetter={true}
               />
               <ComparisonField
@@ -346,10 +450,59 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                 formatter={formatNumber}
               />
               <ComparisonField
+                label="Total Copay Per Stay"
+                values={plans.map(p => 
+                  (p.hospital_inpatient_per_day_copay ?? 0) * (p.hospital_inpatient_days ?? 0) || null
+                )}
+                lowerIsBetter={true}
+              />
+              <ComparisonField
                 label="MOOP (Annual)"
                 values={plans.map(p => p.moop_annual)}
                 lowerIsBetter={true}
               />
+
+              {/* Deductibles */}
+              <tr className="bg-muted/50">
+                <td colSpan={plans.length + 1} className="py-2 px-3 font-semibold text-sm">
+                  Deductibles
+                </td>
+              </tr>
+              <ComparisonField
+                label="Medical Deductible"
+                values={plans.map(p => {
+                  const val = getMetadata(p, 'medical_deductible')
+                  return typeof val === 'number' ? val : (typeof val === 'string' ? parseFloat(val.replace(/\$/g, '').replace(/,/g, '')) || null : null)
+                })}
+                lowerIsBetter={true}
+              />
+
+              {/* Prescription Drug Coverage */}
+              <tr className="bg-muted/50">
+                <td colSpan={plans.length + 1} className="py-2 px-3 font-semibold text-sm">
+                  Prescription Drug Coverage
+                </td>
+              </tr>
+              <ComparisonField
+                label="RX Deductible (Tier 3-4-5)"
+                values={plans.map(p => {
+                  const val = getMetadata(p, 'rx_deductible_tier345')
+                  return typeof val === 'number' ? val : (typeof val === 'string' ? parseFloat(val.replace(/\$/g, '').replace(/,/g, '')) || null : null)
+                })}
+                lowerIsBetter={true}
+              />
+              <tr className="border-b border-border">
+                <td className="py-2 px-3 font-medium text-sm bg-muted/30">RX Cost Share</td>
+                {plans.map((plan, idx) => {
+                  const metadataVal = getMetadata(plan, 'rx_cost_share')
+                  const displayVal = metadataVal || plan.pharmacy_benefit
+                  return (
+                    <td key={idx} className="py-2 px-3 text-center text-xs">
+                      {formatText(displayVal as string)}
+                    </td>
+                  )
+                })}
+              </tr>
 
               {/* Estimated Annual Cost */}
               {showCalculator && (
@@ -394,10 +547,26 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                 ))}
               </tr>
               <tr className="border-b border-border">
-                <td className="py-2 px-3 font-medium text-sm bg-muted/30">Pharmacy Benefit</td>
+                <td className="py-2 px-3 font-medium text-sm bg-muted/30">Medicaid Eligibility</td>
                 {plans.map((plan, idx) => (
                   <td key={idx} className="py-2 px-3 text-center text-sm">
-                    {plan.pharmacy_benefit || '—'}
+                    {formatText(getMetadata(plan, 'medicaid_eligibility') as string)}
+                  </td>
+                ))}
+              </tr>
+              <tr className="border-b border-border">
+                <td className="py-2 px-3 font-medium text-sm bg-muted/30">Transitioned From</td>
+                {plans.map((plan, idx) => (
+                  <td key={idx} className="py-2 px-3 text-center text-sm">
+                    {formatText(getMetadata(plan, 'transitioned_from') as string)}
+                  </td>
+                ))}
+              </tr>
+              <tr className="border-b border-border">
+                <td className="py-2 px-3 font-medium text-sm bg-muted/30">Summary</td>
+                {plans.map((plan, idx) => (
+                  <td key={idx} className="py-2 px-3 text-center text-xs">
+                    {formatText(getMetadata(plan, 'summary') as string)}
                   </td>
                 ))}
               </tr>

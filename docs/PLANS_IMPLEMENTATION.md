@@ -64,6 +64,20 @@ CREATE TABLE plans (
 - **Flexible Data**: JSONB metadata field for additional custom data
 - **Timezone Handling**: All timestamps use UTC [[memory:5285941]]
 
+**Metadata Fields:**
+
+The `metadata` JSONB field stores additional plan benefits and information imported from CSV files:
+
+- `card_benefit` (numeric): Prepaid debit card benefit amount
+- `fitness_benefit` (numeric): Fitness/gym membership benefit amount
+- `transportation_benefit` (numeric): Transportation/rides benefit amount
+- `medical_deductible` (numeric): Medical services deductible
+- `rx_deductible_tier345` (numeric): Prescription drug deductible for tiers 3, 4, and 5
+- `rx_cost_share` (text): Prescription drug cost sharing details
+- `medicaid_eligibility` (text): Medicaid eligibility requirements (e.g., "Required", "Not Required")
+- `transitioned_from` (text): Previous plan this replaced or transitioned from
+- `summary` (text): Additional plan summary or notes
+
 ### Enrollments Table
 
 Links contacts to plans with enrollment lifecycle tracking:
@@ -355,16 +369,20 @@ Provides side-by-side comparison of 2-3 plans with visual indicators and cost ca
   - 🔴 Red arrow up = Worse than average
   - ⚪ Gray dash = Same as average
 - **Organized Categories**:
-  - Basic Information (CMS IDs)
+  - Basic Information (CMS ID Full, CMS Contract Number, CMS Plan Number, CMS Geo Segment, Effective Start, Effective End)
   - Monthly Costs (Premium, Giveback, Net Cost)
   - Supplemental Benefits (OTC, Dental, Hearing, Vision)
+  - Extended Benefits (Card Benefit, Fitness Benefit, Transportation Benefit)
   - Medical Copays (PCP, Specialist, ER, Urgent Care, Ambulance)
-  - Hospital Coverage (Inpatient copay, days covered, MOOP)
-  - Additional Information (Service area, counties, pharmacy, notes)
+  - Hospital Coverage (Inpatient copay per day, days covered, total per stay, MOOP)
+  - Deductibles (Medical Deductible)
+  - Prescription Drug Coverage (RX Deductible Tier 3-4-5, RX Cost Share)
+  - Additional Information (Service area, counties, Medicaid eligibility, transitioned from, summary, notes)
 - **Cost Calculator**: Estimate annual costs based on expected usage
   - Input annual usage (doctor visits, ER visits, etc.)
-  - Real-time cost calculations
+  - Real-time cost calculations including hospital stays (daily copay × days × stays)
   - Highlights lowest-cost plan with ★ star
+- **Metadata Display**: Automatically displays extended benefits from metadata field when available
 - **Responsive Design**: Works on all screen sizes with horizontal scrolling
 
 **Usage:**
@@ -487,6 +505,66 @@ Plans are typically version by year:
 2. **Selective Loading**: Only load enrollments when needed
 3. **Avoid N+1**: Join plans with enrollments in single query
 4. **Cache Plans**: Plans catalog can be cached (changes infrequently)
+
+## Working with Metadata Fields
+
+The `metadata` JSONB field provides flexibility for storing additional plan information that doesn't fit into the standard schema. This is particularly useful for:
+
+1. **Extended Benefits**: Benefits that vary by carrier or year (card, fitness, transportation)
+2. **Prescription Drug Details**: Complex RX coverage that needs more than the pharmacy_benefit field
+3. **Eligibility Requirements**: Medicaid or other special eligibility criteria
+4. **Historical Data**: Tracking which plans replaced others (transitioned_from)
+
+### Accessing Metadata in Code
+
+```typescript
+// TypeScript helper to safely access metadata
+function getMetadata(plan: Plan, key: string): string | number | null {
+  if (!plan.metadata || typeof plan.metadata !== 'object') return null
+  const metadata = plan.metadata as Record<string, any>
+  return metadata[key] ?? null
+}
+
+// Example usage
+const cardBenefit = getMetadata(plan, 'card_benefit')
+const medicaidRequired = getMetadata(plan, 'medicaid_eligibility')
+```
+
+### Adding Metadata During Import
+
+The CSV import automatically populates metadata fields when columns are present:
+
+```typescript
+// From plans-import.ts
+const metadata: Record<string, any> = {}
+if (col.card >= 0 && r[col.card]) metadata.card_benefit = r[col.card]
+if (col.fitness >= 0 && r[col.fitness]) metadata.fitness_benefit = r[col.fitness]
+// ... etc
+```
+
+### Querying Plans with Metadata
+
+```sql
+-- Find plans with card benefits over $100/quarter
+SELECT name, carrier, metadata->>'card_benefit' as card_benefit
+FROM plans
+WHERE (metadata->>'card_benefit')::numeric > 100
+AND plan_year = 2025;
+
+-- Find D-SNP plans (typically have Medicaid eligibility)
+SELECT name, carrier, metadata->>'medicaid_eligibility' as medicaid
+FROM plans
+WHERE plan_type IN ('D-SNP', 'HMO-D-SNP', 'PPO-D-SNP')
+AND plan_year = 2025;
+```
+
+### Best Practices for Metadata
+
+1. **Consistency**: Use consistent key names across imports (snake_case recommended)
+2. **Validation**: Validate numeric values before storing (use `toNumber()` helper)
+3. **Nullability**: Store only non-null values to keep metadata object clean
+4. **Documentation**: Document new metadata fields in this guide when added
+5. **Type Safety**: Use TypeScript type guards when accessing metadata in code
 
 ## Common Operations
 

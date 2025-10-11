@@ -188,7 +188,7 @@ export async function importPlansCsv(text: string): Promise<{
       }
 
       // Build metadata object with additional fields
-      const metadata: Record<string, any> = {}
+      const metadata: Record<string, string> = {}
       
       // Note: total_benefits is calculated on the client, not imported
       if (col.card >= 0 && r[col.card]) metadata.card_benefit = r[col.card]
