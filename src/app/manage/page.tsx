@@ -1,6 +1,7 @@
 'use client'
 
-import React, { useState, useEffect, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Navigation from '@/components/Navigation'
 import ContactList from '@/components/ContactList'
 import ActionList from '@/components/ActionList'
@@ -54,7 +55,10 @@ interface ActionFormData {
   outcome: string | null
 }
 
-export default function ManagePage() {
+function ManagePageContent() {
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  
   // Custom hooks for data management
   const {
     contacts,
@@ -143,9 +147,14 @@ export default function ManagePage() {
 
   // Handle URL parameters for direct action editing and contact selection
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search)
-    const actionId = urlParams.get('action')
-    const contactId = urlParams.get('contact')
+    const actionId = searchParams.get('action')
+    const contactId = searchParams.get('contact')
+
+    // #SMA Race ready
+    // Don't process URL params if data is still loading
+    if (contactsLoading || actionsLoading) {
+      return
+    }
 
     if (actionId && actions.length > 0) {
       const action = actions.find((a) => a.id === actionId)
@@ -159,14 +168,30 @@ export default function ManagePage() {
           handleEditAction(action)
         }
       }
-    } else if (contactId && contacts.length > 0) {
+    } else if (contactId) {
       const contact = contacts.find((c) => c.id === contactId)
-      if (contact) {
+      if (contact && (!selectedContact || selectedContact.id !== contact.id)) {
         setSelectedContact(contact)
         setSingleContactView(true)
+        // Log contact selection only if it's a new selection
+        const contactName = `${contact.first_name} ${contact.last_name}`
+        logger.contactSelected(contactName, contact.id)
+      } else if (contact) {
+        // Same contact, just update state without logging
+        setSelectedContact(contact)
+        setSingleContactView(true)
+      } else {
+        // Contact not found - redirect to clean manage URL
+        logger.error(`Contact not found: ${contactId}`, 'contact_not_found', contactId)
+        router.replace('/manage')
       }
+    } else if (!actionId && !contactId) {
+      // No URL parameters, clear selection
+      setSelectedContact(null)
+      setSingleContactView(false)
     }
-  }, [actions, contacts])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams, actions, contacts, contactsLoading, actionsLoading, router])
 
   // Contact handlers
   const handleAddContact = () => {
@@ -348,7 +373,7 @@ export default function ManagePage() {
           title: 'Action updated',
           description: `"${actionForm.title}" for ${contactName} was successfully updated.`,
         })
-        logger.info(`Action updated: ${actionForm.title} for ${contactName}`, 'action_update')
+        logger.info(`Action updated: ${actionForm.title} for ${contactName}`, 'action_update', editingAction.contact_id)
         closeActionForm()
       }
     } else {
@@ -362,7 +387,7 @@ export default function ManagePage() {
           title: 'Action created',
           description: `"${actionForm.title}" was successfully created.`,
         })
-        logger.info(`Action created: ${actionForm.title}`, 'action_create')
+        logger.info(`Action created: ${actionForm.title}`, 'action_create', selectedContact.id)
         closeActionForm()
       }
     }
@@ -380,7 +405,7 @@ export default function ManagePage() {
         description: `"${action.title}" for ${contactName} was deleted.`,
         variant: 'destructive',
       })
-      logger.info(`Action deleted: ${action.title} for ${contactName}`, 'action_delete')
+      logger.info(`Action deleted: ${action.title} for ${contactName}`, 'action_delete', action.contact_id)
     }
   }
 
@@ -395,7 +420,7 @@ export default function ManagePage() {
         title: 'Action updated',
         description: `"${action.title}" for ${contactName} was ${actionText}.`,
       })
-      logger.info(`Action ${actionText}: ${action.title} for ${contactName}`, 'action_toggle')
+      logger.info(`Action ${actionText}: ${action.title} for ${contactName}`, 'action_toggle', action.contact_id)
     }
   }
 
@@ -409,7 +434,7 @@ export default function ManagePage() {
         title: 'Action completed',
         description: `"${action.title}" for ${contactName} was marked as complete using the created date.`,
       })
-      logger.info(`Action completed with created date: ${action.title} for ${contactName}`, 'action_complete_created')
+      logger.info(`Action completed with created date: ${action.title} for ${contactName}`, 'action_complete_created', action.contact_id)
     }
   }
 
@@ -503,8 +528,12 @@ export default function ManagePage() {
               singleContactView={singleContactView}
               onAddContact={handleAddContact}
               onSelectContact={(contact) => {
-                setSelectedContact(contact)
-                setSingleContactView(true)
+                // Only log if selecting a different contact
+                if (!selectedContact || selectedContact.id !== contact.id) {
+                  const contactName = `${contact.first_name} ${contact.last_name}`
+                  logger.contactSelected(contactName, contact.id)
+                }
+                router.push(`/manage?contact=${contact.id}`)
               }}
               onEditContact={handleEditContact}
               onDeleteContact={handleDeleteContact}
@@ -530,10 +559,11 @@ export default function ManagePage() {
               onToggleShowCompleted={() => setShowCompletedActions((v) => !v)}
               onSelectContact={(contactId) => {
                 const contact = contacts.find((c) => c.id === contactId)
-                if (contact) {
-                  setSelectedContact(contact)
-                  setSingleContactView(true)
+                if (contact && (!selectedContact || selectedContact.id !== contact.id)) {
+                  const contactName = `${contact.first_name} ${contact.last_name}`
+                  logger.contactSelected(contactName, contact.id)
                 }
+                router.push(`/manage?contact=${contactId}`)
               }}
             />
           </div>
@@ -594,5 +624,30 @@ export default function ManagePage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ManagePage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="bg-background min-h-screen">
+          <Navigation pageTitle="Manage" />
+          <div className="p-6">
+            <div className="mx-auto max-w-7xl">
+              <div className="animate-pulse">
+                <div className="bg-muted mb-8 h-8 w-1/4 rounded"></div>
+                <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+                  <div className="bg-muted h-96 rounded"></div>
+                  <div className="bg-muted h-96 rounded"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      }
+    >
+      <ManagePageContent />
+    </Suspense>
   )
 }

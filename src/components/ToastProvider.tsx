@@ -1,6 +1,7 @@
 'use client'
 
 import React, { useEffect, useState, useRef } from 'react'
+import Link from 'next/link'
 import { useToast } from '@/hooks/use-toast'
 import { useLogger, type LogMessage } from '@/lib/logger'
 import { Button } from '@/components/ui/button'
@@ -8,6 +9,42 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { History, X, CheckCircle, AlertTriangle, Info, AlertCircle } from 'lucide-react'
 import { Toast } from '@/components/Toast'
+
+// Helper function to render message text with clickable contact names
+function renderMessageWithLinks(message: LogMessage, onLinkClick: () => void) {
+  const { message: text, details } = message
+  const contactId = details?.contactId as string | undefined
+  const contactName = details?.contactName as string | undefined
+
+  // If we have a contact ID and name, make the name clickable
+  if (contactId && contactName && text.includes(contactName)) {
+    const parts = text.split(contactName)
+    return (
+      <>
+        {parts.map((part, index) => (
+          <React.Fragment key={index}>
+            {part}
+            {index < parts.length - 1 && (
+              <Link
+                href={`/manage?contact=${contactId}`}
+                className="text-primary hover:underline font-semibold"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onLinkClick()
+                }}
+              >
+                {contactName}
+              </Link>
+            )}
+          </React.Fragment>
+        ))}
+      </>
+    )
+  }
+
+  // Otherwise, just return the plain text
+  return <>{text}</>
+}
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
   const { toast, toasts } = useToast()
@@ -153,7 +190,9 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                         <div className="mt-1 flex-shrink-0">{getIcon(message.type)}</div>
                         <div className="min-w-0 flex-1">
                           <div className="mb-1 flex items-center space-x-2">
-                            <p className="text-foreground text-sm font-medium">{message.message}</p>
+                            <p className="text-foreground text-sm font-medium">
+                              {renderMessageWithLinks(message, () => setShowHistory(false))}
+                            </p>
                             <Badge variant={getBadgeVariant(message.type)}>{message.type}</Badge>
                           </div>
                           <div className="text-muted-foreground flex items-center justify-between text-xs">

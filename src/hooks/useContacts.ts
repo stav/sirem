@@ -139,7 +139,7 @@ export function useContacts() {
         }
       }
 
-      logger.contactCreated(`${contactData.first_name} ${contactData.last_name}`)
+      logger.contactCreated(`${contactData.first_name} ${contactData.last_name}`, newContact.id)
       await fetchContacts()
       return newContact
     } catch (error) {
@@ -171,7 +171,7 @@ export function useContacts() {
         return false
       }
 
-      logger.contactUpdated(`${contactData.first_name} ${contactData.last_name}`)
+      logger.contactUpdated(`${contactData.first_name} ${contactData.last_name}`, contactId)
 
       // Update the local state immediately with the returned data
       if (data && data.length > 0) {
@@ -203,7 +203,7 @@ export function useContacts() {
         return false
       }
 
-      logger.contactDeleted(contactName)
+      logger.contactDeleted(contactName, contactId)
       await fetchContacts()
       return true
     } catch (error) {

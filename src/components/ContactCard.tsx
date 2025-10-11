@@ -1,4 +1,5 @@
 import React, { useMemo } from 'react'
+import Link from 'next/link'
 import { Edit, Trash2, Eye } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -120,9 +121,21 @@ export default function ContactCard({
                 return <span className={statusBadge.className}>{statusBadge.text}</span>
               }
             })()}
-            <span>
-              {contact.first_name} {contact.last_name}
-            </span>
+            {!isSingleView ? (
+              <Link
+                href={`/manage?contact=${contact.id}`}
+                className="hover:underline"
+                onClick={(e) => {
+                  e.stopPropagation()
+                }}
+              >
+                {contact.first_name} {contact.last_name}
+              </Link>
+            ) : (
+              <span>
+                {contact.first_name} {contact.last_name}
+              </span>
+            )}
 
             {/* Role Badges - inline with name */}
             {contact.contact_roles && contact.contact_roles.length > 0 && (

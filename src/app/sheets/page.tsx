@@ -250,7 +250,7 @@ export default function SheetsPage() {
       } else {
         // Log successful update
         const contactName = `${data.first_name} ${data.last_name}`
-        logger.contactUpdated(contactName)
+        logger.contactUpdated(contactName, contactId)
       }
     } catch (error) {
       console.error('Error updating contact:', error)

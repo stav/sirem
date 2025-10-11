@@ -4,6 +4,7 @@
 // all times as local time.
 
 import React, { useMemo } from 'react'
+import Link from 'next/link'
 import {
   Edit,
   Trash2,
@@ -144,9 +145,12 @@ const ActionCard = React.memo(function ActionCard({
           <div className="flex items-center space-x-2 text-xs text-muted-foreground">
             <User className="h-3 w-3" />
             {onSelectContact ? (
-              <button onClick={() => onSelectContact(action.contact_id)} className="cursor-pointer hover:underline">
+              <Link 
+                href={`/manage?contact=${action.contact_id}`}
+                className="cursor-pointer hover:underline"
+              >
                 {contactName}
-              </button>
+              </Link>
             ) : (
               <span>{contactName}</span>
             )}
