@@ -78,6 +78,8 @@ export default function PlansPage() {
     cms_contract_number: '',
     cms_plan_number: '',
     cms_geo_segment: '',
+    effective_start: '',
+    effective_end: '',
     premium_monthly: '',
     giveback_monthly: '',
     otc_benefit_quarterly: '',
@@ -96,6 +98,16 @@ export default function PlansPage() {
     service_area: '',
     counties: '', // comma-separated
     notes: '',
+    // Metadata fields
+    card_benefit: '',
+    fitness_benefit: '',
+    transportation_benefit: '',
+    medical_deductible: '',
+    rx_deductible_tier345: '',
+    rx_cost_share: '',
+    medicaid_eligibility: '',
+    transitioned_from: '',
+    summary: '',
   })
 
   const gridRef = useRef<AgGridReact>(null)
@@ -110,6 +122,8 @@ export default function PlansPage() {
     cms_contract_number: '',
     cms_plan_number: '',
     cms_geo_segment: '',
+    effective_start: '',
+    effective_end: '',
     premium_monthly: '',
     giveback_monthly: '',
     otc_benefit_quarterly: '',
@@ -128,6 +142,16 @@ export default function PlansPage() {
     service_area: '',
     counties: '',
     notes: '',
+    // Metadata fields
+    card_benefit: '',
+    fitness_benefit: '',
+    transportation_benefit: '',
+    medical_deductible: '',
+    rx_deductible_tier345: '',
+    rx_cost_share: '',
+    medicaid_eligibility: '',
+    transitioned_from: '',
+    summary: '',
   })
 
   const sortedPlans = useMemo(() => {
@@ -224,6 +248,7 @@ export default function PlansPage() {
             const plan = p.data
             if (!plan) return
             setEditingId(plan.id)
+            const metadata = plan.metadata as Record<string, unknown> | null
             setEditForm({
               name: plan.name ?? '',
               plan_type: (plan.plan_type as PlanType | null) ?? '',
@@ -232,6 +257,8 @@ export default function PlansPage() {
               cms_contract_number: plan.cms_contract_number ?? '',
               cms_plan_number: plan.cms_plan_number ?? '',
               cms_geo_segment: plan.cms_geo_segment ?? '',
+              effective_start: plan.effective_start ?? '',
+              effective_end: plan.effective_end ?? '',
               premium_monthly: plan.premium_monthly != null ? String(plan.premium_monthly) : '',
               giveback_monthly: plan.giveback_monthly != null ? String(plan.giveback_monthly) : '',
               otc_benefit_quarterly: plan.otc_benefit_quarterly != null ? String(plan.otc_benefit_quarterly) : '',
@@ -251,6 +278,16 @@ export default function PlansPage() {
               service_area: plan.service_area ?? '',
               counties: plan.counties?.join(', ') ?? '',
               notes: plan.notes ?? '',
+              // Metadata fields
+              card_benefit: String(metadata?.card_benefit ?? ''),
+              fitness_benefit: String(metadata?.fitness_benefit ?? ''),
+              transportation_benefit: String(metadata?.transportation_benefit ?? ''),
+              medical_deductible: String(metadata?.medical_deductible ?? ''),
+              rx_deductible_tier345: String(metadata?.rx_deductible_tier345 ?? ''),
+              rx_cost_share: String(metadata?.rx_cost_share ?? ''),
+              medicaid_eligibility: String(metadata?.medicaid_eligibility ?? ''),
+              transitioned_from: String(metadata?.transitioned_from ?? ''),
+              summary: String(metadata?.summary ?? ''),
             })
             setIsEditing(true)
           }
@@ -263,6 +300,7 @@ export default function PlansPage() {
             const plan = p.data
             if (!plan) return
             
+            const metadata = plan.metadata as Record<string, unknown> | null
             // Populate the add plan form with the plan data
             setForm({
               name: plan.name ?? '',
@@ -272,6 +310,8 @@ export default function PlansPage() {
               cms_contract_number: plan.cms_contract_number ?? '',
               cms_plan_number: plan.cms_plan_number ?? '',
               cms_geo_segment: plan.cms_geo_segment ?? '',
+              effective_start: plan.effective_start ?? '',
+              effective_end: plan.effective_end ?? '',
               premium_monthly: plan.premium_monthly != null ? String(plan.premium_monthly) : '',
               giveback_monthly: plan.giveback_monthly != null ? String(plan.giveback_monthly) : '',
               otc_benefit_quarterly: plan.otc_benefit_quarterly != null ? String(plan.otc_benefit_quarterly) : '',
@@ -291,6 +331,16 @@ export default function PlansPage() {
               service_area: plan.service_area ?? '',
               counties: plan.counties?.join(', ') ?? '',
               notes: plan.notes ?? '',
+              // Metadata fields
+              card_benefit: String(metadata?.card_benefit ?? ''),
+              fitness_benefit: String(metadata?.fitness_benefit ?? ''),
+              transportation_benefit: String(metadata?.transportation_benefit ?? ''),
+              medical_deductible: String(metadata?.medical_deductible ?? ''),
+              rx_deductible_tier345: String(metadata?.rx_deductible_tier345 ?? ''),
+              rx_cost_share: String(metadata?.rx_cost_share ?? ''),
+              medicaid_eligibility: String(metadata?.medicaid_eligibility ?? ''),
+              transitioned_from: String(metadata?.transitioned_from ?? ''),
+              summary: String(metadata?.summary ?? ''),
             })
             // Open the add plan form
             setIsAdding(true)
@@ -330,6 +380,19 @@ export default function PlansPage() {
 
   const handleCreate = async () => {
     if (!form.name) return
+    
+    // Build metadata object from form fields
+    const metadata: Record<string, string> = {}
+    if (form.card_benefit) metadata.card_benefit = form.card_benefit
+    if (form.fitness_benefit) metadata.fitness_benefit = form.fitness_benefit
+    if (form.transportation_benefit) metadata.transportation_benefit = form.transportation_benefit
+    if (form.medical_deductible) metadata.medical_deductible = form.medical_deductible
+    if (form.rx_deductible_tier345) metadata.rx_deductible_tier345 = form.rx_deductible_tier345
+    if (form.rx_cost_share) metadata.rx_cost_share = form.rx_cost_share
+    if (form.medicaid_eligibility) metadata.medicaid_eligibility = form.medicaid_eligibility
+    if (form.transitioned_from) metadata.transitioned_from = form.transitioned_from
+    if (form.summary) metadata.summary = form.summary
+    
     const data = {
       name: form.name,
       plan_type: (form.plan_type as PlanType) || null,
@@ -338,6 +401,8 @@ export default function PlansPage() {
       cms_contract_number: form.cms_contract_number || null,
       cms_plan_number: form.cms_plan_number || null,
       cms_geo_segment: form.cms_geo_segment || null,
+      effective_start: form.effective_start || null,
+      effective_end: form.effective_end || null,
       premium_monthly: form.premium_monthly ? Number(form.premium_monthly) : null,
       giveback_monthly: form.giveback_monthly ? Number(form.giveback_monthly) : null,
       otc_benefit_quarterly: form.otc_benefit_quarterly ? Number(form.otc_benefit_quarterly) : null,
@@ -363,9 +428,7 @@ export default function PlansPage() {
             .filter(Boolean)
         : null,
       notes: form.notes || null,
-      metadata: null,
-      effective_start: null,
-      effective_end: null,
+      metadata: Object.keys(metadata).length > 0 ? metadata : null,
     }
 
     const ok = await createPlan(data)
@@ -379,6 +442,8 @@ export default function PlansPage() {
         cms_contract_number: '',
         cms_plan_number: '',
         cms_geo_segment: '',
+        effective_start: '',
+        effective_end: '',
         premium_monthly: '',
         giveback_monthly: '',
         otc_benefit_quarterly: '',
@@ -397,6 +462,15 @@ export default function PlansPage() {
         service_area: '',
         counties: '',
         notes: '',
+        card_benefit: '',
+        fitness_benefit: '',
+        transportation_benefit: '',
+        medical_deductible: '',
+        rx_deductible_tier345: '',
+        rx_cost_share: '',
+        medicaid_eligibility: '',
+        transitioned_from: '',
+        summary: '',
       })
     }
   }
@@ -404,6 +478,19 @@ export default function PlansPage() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingId) return
+    
+    // Build metadata object from form fields
+    const metadata: Record<string, string> = {}
+    if (editForm.card_benefit) metadata.card_benefit = editForm.card_benefit
+    if (editForm.fitness_benefit) metadata.fitness_benefit = editForm.fitness_benefit
+    if (editForm.transportation_benefit) metadata.transportation_benefit = editForm.transportation_benefit
+    if (editForm.medical_deductible) metadata.medical_deductible = editForm.medical_deductible
+    if (editForm.rx_deductible_tier345) metadata.rx_deductible_tier345 = editForm.rx_deductible_tier345
+    if (editForm.rx_cost_share) metadata.rx_cost_share = editForm.rx_cost_share
+    if (editForm.medicaid_eligibility) metadata.medicaid_eligibility = editForm.medicaid_eligibility
+    if (editForm.transitioned_from) metadata.transitioned_from = editForm.transitioned_from
+    if (editForm.summary) metadata.summary = editForm.summary
+    
     const data = {
       name: editForm.name,
       plan_type: (editForm.plan_type as PlanType) || null,
@@ -412,6 +499,8 @@ export default function PlansPage() {
       cms_contract_number: editForm.cms_contract_number || null,
       cms_plan_number: editForm.cms_plan_number || null,
       cms_geo_segment: editForm.cms_geo_segment || null,
+      effective_start: editForm.effective_start || null,
+      effective_end: editForm.effective_end || null,
       premium_monthly: editForm.premium_monthly ? Number(editForm.premium_monthly) : null,
       giveback_monthly: editForm.giveback_monthly ? Number(editForm.giveback_monthly) : null,
       otc_benefit_quarterly: editForm.otc_benefit_quarterly ? Number(editForm.otc_benefit_quarterly) : null,
@@ -437,9 +526,7 @@ export default function PlansPage() {
             .filter(Boolean)
         : null,
       notes: editForm.notes || null,
-      metadata: null,
-      effective_start: null,
-      effective_end: null,
+      metadata: Object.keys(metadata).length > 0 ? metadata : null,
     }
     const ok = await updatePlan(editingId, data)
     if (ok) {
@@ -615,7 +702,7 @@ export default function PlansPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Hospital Copay (per stay)</Label>
+                  <Label className="text-xs">Hospital Copay (daily)</Label>
                   <Input
                     type="number"
                     step="0.01"
@@ -815,6 +902,23 @@ export default function PlansPage() {
               </div>
 
               <div className="space-y-1">
+                <Label className="text-xs">Effective Start</Label>
+                <Input
+                  type="date"
+                  value={editForm.effective_start}
+                  onChange={(e) => setEditForm((f) => ({ ...f, effective_start: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Effective End</Label>
+                <Input
+                  type="date"
+                  value={editForm.effective_end}
+                  onChange={(e) => setEditForm((f) => ({ ...f, effective_end: e.target.value }))}
+                />
+              </div>
+
+              <div className="space-y-1">
                 <Label className="text-xs">Premium (monthly)</Label>
                 <Input
                   type="number"
@@ -889,7 +993,7 @@ export default function PlansPage() {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Hospital Copay (per stay)</Label>
+                <Label className="text-xs">Hospital Copay (daily)</Label>
                 <Input
                   type="number"
                   step="0.01"
@@ -965,6 +1069,89 @@ export default function PlansPage() {
                 <Input
                   value={editForm.counties}
                   onChange={(e) => setEditForm((f) => ({ ...f, counties: e.target.value }))}
+                />
+              </div>
+
+              {/* Extended Benefits (Metadata) */}
+              <div className="space-y-1">
+                <Label className="text-xs">Card Benefit</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={editForm.card_benefit}
+                  onChange={(e) => setEditForm((f) => ({ ...f, card_benefit: e.target.value }))}
+                  placeholder="$0"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Fitness Benefit</Label>
+                <Input
+                  type="text"
+                  value={editForm.fitness_benefit}
+                  onChange={(e) => setEditForm((f) => ({ ...f, fitness_benefit: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Transportation Rides</Label>
+                <Input
+                  type="number"
+                  value={editForm.transportation_benefit}
+                  onChange={(e) => setEditForm((f) => ({ ...f, transportation_benefit: e.target.value }))}
+                  placeholder="0"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Medical Deductible</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={editForm.medical_deductible}
+                  onChange={(e) => setEditForm((f) => ({ ...f, medical_deductible: e.target.value }))}
+                  placeholder="$0"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">RX Deductible (T345)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={editForm.rx_deductible_tier345}
+                  onChange={(e) => setEditForm((f) => ({ ...f, rx_deductible_tier345: e.target.value }))}
+                  placeholder="$0"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">RX Cost Share</Label>
+                <Input
+                  value={editForm.rx_cost_share}
+                  onChange={(e) => setEditForm((f) => ({ ...f, rx_cost_share: e.target.value }))}
+                  placeholder="e.g., $0 Tier 1, $10 Tier 2"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Medicaid Eligibility</Label>
+                <Input
+                  value={editForm.medicaid_eligibility}
+                  onChange={(e) => setEditForm((f) => ({ ...f, medicaid_eligibility: e.target.value }))}
+                  placeholder="e.g., Required, Not Required"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Transitioned From</Label>
+                <Input
+                  value={editForm.transitioned_from}
+                  onChange={(e) => setEditForm((f) => ({ ...f, transitioned_from: e.target.value }))}
+                  placeholder="Previous plan name"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Summary</Label>
+                <Input
+                  value={editForm.summary}
+                  onChange={(e) => setEditForm((f) => ({ ...f, summary: e.target.value }))}
+                  placeholder="Plan summary or highlights"
                 />
               </div>
 
