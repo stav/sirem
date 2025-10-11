@@ -86,7 +86,7 @@ export default function PlansPage() {
     vision_benefit_yearly: '',
     primary_care_copay: '',
     specialist_copay: '',
-    hospital_inpatient_per_stay_copay: '',
+    hospital_inpatient_per_day_copay: '',
     hospital_inpatient_days: '',
     moop_annual: '',
     ambulance_copay: '',
@@ -118,7 +118,7 @@ export default function PlansPage() {
     vision_benefit_yearly: '',
     primary_care_copay: '',
     specialist_copay: '',
-    hospital_inpatient_per_stay_copay: '',
+    hospital_inpatient_per_day_copay: '',
     hospital_inpatient_days: '',
     moop_annual: '',
     ambulance_copay: '',
@@ -143,16 +143,29 @@ export default function PlansPage() {
     })
   }, [plans])
 
-  const handleToggleSelection = (planId: string) => {
-    setSelectedPlanIds((prev) => {
-      if (prev.includes(planId)) {
-        return prev.filter((id) => id !== planId)
-      } else {
-        // Limit to 3 plans for comparison
-        if (prev.length >= 3) return prev
-        return [...prev, planId]
-      }
-    })
+  const onSelectionChanged = () => {
+    if (!gridRef.current) return
+    
+    const selectedNodes = gridRef.current.api.getSelectedNodes()
+    const selectedIds = selectedNodes.map(node => node.data?.id).filter(Boolean) as string[]
+    
+    // If more than 3 are selected, deselect all and keep only the first 3
+    if (selectedIds.length > 3) {
+      // Deselect all first
+      gridRef.current.api.deselectAll()
+      
+      // Then select only the first 3
+      selectedIds.slice(0, 3).forEach(id => {
+        const node = gridRef.current?.api.getRowNode(id)
+        if (node) {
+          node.setSelected(true)
+        }
+      })
+      
+      setSelectedPlanIds(selectedIds.slice(0, 3))
+    } else {
+      setSelectedPlanIds(selectedIds)
+    }
   }
 
   const selectedPlans = useMemo(() => {
@@ -166,23 +179,8 @@ export default function PlansPage() {
         field: 'select',
         minWidth: 50,
         maxWidth: 50,
-        checkboxSelection: false,
-        cellRenderer: (p: ICellRendererParams<Database['public']['Tables']['plans']['Row']>) => {
-          const planId = p.data?.id
-          if (!planId) return null
-          const isSelected = selectedPlanIds.includes(planId)
-          const isDisabled = !isSelected && selectedPlanIds.length >= 3
-          return (
-            <input
-              type="checkbox"
-              checked={isSelected}
-              disabled={isDisabled}
-              onChange={() => handleToggleSelection(planId)}
-              className="cursor-pointer disabled:cursor-not-allowed"
-              title={isDisabled ? 'Maximum 3 plans for comparison' : 'Select for comparison'}
-            />
-          )
-        },
+        checkboxSelection: true,
+        headerCheckboxSelection: false,
         pinned: 'left',
       },
       {
@@ -257,8 +255,8 @@ export default function PlansPage() {
               vision_benefit_yearly: plan.vision_benefit_yearly != null ? String(plan.vision_benefit_yearly) : '',
               primary_care_copay: plan.primary_care_copay != null ? String(plan.primary_care_copay) : '',
               specialist_copay: plan.specialist_copay != null ? String(plan.specialist_copay) : '',
-              hospital_inpatient_per_stay_copay:
-                plan.hospital_inpatient_per_stay_copay != null ? String(plan.hospital_inpatient_per_stay_copay) : '',
+              hospital_inpatient_per_day_copay:
+                plan.hospital_inpatient_per_day_copay != null ? String(plan.hospital_inpatient_per_day_copay) : '',
               hospital_inpatient_days: plan.hospital_inpatient_days != null ? String(plan.hospital_inpatient_days) : '',
               moop_annual: plan.moop_annual != null ? String(plan.moop_annual) : '',
               ambulance_copay: plan.ambulance_copay != null ? String(plan.ambulance_copay) : '',
@@ -297,8 +295,8 @@ export default function PlansPage() {
               vision_benefit_yearly: plan.vision_benefit_yearly != null ? String(plan.vision_benefit_yearly) : '',
               primary_care_copay: plan.primary_care_copay != null ? String(plan.primary_care_copay) : '',
               specialist_copay: plan.specialist_copay != null ? String(plan.specialist_copay) : '',
-              hospital_inpatient_per_stay_copay:
-                plan.hospital_inpatient_per_stay_copay != null ? String(plan.hospital_inpatient_per_stay_copay) : '',
+              hospital_inpatient_per_day_copay:
+                plan.hospital_inpatient_per_day_copay != null ? String(plan.hospital_inpatient_per_day_copay) : '',
               hospital_inpatient_days: plan.hospital_inpatient_days != null ? String(plan.hospital_inpatient_days) : '',
               moop_annual: plan.moop_annual != null ? String(plan.moop_annual) : '',
               ambulance_copay: plan.ambulance_copay != null ? String(plan.ambulance_copay) : '',
@@ -329,7 +327,7 @@ export default function PlansPage() {
         pinned: 'right',
       },
     ],
-    [deletePlan, selectedPlanIds]
+        [deletePlan]
   )
 
   const defaultColDef = useMemo(
@@ -363,8 +361,8 @@ export default function PlansPage() {
       vision_benefit_yearly: form.vision_benefit_yearly ? Number(form.vision_benefit_yearly) : null,
       primary_care_copay: form.primary_care_copay ? Number(form.primary_care_copay) : null,
       specialist_copay: form.specialist_copay ? Number(form.specialist_copay) : null,
-      hospital_inpatient_per_stay_copay: form.hospital_inpatient_per_stay_copay
-        ? Number(form.hospital_inpatient_per_stay_copay)
+      hospital_inpatient_per_day_copay: form.hospital_inpatient_per_day_copay
+        ? Number(form.hospital_inpatient_per_day_copay)
         : null,
       hospital_inpatient_days: form.hospital_inpatient_days ? Number(form.hospital_inpatient_days) : null,
       moop_annual: form.moop_annual ? Number(form.moop_annual) : null,
@@ -404,7 +402,7 @@ export default function PlansPage() {
         vision_benefit_yearly: '',
         primary_care_copay: '',
         specialist_copay: '',
-        hospital_inpatient_per_stay_copay: '',
+        hospital_inpatient_per_day_copay: '',
         hospital_inpatient_days: '',
         moop_annual: '',
         ambulance_copay: '',
@@ -437,8 +435,8 @@ export default function PlansPage() {
       vision_benefit_yearly: editForm.vision_benefit_yearly ? Number(editForm.vision_benefit_yearly) : null,
       primary_care_copay: editForm.primary_care_copay ? Number(editForm.primary_care_copay) : null,
       specialist_copay: editForm.specialist_copay ? Number(editForm.specialist_copay) : null,
-      hospital_inpatient_per_stay_copay: editForm.hospital_inpatient_per_stay_copay
-        ? Number(editForm.hospital_inpatient_per_stay_copay)
+      hospital_inpatient_per_day_copay: editForm.hospital_inpatient_per_day_copay
+        ? Number(editForm.hospital_inpatient_per_day_copay)
         : null,
       hospital_inpatient_days: editForm.hospital_inpatient_days ? Number(editForm.hospital_inpatient_days) : null,
       moop_annual: editForm.moop_annual ? Number(editForm.moop_annual) : null,
@@ -636,8 +634,8 @@ export default function PlansPage() {
                   <Input
                     type="number"
                     step="0.01"
-                    value={form.hospital_inpatient_per_stay_copay}
-                    onChange={(e) => setForm((f) => ({ ...f, hospital_inpatient_per_stay_copay: e.target.value }))}
+                    value={form.hospital_inpatient_per_day_copay}
+                    onChange={(e) => setForm((f) => ({ ...f, hospital_inpatient_per_day_copay: e.target.value }))}
                   />
                 </div>
                 <div className="space-y-1">
@@ -742,8 +740,15 @@ export default function PlansPage() {
                 paginationPageSize={100}
                 animateRows={true}
                 enableCellTextSelection={true}
-                suppressRowClickSelection={true}
                 enableBrowserTooltips={true}
+                rowSelection="multiple"
+                onSelectionChanged={onSelectionChanged}
+                isRowSelectable={(rowNode) => {
+                  const currentSelected = gridRef.current?.api.getSelectedNodes().length || 0
+                  const isCurrentlySelected = rowNode.isSelected()
+                  // Allow selection if less than 3 total OR if this row is already selected
+                  return currentSelected < 3 || isCurrentlySelected
+                }}
               />
             </div>
           </div>
@@ -909,8 +914,8 @@ export default function PlansPage() {
                 <Input
                   type="number"
                   step="0.01"
-                  value={editForm.hospital_inpatient_per_stay_copay}
-                  onChange={(e) => setEditForm((f) => ({ ...f, hospital_inpatient_per_stay_copay: e.target.value }))}
+                  value={editForm.hospital_inpatient_per_day_copay}
+                  onChange={(e) => setEditForm((f) => ({ ...f, hospital_inpatient_per_day_copay: e.target.value }))}
                 />
               </div>
 
