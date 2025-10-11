@@ -117,9 +117,9 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
     const isBetter = lowerIsBetter ? currentValue < avgOthers : currentValue > avgOthers
     
     if (isBetter) {
-      return <span title="Better than average"><TrendingDown className="h-4 w-4 text-green-600 inline ml-1" /></span>
+      return <span title="Better than average"><TrendingUp className="h-4 w-4 text-green-600 inline ml-1" /></span>
     } else {
-      return <span title="Worse than average"><TrendingUp className="h-4 w-4 text-red-600 inline ml-1" /></span>
+      return <span title="Worse than average"><TrendingDown className="h-4 w-4 text-red-600 inline ml-1" /></span>
     }
   }
 
@@ -586,11 +586,11 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
         <div className="p-4 border-t border-border bg-muted/30">
           <div className="flex items-center gap-6 text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
-              <TrendingDown className="h-4 w-4 text-green-600" />
+              <TrendingUp className="h-4 w-4 text-green-600" />
               <span>Better than average</span>
             </div>
             <div className="flex items-center gap-1">
-              <TrendingUp className="h-4 w-4 text-red-600" />
+              <TrendingDown className="h-4 w-4 text-red-600" />
               <span>Worse than average</span>
             </div>
             <div className="flex items-center gap-1">

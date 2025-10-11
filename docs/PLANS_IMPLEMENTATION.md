@@ -365,8 +365,8 @@ Provides side-by-side comparison of 2-3 plans with visual indicators and cost ca
 **Features:**
 - **Side-by-Side Comparison**: Compare up to 3 plans simultaneously
 - **Visual Indicators**: Shows which plan has better/worse values
-  - 🟢 Green arrow down = Better than average
-  - 🔴 Red arrow up = Worse than average
+  - 🟢 Green arrow up = Better than average
+  - 🔴 Red arrow down = Worse than average
   - ⚪ Gray dash = Same as average
 - **Organized Categories**:
   - Basic Information (CMS ID Full, CMS Contract Number, CMS Plan Number, CMS Geo Segment, Effective Start, Effective End)
@@ -579,8 +579,8 @@ AND plan_year = 2025;
 5. Adjust usage inputs to see how costs change
 
 **Visual Indicators in Comparison:**
-- Green arrow down (↓): This plan's value is better than average
-- Red arrow up (↑): This plan's value is worse than average
+- Green arrow up (↑): This plan's value is better than average
+- Red arrow down (↓): This plan's value is worse than average
 - Gray dash (–): This plan's value matches the average
 
 **Cost Calculator Usage:**
