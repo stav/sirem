@@ -16,7 +16,7 @@ import {
 import { formatDateTime } from '@/lib/utils'
 import { calculateCmsId } from '@/lib/plan-utils'
 import { getPrimaryAddress } from '@/lib/address-utils'
-import { usePlanEnrollments } from '@/hooks/usePlanEnrollments'
+import LazyContactPlans from './LazyContactPlans'
 
 import { getRoleDisplayInfo, roleIconMap } from '@/lib/role-config'
 import {
@@ -57,9 +57,7 @@ const formatOrgNameForDisplay = (orgName: string, maxLength: number = 20): strin
   return `${orgName.substring(0, maxLength)}...`
 }
 
-type Plan = Database['public']['Tables']['plans']['Row']
-type Enrollment = Database['public']['Tables']['enrollments']['Row']
-type EnrollmentWithPlan = Enrollment & { plans?: Plan }
+// Types moved to LazyContactPlans component
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
   addresses?: Database['public']['Tables']['addresses']['Row'][]
@@ -87,11 +85,7 @@ export default function ContactCard({
   onView,
   refreshTimestamp, // eslint-disable-line @typescript-eslint/no-unused-vars
 }: ContactCardProps) {
-  const { enrollments } = usePlanEnrollments(contact.id)
-
-  const enrollmentItems = useMemo<EnrollmentWithPlan[]>(() => {
-    return (enrollments ?? []) as EnrollmentWithPlan[]
-  }, [enrollments])
+  // Use lazy loading for enrollment data with caching
 
   return (
     <div
@@ -288,30 +282,8 @@ export default function ContactCard({
           })()}
         </div>
 
-        {/* Enrollments */}
-        {enrollmentItems.length > 0 && (
-          <ol className="text-muted-foreground mt-2 list-decimal space-y-1 pl-5 text-sm">
-            {enrollmentItems.map((enr) => {
-              const plan = enr.plans
-              const effectiveDateOnly = enr.coverage_effective_date
-                ? formatDateTime(enr.coverage_effective_date).split(' ')[0]
-                : ''
-              const parts = [
-                plan?.carrier,
-                plan?.name,
-                plan ? calculateCmsId(plan) ? `(${calculateCmsId(plan)})` : '' : '',
-                plan?.plan_type,
-                effectiveDateOnly,
-                `(${enr.enrollment_status})`,
-              ].filter(Boolean)
-              return (
-                <li key={enr.id} className="whitespace-nowrap">
-                  {parts.join(' ')}
-                </li>
-              )
-            })}
-          </ol>
-        )}
+        {/* Enrollments - Lazy loaded with caching */}
+        <LazyContactPlans contactId={contact.id} />
 
         {/* Notes display */}
         {contact.notes && <p className="text-muted-foreground mt-2 text-sm">{contact.notes}</p>}

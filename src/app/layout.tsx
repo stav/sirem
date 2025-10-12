@@ -4,6 +4,7 @@ import './globals.css'
 import { ToastProvider } from '@/components/ToastProvider'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { ThemeProvider } from '@/contexts/ThemeContext'
+import { PlanCacheProvider } from '@/contexts/PlanCacheContext'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -29,9 +30,11 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider>
-          <TooltipProvider>
-            <ToastProvider>{children}</ToastProvider>
-          </TooltipProvider>
+          <PlanCacheProvider>
+            <TooltipProvider>
+              <ToastProvider>{children}</ToastProvider>
+            </TooltipProvider>
+          </PlanCacheProvider>
         </ThemeProvider>
       </body>
     </html>
