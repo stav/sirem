@@ -287,24 +287,41 @@ export default function ContactList({
             {/* Filter section - only when not in single contact view */}
             {!singleContactView && (
               <div className="flex items-center space-x-2">
-                <div className="relative">
-                  <input
-                    type="text"
-                    value={filter}
-                    onChange={(e) => setFilter(e.target.value)}
-                    placeholder="Multi-filter: name, T65 days, t:tag, s:status (e.g., john 180 t:n2m s:client)..."
-                    className="focus:ring-primary rounded border px-2 py-1 pr-8 text-sm focus:ring-2 focus:outline-none"
-                    style={{ minWidth: 0, width: '280px' }}
-                  />
-                  {filter && (
-                    <button
-                      onClick={() => setFilter('')}
-                      className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="h-3 w-3" />
-                    </button>
-                  )}
-                </div>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={filter}
+                          onChange={(e) => setFilter(e.target.value)}
+                          placeholder="Multi-filter: name, T65 days, t:tag, s:status (e.g., john 180 t:n2m s:client)..."
+                          className="focus:ring-primary rounded border px-2 py-1 pr-8 text-sm focus:ring-2 focus:outline-none"
+                          style={{ minWidth: 0, width: '280px' }}
+                        />
+                        {filter && (
+                          <button
+                            onClick={() => setFilter('')}
+                            className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-gray-600"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" align="start" className="max-w-sm">
+                      <div className="space-y-1">
+                        <p className="font-semibold">Multi-Filter Options:</p>
+                        <p className="text-xs">• <strong>Name:</strong> Type any text (e.g., "john")</p>
+                        <p className="text-xs">• <strong>T65 Days:</strong> Type a number (e.g., "180")</p>
+                        <p className="text-xs">• <strong>Tag:</strong> Use t: prefix (e.g., "t:n2m")</p>
+                        <p className="text-xs">• <strong>Status:</strong> Use s: prefix (e.g., "s:client")</p>
+                        <p className="text-xs">• <strong>Role:</strong> Use r: prefix (e.g., "r:primary")</p>
+                        <p className="text-xs mt-2">Combine filters with spaces for AND logic</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 <div className="flex items-center space-x-2">
                   <span className="text-muted-foreground text-xs">
                     {filteredContacts.length}/{contacts.length}
