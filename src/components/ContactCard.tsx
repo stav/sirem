@@ -83,7 +83,8 @@ export default function ContactCard({
   onView,
   refreshTimestamp, // eslint-disable-line @typescript-eslint/no-unused-vars
 }: ContactCardProps) {
-  // Use lazy loading for enrollment data with caching
+  // Removed usePlanEnrollments to prevent excessive API calls
+  // Enrollment data is shown in ContactPlansDisplay when viewing a contact
 
   return (
     <div
