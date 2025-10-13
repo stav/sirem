@@ -13,8 +13,6 @@ import {
   getDaysPast65,
   getT65Days,
 } from '@/lib/contact-utils'
-import { formatDateTime } from '@/lib/utils'
-import { calculateCmsId } from '@/lib/plan-utils'
 import { getPrimaryAddress } from '@/lib/address-utils'
 import LazyContactPlans from './LazyContactPlans'
 

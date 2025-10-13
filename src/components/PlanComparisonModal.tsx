@@ -222,7 +222,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
     })
 
     // Remove empty categories
-    return Object.entries(categories).filter(([_, keys]) => keys.length > 0)
+    return Object.entries(categories).filter(([, keys]) => keys.length > 0)
   }
 
   // Format metadata value for display

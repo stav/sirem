@@ -33,7 +33,7 @@ export default function LazyContactPlans({ contactId, className = '' }: LazyCont
     if (shouldLoad && enrollments.length > 0 && !isDataCached) {
       const enrollmentItems: EnrollmentWithPlan[] = enrollments.map(enrollment => ({
         ...enrollment,
-        plans: (enrollment as any).plans || null
+        plans: (enrollment as Enrollment & { plans?: Plan | null }).plans || null
       }))
       setCachedEnrollments(contactId, enrollmentItems)
     }
@@ -41,6 +41,9 @@ export default function LazyContactPlans({ contactId, className = '' }: LazyCont
 
   // Intersection Observer for lazy loading
   useEffect(() => {
+    const currentElement = elementRef.current
+    if (!currentElement) return
+
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries
@@ -55,21 +58,17 @@ export default function LazyContactPlans({ contactId, className = '' }: LazyCont
       }
     )
 
-    if (elementRef.current) {
-      observer.observe(elementRef.current)
-    }
+    observer.observe(currentElement)
 
     return () => {
-      if (elementRef.current) {
-        observer.unobserve(elementRef.current)
-      }
+      observer.unobserve(currentElement)
     }
   }, [hasBeenVisible])
 
   // Use cached data if available, otherwise use loading state
   const enrollmentItems = cachedEnrollments || (shouldLoad ? enrollments.map(enrollment => ({
     ...enrollment,
-    plans: (enrollment as any).plans || null
+    plans: (enrollment as Enrollment & { plans?: Plan | null }).plans || null
   })) : [])
 
   const isLoading = shouldLoad && loading && !cachedEnrollments
