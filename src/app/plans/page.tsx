@@ -235,7 +235,12 @@ export default function PlansPage() {
         sortable: true,
         filter: 'agNumberColumnFilter',
         minWidth: 130,
-        valueFormatter: (p) => (p.value != null ? `$${Number(p.value).toFixed(2)}` : '—'),
+        valueFormatter: (p) => {
+          if (p.value == null) return '—'
+          const value = Number(p.value)
+          const hasCents = value % 1 !== 0
+          return hasCents ? `$${value.toFixed(2)}` : `$${value.toFixed(0)}`
+        },
       },
       {
         headerName: 'Actions',

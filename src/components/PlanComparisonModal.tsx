@@ -56,10 +56,12 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
 
   if (!isOpen) return null
 
-  // Helper to format currency
+  // Helper to format currency (hide .00 cents only)
   const formatCurrency = (value: number | null | undefined): string => {
     if (value == null) return '—'
-    return `$${value.toFixed(2)}`
+    // Show cents only if they're non-zero
+    const hasCents = value % 1 !== 0
+    return hasCents ? `$${value.toFixed(2)}` : `$${value.toFixed(0)}`
   }
 
   // Helper to format numbers
