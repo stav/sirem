@@ -1,8 +1,10 @@
-import React from 'react'
+import React, { useState, useCallback } from 'react'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
-import { User, Phone, Mail, Tag } from 'lucide-react'
+import { Button } from '@/components/ui/button'
+import { User, Phone, Mail, Tag, Edit2 } from 'lucide-react'
 import { formatPhoneNumber } from '@/lib/contact-utils'
+import TagPicker from '@/components/TagPicker'
 import type { Database } from '@/lib/supabase'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
@@ -22,9 +24,17 @@ interface ContactBasicInfoProps {
   contact: Contact
   tags: TagWithCategory[]
   tagsLoading: boolean
+  onTagsUpdated?: () => void
 }
 
 export default function ContactBasicInfo({ contact, tags, tagsLoading }: ContactBasicInfoProps) {
+  const [isEditingTags, setIsEditingTags] = useState(false)
+
+  const handleTagsChange = useCallback(() => {
+    // Tags are updated in real-time by TagPicker
+    // Changes are saved immediately to the database
+  }, [])
+
   return (
     <div className="space-y-4">
       {/* Name */}
@@ -42,30 +52,52 @@ export default function ContactBasicInfo({ contact, tags, tagsLoading }: Contact
 
       {/* Tags */}
       <div className="space-y-3">
-        <Label className="text-muted-foreground text-sm font-medium">Tags</Label>
-        {tagsLoading ? (
-          <div className="text-muted-foreground text-sm">Loading tags...</div>
-        ) : tags.length > 0 ? (
-          <div className="flex flex-wrap gap-2">
-            {tags.map((tag) => (
-              <Badge
-                key={tag.id}
-                variant="outline"
-                className="text-xs"
-                style={{
-                  borderColor: tag.tag_categories.color || '#A9A9A9',
-                  color: tag.tag_categories.color || '#A9A9A9',
-                  backgroundColor: `${tag.tag_categories.color || '#A9A9A9'}10`,
-                }}
-              >
-                <Tag className="mr-1 h-3 w-3" />
-                {tag.label}
-                <span className="ml-1 text-xs opacity-60">({tag.tag_categories.name})</span>
-              </Badge>
-            ))}
-          </div>
+        <div className="flex items-center justify-between">
+          <Label className="text-muted-foreground text-sm font-medium">Tags</Label>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setIsEditingTags(!isEditingTags)}
+            className="h-7 text-xs"
+          >
+            <Edit2 className="mr-1 h-3 w-3" />
+            {isEditingTags ? 'Done' : 'Edit'}
+          </Button>
+        </div>
+
+        {isEditingTags ? (
+          <TagPicker
+            contactId={contact.id}
+            selectedTagIds={tags.map((t) => t.id)}
+            onTagsChange={handleTagsChange}
+          />
         ) : (
-          <div className="text-muted-foreground text-sm">No tags assigned</div>
+          <>
+            {tagsLoading ? (
+              <div className="text-muted-foreground text-sm">Loading tags...</div>
+            ) : tags.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag) => (
+                  <Badge
+                    key={tag.id}
+                    variant="outline"
+                    className="text-xs"
+                    style={{
+                      borderColor: tag.tag_categories.color || '#A9A9A9',
+                      color: tag.tag_categories.color || '#A9A9A9',
+                      backgroundColor: `${tag.tag_categories.color || '#A9A9A9'}10`,
+                    }}
+                  >
+                    <Tag className="mr-1 h-3 w-3" />
+                    {tag.label}
+                    <span className="ml-1 text-xs opacity-60">({tag.tag_categories.name})</span>
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <div className="text-muted-foreground text-sm">No tags assigned</div>
+            )}
+          </>
         )}
       </div>
 

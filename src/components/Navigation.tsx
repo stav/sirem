@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Users, BarChart3, Table, Upload, ClipboardList } from 'lucide-react'
+import { Users, BarChart3, Table, Upload, ClipboardList, Tags } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
 
 interface NavigationProps {
@@ -12,6 +12,7 @@ const pages = [
   { title: 'Manage', path: '/manage', icon: Users },
   { title: 'Sheets', path: '/sheets', icon: Table },
   { title: 'Plans', path: '/plans', icon: ClipboardList },
+  { title: 'Tags', path: '/tags', icon: Tags },
   { title: 'Import', path: '/import', icon: Upload },
 ]
 

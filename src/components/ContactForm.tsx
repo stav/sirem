@@ -17,6 +17,8 @@ import { AddressType } from '@/lib/address-types'
 import ContactRoleManager from './ContactRoleManager'
 import RoleForm from './RoleForm'
 import ContactPlansManager from './ContactPlansManager'
+import TagPicker from './TagPicker'
+import { useTags } from '@/hooks/useTags'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 type Address = Database['public']['Tables']['addresses']['Row']
@@ -121,6 +123,10 @@ export default function ContactForm({
   })
   const [roleSubmitting, setRoleSubmitting] = useState(false)
 
+  // Tag state
+  const [contactTagIds, setContactTagIds] = useState<string[]>([])
+  const { getContactTags } = useTags()
+
   const { createAddress, updateAddress, deleteAddress } = useAddresses()
 
   const title = editingContact ? `${editingContact.first_name} ${editingContact.last_name}` : 'Add New Contact'
@@ -153,6 +159,20 @@ export default function ContactForm({
     }
   }, [editingContact])
 
+  const fetchContactTags = React.useCallback(async () => {
+    if (!editingContact) {
+      setContactTagIds([])
+      return
+    }
+
+    try {
+      const tags = await getContactTags(editingContact.id)
+      setContactTagIds(tags.map((t) => t.id))
+    } catch (error) {
+      console.error('Error fetching contact tags:', error)
+    }
+  }, [editingContact, getContactTags])
+
   // Clear all state when opening modal for new contact
   useEffect(() => {
     if (isOpen && !editingContact) {
@@ -177,12 +197,14 @@ export default function ContactForm({
     }
   }, [isOpen, editingContact])
 
-  // Fetch addresses when editing a contact
+  // Fetch addresses and tags when editing a contact
   useEffect(() => {
     if (editingContact && isOpen) {
       fetchAddresses()
+      fetchContactTags()
     }
-  }, [editingContact, isOpen, fetchAddresses])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [editingContact?.id, isOpen]) // #SMA Intentionally excluding fetchAddresses and fetchContactTags to prevent infinite loops
 
   // Clear state when modal is closed
   useEffect(() => {
@@ -400,6 +422,24 @@ export default function ContactForm({
             onRoleFormDataChange={setRoleFormData}
             refreshTrigger={parentRoleRefreshTrigger}
           />
+
+          {/* Tags Section (only for existing contacts) */}
+          {editingContact && (
+            <div>
+              <Label className="mb-2 block text-sm font-medium">Tags</Label>
+              <TagPicker
+                contactId={editingContact.id}
+                selectedTagIds={contactTagIds}
+                onTagsChange={(tagIds) => {
+                  setContactTagIds(tagIds)
+                  // Optionally refresh parent contact list
+                  if (onRefreshContact) {
+                    onRefreshContact()
+                  }
+                }}
+              />
+            </div>
+          )}
 
           <div>
             <Label htmlFor="status">Status</Label>

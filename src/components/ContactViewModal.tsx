@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import ModalForm from '@/components/ui/modal-form'
 import { Button } from '@/components/ui/button'
 import { Edit } from 'lucide-react'
@@ -63,6 +63,53 @@ export default function ContactViewModal({
   const [tags, setTags] = useState<TagWithCategory[]>([])
   const [tagsLoading, setTagsLoading] = useState(false)
 
+  const fetchTags = useCallback(async () => {
+    if (!contact) return
+    
+    setTagsLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('contact_tags')
+        .select(
+          `
+          tag_id,
+          tags!inner(
+            id,
+            label,
+            category_id,
+            tag_categories!inner(
+              id,
+              name,
+              color
+            )
+          )
+        `
+        )
+        .eq('contact_id', contact.id)
+
+      if (error) {
+        console.error('Error fetching tags:', error)
+        return
+      }
+
+      // Transform the data to flatten the structure
+      const transformedTags =
+        (data as ContactTagQueryResult[])?.map((item) => ({
+          id: item.tags.id,
+          label: item.tags.label,
+          category_id: item.tags.category_id,
+          tag_categories: item.tags.tag_categories,
+        })) || []
+
+      setTags(transformedTags)
+    } catch (error) {
+      console.error('Error fetching tags:', error)
+    } finally {
+      setTagsLoading(false)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contact?.id]) // #SMA Intentionally excluding contact to prevent infinite loops
+
   useEffect(() => {
     if (!contact || !isOpen) return
 
@@ -88,53 +135,10 @@ export default function ContactViewModal({
       }
     }
 
-    const fetchTags = async () => {
-      setTagsLoading(true)
-      try {
-        const { data, error } = await supabase
-          .from('contact_tags')
-          .select(
-            `
-            tag_id,
-            tags!inner(
-              id,
-              label,
-              category_id,
-              tag_categories!inner(
-                id,
-                name,
-                color
-              )
-            )
-          `
-          )
-          .eq('contact_id', contact.id)
-
-        if (error) {
-          console.error('Error fetching tags:', error)
-          return
-        }
-
-        // Transform the data to flatten the structure
-        const transformedTags =
-          (data as ContactTagQueryResult[])?.map((item) => ({
-            id: item.tags.id,
-            label: item.tags.label,
-            category_id: item.tags.category_id,
-            tag_categories: item.tags.tag_categories,
-          })) || []
-
-        setTags(transformedTags)
-      } catch (error) {
-        console.error('Error fetching tags:', error)
-      } finally {
-        setTagsLoading(false)
-      }
-    }
-
     fetchAddresses()
     fetchTags()
-  }, [contact, isOpen])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contact?.id, isOpen]) // #SMA Intentionally excluding fetchTags to prevent infinite loops
 
   if (!contact) return null
 
@@ -167,7 +171,7 @@ export default function ContactViewModal({
       isLoading={false}
     >
       <div className="space-y-4">
-        <ContactBasicInfo contact={contact} tags={tags} tagsLoading={tagsLoading} />
+        <ContactBasicInfo contact={contact} tags={tags} tagsLoading={tagsLoading} onTagsUpdated={fetchTags} />
         <ContactRolesDisplay contact={contact} refreshTrigger={roleRefreshTrigger} />
         <ContactAddresses addresses={addresses} addressesLoading={addressesLoading} />
         <ContactPersonalInfo contact={contact} />

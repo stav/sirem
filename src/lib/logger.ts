@@ -90,4 +90,12 @@ export const logger = {
   info: (message: string, action?: string, contactId?: string) => {
     useLogger.getState().addMessage(message, 'info', action, contactId ? { contactId } : undefined)
   },
+
+  tagAdded: (contactName: string, tagName: string, contactId?: string) => {
+    useLogger.getState().addMessage(`Tag "${tagName}" added to ${contactName}`, 'success', 'tag_add', { contactName, tagName, contactId })
+  },
+
+  tagRemoved: (contactName: string, tagName: string, contactId?: string) => {
+    useLogger.getState().addMessage(`Tag "${tagName}" removed from ${contactName}`, 'info', 'tag_remove', { contactName, tagName, contactId })
+  },
 }
