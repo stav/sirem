@@ -40,10 +40,10 @@ export default function ImportPage() {
     }
   } | null>(null)
   const [preview, setPreview] = useState<{
-    totalLeads: number
-    totalActivities: number
-    totalTags: number
-    sampleLeads: Array<{
+    totalLeads?: number
+    totalActivities?: number
+    totalTags?: number
+    sampleLeads?: Array<{
       firstName: string
       lastName: string
       status: string
@@ -54,6 +54,15 @@ export default function ImportPage() {
         note: string | null
       }>
     }>
+    // Plans CSV preview
+    totalPlans?: number
+    samplePlans?: Array<{
+      name: string
+      carrier: string
+      type: string
+      premium: string
+      year: string
+    }>
   } | null>(null)
 
   const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,8 +72,48 @@ export default function ImportPage() {
     setFile(selectedFile)
     setImportResult(null)
 
-    // Preview the file (JSON-only flows). Skip preview for plans CSV.
-    if (importType !== 'plans') {
+    // Preview the file
+    if (importType === 'plans') {
+      // CSV preview for plans
+      try {
+        const text = await selectedFile.text()
+        const lines = text.split('\n').filter(line => line.trim())
+        const headers = lines[0].split(',')
+        const dataRows = lines.slice(1).filter(line => line.trim() && !line.startsWith(',,,'))
+        
+        // Find column indices
+        const nameIdx = headers.findIndex(h => h.toLowerCase().includes('name'))
+        const carrierIdx = headers.findIndex(h => h.toLowerCase().includes('carrier'))
+        const typeIdx = headers.findIndex(h => h.toLowerCase().includes('type'))
+        const premiumIdx = headers.findIndex(h => h.toLowerCase().includes('premium'))
+        const descIdx = headers.findIndex(h => h.toLowerCase().includes('description'))
+        
+        const samplePlans = dataRows.slice(0, 5).map(line => {
+          const cols = line.split(',')
+          // Extract year from description if present
+          const desc = descIdx >= 0 ? cols[descIdx] : ''
+          const yearMatch = desc?.match(/^(\d{4})\s/)
+          const year = yearMatch ? yearMatch[1] : ''
+          
+          return {
+            name: nameIdx >= 0 ? cols[nameIdx] : '',
+            carrier: carrierIdx >= 0 ? cols[carrierIdx] : '',
+            type: typeIdx >= 0 ? cols[typeIdx] : '',
+            premium: premiumIdx >= 0 ? cols[premiumIdx] : '',
+            year: year,
+          }
+        })
+        
+        setPreview({
+          totalPlans: dataRows.length,
+          samplePlans,
+        })
+      } catch (error) {
+        console.error('Error previewing CSV:', error)
+        setPreview(null)
+      }
+    } else {
+      // JSON preview for other import types
       try {
         const text = await selectedFile.text()
         const data = JSON.parse(text)
@@ -108,9 +157,6 @@ export default function ImportPage() {
         console.error('Error previewing file:', error)
         setPreview(null)
       }
-    } else {
-      // No preview for CSV; user will get post-import stats
-      setPreview(null)
     }
   }
 
@@ -310,44 +356,78 @@ export default function ImportPage() {
               <CardContent>
                 {preview ? (
                   <div className="space-y-4">
-                    <div className="bg-muted/50 rounded-lg p-4">
-                      <div className="text-foreground text-sm font-medium">
-                        Total Leads: {preview.totalLeads.toLocaleString()}
-                      </div>
-                      <div className="text-muted-foreground text-sm">
-                        Total Activities: {preview.totalActivities.toLocaleString()}
-                      </div>
-                      <div className="text-muted-foreground text-sm">
-                        Total Tags: {preview.totalTags.toLocaleString()}
-                      </div>
-                    </div>
-
-                    <div>
-                      <h4 className="text-foreground mb-2 text-sm font-medium">Sample Leads:</h4>
-                      <div className="space-y-2">
-                        {preview.sampleLeads.map((lead, index) => (
-                          <div key={index} className="bg-card rounded-lg border p-3">
-                            <div className="text-sm font-medium">
-                              {lead.firstName} {lead.lastName}
-                            </div>
-                            <div className="text-muted-foreground text-xs">Status: {lead.status}</div>
-                            {lead.tags.length > 0 && (
-                              <div className="text-muted-foreground mt-1 text-xs">Tags: {lead.tags.join(', ')}</div>
-                            )}
-                            {lead.activities.length > 0 && (
-                              <div className="text-muted-foreground mt-1 text-xs">
-                                Activities: {lead.activities.length} (
-                                {lead.activities
-                                  .slice(0, 2)
-                                  .map((a) => a.subject)
-                                  .join(', ')}
-                                )
-                              </div>
-                            )}
+                    {/* Plans Preview */}
+                    {preview.totalPlans !== undefined && (
+                      <>
+                        <div className="bg-muted/50 rounded-lg p-4">
+                          <div className="text-foreground text-sm font-medium">
+                            Total Plans: {preview.totalPlans.toLocaleString()}
                           </div>
-                        ))}
-                      </div>
-                    </div>
+                        </div>
+
+                        <div>
+                          <h4 className="text-foreground mb-2 text-sm font-medium">Sample Plans:</h4>
+                          <div className="space-y-2">
+                            {preview.samplePlans?.map((plan, index) => (
+                              <div key={index} className="bg-card rounded-lg border p-3">
+                                <div className="text-sm font-medium">{plan.name}</div>
+                                <div className="text-muted-foreground text-xs">
+                                  {plan.carrier} • {plan.type}
+                                  {plan.year && ` • ${plan.year}`}
+                                </div>
+                                {plan.premium && (
+                                  <div className="text-muted-foreground mt-1 text-xs">Premium: {plan.premium}</div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Leads Preview */}
+                    {preview.totalLeads !== undefined && (
+                      <>
+                        <div className="bg-muted/50 rounded-lg p-4">
+                          <div className="text-foreground text-sm font-medium">
+                            Total Leads: {preview.totalLeads.toLocaleString()}
+                          </div>
+                          <div className="text-muted-foreground text-sm">
+                            Total Activities: {preview.totalActivities?.toLocaleString()}
+                          </div>
+                          <div className="text-muted-foreground text-sm">
+                            Total Tags: {preview.totalTags?.toLocaleString()}
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="text-foreground mb-2 text-sm font-medium">Sample Leads:</h4>
+                          <div className="space-y-2">
+                            {preview.sampleLeads?.map((lead, index) => (
+                              <div key={index} className="bg-card rounded-lg border p-3">
+                                <div className="text-sm font-medium">
+                                  {lead.firstName} {lead.lastName}
+                                </div>
+                                <div className="text-muted-foreground text-xs">Status: {lead.status}</div>
+                                {lead.tags.length > 0 && (
+                                  <div className="text-muted-foreground mt-1 text-xs">Tags: {lead.tags.join(', ')}</div>
+                                )}
+                                {lead.activities.length > 0 && (
+                                  <div className="text-muted-foreground mt-1 text-xs">
+                                    Activities: {lead.activities.length} (
+                                    {lead.activities
+                                      .slice(0, 2)
+                                      .map((a) => a.subject)
+                                      .join(', ')}
+                                    )
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
                 ) : (
                   <div className="text-muted-foreground text-center">

@@ -369,7 +369,7 @@ CREATE TABLE public.plans (
     plan_year integer,
     cms_contract_number text,
     cms_plan_number text,
-    cms_id text GENERATED ALWAYS AS (((COALESCE(cms_contract_number, ''::text) || '-'::text) || COALESCE(cms_plan_number, ''::text))) STORED,
+    cms_geo_segment text,
     effective_start timestamp with time zone,
     effective_end timestamp with time zone,
     premium_monthly numeric(10,2),
@@ -380,7 +380,7 @@ CREATE TABLE public.plans (
     vision_benefit_yearly numeric(10,2),
     primary_care_copay numeric(10,2),
     specialist_copay numeric(10,2),
-    hospital_inpatient_per_stay_copay numeric(10,2),
+    hospital_inpatient_per_day_copay numeric(10,2),
     hospital_inpatient_days integer,
     moop_annual numeric(10,2),
     ambulance_copay numeric(10,2),
@@ -815,7 +815,7 @@ CREATE INDEX idx_plans_cms_id ON public.plans USING btree (cms_id);
 -- Name: idx_plans_cms_unique; Type: INDEX; Schema: public; Owner: -
 --
 
-CREATE UNIQUE INDEX idx_plans_cms_unique ON public.plans USING btree (cms_contract_number, cms_plan_number, plan_year);
+CREATE UNIQUE INDEX idx_plans_cms_unique ON public.plans USING btree (plan_year, cms_contract_number, cms_plan_number, cms_geo_segment);
 
 
 --

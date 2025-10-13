@@ -312,11 +312,11 @@ export default function ContactList({
                     <TooltipContent side="bottom" align="start" className="max-w-sm">
                       <div className="space-y-1">
                         <p className="font-semibold">Multi-Filter Options:</p>
-                        <p className="text-xs">• <strong>Name:</strong> Type any text (e.g., "john")</p>
-                        <p className="text-xs">• <strong>T65 Days:</strong> Type a number (e.g., "180")</p>
-                        <p className="text-xs">• <strong>Tag:</strong> Use t: prefix (e.g., "t:n2m")</p>
-                        <p className="text-xs">• <strong>Status:</strong> Use s: prefix (e.g., "s:client")</p>
-                        <p className="text-xs">• <strong>Role:</strong> Use r: prefix (e.g., "r:primary")</p>
+                        <p className="text-xs">• <strong>Name:</strong> Type any text (e.g., &quot;john&quot;)</p>
+                        <p className="text-xs">• <strong>T65 Days:</strong> Type a number (e.g., &quot;180&quot;)</p>
+                        <p className="text-xs">• <strong>Tag:</strong> Use t: prefix (e.g., &quot;t:n2m&quot;)</p>
+                        <p className="text-xs">• <strong>Status:</strong> Use s: prefix (e.g., &quot;s:client&quot;)</p>
+                        <p className="text-xs">• <strong>Role:</strong> Use r: prefix (e.g., &quot;r:primary&quot;)</p>
                         <p className="text-xs mt-2">Combine filters with spaces for AND logic</p>
                       </div>
                     </TooltipContent>

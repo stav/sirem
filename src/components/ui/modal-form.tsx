@@ -46,11 +46,6 @@ export default function ModalForm({
     <div
       className={`fixed inset-0 flex items-center justify-center bg-black/50 p-4`}
       style={{ zIndex }}
-      onClick={(e) => {
-        if (e.target === e.currentTarget) {
-          onCancel()
-        }
-      }}
     >
       <Card className="flex max-h-[90vh] w-full max-w-md flex-col" ref={modalRef}>
         <CardHeader className="relative flex-shrink-0">

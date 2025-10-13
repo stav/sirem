@@ -4,6 +4,7 @@ import { usePlanEnrollments } from '@/hooks/usePlanEnrollments'
 import { usePlans } from '@/hooks/usePlans'
 import { Label } from '@/components/ui/label'
 import { formatDateTime } from '@/lib/utils'
+import { formatPlanDisplayName } from '@/lib/plan-utils'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 type Plan = Database['public']['Tables']['plans']['Row']
@@ -17,8 +18,7 @@ export default function ContactPlansDisplay({ contact }: ContactPlansDisplayProp
   const { plans } = usePlans()
 
   const renderPlanLabel = (plan: Plan) => {
-    const parts = [plan.carrier, plan.name, plan.cms_id ? `(${plan.cms_id})` : ''].filter(Boolean)
-    return parts.join(' ')
+    return formatPlanDisplayName(plan)
   }
 
   return (
@@ -57,7 +57,9 @@ export default function ContactPlansDisplay({ contact }: ContactPlansDisplayProp
                     {enr.premium_monthly_at_enrollment != null && (
                       <div>
                         <span className="text-muted-foreground">Premium at enrollment:</span> $
-                        {enr.premium_monthly_at_enrollment.toFixed(2)}
+                        {enr.premium_monthly_at_enrollment % 1 === 0 
+                          ? enr.premium_monthly_at_enrollment.toFixed(0)
+                          : enr.premium_monthly_at_enrollment.toFixed(2)}
                       </div>
                     )}
                     {enr.pcp_name && (

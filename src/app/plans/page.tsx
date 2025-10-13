@@ -1,17 +1,20 @@
 'use client'
 
-import React, { useMemo, useRef, useState } from 'react'
+import React, { useMemo, useRef, useState, useEffect } from 'react'
 import Navigation from '@/components/Navigation'
 import { usePlans } from '@/hooks/usePlans'
+import { calculateCmsId } from '@/lib/plan-utils'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import { Enums } from '@/lib/supabase-types'
 import { AgGridReact } from 'ag-grid-react'
-import { AllCommunityModule, ColDef, GridReadyEvent, ICellRendererParams, ModuleRegistry } from 'ag-grid-community'
+import { AllCommunityModule, ColDef, GridReadyEvent, ICellRendererParams, ModuleRegistry, Theme, themeQuartz, colorSchemeDark } from 'ag-grid-community'
 import type { Database } from '@/lib/supabase'
-import { Pencil, Trash2 } from 'lucide-react'
+import { Pencil, Trash2, Scale, Copy } from 'lucide-react'
 import ModalForm from '@/components/ui/modal-form'
+import PlanComparisonModal from '@/components/PlanComparisonModal'
+import { useTheme } from '@/contexts/ThemeContext'
 
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule])
@@ -20,38 +23,53 @@ type Carrier = Enums<'carrier'>
 type PlanType = Enums<'plan_type'>
 
 const carrierOptions: Carrier[] = [
-  'United',
-  'Humana',
-  'Devoted',
-  'Anthem',
-  'MedMutual',
   'Aetna',
-  'GTL',
-  'Medico',
+  'Anthem',
   'CareSource',
-  'SummaCare',
-  'Cigna',
+  'Devoted',
+  'GTL',
   'Heartland',
+  'Humana',
+  'Medico',
+  'MedMutual',
+  'SummaCare',
+  'United',
+  'Zing',
   'Other',
 ]
 
 const planTypeOptions: PlanType[] = [
-  'HMO',
-  'HMO-POS',
-  'HMO-POS-D-SNP',
-  'HMO-POS-C-SNP',
-  'PPO',
-  'D-SNP',
-  'C-SNP',
-  'PDP',
-  'Supplement',
   'Ancillary',
+  'C-SNP',
+  'D-SNP',
+  'HMO-D-SNP',
+  'HMO-POS-C-SNP',
+  'HMO-POS-D-SNP',
+  'HMO-POS',
+  'HMO',
+  'PDP',
+  'PPO',
+  'Supplement',
 ]
 
 export default function PlansPage() {
   const { plans, loading, error, createPlan, updatePlan, deletePlan } = usePlans()
+  const { theme } = useTheme()
+
+  // Create theme object for AG Grid v34+ Theming API (client-side only)
+  const [agGridTheme, setAgGridTheme] = useState<Theme | undefined>(undefined)
+  
+  useEffect(() => {
+    const isDark = theme === 'dark' || (theme === 'system' && 
+      window.matchMedia('(prefers-color-scheme: dark)').matches)
+    
+    // Use modern AG Grid v34+ Theming API
+    setAgGridTheme(isDark ? themeQuartz.withPart(colorSchemeDark) : themeQuartz)
+  }, [theme])
 
   const [isAdding, setIsAdding] = useState(false)
+  const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([])
+  const [showComparison, setShowComparison] = useState(false)
   const [form, setForm] = useState({
     name: '',
     plan_type: '' as PlanType | '',
@@ -59,6 +77,9 @@ export default function PlansPage() {
     plan_year: new Date().getUTCFullYear().toString(),
     cms_contract_number: '',
     cms_plan_number: '',
+    cms_geo_segment: '',
+    effective_start: '',
+    effective_end: '',
     premium_monthly: '',
     giveback_monthly: '',
     otc_benefit_quarterly: '',
@@ -67,7 +88,7 @@ export default function PlansPage() {
     vision_benefit_yearly: '',
     primary_care_copay: '',
     specialist_copay: '',
-    hospital_inpatient_per_stay_copay: '',
+    hospital_inpatient_per_day_copay: '',
     hospital_inpatient_days: '',
     moop_annual: '',
     ambulance_copay: '',
@@ -77,6 +98,16 @@ export default function PlansPage() {
     service_area: '',
     counties: '', // comma-separated
     notes: '',
+    // Metadata fields
+    card_benefit: '',
+    fitness_benefit: '',
+    transportation_benefit: '',
+    medical_deductible: '',
+    rx_deductible_tier345: '',
+    rx_cost_share: '',
+    medicaid_eligibility: '',
+    transitioned_from: '',
+    summary: '',
   })
 
   const gridRef = useRef<AgGridReact>(null)
@@ -90,6 +121,9 @@ export default function PlansPage() {
     plan_year: new Date().getUTCFullYear().toString(),
     cms_contract_number: '',
     cms_plan_number: '',
+    cms_geo_segment: '',
+    effective_start: '',
+    effective_end: '',
     premium_monthly: '',
     giveback_monthly: '',
     otc_benefit_quarterly: '',
@@ -98,7 +132,7 @@ export default function PlansPage() {
     vision_benefit_yearly: '',
     primary_care_copay: '',
     specialist_copay: '',
-    hospital_inpatient_per_stay_copay: '',
+    hospital_inpatient_per_day_copay: '',
     hospital_inpatient_days: '',
     moop_annual: '',
     ambulance_copay: '',
@@ -108,6 +142,16 @@ export default function PlansPage() {
     service_area: '',
     counties: '',
     notes: '',
+    // Metadata fields
+    card_benefit: '',
+    fitness_benefit: '',
+    transportation_benefit: '',
+    medical_deductible: '',
+    rx_deductible_tier345: '',
+    rx_cost_share: '',
+    medicaid_eligibility: '',
+    transitioned_from: '',
+    summary: '',
   })
 
   const sortedPlans = useMemo(() => {
@@ -123,8 +167,29 @@ export default function PlansPage() {
     })
   }, [plans])
 
+  const onSelectionChanged = () => {
+    if (!gridRef.current) return
+    
+    const selectedNodes = gridRef.current.api.getSelectedNodes()
+    const selectedIds = selectedNodes.map(node => node.data?.id).filter(Boolean) as string[]
+    setSelectedPlanIds(selectedIds)
+  }
+
+  const selectedPlans = useMemo(() => {
+    return plans.filter((p) => selectedPlanIds.includes(p.id))
+  }, [plans, selectedPlanIds])
+
   const columnDefs: ColDef[] = useMemo(
     () => [
+      {
+        headerName: '',
+        field: 'select',
+        minWidth: 50,
+        maxWidth: 50,
+        checkboxSelection: true,
+        headerCheckboxSelection: false,
+        pinned: 'left',
+      },
       {
         field: 'name',
         headerName: 'Plan',
@@ -156,12 +221,13 @@ export default function PlansPage() {
         valueFormatter: (p) => (p.value == null ? '—' : String(p.value)),
       },
       {
-        headerName: 'CMS',
+        headerName: 'CMS ID',
         minWidth: 150,
         valueGetter: (p) => {
-          const parts = [p.data?.cms_contract_number, p.data?.cms_plan_number].filter(Boolean)
-          return parts.length ? parts.join('-') : '—'
+          return calculateCmsId(p.data) || '—'
         },
+        sortable: true, // Selecting a row has the side-effect of resetting sort
+        filter: true,
       },
       {
         field: 'premium_monthly',
@@ -169,12 +235,17 @@ export default function PlansPage() {
         sortable: true,
         filter: 'agNumberColumnFilter',
         minWidth: 130,
-        valueFormatter: (p) => (p.value != null ? `$${Number(p.value).toFixed(2)}` : '—'),
+        valueFormatter: (p) => {
+          if (p.value == null) return '—'
+          const value = Number(p.value)
+          const hasCents = value % 1 !== 0
+          return hasCents ? `$${value.toFixed(2)}` : `$${value.toFixed(0)}`
+        },
       },
       {
         headerName: 'Actions',
-        minWidth: 120,
-        maxWidth: 140,
+        minWidth: 150,
+        maxWidth: 170,
         cellRenderer: (p: ICellRendererParams<Database['public']['Tables']['plans']['Row']>) => {
           const planId: string | undefined = p.data?.id
           if (!planId) return ''
@@ -182,6 +253,7 @@ export default function PlansPage() {
             const plan = p.data
             if (!plan) return
             setEditingId(plan.id)
+            const metadata = plan.metadata as Record<string, unknown> | null
             setEditForm({
               name: plan.name ?? '',
               plan_type: (plan.plan_type as PlanType | null) ?? '',
@@ -189,6 +261,9 @@ export default function PlansPage() {
               plan_year: plan.plan_year != null ? String(plan.plan_year) : '',
               cms_contract_number: plan.cms_contract_number ?? '',
               cms_plan_number: plan.cms_plan_number ?? '',
+              cms_geo_segment: plan.cms_geo_segment ?? '',
+              effective_start: plan.effective_start ?? '',
+              effective_end: plan.effective_end ?? '',
               premium_monthly: plan.premium_monthly != null ? String(plan.premium_monthly) : '',
               giveback_monthly: plan.giveback_monthly != null ? String(plan.giveback_monthly) : '',
               otc_benefit_quarterly: plan.otc_benefit_quarterly != null ? String(plan.otc_benefit_quarterly) : '',
@@ -197,8 +272,8 @@ export default function PlansPage() {
               vision_benefit_yearly: plan.vision_benefit_yearly != null ? String(plan.vision_benefit_yearly) : '',
               primary_care_copay: plan.primary_care_copay != null ? String(plan.primary_care_copay) : '',
               specialist_copay: plan.specialist_copay != null ? String(plan.specialist_copay) : '',
-              hospital_inpatient_per_stay_copay:
-                plan.hospital_inpatient_per_stay_copay != null ? String(plan.hospital_inpatient_per_stay_copay) : '',
+              hospital_inpatient_per_day_copay:
+                plan.hospital_inpatient_per_day_copay != null ? String(plan.hospital_inpatient_per_day_copay) : '',
               hospital_inpatient_days: plan.hospital_inpatient_days != null ? String(plan.hospital_inpatient_days) : '',
               moop_annual: plan.moop_annual != null ? String(plan.moop_annual) : '',
               ambulance_copay: plan.ambulance_copay != null ? String(plan.ambulance_copay) : '',
@@ -208,6 +283,16 @@ export default function PlansPage() {
               service_area: plan.service_area ?? '',
               counties: plan.counties?.join(', ') ?? '',
               notes: plan.notes ?? '',
+              // Metadata fields
+              card_benefit: String(metadata?.card_benefit ?? ''),
+              fitness_benefit: String(metadata?.fitness_benefit ?? ''),
+              transportation_benefit: String(metadata?.transportation_benefit ?? ''),
+              medical_deductible: String(metadata?.medical_deductible ?? ''),
+              rx_deductible_tier345: String(metadata?.rx_deductible_tier345 ?? ''),
+              rx_cost_share: String(metadata?.rx_cost_share ?? ''),
+              medicaid_eligibility: String(metadata?.medicaid_eligibility ?? ''),
+              transitioned_from: String(metadata?.transitioned_from ?? ''),
+              summary: String(metadata?.summary ?? ''),
             })
             setIsEditing(true)
           }
@@ -216,8 +301,60 @@ export default function PlansPage() {
               await deletePlan(planId)
             }
           }
+          const handleCopy = () => {
+            const plan = p.data
+            if (!plan) return
+            
+            const metadata = plan.metadata as Record<string, unknown> | null
+            // Populate the add plan form with the plan data
+            setForm({
+              name: plan.name ?? '',
+              plan_type: (plan.plan_type as PlanType | null) ?? '',
+              carrier: (plan.carrier as Carrier | null) ?? '',
+              plan_year: plan.plan_year != null ? String(plan.plan_year + 1) : new Date().getUTCFullYear().toString(),
+              cms_contract_number: plan.cms_contract_number ?? '',
+              cms_plan_number: plan.cms_plan_number ?? '',
+              cms_geo_segment: plan.cms_geo_segment ?? '',
+              effective_start: plan.effective_start ?? '',
+              effective_end: plan.effective_end ?? '',
+              premium_monthly: plan.premium_monthly != null ? String(plan.premium_monthly) : '',
+              giveback_monthly: plan.giveback_monthly != null ? String(plan.giveback_monthly) : '',
+              otc_benefit_quarterly: plan.otc_benefit_quarterly != null ? String(plan.otc_benefit_quarterly) : '',
+              dental_benefit_yearly: plan.dental_benefit_yearly != null ? String(plan.dental_benefit_yearly) : '',
+              hearing_benefit_yearly: plan.hearing_benefit_yearly != null ? String(plan.hearing_benefit_yearly) : '',
+              vision_benefit_yearly: plan.vision_benefit_yearly != null ? String(plan.vision_benefit_yearly) : '',
+              primary_care_copay: plan.primary_care_copay != null ? String(plan.primary_care_copay) : '',
+              specialist_copay: plan.specialist_copay != null ? String(plan.specialist_copay) : '',
+              hospital_inpatient_per_day_copay:
+                plan.hospital_inpatient_per_day_copay != null ? String(plan.hospital_inpatient_per_day_copay) : '',
+              hospital_inpatient_days: plan.hospital_inpatient_days != null ? String(plan.hospital_inpatient_days) : '',
+              moop_annual: plan.moop_annual != null ? String(plan.moop_annual) : '',
+              ambulance_copay: plan.ambulance_copay != null ? String(plan.ambulance_copay) : '',
+              emergency_room_copay: plan.emergency_room_copay != null ? String(plan.emergency_room_copay) : '',
+              urgent_care_copay: plan.urgent_care_copay != null ? String(plan.urgent_care_copay) : '',
+              pharmacy_benefit: plan.pharmacy_benefit ?? '',
+              service_area: plan.service_area ?? '',
+              counties: plan.counties?.join(', ') ?? '',
+              notes: plan.notes ?? '',
+              // Metadata fields
+              card_benefit: String(metadata?.card_benefit ?? ''),
+              fitness_benefit: String(metadata?.fitness_benefit ?? ''),
+              transportation_benefit: String(metadata?.transportation_benefit ?? ''),
+              medical_deductible: String(metadata?.medical_deductible ?? ''),
+              rx_deductible_tier345: String(metadata?.rx_deductible_tier345 ?? ''),
+              rx_cost_share: String(metadata?.rx_cost_share ?? ''),
+              medicaid_eligibility: String(metadata?.medicaid_eligibility ?? ''),
+              transitioned_from: String(metadata?.transitioned_from ?? ''),
+              summary: String(metadata?.summary ?? ''),
+            })
+            // Open the add plan form
+            setIsAdding(true)
+          }
           return (
             <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+              <Button size="icon" variant="ghost" aria-label="Copy plan" title="Copy to next year" onClick={handleCopy}>
+                <Copy className="h-4 w-4" />
+              </Button>
               <Button size="icon" variant="ghost" aria-label="Edit plan" title="Edit" onClick={openEdit}>
                 <Pencil className="h-4 w-4" />
               </Button>
@@ -230,7 +367,7 @@ export default function PlansPage() {
         pinned: 'right',
       },
     ],
-    [deletePlan]
+        [deletePlan]
   )
 
   const defaultColDef = useMemo(
@@ -248,6 +385,19 @@ export default function PlansPage() {
 
   const handleCreate = async () => {
     if (!form.name) return
+    
+    // Build metadata object from form fields
+    const metadata: Record<string, string> = {}
+    if (form.card_benefit) metadata.card_benefit = form.card_benefit
+    if (form.fitness_benefit) metadata.fitness_benefit = form.fitness_benefit
+    if (form.transportation_benefit) metadata.transportation_benefit = form.transportation_benefit
+    if (form.medical_deductible) metadata.medical_deductible = form.medical_deductible
+    if (form.rx_deductible_tier345) metadata.rx_deductible_tier345 = form.rx_deductible_tier345
+    if (form.rx_cost_share) metadata.rx_cost_share = form.rx_cost_share
+    if (form.medicaid_eligibility) metadata.medicaid_eligibility = form.medicaid_eligibility
+    if (form.transitioned_from) metadata.transitioned_from = form.transitioned_from
+    if (form.summary) metadata.summary = form.summary
+    
     const data = {
       name: form.name,
       plan_type: (form.plan_type as PlanType) || null,
@@ -255,6 +405,9 @@ export default function PlansPage() {
       plan_year: form.plan_year ? Number(form.plan_year) : null,
       cms_contract_number: form.cms_contract_number || null,
       cms_plan_number: form.cms_plan_number || null,
+      cms_geo_segment: form.cms_geo_segment || null,
+      effective_start: form.effective_start || null,
+      effective_end: form.effective_end || null,
       premium_monthly: form.premium_monthly ? Number(form.premium_monthly) : null,
       giveback_monthly: form.giveback_monthly ? Number(form.giveback_monthly) : null,
       otc_benefit_quarterly: form.otc_benefit_quarterly ? Number(form.otc_benefit_quarterly) : null,
@@ -263,8 +416,8 @@ export default function PlansPage() {
       vision_benefit_yearly: form.vision_benefit_yearly ? Number(form.vision_benefit_yearly) : null,
       primary_care_copay: form.primary_care_copay ? Number(form.primary_care_copay) : null,
       specialist_copay: form.specialist_copay ? Number(form.specialist_copay) : null,
-      hospital_inpatient_per_stay_copay: form.hospital_inpatient_per_stay_copay
-        ? Number(form.hospital_inpatient_per_stay_copay)
+      hospital_inpatient_per_day_copay: form.hospital_inpatient_per_day_copay
+        ? Number(form.hospital_inpatient_per_day_copay)
         : null,
       hospital_inpatient_days: form.hospital_inpatient_days ? Number(form.hospital_inpatient_days) : null,
       moop_annual: form.moop_annual ? Number(form.moop_annual) : null,
@@ -280,9 +433,7 @@ export default function PlansPage() {
             .filter(Boolean)
         : null,
       notes: form.notes || null,
-      metadata: null,
-      effective_start: null,
-      effective_end: null,
+      metadata: Object.keys(metadata).length > 0 ? metadata : null,
     }
 
     const ok = await createPlan(data)
@@ -295,6 +446,9 @@ export default function PlansPage() {
         plan_year: new Date().getUTCFullYear().toString(),
         cms_contract_number: '',
         cms_plan_number: '',
+        cms_geo_segment: '',
+        effective_start: '',
+        effective_end: '',
         premium_monthly: '',
         giveback_monthly: '',
         otc_benefit_quarterly: '',
@@ -303,7 +457,7 @@ export default function PlansPage() {
         vision_benefit_yearly: '',
         primary_care_copay: '',
         specialist_copay: '',
-        hospital_inpatient_per_stay_copay: '',
+        hospital_inpatient_per_day_copay: '',
         hospital_inpatient_days: '',
         moop_annual: '',
         ambulance_copay: '',
@@ -313,6 +467,15 @@ export default function PlansPage() {
         service_area: '',
         counties: '',
         notes: '',
+        card_benefit: '',
+        fitness_benefit: '',
+        transportation_benefit: '',
+        medical_deductible: '',
+        rx_deductible_tier345: '',
+        rx_cost_share: '',
+        medicaid_eligibility: '',
+        transitioned_from: '',
+        summary: '',
       })
     }
   }
@@ -320,6 +483,19 @@ export default function PlansPage() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingId) return
+    
+    // Build metadata object from form fields
+    const metadata: Record<string, string> = {}
+    if (editForm.card_benefit) metadata.card_benefit = editForm.card_benefit
+    if (editForm.fitness_benefit) metadata.fitness_benefit = editForm.fitness_benefit
+    if (editForm.transportation_benefit) metadata.transportation_benefit = editForm.transportation_benefit
+    if (editForm.medical_deductible) metadata.medical_deductible = editForm.medical_deductible
+    if (editForm.rx_deductible_tier345) metadata.rx_deductible_tier345 = editForm.rx_deductible_tier345
+    if (editForm.rx_cost_share) metadata.rx_cost_share = editForm.rx_cost_share
+    if (editForm.medicaid_eligibility) metadata.medicaid_eligibility = editForm.medicaid_eligibility
+    if (editForm.transitioned_from) metadata.transitioned_from = editForm.transitioned_from
+    if (editForm.summary) metadata.summary = editForm.summary
+    
     const data = {
       name: editForm.name,
       plan_type: (editForm.plan_type as PlanType) || null,
@@ -327,6 +503,9 @@ export default function PlansPage() {
       plan_year: editForm.plan_year ? Number(editForm.plan_year) : null,
       cms_contract_number: editForm.cms_contract_number || null,
       cms_plan_number: editForm.cms_plan_number || null,
+      cms_geo_segment: editForm.cms_geo_segment || null,
+      effective_start: editForm.effective_start || null,
+      effective_end: editForm.effective_end || null,
       premium_monthly: editForm.premium_monthly ? Number(editForm.premium_monthly) : null,
       giveback_monthly: editForm.giveback_monthly ? Number(editForm.giveback_monthly) : null,
       otc_benefit_quarterly: editForm.otc_benefit_quarterly ? Number(editForm.otc_benefit_quarterly) : null,
@@ -335,8 +514,8 @@ export default function PlansPage() {
       vision_benefit_yearly: editForm.vision_benefit_yearly ? Number(editForm.vision_benefit_yearly) : null,
       primary_care_copay: editForm.primary_care_copay ? Number(editForm.primary_care_copay) : null,
       specialist_copay: editForm.specialist_copay ? Number(editForm.specialist_copay) : null,
-      hospital_inpatient_per_stay_copay: editForm.hospital_inpatient_per_stay_copay
-        ? Number(editForm.hospital_inpatient_per_stay_copay)
+      hospital_inpatient_per_day_copay: editForm.hospital_inpatient_per_day_copay
+        ? Number(editForm.hospital_inpatient_per_day_copay)
         : null,
       hospital_inpatient_days: editForm.hospital_inpatient_days ? Number(editForm.hospital_inpatient_days) : null,
       moop_annual: editForm.moop_annual ? Number(editForm.moop_annual) : null,
@@ -352,9 +531,7 @@ export default function PlansPage() {
             .filter(Boolean)
         : null,
       notes: editForm.notes || null,
-      metadata: null,
-      effective_start: null,
-      effective_end: null,
+      metadata: Object.keys(metadata).length > 0 ? metadata : null,
     }
     const ok = await updatePlan(editingId, data)
     if (ok) {
@@ -371,11 +548,19 @@ export default function PlansPage() {
         <div className="mx-auto max-w-7xl space-y-6">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold">Plans Catalog</h2>
-            {!isAdding && (
-              <Button size="sm" onClick={() => setIsAdding(true)}>
-                Add Plan
-              </Button>
-            )}
+            <div className="flex items-center gap-2">
+              {selectedPlanIds.length >= 2 && (
+                <Button size="sm" variant="outline" onClick={() => setShowComparison(true)}>
+                  <Scale className="h-4 w-4 mr-2" />
+                  Compare ({selectedPlanIds.length})
+                </Button>
+              )}
+              {!isAdding && (
+                <Button size="sm" onClick={() => setIsAdding(true)}>
+                  Add Plan
+                </Button>
+              )}
+            </div>
           </div>
 
           {isAdding && (
@@ -437,6 +622,13 @@ export default function PlansPage() {
                   <Input
                     value={form.cms_plan_number}
                     onChange={(e) => setForm((f) => ({ ...f, cms_plan_number: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">CMS Geo Segment</Label>
+                  <Input
+                    value={form.cms_geo_segment}
+                    onChange={(e) => setForm((f) => ({ ...f, cms_geo_segment: e.target.value }))}
                   />
                 </div>
 
@@ -515,12 +707,12 @@ export default function PlansPage() {
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Hospital Copay (per stay)</Label>
+                  <Label className="text-xs">Hospital Copay (daily)</Label>
                   <Input
                     type="number"
                     step="0.01"
-                    value={form.hospital_inpatient_per_stay_copay}
-                    onChange={(e) => setForm((f) => ({ ...f, hospital_inpatient_per_stay_copay: e.target.value }))}
+                    value={form.hospital_inpatient_per_day_copay}
+                    onChange={(e) => setForm((f) => ({ ...f, hospital_inpatient_per_day_copay: e.target.value }))}
                   />
                 </div>
                 <div className="space-y-1">
@@ -616,6 +808,7 @@ export default function PlansPage() {
             <div className="w-full" style={{ height: '70vh' }}>
               <AgGridReact
                 ref={gridRef}
+                theme={agGridTheme}
                 rowData={sortedPlans}
                 columnDefs={columnDefs}
                 defaultColDef={defaultColDef}
@@ -624,8 +817,9 @@ export default function PlansPage() {
                 paginationPageSize={100}
                 animateRows={true}
                 enableCellTextSelection={true}
-                suppressRowClickSelection={true}
                 enableBrowserTooltips={true}
+                rowSelection="multiple"
+                onSelectionChanged={onSelectionChanged}
               />
             </div>
           </div>
@@ -704,6 +898,30 @@ export default function PlansPage() {
                   onChange={(e) => setEditForm((f) => ({ ...f, cms_plan_number: e.target.value }))}
                 />
               </div>
+              <div className="space-y-1">
+                <Label className="text-xs">CMS Geo Segment</Label>
+                <Input
+                  value={editForm.cms_geo_segment}
+                  onChange={(e) => setEditForm((f) => ({ ...f, cms_geo_segment: e.target.value }))}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Effective Start</Label>
+                <Input
+                  type="date"
+                  value={editForm.effective_start}
+                  onChange={(e) => setEditForm((f) => ({ ...f, effective_start: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Effective End</Label>
+                <Input
+                  type="date"
+                  value={editForm.effective_end}
+                  onChange={(e) => setEditForm((f) => ({ ...f, effective_end: e.target.value }))}
+                />
+              </div>
 
               <div className="space-y-1">
                 <Label className="text-xs">Premium (monthly)</Label>
@@ -780,12 +998,12 @@ export default function PlansPage() {
                 />
               </div>
               <div className="space-y-1">
-                <Label className="text-xs">Hospital Copay (per stay)</Label>
+                <Label className="text-xs">Hospital Copay (daily)</Label>
                 <Input
                   type="number"
                   step="0.01"
-                  value={editForm.hospital_inpatient_per_stay_copay}
-                  onChange={(e) => setEditForm((f) => ({ ...f, hospital_inpatient_per_stay_copay: e.target.value }))}
+                  value={editForm.hospital_inpatient_per_day_copay}
+                  onChange={(e) => setEditForm((f) => ({ ...f, hospital_inpatient_per_day_copay: e.target.value }))}
                 />
               </div>
 
@@ -859,6 +1077,89 @@ export default function PlansPage() {
                 />
               </div>
 
+              {/* Extended Benefits (Metadata) */}
+              <div className="space-y-1">
+                <Label className="text-xs">Card Benefit</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={editForm.card_benefit}
+                  onChange={(e) => setEditForm((f) => ({ ...f, card_benefit: e.target.value }))}
+                  placeholder="$0"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Fitness Benefit</Label>
+                <Input
+                  type="text"
+                  value={editForm.fitness_benefit}
+                  onChange={(e) => setEditForm((f) => ({ ...f, fitness_benefit: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Transportation Rides</Label>
+                <Input
+                  type="number"
+                  value={editForm.transportation_benefit}
+                  onChange={(e) => setEditForm((f) => ({ ...f, transportation_benefit: e.target.value }))}
+                  placeholder="0"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Medical Deductible</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={editForm.medical_deductible}
+                  onChange={(e) => setEditForm((f) => ({ ...f, medical_deductible: e.target.value }))}
+                  placeholder="$0"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">RX Deductible (T345)</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={editForm.rx_deductible_tier345}
+                  onChange={(e) => setEditForm((f) => ({ ...f, rx_deductible_tier345: e.target.value }))}
+                  placeholder="$0"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">RX Cost Share</Label>
+                <Input
+                  value={editForm.rx_cost_share}
+                  onChange={(e) => setEditForm((f) => ({ ...f, rx_cost_share: e.target.value }))}
+                  placeholder="e.g., $0 Tier 1, $10 Tier 2"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label className="text-xs">Medicaid Eligibility</Label>
+                <Input
+                  value={editForm.medicaid_eligibility}
+                  onChange={(e) => setEditForm((f) => ({ ...f, medicaid_eligibility: e.target.value }))}
+                  placeholder="e.g., Required, Not Required"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Transitioned From</Label>
+                <Input
+                  value={editForm.transitioned_from}
+                  onChange={(e) => setEditForm((f) => ({ ...f, transitioned_from: e.target.value }))}
+                  placeholder="Previous plan name"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs">Summary</Label>
+                <Input
+                  value={editForm.summary}
+                  onChange={(e) => setEditForm((f) => ({ ...f, summary: e.target.value }))}
+                  placeholder="Plan summary or highlights"
+                />
+              </div>
+
               <div className="space-y-1 md:col-span-3">
                 <Label className="text-xs">Notes</Label>
                 <Input value={editForm.notes} onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))} />
@@ -869,6 +1170,9 @@ export default function PlansPage() {
           {error && <div className="text-destructive text-sm">{error}</div>}
         </div>
       </div>
+
+      {/* Plan Comparison Modal */}
+      <PlanComparisonModal isOpen={showComparison} onClose={() => setShowComparison(false)} plans={selectedPlans} />
     </div>
   )
 }
