@@ -175,47 +175,51 @@ export default function ActionList({
             <Button variant="ghost" size="sm" onClick={toggleCollapse} className="ml-2 cursor-pointer px-2">
               {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
             </Button>
-            <div className="ml-2 flex items-center space-x-4">
-              <div className="flex cursor-pointer items-center space-x-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="m-0 flex items-center space-x-2">
-                      <Switch
-                        checked={showCompletedActions}
-                        onCheckedChange={onToggleShowCompleted}
-                        id="show-completed-switch"
-                      />
-                      {showCompletedActions && (
-                        <label htmlFor="show-completed-switch" className="cursor-pointer text-sm">
-                          Show completed
-                        </label>
-                      )}
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>Show all the completed actions as well.</TooltipContent>
-                </Tooltip>
+            {!isCollapsed && (
+              <div className="ml-2 flex items-center space-x-4">
+                <div className="flex cursor-pointer items-center space-x-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="m-0 flex items-center space-x-2">
+                        <Switch
+                          checked={showCompletedActions}
+                          onCheckedChange={onToggleShowCompleted}
+                          id="show-completed-switch"
+                        />
+                        {showCompletedActions && (
+                          <label htmlFor="show-completed-switch" className="cursor-pointer text-sm">
+                            Show completed
+                          </label>
+                        )}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>Show all the completed actions as well.</TooltipContent>
+                  </Tooltip>
+                </div>
+                <div className="flex cursor-pointer items-center space-x-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <span className="flex items-center space-x-2">
+                        <Switch checked={showWeekRange} onCheckedChange={toggleWeekRange} id="show-week-range-switch" />
+                        {showWeekRange && (
+                          <label htmlFor="show-week-range-switch" className="cursor-pointer text-sm">
+                            ±30 days
+                          </label>
+                        )}
+                      </span>
+                    </TooltipTrigger>
+                    <TooltipContent>Show actions within 30 days of today.</TooltipContent>
+                  </Tooltip>
+                </div>
               </div>
-              <div className="flex cursor-pointer items-center space-x-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <span className="flex items-center space-x-2">
-                      <Switch checked={showWeekRange} onCheckedChange={toggleWeekRange} id="show-week-range-switch" />
-                      {showWeekRange && (
-                        <label htmlFor="show-week-range-switch" className="cursor-pointer text-sm">
-                          ±30 days
-                        </label>
-                      )}
-                    </span>
-                  </TooltipTrigger>
-                  <TooltipContent>Show actions within 30 days of today.</TooltipContent>
-                </Tooltip>
-              </div>
-            </div>
+            )}
           </div>
           <div className="flex items-center space-x-2">
-            <span className="text-muted-foreground text-sm">
-              {displayActions.length} / {actions.length}
-            </span>
+            {!isCollapsed && (
+              <span className="text-muted-foreground text-sm">
+                {displayActions.length} / {actions.length}
+              </span>
+            )}
             {selectedContact && (
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -244,6 +248,15 @@ export default function ActionList({
           />
         )}
       </CardHeader>
+      {isCollapsed && (
+        <CardContent>
+          <div className="py-8 text-center">
+            <p className="text-muted-foreground">
+              {displayActions.length} cards rolled up, use arrow above to roll down.
+            </p>
+          </div>
+        </CardContent>
+      )}
       {!isCollapsed && (
         <CardContent>
           {!selectedContact && displayActions.length === 0 ? (
