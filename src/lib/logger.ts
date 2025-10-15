@@ -98,4 +98,33 @@ export const logger = {
   tagRemoved: (contactName: string, tagName: string, contactId?: string) => {
     useLogger.getState().addMessage(`Tag "${tagName}" removed from ${contactName}`, 'info', 'tag_remove', { contactName, tagName, contactId })
   },
+
+  planDeleted: (planName: string, carrier?: string, year?: number, cmsId?: string, planId?: string) => {
+    const details: Record<string, unknown> = { planName, planId }
+    if (carrier) details.carrier = carrier
+    if (year) details.year = year
+    if (cmsId) details.cmsId = cmsId
+    
+    const message = `Plan deleted: ${planName}${carrier ? ` (${carrier})` : ''}${year ? ` ${year}` : ''}${cmsId ? ` [${cmsId}]` : ''}`
+    useLogger.getState().addMessage(message, 'warning', 'plan_delete', details)
+  },
+
+  plansDeleted: (plans: Array<{name: string, carrier?: string, year?: number, cmsId?: string, id?: string}>) => {
+    const planDetails = plans.map(p => ({
+      name: p.name,
+      carrier: p.carrier,
+      year: p.year,
+      cmsId: p.cmsId,
+      id: p.id
+    }))
+    
+    const message = `Deleted ${plans.length} plans: ${plans.map(p => 
+      `${p.name}${p.carrier ? ` (${p.carrier})` : ''}${p.year ? ` ${p.year}` : ''}${p.cmsId ? ` [${p.cmsId}]` : ''}`
+    ).join(', ')}`
+    
+    useLogger.getState().addMessage(message, 'warning', 'plans_delete', { 
+      count: plans.length, 
+      plans: planDetails 
+    })
+  },
 }

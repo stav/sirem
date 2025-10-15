@@ -54,7 +54,7 @@ const planTypeOptions: PlanType[] = [
 ]
 
 export default function PlansPage() {
-  const { plans, loading, error, createPlan, updatePlan, deletePlan } = usePlans()
+  const { plans, loading, error, createPlan, updatePlan, deletePlan, deletePlans } = usePlans()
   const { theme } = useTheme()
 
   // Create theme object for AG Grid v34+ Theming API (client-side only)
@@ -188,7 +188,8 @@ export default function PlansPage() {
         minWidth: 50,
         maxWidth: 50,
         checkboxSelection: true,
-        headerCheckboxSelection: false,
+        headerCheckboxSelection: true,
+        headerCheckboxSelectionFilteredOnly: true,
         pinned: 'left',
       },
       {
@@ -486,6 +487,23 @@ export default function PlansPage() {
                   Compare ({selectedPlanIds.length})
                 </Button>
               )}
+            {selectedPlanIds.length > 1 && (
+              <Button
+                size="sm"
+                variant="destructive"
+                onClick={async () => {
+                  if (!confirm(`Delete ${selectedPlanIds.length} selected plans?`)) return
+                  const ok = await deletePlans(selectedPlanIds)
+                  if (ok) {
+                    setSelectedPlanIds([])
+                    if (gridRef.current) gridRef.current.api.deselectAll()
+                  }
+                }}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete ({selectedPlanIds.length})
+              </Button>
+            )}
               {!isAdding && (
                 <Button size="sm" onClick={() => setIsAdding(true)}>
                   Add Plan

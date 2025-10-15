@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { logger } from '@/lib/logger'
+import { calculateCmsId } from '@/lib/plan-utils'
 import type { Database } from '@/lib/supabase'
 
 type Plan = Database['public']['Tables']['plans']['Row']
@@ -68,8 +70,26 @@ export function usePlans() {
 
   const deletePlan = async (planId: string) => {
     try {
+      // Get plan details before deletion for logging
+      const planToDelete = plans.find(p => p.id === planId)
+      if (!planToDelete) {
+        setError('Plan not found')
+        return false
+      }
+
       const { error } = await supabase.from('plans').delete().eq('id', planId)
       if (error) throw error
+      
+      // Log the deletion
+      const cmsId = calculateCmsId(planToDelete)
+      logger.planDeleted(
+        planToDelete.name || 'Unnamed Plan',
+        planToDelete.carrier || undefined,
+        planToDelete.plan_year || undefined,
+        cmsId || undefined,
+        planToDelete.id
+      )
+      
       await fetchPlans()
       return true
     } catch (err) {
@@ -79,9 +99,42 @@ export function usePlans() {
     }
   }
 
+  const deletePlans = async (planIds: string[]) => {
+    if (!planIds || planIds.length === 0) return true
+    try {
+      // Get plan details before deletion for logging
+      const plansToDelete = plans.filter(p => planIds.includes(p.id))
+      if (plansToDelete.length === 0) {
+        setError('No plans found to delete')
+        return false
+      }
+
+      const { error } = await supabase.from('plans').delete().in('id', planIds)
+      if (error) throw error
+      
+      // Log the bulk deletion
+      const planDetails = plansToDelete.map(plan => ({
+        name: plan.name || 'Unnamed Plan',
+        carrier: plan.carrier || undefined,
+        year: plan.plan_year || undefined,
+        cmsId: calculateCmsId(plan) || undefined,
+        id: plan.id
+      }))
+      
+      logger.plansDeleted(planDetails)
+      
+      await fetchPlans()
+      return true
+    } catch (err) {
+      console.error('Error deleting plans:', err)
+      setError(err instanceof Error ? err.message : 'Failed to delete plans')
+      return false
+    }
+  }
+
   useEffect(() => {
     fetchPlans()
   }, [])
 
-  return { plans, loading, error, fetchPlans, createPlan, updatePlan, deletePlan }
+  return { plans, loading, error, fetchPlans, createPlan, updatePlan, deletePlan, deletePlans }
 }
