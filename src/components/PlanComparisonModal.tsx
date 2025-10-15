@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { Database } from '@/lib/supabase'
 import { calculateCmsId } from '@/lib/plan-utils'
+import { getPlanMetadata } from '@/lib/plan-metadata-utils'
 
 type Plan = Database['public']['Tables']['plans']['Row']
 
@@ -101,58 +102,6 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
     return null
   }
 
-  // Map of metadata keys to their corresponding main table columns
-  const metadataToMainFieldMap: Record<string, keyof Plan> = {
-    'premium_monthly': 'premium_monthly',
-    'giveback_monthly': 'giveback_monthly',
-    'card_benefit': 'otc_benefit_quarterly',
-    'otc_benefit_quarterly': 'otc_benefit_quarterly',
-    'dental_benefit_yearly': 'dental_benefit_yearly',
-    'hearing_benefit_yearly': 'hearing_benefit_yearly',
-    'vision_benefit_yearly': 'vision_benefit_yearly',
-    'primary_care_copay': 'primary_care_copay',
-    'specialist_copay': 'specialist_copay',
-    'ambulance_copay': 'ambulance_copay',
-    'emergency_room_copay': 'emergency_room_copay',
-    'urgent_care_copay': 'urgent_care_copay',
-    'hospital_inpatient_per_stay_copay': 'hospital_inpatient_per_day_copay',
-    'hospital_inpatient_per_day_copay': 'hospital_inpatient_per_day_copay',
-    'hospital_inpatient_days': 'hospital_inpatient_days',
-    'moop_annual': 'moop_annual',
-  }
-
-  // Check if metadata value matches the main field value
-  const hasDiscrepancy = (plan: Plan, metadataKey: string): boolean => {
-    const mainFieldKey = metadataToMainFieldMap[metadataKey]
-    if (!mainFieldKey) return false
-
-    const metadataValue = parseMetadataNumber(getMetadata(plan, metadataKey))
-    const mainValue = plan[mainFieldKey] as number | null
-    
-    // Both null/undefined = no discrepancy
-    if (metadataValue == null && mainValue == null) return false
-    
-    // One is null, other isn't = discrepancy
-    if (metadataValue == null || mainValue == null) return true
-    
-    // Compare numeric values (allow small floating point differences)
-    return Math.abs(metadataValue - mainValue) > 0.01
-  }
-
-  // Check if ANY plan has a discrepancy for this metadata key
-  const hasAnyDiscrepancy = (metadataKey: string): boolean => {
-    return plans.some(plan => hasDiscrepancy(plan, metadataKey))
-  }
-
-  // Filter out metadata keys that exactly match main fields (no discrepancies)
-  const shouldDisplayMetadataKey = (key: string): boolean => {
-    const mainFieldKey = metadataToMainFieldMap[key]
-    if (!mainFieldKey) return true // Not mapped to a main field, always display
-    
-    // Only display if there's a discrepancy in at least one plan
-    return hasAnyDiscrepancy(key)
-  }
-
   // Collect all unique metadata keys across all plans
   const getAllMetadataKeys = (): string[] => {
     const keysSet = new Set<string>()
@@ -166,7 +115,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
 
   // Categorize metadata keys
   const categorizeMetadataKeys = () => {
-    const allKeys = getAllMetadataKeys().filter(shouldDisplayMetadataKey)
+    const allKeys = getAllMetadataKeys()
     const categories: Record<string, string[]> = {
       'Deductibles & Cost Sharing': [],
       'Additional Benefits': [],
@@ -285,17 +234,17 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
 
   // Calculate estimated annual costs
   const calculateAnnualCost = (plan: Plan): number => {
-    const premium = (plan.premium_monthly ?? 0) * 12
-    const giveback = (plan.giveback_monthly ?? 0) * 12
+    const premium = (getPlanMetadata.premiumMonthly(plan) ?? 0) * 12
+    const giveback = (getPlanMetadata.givebackMonthly(plan) ?? 0) * 12
     
-    const primaryCareCosts = (plan.primary_care_copay ?? 0) * usageInputs.primaryCareVisits
-    const specialistCosts = (plan.specialist_copay ?? 0) * usageInputs.specialistVisits
-    const erCosts = (plan.emergency_room_copay ?? 0) * usageInputs.emergencyRoomVisits
-    const urgentCareCosts = (plan.urgent_care_copay ?? 0) * usageInputs.urgentCareVisits
+    const primaryCareCosts = (getPlanMetadata.primaryCareCopay(plan) ?? 0) * usageInputs.primaryCareVisits
+    const specialistCosts = (getPlanMetadata.specialistCopay(plan) ?? 0) * usageInputs.specialistVisits
+    const erCosts = (getPlanMetadata.emergencyRoomCopay(plan) ?? 0) * usageInputs.emergencyRoomVisits
+    const urgentCareCosts = (getPlanMetadata.urgentCareCopay(plan) ?? 0) * usageInputs.urgentCareVisits
     // Hospital cost = daily copay * days covered per stay * number of stays
-    const daysPerStay = plan.hospital_inpatient_days ?? 0
-    const hospitalCosts = (plan.hospital_inpatient_per_day_copay ?? 0) * daysPerStay * usageInputs.hospitalStays
-    const ambulanceCosts = (plan.ambulance_copay ?? 0) * usageInputs.ambulanceUses
+    const daysPerStay = getPlanMetadata.hospitalInpatientDays(plan) ?? 0
+    const hospitalCosts = (getPlanMetadata.hospitalInpatientPerDayCopay(plan) ?? 0) * daysPerStay * usageInputs.hospitalStays
+    const ambulanceCosts = (getPlanMetadata.ambulanceCopay(plan) ?? 0) * usageInputs.ambulanceUses
 
     const totalCopays = primaryCareCosts + specialistCosts + erCosts + urgentCareCosts + hospitalCosts + ambulanceCosts
 
@@ -341,20 +290,18 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
     label, 
     values, 
     lowerIsBetter = true,
-    formatter = formatCurrency,
-    metadataKey
+    formatter = formatCurrency
   }: { 
     label: string
     values: (number | null)[]
     lowerIsBetter?: boolean
     formatter?: (v: number | null) => string
-    metadataKey?: string
   }) => (
     <tr className="border-b border-border">
       <td className="py-2 px-3 font-medium text-sm bg-muted/30">{label}</td>
       {values.map((value, idx) => {
         const others = values.filter((_, i) => i !== idx)
-        const hasDiscrep = metadataKey ? hasDiscrepancy(plans[idx], metadataKey) : false
+        const hasDiscrep = false // No discrepancy checking needed with new schema
         return (
           <td 
             key={idx} 
@@ -528,7 +475,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">Effective Start</td>
                 {plans.map((plan, idx) => (
                   <td key={idx} className="py-2 px-3 text-center text-sm">
-                    {formatDate(plan.effective_start)}
+                    {formatDate(getPlanMetadata.effectiveStart(plan))}
                   </td>
                 ))}
               </tr>
@@ -536,7 +483,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">Effective End</td>
                 {plans.map((plan, idx) => (
                   <td key={idx} className="py-2 px-3 text-center text-sm">
-                    {formatDate(plan.effective_end)}
+                    {formatDate(getPlanMetadata.effectiveEnd(plan))}
                   </td>
                 ))}
               </tr>
@@ -550,17 +497,17 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
               </tr>
               <ComparisonField
                 label="Premium (Monthly)"
-                values={plans.map(p => p.premium_monthly)}
+                values={plans.map(p => getPlanMetadata.premiumMonthly(p))}
                 lowerIsBetter={true}
               />
               <ComparisonField
                 label="Giveback (Monthly)"
-                values={plans.map(p => p.giveback_monthly)}
+                values={plans.map(p => getPlanMetadata.givebackMonthly(p))}
                 lowerIsBetter={false}
               />
               <ComparisonField
                 label="Net Monthly Cost"
-                values={plans.map(p => (p.premium_monthly ?? 0) - (p.giveback_monthly ?? 0))}
+                values={plans.map(p => (getPlanMetadata.premiumMonthly(p) ?? 0) - (getPlanMetadata.givebackMonthly(p) ?? 0))}
                 lowerIsBetter={true}
               />
 
@@ -573,22 +520,22 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
               </tr>
               <ComparisonField
                 label="OTC Benefit (Quarterly)"
-                values={plans.map(p => p.otc_benefit_quarterly)}
+                values={plans.map(p => getPlanMetadata.otcBenefitQuarterly(p))}
                 lowerIsBetter={false}
               />
               <ComparisonField
                 label="Dental Benefit (Yearly)"
-                values={plans.map(p => p.dental_benefit_yearly)}
+                values={plans.map(p => getPlanMetadata.dentalBenefitYearly(p))}
                 lowerIsBetter={false}
               />
               <ComparisonField
                 label="Hearing Benefit (Yearly)"
-                values={plans.map(p => p.hearing_benefit_yearly)}
+                values={plans.map(p => getPlanMetadata.hearingBenefitYearly(p))}
                 lowerIsBetter={false}
               />
               <ComparisonField
                 label="Vision Benefit (Yearly)"
-                values={plans.map(p => p.vision_benefit_yearly)}
+                values={plans.map(p => getPlanMetadata.visionBenefitYearly(p))}
                 lowerIsBetter={false}
               />
 
@@ -613,7 +560,6 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                           label={formatLabel(key)}
                           values={plans.map(p => parseMetadataNumber(getMetadata(p, key)))}
                           lowerIsBetter={isLowerBetter(key)}
-                          metadataKey={key}
                           formatter={(v) => {
                             if (v == null) return '—'
                             // Format based on key type
@@ -632,7 +578,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                             {formatLabel(key)}
                           </td>
                           {plans.map((plan, idx) => {
-                            const hasDiscrep = hasDiscrepancy(plan, key)
+                            const hasDiscrep = false // No discrepancy checking needed with new schema
                             return (
                               <td 
                                 key={idx} 
@@ -659,27 +605,27 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
               </tr>
               <ComparisonField
                 label="Primary Care Copay"
-                values={plans.map(p => p.primary_care_copay)}
+                values={plans.map(p => getPlanMetadata.primaryCareCopay(p))}
                 lowerIsBetter={true}
               />
               <ComparisonField
                 label="Specialist Copay"
-                values={plans.map(p => p.specialist_copay)}
+                values={plans.map(p => getPlanMetadata.specialistCopay(p))}
                 lowerIsBetter={true}
               />
               <ComparisonField
                 label="Emergency Room Copay"
-                values={plans.map(p => p.emergency_room_copay)}
+                values={plans.map(p => getPlanMetadata.emergencyRoomCopay(p))}
                 lowerIsBetter={true}
               />
               <ComparisonField
                 label="Urgent Care Copay"
-                values={plans.map(p => p.urgent_care_copay)}
+                values={plans.map(p => getPlanMetadata.urgentCareCopay(p))}
                 lowerIsBetter={true}
               />
               <ComparisonField
                 label="Ambulance Copay"
-                values={plans.map(p => p.ambulance_copay)}
+                values={plans.map(p => getPlanMetadata.ambulanceCopay(p))}
                 lowerIsBetter={true}
               />
 
@@ -692,25 +638,25 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
               </tr>
               <ComparisonField
                 label="Inpatient Copay (Per Day)"
-                values={plans.map(p => p.hospital_inpatient_per_day_copay)}
+                values={plans.map(p => getPlanMetadata.hospitalInpatientPerDayCopay(p))}
                 lowerIsBetter={true}
               />
               <ComparisonField
                 label="Inpatient Days Covered"
-                values={plans.map(p => p.hospital_inpatient_days)}
+                values={plans.map(p => getPlanMetadata.hospitalInpatientDays(p))}
                 lowerIsBetter={false}
                 formatter={formatNumber}
               />
               <ComparisonField
                 label="Total Copay Per Stay"
                 values={plans.map(p => 
-                  (p.hospital_inpatient_per_day_copay ?? 0) * (p.hospital_inpatient_days ?? 0) || null
+                  (getPlanMetadata.hospitalInpatientPerDayCopay(p) ?? 0) * (getPlanMetadata.hospitalInpatientDays(p) ?? 0) || null
                 )}
                 lowerIsBetter={true}
               />
               <ComparisonField
                 label="MOOP (Annual)"
-                values={plans.map(p => p.moop_annual)}
+                values={plans.map(p => getPlanMetadata.moopAnnual(p))}
                 lowerIsBetter={true}
               />
 
@@ -747,7 +693,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">Service Area</td>
                 {plans.map((plan, idx) => (
                   <td key={idx} className="py-2 px-3 text-center text-sm">
-                    {plan.service_area || '—'}
+                    {getPlanMetadata.serviceArea(plan) || '—'}
                   </td>
                 ))}
               </tr>
@@ -765,8 +711,8 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">Notes</td>
                 {plans.map((plan, idx) => (
                   <td key={idx} className="py-2 px-3 text-center text-xs max-w-xs overflow-hidden">
-                    <div className="line-clamp-3" title={plan.notes || undefined}>
-                      {plan.notes || '—'}
+                    <div className="line-clamp-3" title={getPlanMetadata.notes(plan) || undefined}>
+                      {getPlanMetadata.notes(plan) || '—'}
                     </div>
                   </td>
                 ))}

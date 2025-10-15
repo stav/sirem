@@ -541,6 +541,7 @@ function ManagePageContent() {
               onBackToAll={handleBackToAll}
               refreshTimestamp={refreshTimestamp}
               onFilteredContactsChange={handleFilteredContactsChange}
+              onRefresh={fetchContacts}
             />
 
             {/* Actions Section */}
@@ -620,6 +621,7 @@ function ManagePageContent() {
               handleEditContact(contact)
             }}
             roleRefreshTrigger={roleRefreshTrigger}
+            onContactUpdated={fetchContacts}
           />
         </div>
       </div>

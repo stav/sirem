@@ -25,15 +25,23 @@ interface ContactBasicInfoProps {
   tags: TagWithCategory[]
   tagsLoading: boolean
   onTagsUpdated?: () => void
+  onContactUpdated?: () => void
 }
 
-export default function ContactBasicInfo({ contact, tags, tagsLoading }: ContactBasicInfoProps) {
+export default function ContactBasicInfo({ contact, tags, tagsLoading, onTagsUpdated, onContactUpdated }: ContactBasicInfoProps) {
   const [isEditingTags, setIsEditingTags] = useState(false)
 
   const handleTagsChange = useCallback(() => {
     // Tags are updated in real-time by TagPicker
     // Changes are saved immediately to the database
-  }, [])
+    // Refresh the tags display and trigger parent refresh
+    if (onTagsUpdated) {
+      onTagsUpdated()
+    }
+    if (onContactUpdated) {
+      onContactUpdated()
+    }
+  }, [onTagsUpdated, onContactUpdated])
 
   return (
     <div className="space-y-4">

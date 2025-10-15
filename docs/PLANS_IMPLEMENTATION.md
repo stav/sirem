@@ -8,7 +8,7 @@ The Sirem CRM system includes a comprehensive Medicare plans management system t
 
 ### Plans Table
 
-The core plans catalog table stores master plan information:
+The core plans catalog table stores master plan information with a simplified schema:
 
 ```sql
 CREATE TABLE plans (
@@ -16,7 +16,7 @@ CREATE TABLE plans (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
 
-  -- Core identifiers
+  -- Core identifiers (main database fields)
   name TEXT NOT NULL,
   plan_type plan_type,
   carrier carrier,
@@ -27,56 +27,75 @@ CREATE TABLE plans (
   cms_plan_number TEXT,
   cms_geo_segment TEXT, -- Three-digit county identifier (e.g., "001")
 
-  -- Plan period
-  effective_start TIMESTAMP WITH TIME ZONE,
-  effective_end TIMESTAMP WITH TIME ZONE,
-
-  -- Financial benefits
-  premium_monthly NUMERIC(10,2),
-  giveback_monthly NUMERIC(10,2),
-  otc_benefit_quarterly NUMERIC(10,2),
-  dental_benefit_yearly NUMERIC(10,2),
-  hearing_benefit_yearly NUMERIC(10,2),
-  vision_benefit_yearly NUMERIC(10,2),
-
-  -- Medical copays
-  primary_care_copay NUMERIC(10,2),
-  specialist_copay NUMERIC(10,2),
-  hospital_inpatient_per_day_copay NUMERIC(10,2),  -- Daily copay, not per stay
-  hospital_inpatient_days INTEGER,
-  moop_annual NUMERIC(10,2),
-  ambulance_copay NUMERIC(10,2),
-  emergency_room_copay NUMERIC(10,2),
-  urgent_care_copay NUMERIC(10,2),
-
-  -- Additional information
-  pharmacy_benefit TEXT,
-  service_area TEXT,
+  -- Geographic coverage
   counties TEXT[],
-  notes TEXT,
+
+  -- Flexible metadata storage
   metadata JSONB
 );
 ```
 
 **Key Features:**
+- **Simplified Schema**: Only essential fields stored as database columns
 - **CMS ID Construction**: Dynamically combines contract, plan, and geo segment numbers in the UI
-- **Comprehensive Benefits**: Tracks all common Medicare Advantage benefits
-- **Flexible Data**: JSONB metadata field for additional custom data
+- **Flexible Metadata**: All plan benefits and details stored in JSONB metadata field
 - **Timezone Handling**: All timestamps use UTC [[memory:5285941]]
+
+**Main Database Fields:**
+- `id`, `created_at`, `updated_at` - System fields
+- `name` - Plan name (required)
+- `plan_type` - Plan type enum (HMO, PPO, D-SNP, etc.)
+- `carrier` - Insurance carrier
+- `plan_year` - Plan year (e.g., 2025)
+- `cms_contract_number` - CMS contract identifier
+- `cms_plan_number` - CMS plan identifier  
+- `cms_geo_segment` - Three-digit county identifier (e.g., "001")
+- `counties` - Array of county names covered
+- `metadata` - JSONB field containing all other plan data
 
 **Metadata Fields:**
 
-The `metadata` JSONB field stores additional plan benefits and information imported from CSV files:
+The `metadata` JSONB field stores all plan benefits and additional information:
 
+**Dates:**
+- `effective_start` (date): Plan effective start date
+- `effective_end` (date): Plan effective end date
+
+**Financial Benefits:**
+- `premium_monthly` (numeric): Monthly premium amount
+- `giveback_monthly` (numeric): Monthly giveback/rebate amount
+- `otc_benefit_quarterly` (numeric): Quarterly OTC benefit amount
+
+**Yearly Benefits:**
+- `dental_benefit_yearly` (numeric): Annual dental benefit
+- `hearing_benefit_yearly` (numeric): Annual hearing benefit
+- `vision_benefit_yearly` (numeric): Annual vision benefit
+
+**Medical Copays:**
+- `primary_care_copay` (numeric): Primary care physician copay
+- `specialist_copay` (numeric): Specialist copay
+- `hospital_inpatient_per_day_copay` (numeric): Daily hospital inpatient copay
+- `hospital_inpatient_days` (integer): Number of covered hospital days
+- `moop_annual` (numeric): Maximum Out-of-Pocket annual limit
+- `ambulance_copay` (numeric): Ambulance service copay
+- `emergency_room_copay` (numeric): Emergency room copay
+- `urgent_care_copay` (numeric): Urgent care copay
+
+**Additional Information:**
+- `pharmacy_benefit` (text): Pharmacy benefit description
+- `service_area` (text): Service area description
+- `notes` (text): General plan notes
+
+**Extended Benefits:**
 - `card_benefit` (numeric): Prepaid debit card benefit amount
-- `fitness_benefit` (numeric): Fitness/gym membership benefit amount
+- `fitness_benefit` (text): Fitness/gym membership benefit
 - `transportation_benefit` (numeric): Transportation/rides benefit amount
 - `medical_deductible` (numeric): Medical services deductible
 - `rx_deductible_tier345` (numeric): Prescription drug deductible for tiers 3, 4, and 5
 - `rx_cost_share` (text): Prescription drug cost sharing details
 - `medicaid_eligibility` (text): Medicaid eligibility requirements (e.g., "Required", "Not Required")
 - `transitioned_from` (text): Previous plan this replaced or transitioned from
-- `summary` (text): Additional plan summary or notes
+- `summary` (text): Additional plan summary or highlights
 
 ### Enrollments Table
 
@@ -175,13 +194,17 @@ Optimized indexes for performance:
 CREATE INDEX idx_plans_carrier ON plans(carrier);
 CREATE INDEX idx_plans_plan_type ON plans(plan_type);
 CREATE INDEX idx_plans_plan_year ON plans(plan_year);
-CREATE UNIQUE INDEX idx_plans_cms_unique ON plans(plan_year, cms_contract_number, cms_plan_number, cms_geo_segment);
+CREATE INDEX idx_plans_cms_lookup ON plans(plan_year, cms_contract_number, cms_plan_number, cms_geo_segment);
 
 -- Enrollments table
 CREATE INDEX idx_enrollments_contact_id ON enrollments(contact_id);
 CREATE INDEX idx_enrollments_plan_id ON enrollments(plan_id);
 CREATE INDEX idx_enrollments_status ON enrollments(enrollment_status);
 CREATE INDEX idx_enrollments_effective ON enrollments(coverage_effective_date);
+
+-- CMS uniqueness constraint (prevents duplicate plans)
+ALTER TABLE plans ADD CONSTRAINT plans_unique_cms_complete 
+UNIQUE (plan_year, cms_contract_number, cms_plan_number, cms_geo_segment);
 ```
 
 ## TypeScript Types and Interfaces
@@ -310,51 +333,34 @@ React.useEffect(() => {
 
 #### Add Plan Form
 
-Comprehensive inline form with fields:
+Comprehensive inline form with two main sections:
 
-**Core Information:**
+**Main Database Fields:**
 - Plan name (required)
 - Plan type (select dropdown)
 - Carrier (select dropdown)
 - Plan year (defaults to current year)
-
-**CMS Identifiers:**
 - CMS contract number
 - CMS plan number
-
-**Monthly Benefits:**
-- Premium
-- Giveback
-- OTC benefit (quarterly)
-
-**Yearly Benefits:**
-- Dental benefit
-- Hearing benefit
-- Vision benefit
-
-**Medical Copays:**
-- Primary care copay
-- Specialist copay
-- Hospital inpatient per stay copay
-- Hospital inpatient days
-- MOOP (Maximum Out-of-Pocket) annual
-- Ambulance copay
-- Emergency room copay
-- Urgent care copay
-
-**Additional Information:**
-- Pharmacy benefit (text)
-- Service area (text)
+- CMS geo segment
 - Counties (comma-separated array)
-- Notes
+
+**Plan Benefits & Details (Metadata):**
+- **Dates**: Effective start, Effective end
+- **Financial Benefits**: Premium (monthly), Giveback (monthly), OTC (quarterly)
+- **Yearly Benefits**: Dental, Hearing, Vision
+- **Medical Copays**: PCP, Specialist, Hospital (daily), Hospital days, MOOP, Ambulance, ER, Urgent Care
+- **Additional Info**: Pharmacy benefit, Service area, Notes
+- **Extended Benefits**: Card benefit, Fitness benefit, Transportation, Medical deductible, RX deductible, RX cost share, Medicaid eligibility, Transitioned from, Summary
 
 #### Edit Modal
 
 Modal-based editing with `ModalForm` component featuring:
-- All fields from add form
-- Pre-populated with existing data
-- Validation
-- Save/cancel actions
+- **Main Database Fields** section at the top (essential plan identifiers)
+- **Plan Benefits & Details (Metadata)** section below with all benefits and additional information
+- Pre-populated with existing data using `extractMetadataForForm` helper
+- Validation and save/cancel actions
+- Clear visual separation between main fields and metadata
 
 ### Plan Comparison Modal
 
@@ -754,6 +760,17 @@ Potential queries and reports:
    - Business logic validation
    - Cross-field validation
    - Warning for unusual values
+
+### Database Schema Updates (2025)
+
+#### CMS Constraint and Index Optimization
+
+The database schema has been updated to improve both data integrity and query performance:
+
+- **Constraint**: `plans_unique_cms_complete` - Prevents duplicate plans
+- **Index**: `idx_plans_cms_lookup` - Improves query performance
+- **Fields**: `(plan_year, cms_contract_number, cms_plan_number, cms_geo_segment)`
+- **Benefits**: Better duplicate prevention + faster queries
 
 ## Migration and Data Management
 

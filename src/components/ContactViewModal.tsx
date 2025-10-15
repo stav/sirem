@@ -49,6 +49,7 @@ interface ContactViewModalProps {
   contact: Contact | null
   onEdit?: (contact: Contact) => void
   roleRefreshTrigger?: number
+  onContactUpdated?: () => void
 }
 
 export default function ContactViewModal({
@@ -57,6 +58,7 @@ export default function ContactViewModal({
   contact,
   onEdit,
   roleRefreshTrigger,
+  onContactUpdated,
 }: ContactViewModalProps) {
   const [addresses, setAddresses] = useState<Address[]>([])
   const [addressesLoading, setAddressesLoading] = useState(false)
@@ -171,7 +173,13 @@ export default function ContactViewModal({
       isLoading={false}
     >
       <div className="space-y-4">
-        <ContactBasicInfo contact={contact} tags={tags} tagsLoading={tagsLoading} onTagsUpdated={fetchTags} />
+        <ContactBasicInfo 
+          contact={contact} 
+          tags={tags} 
+          tagsLoading={tagsLoading} 
+          onTagsUpdated={fetchTags}
+          onContactUpdated={onContactUpdated}
+        />
         <ContactRolesDisplay contact={contact} refreshTrigger={roleRefreshTrigger} />
         <ContactAddresses addresses={addresses} addressesLoading={addressesLoading} />
         <ContactPersonalInfo contact={contact} />

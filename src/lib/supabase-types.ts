@@ -570,103 +570,46 @@ export type Database = {
       }
       plans: {
         Row: {
-          ambulance_copay: number | null
           carrier: Database["public"]["Enums"]["carrier"] | null
           cms_contract_number: string | null
           cms_geo_segment: string | null
           cms_plan_number: string | null
           counties: string[] | null
           created_at: string
-          dental_benefit_yearly: number | null
-          effective_end: string | null
-          effective_start: string | null
-          emergency_room_copay: number | null
-          giveback_monthly: number | null
-          hearing_benefit_yearly: number | null
-          hospital_inpatient_days: number | null
-          hospital_inpatient_per_day_copay: number | null
           id: string
           metadata: Json | null
-          moop_annual: number | null
           name: string
-          notes: string | null
-          otc_benefit_quarterly: number | null
-          pharmacy_benefit: string | null
           plan_type: Database["public"]["Enums"]["plan_type"] | null
           plan_year: number | null
-          premium_monthly: number | null
-          primary_care_copay: number | null
-          service_area: string | null
-          specialist_copay: number | null
           updated_at: string
-          urgent_care_copay: number | null
-          vision_benefit_yearly: number | null
         }
         Insert: {
-          ambulance_copay?: number | null
           carrier?: Database["public"]["Enums"]["carrier"] | null
           cms_contract_number?: string | null
           cms_geo_segment?: string | null
           cms_plan_number?: string | null
           counties?: string[] | null
           created_at?: string
-          dental_benefit_yearly?: number | null
-          effective_end?: string | null
-          effective_start?: string | null
-          emergency_room_copay?: number | null
-          giveback_monthly?: number | null
-          hearing_benefit_yearly?: number | null
-          hospital_inpatient_days?: number | null
-          hospital_inpatient_per_day_copay?: number | null
           id?: string
           metadata?: Json | null
-          moop_annual?: number | null
           name: string
-          notes?: string | null
-          otc_benefit_quarterly?: number | null
-          pharmacy_benefit?: string | null
           plan_type?: Database["public"]["Enums"]["plan_type"] | null
           plan_year?: number | null
-          premium_monthly?: number | null
-          primary_care_copay?: number | null
-          service_area?: string | null
-          specialist_copay?: number | null
           updated_at?: string
-          urgent_care_copay?: number | null
-          vision_benefit_yearly?: number | null
         }
         Update: {
-          ambulance_copay?: number | null
           carrier?: Database["public"]["Enums"]["carrier"] | null
           cms_contract_number?: string | null
           cms_geo_segment?: string | null
           cms_plan_number?: string | null
           counties?: string[] | null
           created_at?: string
-          dental_benefit_yearly?: number | null
-          effective_end?: string | null
-          effective_start?: string | null
-          emergency_room_copay?: number | null
-          giveback_monthly?: number | null
-          hearing_benefit_yearly?: number | null
-          hospital_inpatient_days?: number | null
-          hospital_inpatient_per_day_copay?: number | null
           id?: string
           metadata?: Json | null
-          moop_annual?: number | null
           name?: string
-          notes?: string | null
-          otc_benefit_quarterly?: number | null
-          pharmacy_benefit?: string | null
           plan_type?: Database["public"]["Enums"]["plan_type"] | null
           plan_year?: number | null
-          premium_monthly?: number | null
-          primary_care_copay?: number | null
-          service_area?: string | null
-          specialist_copay?: number | null
           updated_at?: string
-          urgent_care_copay?: number | null
-          vision_benefit_yearly?: number | null
         }
         Relationships: []
       }

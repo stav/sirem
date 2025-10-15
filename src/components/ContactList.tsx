@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { Plus, ArrowLeft, ChevronDown, ChevronUp, X, List, Filter } from 'lucide-react'
+import { Plus, ArrowLeft, ChevronDown, ChevronUp, X, List, Filter, RefreshCw } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -32,6 +32,7 @@ interface ContactListProps {
   onBackToAll: () => void
   refreshTimestamp?: number
   onFilteredContactsChange?: (filteredContacts: Contact[]) => void
+  onRefresh?: () => void
 }
 
 export default function ContactList({
@@ -46,6 +47,7 @@ export default function ContactList({
   onBackToAll,
   refreshTimestamp,
   onFilteredContactsChange,
+  onRefresh,
 }: ContactListProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [filter, setFilter] = useState('')
@@ -388,6 +390,25 @@ export default function ContactList({
                         </TooltipContent>
                       </Tooltip>
                     </TooltipProvider>
+                    {onRefresh && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              onClick={onRefresh}
+                              size="sm"
+                              variant="outline"
+                              className="cursor-pointer"
+                            >
+                              <RefreshCw className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Refresh contact list</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    )}
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
