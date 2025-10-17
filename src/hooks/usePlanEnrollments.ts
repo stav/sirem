@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase'
 
@@ -12,8 +12,9 @@ export function usePlanEnrollments(contactId?: string) {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
   const [loading, setLoading] = useState<boolean>(false)
   const [error, setError] = useState<string | null>(null)
+  const lastContactIdRef = useRef<string | undefined>(undefined)
 
-  const fetchEnrollments = async (id: string) => {
+  const fetchEnrollments = useCallback(async (id: string) => {
     if (!id) {
       console.warn('fetchEnrollments called with empty contact ID')
       setEnrollments([])
@@ -49,7 +50,7 @@ export function usePlanEnrollments(contactId?: string) {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
   const createEnrollment = async (id: string, planId: string, form: EnrollmentForm) => {
     try {
@@ -113,14 +114,17 @@ export function usePlanEnrollments(contactId?: string) {
   }
 
   useEffect(() => {
-    if (contactId) {
-      console.log('usePlanEnrollments: Fetching enrollments for contact:', contactId)
-      fetchEnrollments(contactId)
-    } else {
-      console.log('usePlanEnrollments: No contactId provided, clearing enrollments')
-      setEnrollments([])
+    // Only fetch if contactId has actually changed
+    if (contactId !== lastContactIdRef.current) {
+      lastContactIdRef.current = contactId
+      
+      if (contactId) {
+        fetchEnrollments(contactId)
+      } else {
+        setEnrollments([])
+      }
     }
-  }, [contactId])
+  }, [contactId, fetchEnrollments])
 
   return { enrollments, loading, error, fetchEnrollments, createEnrollment, updateEnrollment, deleteEnrollment }
 }

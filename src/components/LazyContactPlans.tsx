@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react'
+import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { usePlanEnrollments } from '@/hooks/usePlanEnrollments'
 import { usePlanCache } from '@/contexts/PlanCacheContext'
 import { formatDateTime } from '@/lib/utils'
@@ -22,7 +22,13 @@ export default function LazyContactPlans({ contactId, className = '' }: LazyCont
   const [hasBeenVisible, setHasBeenVisible] = useState(false)
   const elementRef = useRef<HTMLDivElement>(null)
   const { getCachedEnrollments, setCachedEnrollments, isCached } = usePlanCache()
-  const { enrollments, loading } = usePlanEnrollments(shouldLoad ? contactId : undefined)
+  
+  // Memoize the contactId to prevent unnecessary re-renders
+  const memoizedContactId = useMemo(() => {
+    return shouldLoad ? contactId : undefined
+  }, [shouldLoad, contactId])
+  
+  const { enrollments, loading } = usePlanEnrollments(memoizedContactId)
 
   // Check cache first
   const cachedEnrollments = getCachedEnrollments(contactId)
