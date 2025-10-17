@@ -21,7 +21,7 @@ npm-debug.log*
 
 # supabase
 supabase/
-supabase-dump-*
+data/dumps/
 
 # IDE
 .vscode/settings.json
