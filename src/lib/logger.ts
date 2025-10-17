@@ -127,4 +127,16 @@ export const logger = {
       plans: planDetails 
     })
   },
+
+  planDeletionBlocked: (planName: string, enrollmentCount: number, activeEnrollments: number, contactNames: string[], planId?: string, contactDetails?: Array<{id: string, name: string}>) => {
+    const message = `Cannot delete plan "${planName}". It has ${enrollmentCount} enrollment(s) (${activeEnrollments} active). Contact(s): ${contactNames.join(', ')}. Please remove all enrollments first.`
+    useLogger.getState().addMessage(message, 'error', 'plan_delete_blocked', { 
+      planName, 
+      planId, 
+      enrollmentCount, 
+      activeEnrollments, 
+      contactNames,
+      contactDetails
+    })
+  },
 }

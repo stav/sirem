@@ -15,8 +15,54 @@ function renderMessageWithLinks(message: LogMessage, onLinkClick: () => void) {
   const { message: text, details } = message
   const contactId = details?.contactId as string | undefined
   const contactName = details?.contactName as string | undefined
+  const contactDetails = details?.contactDetails as Array<{id: string, name: string}> | undefined
 
-  // If we have a contact ID and name, make the name clickable
+  // Handle multiple contacts (for plan deletion messages)
+  if (contactDetails && contactDetails.length > 0) {
+    let result = text
+    const elements: React.ReactNode[] = []
+    let lastIndex = 0
+
+    // Replace each contact name with a clickable link
+    contactDetails.forEach((contact, index) => {
+      const nameIndex = result.indexOf(contact.name, lastIndex)
+      if (nameIndex !== -1) {
+        // Add text before the contact name
+        if (nameIndex > lastIndex) {
+          elements.push(result.slice(lastIndex, nameIndex))
+        }
+        
+        // Add the clickable contact name
+        elements.push(
+          <Link
+            key={`contact-${contact.id}-${index}`}
+            href={`/manage?contact=${contact.id}`}
+            className="text-primary hover:underline font-semibold"
+            onClick={(e) => {
+              e.stopPropagation()
+              onLinkClick()
+            }}
+          >
+            {contact.name}
+          </Link>
+        )
+        
+        lastIndex = nameIndex + contact.name.length
+      }
+    })
+
+    // Add remaining text
+    if (lastIndex < result.length) {
+      elements.push(result.slice(lastIndex))
+    }
+
+    // If we found any links, return the elements, otherwise fall back to plain text
+    if (elements.length > 0) {
+      return <>{elements}</>
+    }
+  }
+
+  // Handle single contact (existing logic)
   if (contactId && contactName && text.includes(contactName)) {
     const parts = text.split(contactName)
     return (
@@ -63,6 +109,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         title: latestMessage.message,
         description: latestMessage.action ? `Action: ${latestMessage.action}` : undefined,
         variant: latestMessage.type === 'error' ? 'destructive' : 'default',
+        contactDetails: latestMessage.details?.contactDetails as Array<{id: string, name: string}> | undefined,
       })
     }
   }, [messages, toast, lastMessageId])
@@ -142,7 +189,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
 
       {/* Toast Notifications */}
-      <div className="fixed top-4 right-4 z-50 space-y-2">
+      <div className="fixed top-4 right-4 z-[9999] space-y-2">
         {toasts.map((toast) => (
           <div key={toast.id} className="relative">
             <Toast
@@ -150,6 +197,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               title={toast.title}
               description={toast.description}
               variant={toast.variant}
+              contactDetails={toast.contactDetails}
               onDismiss={() => {
                 // This will be handled by the auto-remove timeout
               }}

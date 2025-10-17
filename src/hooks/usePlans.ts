@@ -68,13 +68,53 @@ export function usePlans() {
     }
   }
 
-  const deletePlan = async (planId: string) => {
+  const deletePlan = async (planId: string): Promise<boolean | { success: false, reason: string, enrollments?: any[], plan?: any }> => {
     try {
       // Get plan details before deletion for logging
       const planToDelete = plans.find(p => p.id === planId)
       if (!planToDelete) {
         setError('Plan not found')
         return false
+      }
+
+      // Check for existing enrollments before attempting deletion
+      const { data: enrollments, error: enrollmentsError } = await supabase
+        .from('enrollments')
+        .select('id, enrollment_status, contacts:contact_id(id, first_name, last_name)')
+        .eq('plan_id', planId)
+
+      if (enrollmentsError) {
+        console.error('Error checking enrollments:', enrollmentsError)
+        setError('Failed to check plan dependencies')
+        return false
+      }
+
+      if (enrollments && enrollments.length > 0) {
+        const enrollmentCount = enrollments.length
+        const activeEnrollments = enrollments.filter(e => e.enrollment_status === 'active').length
+        const contactNames = enrollments
+          .map(e => e.contacts ? `${e.contacts.first_name} ${e.contacts.last_name}` : 'Unknown')
+          .slice(0, 3) // Show first 3 contacts
+        
+        // Log to history with contact details for linking
+        const contactDetails = enrollments
+          .map(e => ({
+            id: e.contacts?.id || '',
+            name: e.contacts ? `${e.contacts.first_name} ${e.contacts.last_name}` : 'Unknown'
+          }))
+          .filter(c => c.id) // Only include contacts with valid IDs
+        
+        logger.planDeletionBlocked(
+          planToDelete.name || 'Unnamed Plan',
+          enrollmentCount,
+          activeEnrollments,
+          contactNames,
+          planToDelete.id,
+          contactDetails
+        )
+        
+        // Don't set error state - let the UI handle the toast
+        return { success: false, reason: 'enrollments_exist', enrollments, plan: planToDelete }
       }
 
       const { error } = await supabase.from('plans').delete().eq('id', planId)
@@ -94,12 +134,17 @@ export function usePlans() {
       return true
     } catch (err) {
       console.error('Error deleting plan:', err)
-      setError(err instanceof Error ? err.message : 'Failed to delete plan')
+      // Check if it's a foreign key constraint error
+      if (err instanceof Error && err.message.includes('violates foreign key constraint')) {
+        setError('Cannot delete plan: it is still referenced by existing enrollments. Please remove all enrollments first.')
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to delete plan')
+      }
       return false
     }
   }
 
-  const deletePlans = async (planIds: string[]) => {
+  const deletePlans = async (planIds: string[]): Promise<boolean | { success: false, reason: string, enrollments?: any[], plans?: any[] }> => {
     if (!planIds || planIds.length === 0) return true
     try {
       // Get plan details before deletion for logging
@@ -107,6 +152,57 @@ export function usePlans() {
       if (plansToDelete.length === 0) {
         setError('No plans found to delete')
         return false
+      }
+
+      // Check for existing enrollments before attempting deletion
+      const { data: enrollments, error: enrollmentsError } = await supabase
+        .from('enrollments')
+        .select('id, plan_id, enrollment_status, contacts:contact_id(id, first_name, last_name)')
+        .in('plan_id', planIds)
+
+      if (enrollmentsError) {
+        console.error('Error checking enrollments:', enrollmentsError)
+        setError('Failed to check plan dependencies')
+        return false
+      }
+
+      if (enrollments && enrollments.length > 0) {
+        // Group enrollments by plan
+        const enrollmentsByPlan = enrollments.reduce((acc, enrollment) => {
+          if (!acc[enrollment.plan_id]) {
+            acc[enrollment.plan_id] = []
+          }
+          acc[enrollment.plan_id].push(enrollment)
+          return acc
+        }, {} as Record<string, typeof enrollments>)
+
+        const plansWithEnrollments = plansToDelete.filter(plan => enrollmentsByPlan[plan.id])
+        
+        if (plansWithEnrollments.length > 0) {
+          const planNames = plansWithEnrollments.map(plan => plan.name || 'Unnamed Plan')
+          const totalEnrollments = enrollments.length
+          const activeEnrollments = enrollments.filter(e => e.enrollment_status === 'active').length
+          
+          // Log to history with contact details for linking
+          const contactDetails = enrollments
+            .map(e => ({
+              id: e.contacts?.id || '',
+              name: e.contacts ? `${e.contacts.first_name} ${e.contacts.last_name}` : 'Unknown'
+            }))
+            .filter(c => c.id) // Only include contacts with valid IDs
+          
+          logger.planDeletionBlocked(
+            planNames.join(', '),
+            totalEnrollments,
+            activeEnrollments,
+            [], // We don't show individual contact names for bulk operations
+            undefined,
+            contactDetails
+          )
+          
+          // Don't set error state - let the UI handle the toast
+          return { success: false, reason: 'enrollments_exist', enrollments, plans: plansWithEnrollments }
+        }
       }
 
       const { error } = await supabase.from('plans').delete().in('id', planIds)
@@ -127,8 +223,36 @@ export function usePlans() {
       return true
     } catch (err) {
       console.error('Error deleting plans:', err)
-      setError(err instanceof Error ? err.message : 'Failed to delete plans')
+      // Check if it's a foreign key constraint error
+      if (err instanceof Error && err.message.includes('violates foreign key constraint')) {
+        setError('Cannot delete plans: some are still referenced by existing enrollments. Please remove all enrollments first.')
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to delete plans')
+      }
       return false
+    }
+  }
+
+  // Utility function to get enrollments for a specific plan
+  const getPlanEnrollments = async (planId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('enrollments')
+        .select(`
+          id,
+          enrollment_status,
+          coverage_effective_date,
+          coverage_end_date,
+          contacts:contact_id(id, first_name, last_name)
+        `)
+        .eq('plan_id', planId)
+        .order('coverage_effective_date', { ascending: true })
+
+      if (error) throw error
+      return data || []
+    } catch (err) {
+      console.error('Error fetching plan enrollments:', err)
+      return []
     }
   }
 
@@ -136,5 +260,5 @@ export function usePlans() {
     fetchPlans()
   }, [])
 
-  return { plans, loading, error, fetchPlans, createPlan, updatePlan, deletePlan, deletePlans }
+  return { plans, loading, error, fetchPlans, createPlan, updatePlan, deletePlan, deletePlans, getPlanEnrollments }
 }

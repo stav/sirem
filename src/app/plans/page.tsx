@@ -16,6 +16,7 @@ import { Pencil, Trash2, Scale, Copy } from 'lucide-react'
 import ModalForm from '@/components/ui/modal-form'
 import PlanComparisonModal from '@/components/PlanComparisonModal'
 import { useTheme } from '@/contexts/ThemeContext'
+import { useToast } from '@/hooks/use-toast'
 
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule])
@@ -54,8 +55,9 @@ const planTypeOptions: PlanType[] = [
 ]
 
 export default function PlansPage() {
-  const { plans, loading, error, createPlan, updatePlan, deletePlan, deletePlans } = usePlans()
+  const { plans, loading, error, createPlan, updatePlan, deletePlan, deletePlans, getPlanEnrollments } = usePlans()
   const { theme } = useTheme()
+  const { toast } = useToast()
 
   // Create theme object for AG Grid v34+ Theming API (client-side only)
   const [agGridTheme, setAgGridTheme] = useState<Theme | undefined>(undefined)
@@ -289,7 +291,31 @@ export default function PlansPage() {
           }
           const handleDelete = async () => {
             if (confirm('Delete this plan?')) {
-              await deletePlan(planId)
+              const result = await deletePlan(planId)
+              if (result === false) {
+                // Generic error case
+                toast({
+                  title: 'Failed to delete plan',
+                  description: 'An unexpected error occurred while deleting the plan.',
+                  variant: 'destructive'
+                })
+              } else if (typeof result === 'object' && result.success === false) {
+                // Enrollment blocking case - the error is already logged to history
+                const { enrollments, plan } = result
+                if (enrollments && enrollments.length > 0) {
+                  const contactNames = enrollments
+                    .map(e => e.contacts ? `${e.contacts.first_name} ${e.contacts.last_name}` : 'Unknown')
+                    .slice(0, 3)
+                    .join(', ')
+                  
+                  toast({
+                    title: 'Cannot delete plan',
+                    description: `This plan has ${enrollments.length} enrollment(s) with contact(s): ${contactNames}${enrollments.length > 3 ? '...' : ''}. Please remove all enrollments first.`,
+                    variant: 'destructive'
+                  })
+                }
+              }
+              // If result === true, deletion was successful (no toast needed)
             }
           }
           const handleCopy = () => {
@@ -493,10 +519,23 @@ export default function PlansPage() {
                 variant="destructive"
                 onClick={async () => {
                   if (!confirm(`Delete ${selectedPlanIds.length} selected plans?`)) return
-                  const ok = await deletePlans(selectedPlanIds)
-                  if (ok) {
+                  const result = await deletePlans(selectedPlanIds)
+                  if (result === true) {
                     setSelectedPlanIds([])
                     if (gridRef.current) gridRef.current.api.deselectAll()
+                  } else if (result === false) {
+                    toast({
+                      title: 'Failed to delete plans',
+                      description: 'An unexpected error occurred while deleting the plans.',
+                      variant: 'destructive'
+                    })
+                  } else if (typeof result === 'object' && result.success === false) {
+                    // Enrollment blocking case - the error is already logged to history
+                    toast({
+                      title: 'Cannot delete plans',
+                      description: 'Some plans cannot be deleted because they have existing enrollments. Please remove all enrollments first.',
+                      variant: 'destructive'
+                    })
                   }
                 }}
               >

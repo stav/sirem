@@ -4,6 +4,7 @@ interface ToastProps {
   title: string
   description?: string
   variant?: 'default' | 'destructive'
+  contactDetails?: Array<{id: string, name: string}>
 }
 
 interface ToastWithId extends ToastProps {
