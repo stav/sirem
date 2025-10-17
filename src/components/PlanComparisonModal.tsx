@@ -305,7 +305,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
         return (
           <td 
             key={idx} 
-            className={`py-2 px-3 text-center text-sm ${hasDiscrep ? 'bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-500' : ''}`}
+            className={`py-2 px-3 text-center text-sm max-w-48 ${hasDiscrep ? 'bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-500' : ''}`}
             title={hasDiscrep ? `⚠️ Discrepancy: Metadata value differs from main field` : undefined}
           >
             {formatter(value)}
@@ -419,7 +419,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
               <tr className="border-b-2 border-border">
                 <th className="py-3 px-3 text-left font-semibold text-sm bg-muted/50 sticky top-0">Field</th>
                 {plans.map((plan, idx) => (
-                  <th key={idx} className="py-3 px-3 text-center font-semibold text-sm bg-muted/50 sticky top-0">
+                  <th key={idx} className="py-3 px-3 text-center font-semibold text-sm bg-muted/50 sticky top-0 max-w-48">
                     <div className="font-bold">{plan.name}</div>
                     <div className="text-xs font-normal text-muted-foreground">
                       {plan.carrier} • {plan.plan_type}
@@ -442,7 +442,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
               <tr className="border-b border-border">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">CMS ID (Full)</td>
                 {plans.map((plan, idx) => (
-                  <td key={idx} className="py-2 px-3 text-center text-sm">
+                  <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
                     {calculateCmsId(plan) || '—'}
                   </td>
                 ))}
@@ -450,7 +450,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
               <tr className="border-b border-border">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">CMS Contract Number</td>
                 {plans.map((plan, idx) => (
-                  <td key={idx} className="py-2 px-3 text-center text-sm">
+                  <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
                     {formatText(plan.cms_contract_number)}
                   </td>
                 ))}
@@ -458,7 +458,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
               <tr className="border-b border-border">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">CMS Plan Number</td>
                 {plans.map((plan, idx) => (
-                  <td key={idx} className="py-2 px-3 text-center text-sm">
+                  <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
                     {formatText(plan.cms_plan_number)}
                   </td>
                 ))}
@@ -466,7 +466,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
               <tr className="border-b border-border">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">CMS Geo Segment</td>
                 {plans.map((plan, idx) => (
-                  <td key={idx} className="py-2 px-3 text-center text-sm">
+                  <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
                     {formatText(plan.cms_geo_segment)}
                   </td>
                 ))}
@@ -474,7 +474,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
               <tr className="border-b border-border">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">Effective Start</td>
                 {plans.map((plan, idx) => (
-                  <td key={idx} className="py-2 px-3 text-center text-sm">
+                  <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
                     {formatDate(getPlanMetadata.effectiveStart(plan))}
                   </td>
                 ))}
@@ -482,7 +482,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
               <tr className="border-b border-border">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">Effective End</td>
                 {plans.map((plan, idx) => (
-                  <td key={idx} className="py-2 px-3 text-center text-sm">
+                  <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
                     {formatDate(getPlanMetadata.effectiveEnd(plan))}
                   </td>
                 ))}
@@ -582,7 +582,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                             return (
                               <td 
                                 key={idx} 
-                                className={`py-2 px-3 text-center text-xs ${hasDiscrep ? 'bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-500' : ''}`}
+                                className={`py-2 px-3 text-center text-xs max-w-48 ${hasDiscrep ? 'bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-500' : ''}`}
                                 title={hasDiscrep ? `⚠️ Discrepancy: Metadata value differs from main field` : undefined}
                               >
                                 {formatMetadataValue(getMetadata(plan, key))}
@@ -692,7 +692,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
               <tr className="border-b border-border">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">Service Area</td>
                 {plans.map((plan, idx) => (
-                  <td key={idx} className="py-2 px-3 text-center text-sm">
+                  <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
                     {getPlanMetadata.serviceArea(plan) || '—'}
                   </td>
                 ))}
@@ -700,7 +700,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
               <tr className="border-b border-border">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">Counties</td>
                 {plans.map((plan, idx) => (
-                  <td key={idx} className="py-2 px-3 text-center text-xs max-w-xs overflow-hidden">
+                  <td key={idx} className="py-2 px-3 text-center text-xs max-w-48 overflow-hidden">
                     <div className="line-clamp-3" title={plan.counties?.join(', ')}>
                       {plan.counties?.join(', ') || '—'}
                     </div>
@@ -710,7 +710,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
               <tr className="border-b border-border">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">Notes</td>
                 {plans.map((plan, idx) => (
-                  <td key={idx} className="py-2 px-3 text-center text-xs max-w-xs overflow-hidden">
+                  <td key={idx} className="py-2 px-3 text-center text-xs max-w-48 overflow-hidden">
                     <div className="line-clamp-3" title={getPlanMetadata.notes(plan) || undefined}>
                       {getPlanMetadata.notes(plan) || '—'}
                     </div>
