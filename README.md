@@ -141,6 +141,20 @@ The system uses a simplified datetime approach without timezone complexity:
 
 This approach keeps the implementation simple while providing full datetime functionality for action scheduling and tracking.
 
+## Documentation
+
+- [Component Architecture](docs/COMPONENT_ARCHITECTURE.md)
+- [Plans Implementation](docs/PLANS_IMPLEMENTATION.md)
+- [Roles Implementation](docs/ROLES_IMPLEMENTATION.md)
+- [Tags Implementation](docs/TAGS_IMPLEMENTATION.md)
+- [Theme Implementation](docs/THEME_IMPLEMENTATION.md)
+- [Filtering Guide](docs/FILTERING_GUIDE.md)
+- [AG Grid Theming Guide](docs/AG_GRID_THEMING_GUIDE.md)
+- [Plan Deletion Guide](docs/PLAN_DELETION_GUIDE.md)
+- [Integrity Implementation Guide](docs/INTEGRITY_IMPLEMENTATION_GUIDE.md)
+- [Datetime Implementation](docs/DATETIME_IMPLEMENTATION.md)
+- [Database Sync Guide](docs/DATABASE_SYNC_GUIDE.md)
+
 ## License
 
 MIT
