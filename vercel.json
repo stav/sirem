@@ -31,8 +31,10 @@
   ],
   "git": {
     "deploymentEnabled": {
+      "*": false,
+      "dev": true,
       "master": false,
-      "dev": true
+      "release-*": true
     }
   }
 }
