@@ -28,5 +28,11 @@
         }
       ]
     }
-  ]
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "master": false,
+      "dev": true
+    }
+  }
 }
