@@ -10,6 +10,16 @@ type PlanUpdate = Database['public']['Tables']['plans']['Update']
 
 export type PlanForm = Omit<PlanInsert, 'id' | 'created_at' | 'updated_at'>
 
+type EnrollmentWithContact = {
+  id: string
+  enrollment_status: string | null
+  contacts: {
+    id: string
+    first_name: string
+    last_name: string
+  } | null
+}
+
 export function usePlans() {
   const [plans, setPlans] = useState<Plan[]>([])
   const [loading, setLoading] = useState<boolean>(true)
@@ -68,7 +78,7 @@ export function usePlans() {
     }
   }
 
-  const deletePlan = async (planId: string): Promise<boolean | { success: false, reason: string, enrollments?: any[], plan?: any }> => {
+  const deletePlan = async (planId: string): Promise<boolean | { success: false, reason: string, enrollments?: EnrollmentWithContact[], plan?: Plan }> => {
     try {
       // Get plan details before deletion for logging
       const planToDelete = plans.find(p => p.id === planId)
@@ -144,7 +154,7 @@ export function usePlans() {
     }
   }
 
-  const deletePlans = async (planIds: string[]): Promise<boolean | { success: false, reason: string, enrollments?: any[], plans?: any[] }> => {
+  const deletePlans = async (planIds: string[]): Promise<boolean | { success: false, reason: string, enrollments?: EnrollmentWithContact[], plans?: Plan[] }> => {
     if (!planIds || planIds.length === 0) return true
     try {
       // Get plan details before deletion for logging

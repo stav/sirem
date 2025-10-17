@@ -55,7 +55,7 @@ const planTypeOptions: PlanType[] = [
 ]
 
 export default function PlansPage() {
-  const { plans, loading, error, createPlan, updatePlan, deletePlan, deletePlans, getPlanEnrollments } = usePlans()
+  const { plans, loading, error, createPlan, updatePlan, deletePlan, deletePlans } = usePlans()
   const { theme } = useTheme()
   const { toast } = useToast()
 
@@ -301,7 +301,7 @@ export default function PlansPage() {
                 })
               } else if (typeof result === 'object' && result.success === false) {
                 // Enrollment blocking case - the error is already logged to history
-                const { enrollments, plan } = result
+                const { enrollments } = result
                 if (enrollments && enrollments.length > 0) {
                   const contactNames = enrollments
                     .map(e => e.contacts ? `${e.contacts.first_name} ${e.contacts.last_name}` : 'Unknown')
@@ -385,7 +385,7 @@ export default function PlansPage() {
         pinned: 'right',
       },
     ],
-        [deletePlan]
+        [deletePlan, toast]
   )
 
   const defaultColDef = useMemo(

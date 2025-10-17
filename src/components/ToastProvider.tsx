@@ -19,7 +19,7 @@ function renderMessageWithLinks(message: LogMessage, onLinkClick: () => void) {
 
   // Handle multiple contacts (for plan deletion messages)
   if (contactDetails && contactDetails.length > 0) {
-    let result = text
+    const result = text
     const elements: React.ReactNode[] = []
     let lastIndex = 0
 
