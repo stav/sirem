@@ -55,7 +55,7 @@ const planTypeOptions: PlanType[] = [
 ]
 
 export default function PlansPage() {
-  const { plans, loading, error, createPlan, updatePlan, deletePlan, deletePlans } = usePlans()
+  const { plans, loading, error, fetchPlans, createPlan, updatePlan, deletePlan, deletePlans } = usePlans()
   const { theme } = useTheme()
   const { toast } = useToast()
 
@@ -70,9 +70,20 @@ export default function PlansPage() {
     setAgGridTheme(isDark ? themeQuartz.withPart(colorSchemeDark) : themeQuartz)
   }, [theme])
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current)
+      }
+    }
+  }, [])
+
   const [isAdding, setIsAdding] = useState(false)
   const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([])
   const [showComparison, setShowComparison] = useState(false)
+  const isRefreshingRef = useRef(false)
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [form, setForm] = useState({
     name: '',
     plan_type: '' as PlanType | '',
@@ -171,7 +182,7 @@ export default function PlansPage() {
   }, [plans])
 
   const onSelectionChanged = () => {
-    if (!gridRef.current) return
+    if (!gridRef.current || isRefreshingRef.current) return
     
     const selectedNodes = gridRef.current.api.getSelectedNodes()
     const selectedIds = selectedNodes.map(node => node.data?.id).filter(Boolean) as string[]
@@ -179,8 +190,34 @@ export default function PlansPage() {
   }
 
   const selectedPlans = useMemo(() => {
+    if (selectedPlanIds.length === 0) return []
     return plans.filter((p) => selectedPlanIds.includes(p.id))
   }, [plans, selectedPlanIds])
+
+  // Custom refresh function that preserves selection
+  const refreshPlansWithSelection = async () => {
+    // Clear any existing timeout
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current)
+    }
+    
+    isRefreshingRef.current = true
+    await fetchPlans()
+    
+    // Wait for the grid to update with new data, then restore selection
+    refreshTimeoutRef.current = setTimeout(() => {
+      if (gridRef.current && selectedPlanIds.length > 0) {
+        selectedPlanIds.forEach(planId => {
+          const rowNode = gridRef.current?.api.getRowNode(planId)
+          if (rowNode) {
+            rowNode.setSelected(true)
+          }
+        })
+      }
+      isRefreshingRef.current = false
+      refreshTimeoutRef.current = null
+    }, 200)
+  }
 
   const columnDefs: ColDef[] = useMemo(
     () => [
@@ -1177,7 +1214,7 @@ export default function PlansPage() {
       </div>
 
       {/* Plan Comparison Modal */}
-      <PlanComparisonModal isOpen={showComparison} onClose={() => setShowComparison(false)} plans={selectedPlans} />
+      <PlanComparisonModal isOpen={showComparison} onClose={() => setShowComparison(false)} plans={selectedPlans} onRefresh={refreshPlansWithSelection} />
     </div>
   )
 }
