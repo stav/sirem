@@ -93,6 +93,7 @@ export default function ActionViewModal({ isOpen, onClose, action, contactName }
       title="View Action"
       submitText=""
       isLoading={false}
+      allowBackdropClose={true}
     >
       <div className="space-y-4">
         {/* Title */}

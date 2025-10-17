@@ -13,6 +13,7 @@ interface ModalFormProps {
   submitText?: string
   editingInfo?: ReactNode
   zIndex?: number
+  allowBackdropClose?: boolean
 }
 
 export default function ModalForm({
@@ -25,6 +26,7 @@ export default function ModalForm({
   submitText = 'Save',
   editingInfo,
   zIndex = 50,
+  allowBackdropClose = false,
 }: ModalFormProps) {
   const modalRef = useRef<HTMLDivElement>(null)
 
@@ -46,6 +48,11 @@ export default function ModalForm({
     <div
       className={`fixed inset-0 flex items-center justify-center bg-black/50 p-4`}
       style={{ zIndex }}
+      onClick={allowBackdropClose ? (e) => {
+        if (e.target === e.currentTarget) {
+          onCancel()
+        }
+      } : undefined}
     >
       <Card className="flex max-h-[90vh] w-full max-w-md flex-col" ref={modalRef}>
         <CardHeader className="relative flex-shrink-0">

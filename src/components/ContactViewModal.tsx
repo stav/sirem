@@ -171,6 +171,7 @@ export default function ContactViewModal({
       }
       submitText=""
       isLoading={false}
+      allowBackdropClose={true}
     >
       <div className="space-y-4">
         <ContactBasicInfo 
