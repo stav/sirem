@@ -443,9 +443,9 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b-2 border-border">
-                <th className="py-3 px-3 text-left font-semibold text-sm bg-muted/50 sticky top-0">Field</th>
+                <th className="py-3 px-3 text-left font-semibold text-sm bg-muted sticky top-0">Field</th>
                 {plans.map((plan, idx) => (
-                  <th key={idx} className="py-3 px-3 text-center font-semibold text-sm bg-muted/50 sticky top-0 max-w-48">
+                  <th key={idx} className="py-3 px-3 text-center font-semibold text-sm bg-muted sticky top-0 max-w-48">
                     <div className="font-bold">{plan.name}</div>
                     <div className="text-xs font-normal text-muted-foreground">
                       {plan.carrier} • {plan.plan_type}
