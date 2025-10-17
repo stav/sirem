@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useCallback, useMemo, ReactNode } from 'react'
 import type { Database } from '@/lib/supabase'
 
 type Enrollment = Database['public']['Tables']['enrollments']['Row']
@@ -50,13 +50,15 @@ export function PlanCacheProvider({ children }: PlanCacheProviderProps) {
     return cache.has(contactId)
   }, [cache])
 
+  const contextValue = useMemo(() => ({
+    getCachedEnrollments,
+    setCachedEnrollments,
+    clearCache,
+    isCached
+  }), [getCachedEnrollments, setCachedEnrollments, clearCache, isCached])
+
   return (
-    <PlanCacheContext.Provider value={{
-      getCachedEnrollments,
-      setCachedEnrollments,
-      clearCache,
-      isCached
-    }}>
+    <PlanCacheContext.Provider value={contextValue}>
       {children}
     </PlanCacheContext.Provider>
   )

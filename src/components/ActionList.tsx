@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react'
+import React, { useState, useEffect, useMemo, useRef } from 'react'
 import { Plus, ChevronDown, ChevronUp } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -48,6 +48,7 @@ export default function ActionList({
   const [itemsPerPage, setItemsPerPage] = useState(50) // Configurable page size
   const [isRendering, setIsRendering] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Load week range state from localStorage on component mount
   useEffect(() => {
@@ -102,15 +103,30 @@ export default function ActionList({
     setCurrentPage(1)
   }, [selectedContact, showCompletedActions, showWeekRange, itemsPerPage])
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current)
+      }
+    }
+  }, [])
+
   // Show loading spinner when changing to large page sizes
   const handleItemsPerPageChange = (newItemsPerPage: number) => {
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current)
+    }
+    
     const isLargePageSize = newItemsPerPage >= 100 || newItemsPerPage === displayActions.length
     if (isLargePageSize && displayActions.length > 50) {
       setIsRendering(true)
       // Use setTimeout to allow the spinner to show before the heavy rendering
-      setTimeout(() => {
+      timeoutRef.current = setTimeout(() => {
         setItemsPerPage(newItemsPerPage)
         setIsRendering(false)
+        timeoutRef.current = null
       }, 50)
     } else {
       setItemsPerPage(newItemsPerPage)

@@ -1,6 +1,6 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useMemo } from 'react'
 
 type Theme = 'light' | 'dark' | 'system'
 
@@ -42,10 +42,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme, mounted])
 
   // Prevent hydration mismatch by providing a default context during SSR
-  const contextValue = {
+  const contextValue = useMemo(() => ({
     theme,
     setTheme,
-  }
+  }), [theme, setTheme])
 
   return <ThemeContext.Provider value={contextValue}>{children}</ThemeContext.Provider>
 }
