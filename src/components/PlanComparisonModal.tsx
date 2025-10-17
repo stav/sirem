@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { X, TrendingUp, TrendingDown, Calculator } from 'lucide-react'
+import { X, TrendingUp, TrendingDown, Calculator, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -15,6 +15,7 @@ interface PlanComparisonModalProps {
   isOpen: boolean
   onClose: () => void
   plans: Plan[]
+  onRefresh?: () => void
 }
 
 interface UsageInputs {
@@ -26,7 +27,7 @@ interface UsageInputs {
   ambulanceUses: number
 }
 
-export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComparisonModalProps) {
+export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh }: PlanComparisonModalProps) {
   const [usageInputs, setUsageInputs] = useState<UsageInputs>({
     primaryCareVisits: 4,
     specialistVisits: 2,
@@ -355,6 +356,17 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
         <div className="flex items-center justify-between p-4 border-b border-border">
           <h2 className="text-xl font-semibold">Compare Plans ({plans.length})</h2>
           <div className="flex items-center gap-2">
+            {onRefresh && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={onRefresh}
+                title="Refresh plans data"
+              >
+                <RefreshCw className="h-4 w-4 mr-2" />
+                Refresh
+              </Button>
+            )}
             <Button
               size="sm"
               variant={showCalculator ? 'default' : 'outline'}
