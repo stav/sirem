@@ -323,7 +323,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
     lowerIsBetter?: boolean
     formatter?: (v: number | null) => string
   }) => (
-    <tr className="border-b border-border">
+    <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
       <td className="py-2 px-3 font-medium text-sm bg-muted/30">{label}</td>
       {values.map((value, idx) => {
         const others = values.filter((_, i) => i !== idx)
@@ -465,7 +465,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                 </th>
                 <td colSpan={plans.length}></td>
               </tr>
-              <tr className="border-b border-border">
+              <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">CMS ID (Full)</td>
                 {plans.map((plan, idx) => (
                   <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
@@ -473,7 +473,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                   </td>
                 ))}
               </tr>
-              <tr className="border-b border-border">
+              <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">CMS Contract Number</td>
                 {plans.map((plan, idx) => (
                   <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
@@ -481,7 +481,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                   </td>
                 ))}
               </tr>
-              <tr className="border-b border-border">
+              <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">CMS Plan Number</td>
                 {plans.map((plan, idx) => (
                   <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
@@ -489,7 +489,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                   </td>
                 ))}
               </tr>
-              <tr className="border-b border-border">
+              <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">CMS Geo Segment</td>
                 {plans.map((plan, idx) => (
                   <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
@@ -497,7 +497,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                   </td>
                 ))}
               </tr>
-              <tr className="border-b border-border">
+              <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">Effective Start</td>
                 {plans.map((plan, idx) => (
                   <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
@@ -505,7 +505,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                   </td>
                 ))}
               </tr>
-              <tr className="border-b border-border">
+              <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">Effective End</td>
                 {plans.map((plan, idx) => (
                   <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
@@ -599,7 +599,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                     } else {
                       // Render as text field
                       return (
-                        <tr key={key} className="border-b border-border">
+                        <tr key={key} className="border-b border-border hover:bg-blue-500/20 transition-colors">
                           <td className="py-2 px-3 font-medium text-sm bg-muted/30">
                             {formatLabel(key)}
                           </td>
@@ -735,7 +735,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                 </th>
                 <td colSpan={plans.length}></td>
               </tr>
-              <tr className="border-b border-border">
+              <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">Service Area</td>
                 {plans.map((plan, idx) => (
                   <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
@@ -743,7 +743,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                   </td>
                 ))}
               </tr>
-              <tr className="border-b border-border">
+              <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">Counties</td>
                 {plans.map((plan, idx) => (
                   <td key={idx} className="py-2 px-3 text-center text-xs max-w-48 overflow-hidden">
@@ -753,7 +753,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                   </td>
                 ))}
               </tr>
-              <tr className="border-b border-border">
+              <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">Notes</td>
                 {plans.map((plan, idx) => (
                   <td key={idx} className="py-2 px-3 text-center text-xs max-w-48 overflow-hidden">
