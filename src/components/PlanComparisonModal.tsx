@@ -182,6 +182,32 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
     return value
   }
 
+  // Check if a field should be treated as long text that needs truncation
+  const isLongTextField = (key: string, value: string | number | null): boolean => {
+    // Always treat these known long text fields as long text
+    const knownLongTextFields = [
+      'pharmacy_benefit',
+      'service_area', 
+      'fitness_benefit',
+      'rx_cost_share',
+      'medicaid_eligibility',
+      'transitioned_from',
+      'summary',
+      'pdf_text_sample'
+    ]
+    
+    if (knownLongTextFields.includes(key)) {
+      return true
+    }
+    
+    // Also treat any text field longer than 100 characters as long text
+    if (typeof value === 'string' && value.length > 100) {
+      return true
+    }
+    
+    return false
+  }
+
   // Parse metadata value to number (for comparison)
   const parseMetadataNumber = (value: string | number | null): number | null => {
     if (value == null) return null
@@ -579,15 +605,35 @@ export default function PlanComparisonModal({ isOpen, onClose, plans }: PlanComp
                           </td>
                           {plans.map((plan, idx) => {
                             const hasDiscrep = false // No discrepancy checking needed with new schema
-                            return (
-                              <td 
-                                key={idx} 
-                                className={`py-2 px-3 text-center text-xs max-w-48 ${hasDiscrep ? 'bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-500' : ''}`}
-                                title={hasDiscrep ? `⚠️ Discrepancy: Metadata value differs from main field` : undefined}
-                              >
-                                {formatMetadataValue(getMetadata(plan, key))}
-                              </td>
-                            )
+                            const value = getMetadata(plan, key)
+                            const displayValue = formatMetadataValue(value)
+                            const isLongText = isLongTextField(key, value)
+                            
+                            if (isLongText && typeof value === 'string' && value.length > 0) {
+                              // Render long text fields with truncation and tooltip like counties/notes
+                              return (
+                                <td 
+                                  key={idx} 
+                                  className={`py-2 px-3 text-center text-xs max-w-48 overflow-hidden ${hasDiscrep ? 'bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-500' : ''}`}
+                                  title={hasDiscrep ? `⚠️ Discrepancy: Metadata value differs from main field` : value}
+                                >
+                                  <div className="line-clamp-3">
+                                    {displayValue}
+                                  </div>
+                                </td>
+                              )
+                            } else {
+                              // Render regular text fields
+                              return (
+                                <td 
+                                  key={idx} 
+                                  className={`py-2 px-3 text-center text-xs max-w-48 ${hasDiscrep ? 'bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-500' : ''}`}
+                                  title={hasDiscrep ? `⚠️ Discrepancy: Metadata value differs from main field` : undefined}
+                                >
+                                  {displayValue}
+                                </td>
+                              )
+                            }
                           })}
                         </tr>
                       )
