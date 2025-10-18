@@ -12,7 +12,7 @@ import { Enums } from '@/lib/supabase-types'
 import { AgGridReact } from 'ag-grid-react'
 import { AllCommunityModule, ColDef, GridReadyEvent, ICellRendererParams, ModuleRegistry, Theme, themeQuartz, colorSchemeDark } from 'ag-grid-community'
 import type { Database } from '@/lib/supabase'
-import { Pencil, Trash2, Scale, Copy } from 'lucide-react'
+import { Pencil, Trash2, Scale, Copy, Plus } from 'lucide-react'
 import ModalForm from '@/components/ui/modal-form'
 import PlanComparisonModal from '@/components/PlanComparisonModal'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -539,54 +539,8 @@ export default function PlansPage() {
     <div className="bg-background min-h-screen">
       <Navigation pageTitle="Plans" />
 
-      <div className="p-6">
-        <div className="mx-auto max-w-7xl space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Plans Catalog</h2>
-            <div className="flex items-center gap-2">
-              {selectedPlanIds.length >= 2 && (
-                <Button size="sm" variant="outline" onClick={() => setShowComparison(true)}>
-                  <Scale className="h-4 w-4 mr-2" />
-                  Compare ({selectedPlanIds.length})
-                </Button>
-              )}
-            {selectedPlanIds.length > 1 && (
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={async () => {
-                  if (!confirm(`Delete ${selectedPlanIds.length} selected plans?`)) return
-                  const result = await deletePlans(selectedPlanIds)
-                  if (result === true) {
-                    setSelectedPlanIds([])
-                    if (gridRef.current) gridRef.current.api.deselectAll()
-                  } else if (result === false) {
-                    toast({
-                      title: 'Failed to delete plans',
-                      description: 'An unexpected error occurred while deleting the plans.',
-                      variant: 'destructive'
-                    })
-                  } else if (typeof result === 'object' && result.success === false) {
-                    // Enrollment blocking case - the error is already logged to history
-                    toast({
-                      title: 'Cannot delete plans',
-                      description: 'Some plans cannot be deleted because they have existing enrollments. Please remove all enrollments first.',
-                      variant: 'destructive'
-                    })
-                  }
-                }}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete ({selectedPlanIds.length})
-              </Button>
-            )}
-              {!isAdding && (
-                <Button size="sm" onClick={() => setIsAdding(true)}>
-                  Add Plan
-                </Button>
-              )}
-            </div>
-          </div>
+      <div className="h-[calc(100vh-4rem)] flex flex-col">
+        <div className="flex-1 flex flex-col">
 
           {isAdding && (
             <div className="rounded border p-4">
@@ -825,12 +779,12 @@ export default function PlansPage() {
           )}
 
           {/* Plans list (AG Grid) */}
-          <div className="rounded border">
+          <div className="flex-1 flex flex-col">
             {loading && <div className="text-muted-foreground p-3 text-sm">Loading plans…</div>}
             {!loading && sortedPlans.length === 0 && (
               <div className="text-muted-foreground p-3 text-sm">No plans found</div>
             )}
-            <div className="w-full" style={{ height: '70vh' }}>
+            <div className="flex-1 w-full">
               <AgGridReact
                 ref={gridRef}
                 theme={agGridTheme}
@@ -846,6 +800,54 @@ export default function PlansPage() {
                 rowSelection="multiple"
                 onSelectionChanged={onSelectionChanged}
               />
+            </div>
+            
+            {/* Custom Footer */}
+            <div className="flex items-center justify-center px-4 py-2 border-t bg-muted/30 text-sm">
+              <div className="flex items-center gap-2">
+                {selectedPlanIds.length >= 2 && (
+                  <Button size="sm" variant="outline" onClick={() => setShowComparison(true)}>
+                    <Scale className="h-4 w-4 mr-2" />
+                    Compare ({selectedPlanIds.length})
+                  </Button>
+                )}
+                {selectedPlanIds.length > 1 && (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={async () => {
+                      if (!confirm(`Delete ${selectedPlanIds.length} selected plans?`)) return
+                      const result = await deletePlans(selectedPlanIds)
+                      if (result === true) {
+                        setSelectedPlanIds([])
+                        if (gridRef.current) gridRef.current.api.deselectAll()
+                      } else if (result === false) {
+                        toast({
+                          title: 'Failed to delete plans',
+                          description: 'An unexpected error occurred while deleting the plans.',
+                          variant: 'destructive'
+                        })
+                      } else if (typeof result === 'object' && result.success === false) {
+                        // Enrollment blocking case - the error is already logged to history
+                        toast({
+                          title: 'Cannot delete plans',
+                          description: 'Some plans cannot be deleted because they have existing enrollments. Please remove all enrollments first.',
+                          variant: 'destructive'
+                        })
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete ({selectedPlanIds.length})
+                  </Button>
+                )}
+                {!isAdding && (
+                  <Button size="sm" onClick={() => setIsAdding(true)}>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Plan
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 
@@ -1222,10 +1224,10 @@ export default function PlansPage() {
 
           {error && <div className="text-destructive text-sm">{error}</div>}
         </div>
-      </div>
 
-      {/* Plan Comparison Modal */}
-      <PlanComparisonModal isOpen={showComparison} onClose={() => setShowComparison(false)} plans={selectedPlans} onRefresh={refreshPlansWithSelection} />
+        {/* Plan Comparison Modal */}
+        <PlanComparisonModal isOpen={showComparison} onClose={() => setShowComparison(false)} plans={selectedPlans} onRefresh={refreshPlansWithSelection} />
+      </div>
     </div>
   )
 }
