@@ -863,6 +863,17 @@ export default function PlansPage() {
             submitText="Save Changes"
           >
             <div className="space-y-6">
+              {/* Plan ID Display */}
+              {editingId && (
+                <div className="bg-muted/50 rounded-lg p-4 border">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {editingId}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Main Database Fields Section */}
               <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                 <div className="space-y-1 md:col-span-3">
