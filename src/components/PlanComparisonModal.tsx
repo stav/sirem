@@ -346,10 +346,25 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
   const annualCosts = plans.map(calculateAnnualCost)
   const lowestCost = Math.min(...annualCosts)
 
+  // Dynamic max-width based on number of plans
+  const getMaxWidthClass = (planCount: number): string => {
+    const maxWidthMap: Record<number, string> = {
+      1: 'max-w-xl',
+      2: 'max-w-2xl',
+      3: 'max-w-3xl',
+      4: 'max-w-4xl',
+      5: 'max-w-5xl',
+      6: 'max-w-6xl',
+      7: 'max-w-7xl',
+    }
+    // For 8+ plans, no max-width constraint
+    return maxWidthMap[planCount] || ''
+  }
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90" onClick={onClose}>
       <div
-        className="bg-background border border-border rounded-lg shadow-xl w-[95vw] max-w-7xl max-h-[90vh] overflow-hidden flex flex-col"
+        className={`bg-background border border-border rounded-lg shadow-xl w-[95vw] ${getMaxWidthClass(plans.length)} max-h-[90vh] overflow-hidden flex flex-col`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
@@ -455,7 +470,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b-2 border-border">
-                <th className="py-3 px-3 text-left font-semibold text-sm bg-muted sticky top-0">Field</th>
+                <th className="py-3 px-3 text-left font-semibold text-sm bg-muted sticky top-0"></th>
                 {plans.map((plan, idx) => (
                   <th key={idx} className="py-3 px-3 text-center font-semibold text-sm bg-muted sticky top-0 max-w-48">
                     <div className="font-bold">{plan.name}</div>
@@ -471,12 +486,6 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
             </thead>
             <tbody>
               {/* Basic Information */}
-              <tr className="bg-muted/50">
-                <th className="py-2 px-3 font-semibold text-sm text-right">
-                  Basic Information
-                </th>
-                <td colSpan={plans.length}></td>
-              </tr>
               <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">CMS ID (Full)</td>
                 {plans.map((plan, idx) => (
