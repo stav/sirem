@@ -17,7 +17,7 @@ try {
       supabaseKey = line.split('=')[1].trim()
     }
   }
-} catch (e) {
+} catch {
   console.error('Could not load .env.local file')
   process.exit(1)
 }
@@ -60,7 +60,7 @@ async function findExistingPlan(planData) {
 async function updatePlan(planId, planData) {
   console.log(`  🔄 Updating existing plan: ${planData.name} (${planData.cms_id})`)
   
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('plans')
     .update({
       name: planData.name,
@@ -91,7 +91,7 @@ async function updatePlan(planId, planData) {
 async function createPlan(planData) {
   console.log(`  ➕ Creating new plan: ${planData.name} (${planData.cms_id})`)
   
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('plans')
     .insert({
       name: planData.name,

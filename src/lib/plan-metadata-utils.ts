@@ -174,13 +174,18 @@ export function extractMetadataForForm(plan: Plan): Record<string, unknown> {
   
   // Core fields (these stay as columns)
   formData.name = plan.name
-  formData.plan_type = plan.plan_type
   formData.carrier = plan.carrier
   formData.plan_year = plan.plan_year
   formData.cms_contract_number = plan.cms_contract_number
   formData.cms_plan_number = plan.cms_plan_number
   formData.cms_geo_segment = plan.cms_geo_segment
   formData.counties = plan.counties
+  
+  // Normalized plan type fields
+  formData.type_network = plan.type_network
+  formData.type_extension = plan.type_extension
+  formData.type_snp = plan.type_snp
+  formData.type_program = plan.type_program
   
   // Metadata fields
   if (plan.metadata) {

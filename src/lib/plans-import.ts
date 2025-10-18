@@ -1,6 +1,7 @@
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase'
 import type { Json } from '@/lib/supabase-types'
+import { parseLegacyPlanType, mapCarrier } from '@/lib/plan-constants'
 
 type PlanInsert = Database['public']['Tables']['plans']['Insert']
 
@@ -20,43 +21,6 @@ function parseCmsId(id: string | null | undefined): { contract: string | null; p
   const contract = parts[0] || null
   const plan = parts.length > 1 ? parts[1] || null : null
   return { contract, plan }
-}
-
-function mapCarrier(value: string | null | undefined): Database['public']['Enums']['carrier'] | null {
-  if (!value) return null
-  const v = value.trim()
-  const carriers: Record<string, Database['public']['Enums']['carrier']> = {
-    United: 'United',
-    Humana: 'Humana',
-    Devoted: 'Devoted',
-    Anthem: 'Anthem',
-    MedMutual: 'MedMutual',
-    Aetna: 'Aetna',
-    GTL: 'GTL',
-    Medico: 'Medico',
-    CareSource: 'CareSource',
-    SummaCare: 'SummaCare',
-    Zing: 'Zing',
-    Heartland: 'Heartland',
-    Other: 'Other',
-  }
-  return carriers[v] ?? 'Other'
-}
-
-function mapPlanType(value: string | null | undefined): Database['public']['Enums']['plan_type'] | null {
-  if (!value) return null
-  const v = value.trim().toUpperCase()
-  if (v.includes('HMO-POS') && v.includes('D-SNP')) return 'HMO-POS-D-SNP'
-  if (v.includes('HMO-POS') && v.includes('C-SNP')) return 'HMO-POS-C-SNP'
-  if (v.includes('HMO-POS')) return 'HMO-POS'
-  if (v.includes('PPO')) return 'PPO'
-  if (v.includes('D-SNP')) return 'D-SNP'
-  if (v.includes('C-SNP')) return 'C-SNP'
-  if (v.includes('PDP')) return 'PDP'
-  if (v.includes('SUPPLEMENT')) return 'Supplement'
-  if (v.includes('ANCILLARY')) return 'Ancillary'
-  if (v.includes('HMO')) return 'HMO'
-  return null
 }
 
 // Minimal CSV parser that handles quotes and commas
@@ -220,10 +184,16 @@ export async function importPlansCsv(text: string): Promise<{
       if (col.rxCostShare >= 0 && r[col.rxCostShare]) metadata.rx_cost_share = r[col.rxCostShare]
       if (col.summary >= 0 && r[col.summary]) metadata.summary = r[col.summary]
 
-          const record: PlanInsert = {
-            name: r[col.name] || 'Unnamed Plan',
-            plan_type: mapPlanType(r[col.type]),
-            carrier: mapCarrier(r[col.carrier]),
+          // Parse the legacy plan type into normalized structure
+          const planTypeStructure = parseLegacyPlanType(r[col.type])
+          
+      const record: PlanInsert = {
+        name: r[col.name] || 'Unnamed Plan',
+        type_network: planTypeStructure?.type_network || null,
+        type_extension: planTypeStructure?.type_extension || null,
+        type_snp: planTypeStructure?.type_snp || null,
+        type_program: planTypeStructure?.type_program || null,
+        carrier: mapCarrier(r[col.carrier]),
             plan_year: planYear,
             cms_contract_number: contract,
             cms_plan_number: plan,

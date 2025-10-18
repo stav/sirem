@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { usePlanEnrollments } from '@/hooks/usePlanEnrollments'
 import { usePlanCache } from '@/contexts/PlanCacheContext'
 import { formatDateTime } from '@/lib/utils'
-import { calculateCmsId } from '@/lib/plan-utils'
+import { calculateCmsId, buildPlanTypeString } from '@/lib/plan-utils'
 import type { Database } from '@/lib/supabase'
 
 type Enrollment = Database['public']['Tables']['enrollments']['Row']
@@ -102,7 +102,7 @@ export default function LazyContactPlans({ contactId, className = '' }: LazyCont
               plan?.carrier,
               plan?.name,
               plan ? calculateCmsId(plan) ? `(${calculateCmsId(plan)})` : '' : '',
-              plan?.plan_type,
+              plan ? buildPlanTypeString(plan) : '',
               effectiveDateOnly,
               `(${enr.enrollment_status})`,
             ].filter(Boolean)

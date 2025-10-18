@@ -8,7 +8,7 @@ import { buildMetadata, extractMetadataForForm } from '@/lib/plan-metadata-utils
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Enums } from '@/lib/supabase-types'
+import { TYPE_NETWORKS_LIST, TYPE_EXTENSIONS_LIST, TYPE_SNPS_LIST, TYPE_PROGRAMS_LIST, CARRIERS, type TypeNetwork, type TypeExtension, type TypeSnp, type TypeProgram, type Carrier } from '@/lib/plan-constants'
 import { AgGridReact } from 'ag-grid-react'
 import { AllCommunityModule, ColDef, GridReadyEvent, ICellRendererParams, ModuleRegistry, Theme, themeQuartz, colorSchemeDark } from 'ag-grid-community'
 import type { Database } from '@/lib/supabase'
@@ -21,38 +21,12 @@ import { useToast } from '@/hooks/use-toast'
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule])
 
-type Carrier = Enums<'carrier'>
-type PlanType = Enums<'plan_type'>
-
-const carrierOptions: Carrier[] = [
-  'Aetna',
-  'Anthem',
-  'CareSource',
-  'Devoted',
-  'GTL',
-  'Heartland',
-  'Humana',
-  'Medico',
-  'MedMutual',
-  'SummaCare',
-  'United',
-  'Zing',
-  'Other',
-]
-
-const planTypeOptions: PlanType[] = [
-  'Ancillary',
-  'C-SNP',
-  'D-SNP',
-  'HMO-D-SNP',
-  'HMO-POS-C-SNP',
-  'HMO-POS-D-SNP',
-  'HMO-POS',
-  'HMO',
-  'PDP',
-  'PPO',
-  'Supplement',
-]
+// Use centralized constants instead of hardcoded arrays
+const carrierOptions = CARRIERS
+const typeNetworkOptions = TYPE_NETWORKS_LIST
+const typeExtensionOptions = TYPE_EXTENSIONS_LIST
+const typeSnpOptions = TYPE_SNPS_LIST
+const typeProgramOptions = TYPE_PROGRAMS_LIST
 
 export default function PlansPage() {
   const { plans, loading, error, fetchPlans, createPlan, updatePlan, deletePlan, deletePlans } = usePlans()
@@ -86,7 +60,10 @@ export default function PlansPage() {
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   const [form, setForm] = useState({
     name: '',
-    plan_type: '' as PlanType | '',
+    type_network: '' as TypeNetwork | '',
+    type_extension: '' as TypeExtension | '',
+    type_snp: '' as TypeSnp | '',
+    type_program: '' as TypeProgram | '',
     carrier: '' as Carrier | '',
     plan_year: new Date().getUTCFullYear().toString(),
     cms_contract_number: '',
@@ -130,7 +107,10 @@ export default function PlansPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editForm, setEditForm] = useState({
     name: '',
-    plan_type: '' as PlanType | '',
+    type_network: '' as TypeNetwork | '',
+    type_extension: '' as TypeExtension | '',
+    type_snp: '' as TypeSnp | '',
+    type_program: '' as TypeProgram | '',
     carrier: '' as Carrier | '',
     plan_year: new Date().getUTCFullYear().toString(),
     cms_contract_number: '',
@@ -247,11 +227,56 @@ export default function PlansPage() {
         minWidth: 140,
       },
       {
-        field: 'plan_type',
         headerName: 'Type',
+        minWidth: 120,
+        valueGetter: (p) => {
+          const plan = p.data
+          if (!plan) return '—'
+          
+          // Build the plan type string from normalized fields
+          const parts = []
+          if (plan.type_network) parts.push(plan.type_network)
+          if (plan.type_extension) parts.push(plan.type_extension)
+          if (plan.type_snp) parts.push(`${plan.type_snp}-SNP`)
+          // Don't add type_program if it's already included in the SNP part
+          if (plan.type_program && plan.type_program !== 'MA' && plan.type_program !== 'SNP') parts.push(plan.type_program)
+          
+          return parts.length > 0 ? parts.join('-') : '—'
+        },
         sortable: true,
         filter: true,
-        minWidth: 120,
+      },
+      {
+        field: 'type_network',
+        headerName: 'Network',
+        sortable: true,
+        filter: true,
+        minWidth: 100,
+        valueFormatter: (p) => p.value || '—',
+      },
+      {
+        field: 'type_extension',
+        headerName: 'Extension',
+        sortable: true,
+        filter: true,
+        minWidth: 100,
+        valueFormatter: (p) => p.value || '—',
+      },
+      {
+        field: 'type_snp',
+        headerName: 'SNP',
+        sortable: true,
+        filter: true,
+        minWidth: 80,
+        valueFormatter: (p) => p.value ? `${p.value}-SNP` : '—',
+      },
+      {
+        field: 'type_program',
+        headerName: 'Program',
+        sortable: true,
+        filter: true,
+        minWidth: 100,
+        valueFormatter: (p) => p.value || '—',
       },
       {
         field: 'plan_year',
@@ -287,7 +312,10 @@ export default function PlansPage() {
             
             setEditForm({
               name: String(formData.name ?? ''),
-              plan_type: (formData.plan_type as PlanType) ?? '',
+              type_network: (formData.type_network as TypeNetwork) ?? '',
+              type_extension: (formData.type_extension as TypeExtension) ?? '',
+              type_snp: (formData.type_snp as TypeSnp) ?? '',
+              type_program: (formData.type_program as TypeProgram) ?? '',
               carrier: (formData.carrier as Carrier) ?? '',
               plan_year: formData.plan_year != null ? String(formData.plan_year) : '',
               cms_contract_number: String(formData.cms_contract_number ?? ''),
@@ -365,7 +393,10 @@ export default function PlansPage() {
             // Populate the add plan form with the plan data
             setForm({
               name: String(formData.name ?? ''),
-              plan_type: (formData.plan_type as PlanType) ?? '',
+              type_network: (formData.type_network as TypeNetwork) ?? '',
+              type_extension: (formData.type_extension as TypeExtension) ?? '',
+              type_snp: (formData.type_snp as TypeSnp) ?? '',
+              type_program: (formData.type_program as TypeProgram) ?? '',
               carrier: (formData.carrier as Carrier) ?? '',
               plan_year: formData.plan_year != null ? String(Number(formData.plan_year) + 1) : new Date().getUTCFullYear().toString(),
               cms_contract_number: String(formData.cms_contract_number ?? ''),
@@ -446,7 +477,10 @@ export default function PlansPage() {
     
     const data = {
       name: form.name,
-      plan_type: (form.plan_type as PlanType) || null,
+      type_network: (form.type_network as TypeNetwork) || null,
+      type_extension: (form.type_extension as TypeExtension) || null,
+      type_snp: (form.type_snp as TypeSnp) || null,
+      type_program: (form.type_program as TypeProgram) || null,
       carrier: (form.carrier as Carrier) || null,
       plan_year: form.plan_year ? Number(form.plan_year) : null,
       cms_contract_number: form.cms_contract_number || null,
@@ -466,7 +500,10 @@ export default function PlansPage() {
       setIsAdding(false)
       setForm({
         name: '',
-        plan_type: '',
+        type_network: '' as TypeNetwork | '',
+        type_extension: '' as TypeExtension | '',
+        type_snp: '' as TypeSnp | '',
+        type_program: '' as TypeProgram | '',
         carrier: '',
         plan_year: new Date().getUTCFullYear().toString(),
         cms_contract_number: '',
@@ -514,7 +551,10 @@ export default function PlansPage() {
     
     const data = {
       name: editForm.name,
-      plan_type: (editForm.plan_type as PlanType) || null,
+      type_network: (editForm.type_network as TypeNetwork) || null,
+      type_extension: (editForm.type_extension as TypeExtension) || null,
+      type_snp: (editForm.type_snp as TypeSnp) || null,
+      type_program: (editForm.type_program as TypeProgram) || null,
       carrier: (editForm.carrier as Carrier) || null,
       plan_year: editForm.plan_year ? Number(editForm.plan_year) : null,
       cms_contract_number: editForm.cms_contract_number || null,
@@ -550,16 +590,61 @@ export default function PlansPage() {
                   <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Plan Type</Label>
+                  <Label className="text-xs">Network Type</Label>
                   <select
                     className="bg-background w-full rounded border p-2 text-sm"
-                    value={form.plan_type}
-                    onChange={(e) => setForm((f) => ({ ...f, plan_type: e.target.value as PlanType }))}
+                    value={form.type_network}
+                    onChange={(e) => setForm((f) => ({ ...f, type_network: e.target.value as TypeNetwork }))}
                   >
                     <option value="">—</option>
-                    {planTypeOptions.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
+                    {typeNetworkOptions.map((network) => (
+                      <option key={network} value={network}>
+                        {network}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Extension</Label>
+                  <select
+                    className="bg-background w-full rounded border p-2 text-sm"
+                    value={form.type_extension || ''}
+                    onChange={(e) => setForm((f) => ({ ...f, type_extension: e.target.value as TypeExtension }))}
+                  >
+                    <option value="">—</option>
+                    {typeExtensionOptions.map((extension) => (
+                      <option key={extension || 'null'} value={extension || ''}>
+                        {extension || 'None'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">SNP Type</Label>
+                  <select
+                    className="bg-background w-full rounded border p-2 text-sm"
+                    value={form.type_snp || ''}
+                    onChange={(e) => setForm((f) => ({ ...f, type_snp: e.target.value as TypeSnp }))}
+                  >
+                    <option value="">—</option>
+                    {typeSnpOptions.map((snp) => (
+                      <option key={snp || 'null'} value={snp || ''}>
+                        {snp ? `${snp}-SNP` : 'None'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Program Type</Label>
+                  <select
+                    className="bg-background w-full rounded border p-2 text-sm"
+                    value={form.type_program}
+                    onChange={(e) => setForm((f) => ({ ...f, type_program: e.target.value as TypeProgram }))}
+                  >
+                    <option value="">—</option>
+                    {typeProgramOptions.map((program) => (
+                      <option key={program} value={program}>
+                        {program}
                       </option>
                     ))}
                   </select>
@@ -884,16 +969,61 @@ export default function PlansPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs">Plan Type</Label>
+                  <Label className="text-xs">Network Type</Label>
                   <select
                     className="bg-background w-full rounded border p-2 text-sm"
-                    value={editForm.plan_type}
-                    onChange={(e) => setEditForm((f) => ({ ...f, plan_type: e.target.value as PlanType }))}
+                    value={editForm.type_network}
+                    onChange={(e) => setEditForm((f) => ({ ...f, type_network: e.target.value as TypeNetwork }))}
                   >
                     <option value="">—</option>
-                    {planTypeOptions.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
+                    {typeNetworkOptions.map((network) => (
+                      <option key={network} value={network}>
+                        {network}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Extension</Label>
+                  <select
+                    className="bg-background w-full rounded border p-2 text-sm"
+                    value={editForm.type_extension || ''}
+                    onChange={(e) => setEditForm((f) => ({ ...f, type_extension: e.target.value as TypeExtension }))}
+                  >
+                    <option value="">—</option>
+                    {typeExtensionOptions.map((extension) => (
+                      <option key={extension || 'null'} value={extension || ''}>
+                        {extension || 'None'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">SNP Type</Label>
+                  <select
+                    className="bg-background w-full rounded border p-2 text-sm"
+                    value={editForm.type_snp || ''}
+                    onChange={(e) => setEditForm((f) => ({ ...f, type_snp: e.target.value as TypeSnp }))}
+                  >
+                    <option value="">—</option>
+                    {typeSnpOptions.map((snp) => (
+                      <option key={snp || 'null'} value={snp || ''}>
+                        {snp ? `${snp}-SNP` : 'None'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Program Type</Label>
+                  <select
+                    className="bg-background w-full rounded border p-2 text-sm"
+                    value={editForm.type_program}
+                    onChange={(e) => setEditForm((f) => ({ ...f, type_program: e.target.value as TypeProgram }))}
+                  >
+                    <option value="">—</option>
+                    {typeProgramOptions.map((program) => (
+                      <option key={program} value={program}>
+                        {program}
                       </option>
                     ))}
                   </select>

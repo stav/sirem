@@ -434,9 +434,7 @@ export type Database = {
           coverage_end_date: string | null
           created_at: string
           disenrollment_reason: string | null
-          enrollment_status:
-            | Database["public"]["Enums"]["enrollment_status"]
-            | null
+          enrollment_status: string | null
           id: string
           metadata: Json | null
           pcp_id: string | null
@@ -454,9 +452,7 @@ export type Database = {
           coverage_end_date?: string | null
           created_at?: string
           disenrollment_reason?: string | null
-          enrollment_status?:
-            | Database["public"]["Enums"]["enrollment_status"]
-            | null
+          enrollment_status?: string | null
           id?: string
           metadata?: Json | null
           pcp_id?: string | null
@@ -474,9 +470,7 @@ export type Database = {
           coverage_end_date?: string | null
           created_at?: string
           disenrollment_reason?: string | null
-          enrollment_status?:
-            | Database["public"]["Enums"]["enrollment_status"]
-            | null
+          enrollment_status?: string | null
           id?: string
           metadata?: Json | null
           pcp_id?: string | null
@@ -570,7 +564,7 @@ export type Database = {
       }
       plans: {
         Row: {
-          carrier: Database["public"]["Enums"]["carrier"] | null
+          carrier: string | null
           cms_contract_number: string | null
           cms_geo_segment: string | null
           cms_plan_number: string | null
@@ -579,12 +573,15 @@ export type Database = {
           id: string
           metadata: Json | null
           name: string
-          plan_type: Database["public"]["Enums"]["plan_type"] | null
           plan_year: number | null
+          type_extension: string | null
+          type_network: string | null
+          type_program: string | null
+          type_snp: string | null
           updated_at: string
         }
         Insert: {
-          carrier?: Database["public"]["Enums"]["carrier"] | null
+          carrier?: string | null
           cms_contract_number?: string | null
           cms_geo_segment?: string | null
           cms_plan_number?: string | null
@@ -593,12 +590,15 @@ export type Database = {
           id?: string
           metadata?: Json | null
           name: string
-          plan_type?: Database["public"]["Enums"]["plan_type"] | null
           plan_year?: number | null
+          type_extension?: string | null
+          type_network?: string | null
+          type_program?: string | null
+          type_snp?: string | null
           updated_at?: string
         }
         Update: {
-          carrier?: Database["public"]["Enums"]["carrier"] | null
+          carrier?: string | null
           cms_contract_number?: string | null
           cms_geo_segment?: string | null
           cms_plan_number?: string | null
@@ -607,8 +607,11 @@ export type Database = {
           id?: string
           metadata?: Json | null
           name?: string
-          plan_type?: Database["public"]["Enums"]["plan_type"] | null
           plan_year?: number | null
+          type_extension?: string | null
+          type_network?: string | null
+          type_program?: string | null
+          type_snp?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -747,40 +750,7 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      carrier:
-        | "United"
-        | "Humana"
-        | "Devoted"
-        | "Anthem"
-        | "MedMutual"
-        | "Aetna"
-        | "GTL"
-        | "Medico"
-        | "CareSource"
-        | "SummaCare"
-        | "Zing"
-        | "Heartland"
-        | "Other"
-      enrollment_status:
-        | "pending"
-        | "active"
-        | "cancelled"
-        | "terminated"
-        | "declined"
-        | "ended"
-      plan_type:
-        | "HMO"
-        | "HMO-POS"
-        | "HMO-POS-D-SNP"
-        | "HMO-POS-C-SNP"
-        | "PPO"
-        | "D-SNP"
-        | "C-SNP"
-        | "PDP"
-        | "Supplement"
-        | "Ancillary"
-        | "HMO-D-SNP"
-        | "PPO-D-SNP"
+      [_ in never]: never
     }
     CompositeTypes: {
       [_ in never]: never
@@ -907,44 +877,6 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {
-      carrier: [
-        "United",
-        "Humana",
-        "Devoted",
-        "Anthem",
-        "MedMutual",
-        "Aetna",
-        "GTL",
-        "Medico",
-        "CareSource",
-        "SummaCare",
-        "Zing",
-        "Heartland",
-        "Other",
-      ],
-      enrollment_status: [
-        "pending",
-        "active",
-        "cancelled",
-        "terminated",
-        "declined",
-        "ended",
-      ],
-      plan_type: [
-        "HMO",
-        "HMO-POS",
-        "HMO-POS-D-SNP",
-        "HMO-POS-C-SNP",
-        "PPO",
-        "D-SNP",
-        "C-SNP",
-        "PDP",
-        "Supplement",
-        "Ancillary",
-        "HMO-D-SNP",
-        "PPO-D-SNP",
-      ],
-    },
+    Enums: {},
   },
 } as const

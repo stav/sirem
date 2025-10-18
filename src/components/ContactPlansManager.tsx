@@ -1,6 +1,6 @@
 import React, { useMemo, useState } from 'react'
 import type { Database } from '@/lib/supabase'
-import { Enums } from '@/lib/supabase-types'
+import { type EnrollmentStatus } from '@/lib/plan-constants'
 import { usePlanEnrollments } from '@/hooks/usePlanEnrollments'
 import { usePlans } from '@/hooks/usePlans'
 import { Button } from '@/components/ui/button'
@@ -13,7 +13,6 @@ import { Edit, Trash2, Plus, X } from 'lucide-react'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 type Plan = Database['public']['Tables']['plans']['Row']
-type EnrollmentStatus = Enums<'enrollment_status'>
 
 interface ContactPlansManagerProps {
   contact: Contact
@@ -93,7 +92,7 @@ export default function ContactPlansManager({ contact, onRefresh }: ContactPlans
     setEditingId(enrollment.id)
     setForm({
       plan_id: enrollment.plan_id,
-      enrollment_status: enrollment.enrollment_status || 'active',
+      enrollment_status: (enrollment.enrollment_status as EnrollmentStatus) || 'active',
       signed_up_at: enrollment.signed_up_at ? enrollment.signed_up_at.split('T')[0] : '',
       coverage_effective_date: enrollment.coverage_effective_date ? enrollment.coverage_effective_date.split('T')[0] : '',
       coverage_end_date: enrollment.coverage_end_date ? enrollment.coverage_end_date.split('T')[0] : '',

@@ -475,7 +475,16 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                   <th key={idx} className="py-3 px-3 text-center font-semibold text-sm bg-muted sticky top-0 max-w-48">
                     <div className="font-bold">{plan.name}</div>
                     <div className="text-xs font-normal text-muted-foreground">
-                      {plan.carrier} • {plan.plan_type}
+                      {plan.carrier} • {(() => {
+                        // Build the plan type string from normalized fields
+                        const parts = []
+                        if (plan.type_network) parts.push(plan.type_network)
+                        if (plan.type_extension) parts.push(plan.type_extension)
+                        if (plan.type_snp) parts.push(`${plan.type_snp}-SNP`)
+                        // Don't add type_program if it's already included in the SNP part
+                        if (plan.type_program && plan.type_program !== 'MA' && plan.type_program !== 'SNP') parts.push(plan.type_program)
+                        return parts.length > 0 ? parts.join('-') : '—'
+                      })()}
                     </div>
                     {plan.plan_year && (
                       <div className="text-xs font-normal text-muted-foreground">{plan.plan_year}</div>
