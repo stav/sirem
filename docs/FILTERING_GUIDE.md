@@ -192,6 +192,12 @@ The Filter Helper provides quick access to common filter values:
 - Click any role button to add `r:[role_type]` to the filter
 - Displays role types in user-friendly format (e.g., "medicare client" instead of "medicare_client")
 
+### Tag Filters
+
+- Dynamically loads all active tags from the database
+- Click any tag button to add `t:[tag_label]` to the filter
+- Tags are organized by categories and displayed alphabetically
+
 ## Best Practices
 
 ### 1. Start Broad, Then Narrow
