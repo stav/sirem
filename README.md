@@ -12,6 +12,13 @@ A modern Medicare CRM system built with Next.js, TypeScript, and Supabase.
 - **Data Import**: Import data from Integrity CRM system
 - **Modern UI**: Built with shadcn/ui components and Tailwind CSS
 
+## 🛠️ Development Notes
+
+### ESLint Configuration
+- Using legacy `.eslintrc.json` format instead of flat config (`eslint.config.mjs`)
+- Reason: Next.js 15.5.4 doesn't fully support flat config yet and shows warnings
+- TODO: Migrate to flat config when Next.js officially supports it without warnings
+
 ## ✅ Enhanced Filter System
 
 The contact list features a powerful multi-filter system that supports combining different filter types with AND logic.

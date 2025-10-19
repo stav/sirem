@@ -1,0 +1,28 @@
+{
+  "extends": ["next/core-web-vitals", "next/typescript"],
+  "ignorePatterns": [
+    ".next/**",
+    "out/**",
+    "build/**",
+    "dist/**",
+    "next-env.d.ts",
+    "node_modules/**",
+    "*.config.js",
+    "*.config.mjs",
+    "*.config.ts"
+  ],
+  "rules": {
+    "no-unexpected-multiline": "error",
+    "semi": ["error", "never"],
+    "no-unreachable": "error"
+  },
+  "overrides": [
+    {
+      "files": ["next.config.ts", "next.config.js"],
+      "rules": {
+        "@typescript-eslint/no-var-requires": "off",
+        "@typescript-eslint/no-require-imports": "off"
+      }
+    }
+  ]
+}
