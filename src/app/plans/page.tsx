@@ -12,7 +12,7 @@ import { TYPE_NETWORKS_LIST, TYPE_EXTENSIONS_LIST, TYPE_SNPS_LIST, TYPE_PROGRAMS
 import { AgGridReact } from 'ag-grid-react'
 import { AllCommunityModule, ColDef, GridReadyEvent, ICellRendererParams, ModuleRegistry, Theme, themeQuartz, colorSchemeDark } from 'ag-grid-community'
 import type { Database } from '@/lib/supabase'
-import { Pencil, Trash2, Scale, Copy, Plus } from 'lucide-react'
+import { Pencil, Trash2, Scale, Copy, Plus, RefreshCw } from 'lucide-react'
 import ModalForm from '@/components/ui/modal-form'
 import PlanComparisonModal from '@/components/PlanComparisonModal'
 import { useTheme } from '@/contexts/ThemeContext'
@@ -927,10 +927,16 @@ export default function PlansPage() {
                   </Button>
                 )}
                 {!isAdding && (
-                  <Button size="sm" onClick={() => setIsAdding(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
-                    Add Plan
-                  </Button>
+                  <>
+                    <Button size="sm" onClick={() => setIsAdding(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Plan
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={fetchPlans}>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Refresh
+                    </Button>
+                  </>
                 )}
               </div>
             </div>
