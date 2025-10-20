@@ -1,4 +1,6 @@
 
+\restrict 8v9QalV4kLlVP34gJvqzeLf2VKoggfu5JkS7YlSW7vsgXIQlCSE25PXzr7qhIcG
+
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -49,58 +51,6 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA "extensions";
 
 
 
-
-
-CREATE TYPE "public"."carrier" AS ENUM (
-    'United',
-    'Humana',
-    'Devoted',
-    'Anthem',
-    'MedMutual',
-    'Aetna',
-    'GTL',
-    'Medico',
-    'CareSource',
-    'SummaCare',
-    'Zing',
-    'Heartland',
-    'Other'
-);
-
-
-ALTER TYPE "public"."carrier" OWNER TO "postgres";
-
-
-CREATE TYPE "public"."enrollment_status" AS ENUM (
-    'pending',
-    'active',
-    'cancelled',
-    'terminated',
-    'declined',
-    'ended'
-);
-
-
-ALTER TYPE "public"."enrollment_status" OWNER TO "postgres";
-
-
-CREATE TYPE "public"."plan_type" AS ENUM (
-    'HMO',
-    'HMO-POS',
-    'HMO-POS-D-SNP',
-    'HMO-POS-C-SNP',
-    'PPO',
-    'D-SNP',
-    'C-SNP',
-    'PDP',
-    'Supplement',
-    'Ancillary',
-    'HMO-D-SNP',
-    'PPO-D-SNP'
-);
-
-
-ALTER TYPE "public"."plan_type" OWNER TO "postgres";
 
 
 CREATE OR REPLACE FUNCTION "public"."update_updated_at_column"() RETURNS "trigger"
@@ -299,7 +249,7 @@ CREATE TABLE IF NOT EXISTS "public"."enrollments" (
     "updated_at" timestamp with time zone DEFAULT "timezone"('America/New_York'::"text", "now"()) NOT NULL,
     "contact_id" "uuid" NOT NULL,
     "plan_id" "uuid" NOT NULL,
-    "enrollment_status" "public"."enrollment_status",
+    "enrollment_status" "text",
     "application_id" "text",
     "signed_up_at" timestamp with time zone,
     "coverage_effective_date" timestamp with time zone,
@@ -348,21 +298,44 @@ CREATE TABLE IF NOT EXISTS "public"."plans" (
     "created_at" timestamp with time zone DEFAULT "timezone"('America/New_York'::"text", "now"()) NOT NULL,
     "updated_at" timestamp with time zone DEFAULT "timezone"('America/New_York'::"text", "now"()) NOT NULL,
     "name" "text" NOT NULL,
-    "plan_type" "public"."plan_type",
-    "carrier" "public"."carrier",
+    "carrier" "text",
     "plan_year" integer,
     "cms_contract_number" "text",
     "cms_plan_number" "text",
     "counties" "text"[],
     "metadata" "jsonb",
-    "cms_geo_segment" "text"
+    "cms_geo_segment" "text",
+    "type_network" "text",
+    "type_extension" "text",
+    "type_snp" "text",
+    "type_program" "text"
 );
 
 
 ALTER TABLE "public"."plans" OWNER TO "postgres";
 
 
+COMMENT ON TABLE "public"."plans" IS 'Plans table with normalized plan type structure (type_network, type_extension, type_snp, type_program) - legacy plan_type field removed in migration 20';
+
+
+
 COMMENT ON COLUMN "public"."plans"."cms_geo_segment" IS 'Three-digit county identifier (e.g., "001") used in CMS ID construction';
+
+
+
+COMMENT ON COLUMN "public"."plans"."type_network" IS 'Plan network type (HMO, PPO, PFFS, MSA) - values defined in src/lib/plan-constants.ts';
+
+
+
+COMMENT ON COLUMN "public"."plans"."type_extension" IS 'Plan extension type (POS or null) - values defined in src/lib/plan-constants.ts';
+
+
+
+COMMENT ON COLUMN "public"."plans"."type_snp" IS 'SNP type (D, C, I or null) - values defined in src/lib/plan-constants.ts';
+
+
+
+COMMENT ON COLUMN "public"."plans"."type_program" IS 'Program type (SNP, MA, MAPD, PDP, Supplement, Ancillary) - values defined in src/lib/plan-constants.ts';
 
 
 
@@ -635,11 +608,27 @@ CREATE INDEX "idx_plans_cms_lookup" ON "public"."plans" USING "btree" ("plan_yea
 
 
 
-CREATE INDEX "idx_plans_plan_type" ON "public"."plans" USING "btree" ("plan_type");
-
-
-
 CREATE INDEX "idx_plans_plan_year" ON "public"."plans" USING "btree" ("plan_year");
+
+
+
+CREATE INDEX "idx_plans_type_composite" ON "public"."plans" USING "btree" ("type_network", "type_extension", "type_snp", "type_program");
+
+
+
+CREATE INDEX "idx_plans_type_extension" ON "public"."plans" USING "btree" ("type_extension");
+
+
+
+CREATE INDEX "idx_plans_type_network" ON "public"."plans" USING "btree" ("type_network");
+
+
+
+CREATE INDEX "idx_plans_type_program" ON "public"."plans" USING "btree" ("type_program");
+
+
+
+CREATE INDEX "idx_plans_type_snp" ON "public"."plans" USING "btree" ("type_snp");
 
 
 
@@ -1186,9 +1175,6 @@ GRANT USAGE ON SCHEMA "public" TO "service_role";
 
 
 
-
-
-
 GRANT ALL ON FUNCTION "public"."update_updated_at_column"() TO "anon";
 GRANT ALL ON FUNCTION "public"."update_updated_at_column"() TO "authenticated";
 GRANT ALL ON FUNCTION "public"."update_updated_at_column"() TO "service_role";
@@ -1207,123 +1193,123 @@ GRANT ALL ON FUNCTION "public"."update_updated_at_column"() TO "service_role";
 
 
 
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."actions" TO "anon";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."actions" TO "authenticated";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."actions" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."actions" TO "anon";
-GRANT ALL ON TABLE "public"."actions" TO "authenticated";
-GRANT ALL ON TABLE "public"."actions" TO "service_role";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."activities" TO "anon";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."activities" TO "authenticated";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."activities" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."activities" TO "anon";
-GRANT ALL ON TABLE "public"."activities" TO "authenticated";
-GRANT ALL ON TABLE "public"."activities" TO "service_role";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."addresses" TO "anon";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."addresses" TO "authenticated";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."addresses" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."addresses" TO "anon";
-GRANT ALL ON TABLE "public"."addresses" TO "authenticated";
-GRANT ALL ON TABLE "public"."addresses" TO "service_role";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."contact_roles" TO "anon";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."contact_roles" TO "authenticated";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."contact_roles" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."contact_roles" TO "anon";
-GRANT ALL ON TABLE "public"."contact_roles" TO "authenticated";
-GRANT ALL ON TABLE "public"."contact_roles" TO "service_role";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."contact_tags" TO "anon";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."contact_tags" TO "authenticated";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."contact_tags" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."contact_tags" TO "anon";
-GRANT ALL ON TABLE "public"."contact_tags" TO "authenticated";
-GRANT ALL ON TABLE "public"."contact_tags" TO "service_role";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."contacts" TO "anon";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."contacts" TO "authenticated";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."contacts" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."contacts" TO "anon";
-GRANT ALL ON TABLE "public"."contacts" TO "authenticated";
-GRANT ALL ON TABLE "public"."contacts" TO "service_role";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."emails" TO "anon";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."emails" TO "authenticated";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."emails" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."emails" TO "anon";
-GRANT ALL ON TABLE "public"."emails" TO "authenticated";
-GRANT ALL ON TABLE "public"."emails" TO "service_role";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."enrollments" TO "anon";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."enrollments" TO "authenticated";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."enrollments" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."enrollments" TO "anon";
-GRANT ALL ON TABLE "public"."enrollments" TO "authenticated";
-GRANT ALL ON TABLE "public"."enrollments" TO "service_role";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."lead_statuses" TO "anon";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."lead_statuses" TO "authenticated";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."lead_statuses" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."lead_statuses" TO "anon";
-GRANT ALL ON TABLE "public"."lead_statuses" TO "authenticated";
-GRANT ALL ON TABLE "public"."lead_statuses" TO "service_role";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."phones" TO "anon";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."phones" TO "authenticated";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."phones" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."phones" TO "anon";
-GRANT ALL ON TABLE "public"."phones" TO "authenticated";
-GRANT ALL ON TABLE "public"."phones" TO "service_role";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."plans" TO "anon";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."plans" TO "authenticated";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."plans" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."plans" TO "anon";
-GRANT ALL ON TABLE "public"."plans" TO "authenticated";
-GRANT ALL ON TABLE "public"."plans" TO "service_role";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."reminders" TO "anon";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."reminders" TO "authenticated";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."reminders" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."reminders" TO "anon";
-GRANT ALL ON TABLE "public"."reminders" TO "authenticated";
-GRANT ALL ON TABLE "public"."reminders" TO "service_role";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."tag_categories" TO "anon";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."tag_categories" TO "authenticated";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."tag_categories" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."tag_categories" TO "anon";
-GRANT ALL ON TABLE "public"."tag_categories" TO "authenticated";
-GRANT ALL ON TABLE "public"."tag_categories" TO "service_role";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."tags" TO "anon";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."tags" TO "authenticated";
+GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLE "public"."tags" TO "service_role";
 
 
 
-GRANT ALL ON TABLE "public"."tags" TO "anon";
-GRANT ALL ON TABLE "public"."tags" TO "authenticated";
-GRANT ALL ON TABLE "public"."tags" TO "service_role";
 
 
 
 
 
 
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES TO "service_role";
 
 
 
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES  TO "postgres";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES  TO "anon";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES  TO "authenticated";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON SEQUENCES  TO "service_role";
 
 
 
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS TO "service_role";
 
 
 
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS  TO "postgres";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS  TO "anon";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS  TO "authenticated";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON FUNCTIONS  TO "service_role";
 
 
 
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLES TO "postgres";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLES TO "anon";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLES TO "authenticated";
+ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT SELECT,INSERT,REFERENCES,DELETE,TRIGGER,TRUNCATE,UPDATE ON TABLES TO "service_role";
 
 
 
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES  TO "postgres";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES  TO "anon";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES  TO "authenticated";
-ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TABLES  TO "service_role";
 
 
 
@@ -1351,7 +1337,7 @@ ALTER DEFAULT PRIVILEGES FOR ROLE "postgres" IN SCHEMA "public" GRANT ALL ON TAB
 
 
 
-
+\unrestrict 8v9QalV4kLlVP34gJvqzeLf2VKoggfu5JkS7YlSW7vsgXIQlCSE25PXzr7qhIcG
 
 
 RESET ALL;

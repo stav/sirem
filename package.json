@@ -13,7 +13,7 @@
     "format:check": "prettier --check .",
     "dump-data": "node scripts/supabase-dump.mjs",
     "dump-types": "npx supabase gen types typescript --project-id $(grep SUPABASE_PROJECT_ID .env.local 2>/dev/null | cut -d'=' -f2 || echo) >| src/lib/supabase-types.ts",
-    "dump-schema": "npx supabase db dump --linked --file data/schema/current-schema.sql",
+    "dump-schema": "node scripts/dump-schema-local.mjs",
     "dump-all": "npm run dump-types && npm run dump-schema && npm run dump-data",
     "show-migrations": "node data/schema/run-migrations.mjs",
     "clean": "rm -rf .next out",
