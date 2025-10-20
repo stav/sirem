@@ -71,6 +71,7 @@ The `metadata` JSONB field stores all plan benefits and additional information:
 
 **Financial Benefits:**
 - `premium_monthly` (numeric): Monthly premium amount
+- `premium_monthly_with_extra_help` (numeric): Monthly premium for LIS/Extra Help recipients (typically $0)
 - `giveback_monthly` (numeric): Monthly giveback/rebate amount
 - `otc_benefit_quarterly` (numeric): Quarterly OTC benefit amount
 
@@ -88,6 +89,10 @@ The `metadata` JSONB field stores all plan benefits and additional information:
 - `ambulance_copay` (numeric): Ambulance service copay
 - `emergency_room_copay` (numeric): Emergency room copay
 - `urgent_care_copay` (numeric): Urgent care copay
+
+**Medical Deductible with Medicaid Assistance:**
+- `medical_deductible` (numeric): Standard medical deductible amount
+- `medical_deductible_with_medicaid` (numeric): Medical deductible for Medicaid cost-sharing recipients (typically $0)
 
 **Additional Information:**
 - `pharmacy_benefit` (text): Pharmacy benefit description

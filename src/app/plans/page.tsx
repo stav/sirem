@@ -72,6 +72,7 @@ export default function PlansPage() {
     effective_start: '',
     effective_end: '',
     premium_monthly: '',
+    premium_monthly_with_extra_help: '',
     giveback_monthly: '',
     otc_benefit_quarterly: '',
     dental_benefit_yearly: '',
@@ -94,6 +95,7 @@ export default function PlansPage() {
     fitness_benefit: '',
     transportation_benefit: '',
     medical_deductible: '',
+    medical_deductible_with_medicaid: '',
     rx_deductible_tier345: '',
     rx_cost_share: '',
     medicaid_eligibility: '',
@@ -119,6 +121,7 @@ export default function PlansPage() {
     effective_start: '',
     effective_end: '',
     premium_monthly: '',
+    premium_monthly_with_extra_help: '',
     giveback_monthly: '',
     otc_benefit_quarterly: '',
     dental_benefit_yearly: '',
@@ -141,6 +144,7 @@ export default function PlansPage() {
     fitness_benefit: '',
     transportation_benefit: '',
     medical_deductible: '',
+    medical_deductible_with_medicaid: '',
     rx_deductible_tier345: '',
     rx_cost_share: '',
     medicaid_eligibility: '',
@@ -324,6 +328,7 @@ export default function PlansPage() {
               effective_start: String(formData.effective_start ?? ''),
               effective_end: String(formData.effective_end ?? ''),
               premium_monthly: formData.premium_monthly != null ? String(formData.premium_monthly) : '',
+              premium_monthly_with_extra_help: formData.premium_monthly_with_extra_help != null ? String(formData.premium_monthly_with_extra_help) : '',
               giveback_monthly: formData.giveback_monthly != null ? String(formData.giveback_monthly) : '',
               otc_benefit_quarterly: formData.otc_benefit_quarterly != null ? String(formData.otc_benefit_quarterly) : '',
               dental_benefit_yearly: formData.dental_benefit_yearly != null ? String(formData.dental_benefit_yearly) : '',
@@ -346,6 +351,7 @@ export default function PlansPage() {
               fitness_benefit: formData.fitness_benefit != null ? String(formData.fitness_benefit) : '',
               transportation_benefit: formData.transportation_benefit != null ? String(formData.transportation_benefit) : '',
               medical_deductible: formData.medical_deductible != null ? String(formData.medical_deductible) : '',
+              medical_deductible_with_medicaid: formData.medical_deductible_with_medicaid != null ? String(formData.medical_deductible_with_medicaid) : '',
               rx_deductible_tier345: formData.rx_deductible_tier345 != null ? String(formData.rx_deductible_tier345) : '',
               rx_cost_share: String(formData.rx_cost_share ?? ''),
               medicaid_eligibility: String(formData.medicaid_eligibility ?? ''),
@@ -405,6 +411,7 @@ export default function PlansPage() {
               effective_start: String(formData.effective_start ?? ''),
               effective_end: String(formData.effective_end ?? ''),
               premium_monthly: formData.premium_monthly != null ? String(formData.premium_monthly) : '',
+              premium_monthly_with_extra_help: formData.premium_monthly_with_extra_help != null ? String(formData.premium_monthly_with_extra_help) : '',
               giveback_monthly: formData.giveback_monthly != null ? String(formData.giveback_monthly) : '',
               otc_benefit_quarterly: formData.otc_benefit_quarterly != null ? String(formData.otc_benefit_quarterly) : '',
               dental_benefit_yearly: formData.dental_benefit_yearly != null ? String(formData.dental_benefit_yearly) : '',
@@ -427,6 +434,7 @@ export default function PlansPage() {
               fitness_benefit: formData.fitness_benefit != null ? String(formData.fitness_benefit) : '',
               transportation_benefit: formData.transportation_benefit != null ? String(formData.transportation_benefit) : '',
               medical_deductible: formData.medical_deductible != null ? String(formData.medical_deductible) : '',
+              medical_deductible_with_medicaid: formData.medical_deductible_with_medicaid != null ? String(formData.medical_deductible_with_medicaid) : '',
               rx_deductible_tier345: formData.rx_deductible_tier345 != null ? String(formData.rx_deductible_tier345) : '',
               rx_cost_share: String(formData.rx_cost_share ?? ''),
               medicaid_eligibility: String(formData.medicaid_eligibility ?? ''),
@@ -703,6 +711,16 @@ export default function PlansPage() {
                     step="0.01"
                     value={form.premium_monthly}
                     onChange={(e) => setForm((f) => ({ ...f, premium_monthly: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Premium with Extra Help (monthly)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={form.premium_monthly_with_extra_help}
+                    onChange={(e) => setForm((f) => ({ ...f, premium_monthly_with_extra_help: e.target.value }))}
+                    placeholder="$0"
                   />
                 </div>
                 <div className="space-y-1">
@@ -1127,6 +1145,16 @@ export default function PlansPage() {
                     />
                   </div>
                   <div className="space-y-1">
+                    <Label className="text-xs">Premium with Extra Help (monthly)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editForm.premium_monthly_with_extra_help}
+                      onChange={(e) => setEditForm((f) => ({ ...f, premium_monthly_with_extra_help: e.target.value }))}
+                      placeholder="$0"
+                    />
+                  </div>
+                  <div className="space-y-1">
                     <Label className="text-xs">Giveback (monthly)</Label>
                     <Input
                       type="number"
@@ -1135,6 +1163,39 @@ export default function PlansPage() {
                       onChange={(e) => setEditForm((f) => ({ ...f, giveback_monthly: e.target.value }))}
                     />
                   </div>
+
+                  {/* Deductibles */}
+                  <div className="space-y-1">
+                    <Label className="text-xs">Medical Deductible</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editForm.medical_deductible}
+                      onChange={(e) => setEditForm((f) => ({ ...f, medical_deductible: e.target.value }))}
+                      placeholder="$0"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Medical Deductible with Medicaid</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editForm.medical_deductible_with_medicaid}
+                      onChange={(e) => setEditForm((f) => ({ ...f, medical_deductible_with_medicaid: e.target.value }))}
+                      placeholder="$0"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">RX Deductible (T345)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editForm.rx_deductible_tier345}
+                      onChange={(e) => setEditForm((f) => ({ ...f, rx_deductible_tier345: e.target.value }))}
+                      placeholder="$0"
+                    />
+                  </div>
+
                   <div className="space-y-1">
                     <Label className="text-xs">OTC (quarterly)</Label>
                     <Input
@@ -1300,26 +1361,6 @@ export default function PlansPage() {
                     />
                   </div>
 
-                  <div className="space-y-1">
-                    <Label className="text-xs">Medical Deductible</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={editForm.medical_deductible}
-                      onChange={(e) => setEditForm((f) => ({ ...f, medical_deductible: e.target.value }))}
-                      placeholder="$0"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">RX Deductible (T345)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={editForm.rx_deductible_tier345}
-                      onChange={(e) => setEditForm((f) => ({ ...f, rx_deductible_tier345: e.target.value }))}
-                      placeholder="$0"
-                    />
-                  </div>
                   <div className="space-y-1">
                     <Label className="text-xs">RX Cost Share</Label>
                     <Input
