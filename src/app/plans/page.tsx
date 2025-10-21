@@ -12,7 +12,7 @@ import { TYPE_NETWORKS_LIST, TYPE_EXTENSIONS_LIST, TYPE_SNPS_LIST, TYPE_PROGRAMS
 import { AgGridReact } from 'ag-grid-react'
 import { AllCommunityModule, ColDef, GridReadyEvent, ICellRendererParams, ModuleRegistry, Theme, themeQuartz, colorSchemeDark } from 'ag-grid-community'
 import type { Database } from '@/lib/supabase'
-import { Pencil, Trash2, Scale, Copy, Plus, RefreshCw } from 'lucide-react'
+import { Pencil, Trash2, Scale, Copy, Plus, RefreshCw, Filter } from 'lucide-react'
 import ModalForm from '@/components/ui/modal-form'
 import PlanComparisonModal from '@/components/PlanComparisonModal'
 import dynamic from 'next/dynamic'
@@ -73,6 +73,8 @@ export default function PlansPage() {
   const [isAdding, setIsAdding] = useState(false)
   const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([])
   const [showComparison, setShowComparison] = useState(false)
+  const [activeFilters, setActiveFilters] = useState<Record<string, any>>({})
+  const [showQuickFilters, setShowQuickFilters] = useState(true)
   const isRefreshingRef = useRef(false)
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   // Helper function to get default core fields - type inferred from implementation
@@ -133,6 +135,75 @@ export default function PlansPage() {
     const selectedNodes = gridRef.current.api.getSelectedNodes()
     const selectedIds = selectedNodes.map(node => node.data?.id).filter(Boolean) as string[]
     setSelectedPlanIds(selectedIds)
+  }
+
+  const onFilterChanged = () => {
+    if (!gridRef.current) return
+    
+    const filterModel = gridRef.current.api.getFilterModel()
+    setActiveFilters(filterModel)
+  }
+
+  const applyQuickFilter = (field: string, value: string) => {
+    if (!gridRef.current) return
+    
+    const api = gridRef.current.api
+    
+    // Check if this filter is already active
+    const currentFilter = activeFilters[field]
+    const isActive = field === 'plan_year' 
+      ? currentFilter?.filter === parseInt(value)
+      : currentFilter?.filter === value
+    
+    if (isActive) {
+      // Remove this filter
+      const newFilters = { ...activeFilters }
+      delete newFilters[field]
+      api.setFilterModel(newFilters)
+    } else {
+      // Set the filter value with appropriate filter type
+      const filterConfig = field === 'plan_year' 
+        ? {
+            type: 'equals',
+            filter: parseInt(value),
+            filterType: 'number'
+          }
+        : {
+            type: 'contains',
+            filter: value,
+            filterType: 'text'
+          }
+      
+      api.setFilterModel({
+        ...activeFilters,
+        [field]: filterConfig
+      })
+    }
+  }
+
+  const clearAllFilters = () => {
+    if (!gridRef.current) return
+    
+    gridRef.current.api.setFilterModel({})
+    setActiveFilters({})
+  }
+
+  // Custom header component for Actions column
+  const ActionsHeaderComponent = () => {
+    return (
+      <div className="flex items-center justify-between w-full">
+        <span>Actions</span>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowQuickFilters(!showQuickFilters)}
+          className="h-6 w-6 p-0"
+          title="Toggle Quick Filters"
+        >
+          <Filter className="h-3 w-3" />
+        </Button>
+      </div>
+    )
   }
 
   const selectedPlans = useMemo(() => {
@@ -263,6 +334,7 @@ export default function PlansPage() {
       },
       {
         headerName: 'Actions',
+        headerComponent: ActionsHeaderComponent,
         minWidth: 150,
         maxWidth: 170,
         cellRenderer: (p: ICellRendererParams<Database['public']['Tables']['plans']['Row']>) => {
@@ -532,6 +604,58 @@ export default function PlansPage() {
             </div>
           )}
 
+          {/* Quick Filter Buttons */}
+          {showQuickFilters && (
+            <div className="border-b bg-muted/20 p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-medium text-muted-foreground">Quick Filters:</span>
+              
+              {/* Carrier Filters */}
+              <div className="flex flex-wrap gap-1">
+                {carrierOptions.map((carrier) => (
+                  <Button
+                    key={carrier}
+                    variant={activeFilters.carrier?.filter === carrier ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => applyQuickFilter('carrier', carrier)}
+                    className="text-xs cursor-pointer"
+                  >
+                    {carrier}
+                  </Button>
+                ))}
+              </div>
+
+              {/* Year Filters */}
+              <div className="flex flex-wrap gap-1">
+                {[2025, 2026].map((year) => (
+                  <Button
+                    key={year}
+                    variant={activeFilters.plan_year?.filter === year ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => applyQuickFilter('plan_year', year.toString())}
+                    className="text-xs cursor-pointer"
+                  >
+                    {year}
+                  </Button>
+                ))}
+              </div>
+
+              {/* Clear All Filters */}
+              {Object.keys(activeFilters).length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearAllFilters}
+                  className="text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                  title="Clear all filters"
+                >
+                  ✕
+                </Button>
+              )}
+            </div>
+          </div>
+          )}
+
           {/* Plans list (AG Grid) */}
           <div className="flex-1 flex flex-col">
             {!loading && sortedPlans.length === 0 && (
@@ -545,6 +669,7 @@ export default function PlansPage() {
                 columnDefs={columnDefs}
                 defaultColDef={defaultColDef}
                 onGridReady={onGridReady}
+                onFilterChanged={onFilterChanged}
                 pagination={true}
                 paginationPageSize={100}
                 animateRows={true}
