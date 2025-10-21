@@ -1,4 +1,5 @@
 import { Database } from './supabase-types'
+import { plansMetadataSchema } from '@/schema/plans-metadata-schema'
 
 // Base plan type from database
 export type Plan = Database['public']['Tables']['plans']['Row']
@@ -6,77 +7,52 @@ export type PlanInsert = Database['public']['Tables']['plans']['Insert']
 export type PlanUpdate = Database['public']['Tables']['plans']['Update']
 
 /**
- * Plan Metadata Interface
- * 
- * This interface defines the structure for the metadata JSONB field in the plans table.
- * 
- * ⚠️  IMPORTANT: TWO SOURCES OF TRUTH
- * This TypeScript interface must be kept in sync with:
- * - data/schema/plans-metadata-schema.json (JSON Schema for validation)
- * 
- * When adding, modifying, or removing fields, update BOTH files to maintain consistency.
- * 
- * 🔄 DYNAMIC SCHEMA
- * New fields may be added, changed, or removed at any time as business requirements evolve.
- * The metadata field is designed to be flexible and extensible.
- * 
- * All fields are optional to accommodate different plan types and data availability.
- * The metadata field allows for additional properties beyond those defined here.
+ * Generate TypeScript interface from JSON Schema
+ * This utility creates a type-safe interface from the schema properties
  */
-export interface PlanMetadata {
-  // Dates
-  effective_start?: string
-  effective_end?: string
+type SchemaProperty = {
+  type: string
+  format?: string
+  label?: string
+  section?: string
+  description?: string
+  enum?: readonly string[]
+  minimum?: number
+  maximum?: number
+}
 
-  // Monthly financials
-  premium_monthly?: number
-  premium_monthly_with_extra_help?: number // $0 with LIS
-  giveback_monthly?: number
+type SchemaProperties = Record<string, SchemaProperty>
 
-  // Yearly financials
-  moop_annual?: number
-  medical_deductible?: number
-  medical_deductible_with_medicaid?: number // $0 when Medicaid pays
-  rx_deductible_tier345?: number
-  rx_cost_share?: string
+/**
+ * Convert JSON Schema type to TypeScript type
+ */
+type JsonSchemaToTsType<T extends string> = 
+  T extends 'string' ? string :
+  T extends 'number' ? number :
+  T extends 'boolean' ? boolean :
+  T extends 'array' ? unknown[] :
+  unknown
 
-  // Yearly benefits
-  dental_benefit_yearly?: number
-  hearing_benefit_yearly?: number
-  vision_benefit_yearly?: number
-
-  // Medical copays
-  primary_care_copay?: number
-  specialist_copay?: number
-  hospital_inpatient_per_day_copay?: number
-  hospital_inpatient_days?: number
-  hospital_inpatient_with_assistance_per_stay_copay?: number
-  hospital_inpatient_without_assistance_per_stay_copay?: number
-  ambulance_copay?: number
-  ambulance_with_assistance_copay?: number
-  emergency_room_copay?: number
-  emergency_with_assistance_copay?: number
-  urgent_care_copay?: number
-  skilled_nursing_per_day_copay?: number
-  skilled_nursing_with_assistance_per_stay_copay?: number
-
-  // Additional information
-  pharmacy_benefit?: string
-  service_area?: string
-  summary?: string
-  notes?: string
-
-  // Extended benefits
-  otc_benefit_quarterly?: number
-  card_benefit?: number
-  fitness_benefit?: string
-  transportation_benefit?: number
-  medicaid_eligibility?: string
-  transitioned_from?: string
-
+/**
+ * Generate TypeScript interface from schema properties
+ */
+type GenerateInterfaceFromSchema<T extends SchemaProperties> = {
+  [K in keyof T]?: JsonSchemaToTsType<T[K]['type']>
+} & {
   // Allow any additional fields for future flexibility
   [key: string]: unknown
 }
+
+/**
+ * PlanMetadata interface - dynamically generated from schema
+ * 
+ * This interface is automatically generated from the JSON Schema properties.
+ * No manual field definitions needed - the schema is the single source of truth.
+ * 
+ * 🔄 DYNAMIC: New fields added to the schema automatically appear in this interface.
+ * ✅ SINGLE SOURCE OF TRUTH: Schema drives both runtime validation and compile-time types.
+ */
+export type PlanMetadata = GenerateInterfaceFromSchema<typeof plansMetadataSchema.properties>
 
 // Helper type for plan with typed metadata
 export interface PlanWithMetadata extends Omit<Plan, 'metadata'> {
@@ -110,101 +86,168 @@ export function getMetadataDate(plan: Plan, key: string): string | null {
   return typeof value === 'string' ? value : null
 }
 
-// Specific getters for common metadata fields
-export const getPlanMetadata = {
-  effectiveStart: (plan: Plan) => getMetadataDate(plan, 'effective_start'),
-  effectiveEnd: (plan: Plan) => getMetadataDate(plan, 'effective_end'),
+/**
+ * Dynamically generate getter functions from schema
+ * This eliminates hardcoded field definitions by using the schema as the source of truth
+ */
+export const getPlanMetadata = (() => {
+  const getters: Record<string, (plan: Plan) => unknown> = {}
+  
+  // Generate getters for all schema properties
+  Object.entries(plansMetadataSchema.properties).forEach(([fieldName, fieldSchema]) => {
+    const fieldType = fieldSchema.type
+    
+    // Choose appropriate getter based on field type
+    if (fieldType === 'string' && 'format' in fieldSchema && fieldSchema.format === 'date') {
+      getters[fieldName] = (plan: Plan) => getMetadataDate(plan, fieldName)
+    } else if (fieldType === 'number') {
+      getters[fieldName] = (plan: Plan) => getMetadataNumber(plan, fieldName)
+    } else {
+      getters[fieldName] = (plan: Plan) => getMetadataString(plan, fieldName)
+    }
+  })
+  
+  return getters
+})() as Record<string, (plan: Plan) => number | string | null>
 
-  premiumMonthly: (plan: Plan) => getMetadataNumber(plan, 'premium_monthly'),
-  premiumMonthlyWithExtraHelp: (plan: Plan) => getMetadataNumber(plan, 'premium_monthly_with_extra_help'),
-  givebackMonthly: (plan: Plan) => getMetadataNumber(plan, 'giveback_monthly'),
-  otcBenefitQuarterly: (plan: Plan) => getMetadataNumber(plan, 'otc_benefit_quarterly'),
-
-  dentalBenefitYearly: (plan: Plan) => getMetadataNumber(plan, 'dental_benefit_yearly'),
-  hearingBenefitYearly: (plan: Plan) => getMetadataNumber(plan, 'hearing_benefit_yearly'),
-  visionBenefitYearly: (plan: Plan) => getMetadataNumber(plan, 'vision_benefit_yearly'),
-
-  primaryCareCopay: (plan: Plan) => getMetadataNumber(plan, 'primary_care_copay'),
-  specialistCopay: (plan: Plan) => getMetadataNumber(plan, 'specialist_copay'),
-  hospitalInpatientPerDayCopay: (plan: Plan) => getMetadataNumber(plan, 'hospital_inpatient_per_day_copay'),
-  hospitalInpatientDays: (plan: Plan) => getMetadataNumber(plan, 'hospital_inpatient_days'),
-  hospitalInpatientWithAssistancePerStayCopay: (plan: Plan) => getMetadataNumber(plan, 'hospital_inpatient_with_assistance_per_stay_copay'),
-  hospitalInpatientWithoutAssistancePerStayCopay: (plan: Plan) => getMetadataNumber(plan, 'hospital_inpatient_without_assistance_per_stay_copay'),
-  moopAnnual: (plan: Plan) => getMetadataNumber(plan, 'moop_annual'),
-  ambulanceCopay: (plan: Plan) => getMetadataNumber(plan, 'ambulance_copay'),
-  ambulanceWithAssistanceCopay: (plan: Plan) => getMetadataNumber(plan, 'ambulance_with_assistance_copay'),
-  emergencyRoomCopay: (plan: Plan) => getMetadataNumber(plan, 'emergency_room_copay'),
-  emergencyWithAssistanceCopay: (plan: Plan) => getMetadataNumber(plan, 'emergency_with_assistance_copay'),
-  urgentCareCopay: (plan: Plan) => getMetadataNumber(plan, 'urgent_care_copay'),
-  skilledNursingPerDayCopay: (plan: Plan) => getMetadataNumber(plan, 'skilled_nursing_per_day_copay'),
-  skilledNursingWithAssistancePerStayCopay: (plan: Plan) => getMetadataNumber(plan, 'skilled_nursing_with_assistance_per_stay_copay'),
-
-  medicalDeductible: (plan: Plan) => getMetadataNumber(plan, 'medical_deductible'),
-  medicalDeductibleWithMedicaid: (plan: Plan) => getMetadataNumber(plan, 'medical_deductible_with_medicaid'),
-
-  pharmacyBenefit: (plan: Plan) => getMetadataString(plan, 'pharmacy_benefit'),
-  serviceArea: (plan: Plan) => getMetadataString(plan, 'service_area'),
-  notes: (plan: Plan) => getMetadataString(plan, 'notes'),
-
-  cardBenefit: (plan: Plan) => getMetadataNumber(plan, 'card_benefit'),
-  fitnessBenefit: (plan: Plan) => getMetadataString(plan, 'fitness_benefit'),
-  transportationBenefit: (plan: Plan) => getMetadataNumber(plan, 'transportation_benefit'),
-  rxDeductibleTier345: (plan: Plan) => getMetadataNumber(plan, 'rx_deductible_tier345'),
-  rxCostShare: (plan: Plan) => getMetadataString(plan, 'rx_cost_share'),
-  medicaidEligibility: (plan: Plan) => getMetadataString(plan, 'medicaid_eligibility'),
-  transitionedFrom: (plan: Plan) => getMetadataString(plan, 'transitioned_from'),
-  summary: (plan: Plan) => getMetadataString(plan, 'summary'),
+/**
+ * Get default/empty metadata form data - dynamically generated from schema
+ * This function creates a form object with only metadata fields set to empty values
+ * Core database fields are handled separately in the form state
+ */
+export function getDefaultMetadataFormData(): Record<string, unknown> {
+  const formData: Record<string, unknown> = {}
+  
+  // Dynamically generate metadata fields from schema
+  Object.keys(plansMetadataSchema.properties).forEach(fieldName => {
+    formData[fieldName] = ''
+  })
+  
+  return formData
 }
 
-// Helper to build metadata object from form data
+/**
+ * Get default/empty form data (DEPRECATED - use getDefaultMetadataFormData instead)
+ * This function creates a form object with all fields set to empty values
+ */
+export function getDefaultFormData(): Record<string, unknown> {
+  const formData: Record<string, unknown> = {}
+  
+  // Core database fields with default values
+  formData.name = ''
+  formData.type_network = ''
+  formData.type_extension = ''
+  formData.type_snp = ''
+  formData.type_program = ''
+  formData.carrier = ''
+  formData.plan_year = new Date().getUTCFullYear().toString()
+  formData.cms_contract_number = ''
+  formData.cms_plan_number = ''
+  formData.cms_geo_segment = ''
+  formData.counties = ''
+  
+  // Add metadata fields
+  const metadataData = getDefaultMetadataFormData()
+  Object.assign(formData, metadataData)
+  
+  return formData
+}
+
+/**
+ * Dynamically populate form data from plan object
+ * This function uses the schema to determine which fields to populate
+ */
+export function populateFormFromPlan(plan: Plan): Record<string, unknown> {
+  const formData: Record<string, unknown> = {}
+  
+  // Core database fields (always present)
+  formData.name = String(plan.name ?? '')
+  formData.type_network = plan.type_network ?? ''
+  formData.type_extension = plan.type_extension ?? ''
+  formData.type_snp = plan.type_snp ?? ''
+  formData.type_program = plan.type_program ?? ''
+  formData.carrier = plan.carrier ?? ''
+  formData.plan_year = plan.plan_year != null ? String(plan.plan_year) : ''
+  formData.cms_contract_number = String(plan.cms_contract_number ?? '')
+  formData.cms_plan_number = String(plan.cms_plan_number ?? '')
+  formData.cms_geo_segment = String(plan.cms_geo_segment ?? '')
+  formData.counties = Array.isArray(plan.counties) ? plan.counties.join(', ') : String(plan.counties ?? '')
+  
+  // Metadata fields - dynamically populate based on what's in the metadata
+  if (plan.metadata) {
+    const metadata = plan.metadata as Record<string, unknown>
+    
+    // Get all possible metadata fields from the schema
+    const metadataFields = Object.keys(plansMetadataSchema.properties)
+    
+    // Populate each field if it exists in the metadata
+    metadataFields.forEach(field => {
+      if (metadata[field] !== undefined && metadata[field] !== null) {
+        formData[field] = String(metadata[field])
+      } else {
+        formData[field] = ''
+      }
+    })
+  }
+  
+  return formData
+}
+
+/**
+ * Build complete plan data object from form data
+ * This function builds both core database fields and metadata
+ */
+export function buildPlanDataFromForm(formData: Record<string, unknown>): {
+  name: string
+  type_network: string | null
+  type_extension: string | null
+  type_snp: string | null
+  type_program: string | null
+  carrier: string | null
+  plan_year: number | null
+  cms_contract_number: string | null
+  cms_plan_number: string | null
+  cms_geo_segment: string | null
+  counties: string[] | null
+  metadata: PlanMetadata | null
+} {
+  // Build metadata object from form fields
+  const metadata = buildMetadata(formData)
+  
+  // Build core database fields
+  return {
+    name: String(formData.name || ''),
+    type_network: (formData.type_network as string) || null,
+    type_extension: (formData.type_extension as string) || null,
+    type_snp: (formData.type_snp as string) || null,
+    type_program: (formData.type_program as string) || null,
+    carrier: (formData.carrier as string) || null,
+    plan_year: formData.plan_year ? Number(formData.plan_year) : null,
+    cms_contract_number: (formData.cms_contract_number as string) || null,
+    cms_plan_number: (formData.cms_plan_number as string) || null,
+    cms_geo_segment: (formData.cms_geo_segment as string) || null,
+    counties: formData.counties
+      ? String(formData.counties)
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : null,
+    metadata: Object.keys(metadata).length > 0 ? metadata : null,
+  }
+}
+
+/**
+ * Build metadata object from form data - dynamically generated from schema
+ * This function eliminates hardcoded field mappings by using the schema as the source of truth
+ */
 export function buildMetadata(data: Record<string, unknown>): PlanMetadata {
   const metadata: PlanMetadata = {}
 
-  // Map form fields to metadata keys
-  const fieldMapping: Record<string, string> = {
-    effective_start: 'effective_start',
-    effective_end: 'effective_end',
-    premium_monthly: 'premium_monthly',
-    premium_monthly_with_extra_help: 'premium_monthly_with_extra_help',
-    giveback_monthly: 'giveback_monthly',
-    otc_benefit_quarterly: 'otc_benefit_quarterly',
-    dental_benefit_yearly: 'dental_benefit_yearly',
-    hearing_benefit_yearly: 'hearing_benefit_yearly',
-    vision_benefit_yearly: 'vision_benefit_yearly',
-    primary_care_copay: 'primary_care_copay',
-    specialist_copay: 'specialist_copay',
-    hospital_inpatient_per_day_copay: 'hospital_inpatient_per_day_copay',
-    hospital_inpatient_days: 'hospital_inpatient_days',
-    hospital_inpatient_with_assistance_per_stay_copay: 'hospital_inpatient_with_assistance_per_stay_copay',
-    hospital_inpatient_without_assistance_per_stay_copay: 'hospital_inpatient_without_assistance_per_stay_copay',
-    moop_annual: 'moop_annual',
-    ambulance_copay: 'ambulance_copay',
-    ambulance_with_assistance_copay: 'ambulance_with_assistance_copay',
-    emergency_room_copay: 'emergency_room_copay',
-    emergency_with_assistance_copay: 'emergency_with_assistance_copay',
-    urgent_care_copay: 'urgent_care_copay',
-    skilled_nursing_per_day_copay: 'skilled_nursing_per_day_copay',
-    skilled_nursing_with_assistance_per_stay_copay: 'skilled_nursing_with_assistance_per_stay_copay',
-    medical_deductible: 'medical_deductible',
-    medical_deductible_with_medicaid: 'medical_deductible_with_medicaid',
-    pharmacy_benefit: 'pharmacy_benefit',
-    service_area: 'service_area',
-    notes: 'notes',
-    card_benefit: 'card_benefit',
-    fitness_benefit: 'fitness_benefit',
-    transportation_benefit: 'transportation_benefit',
-    rx_deductible_tier345: 'rx_deductible_tier345',
-    rx_cost_share: 'rx_cost_share',
-    medicaid_eligibility: 'medicaid_eligibility',
-    transitioned_from: 'transitioned_from',
-    summary: 'summary',
-  }
-
-  // Only include non-null/non-empty values
-  Object.entries(fieldMapping).forEach(([formKey, metadataKey]) => {
-    const value = data[formKey]
+  // Dynamically process all schema properties
+  Object.keys(plansMetadataSchema.properties).forEach(fieldName => {
+    const value = data[fieldName]
     if (value !== null && value !== undefined && value !== '') {
-      metadata[metadataKey] = value
+      metadata[fieldName] = value
     }
   })
 
@@ -252,10 +295,10 @@ export const premiumCalculations = {
   getEffectivePremium: (plan: Plan, hasExtraHelp: boolean = false): number | null => {
     if (hasExtraHelp) {
       // If they have Extra Help, use the reduced premium (typically $0)
-      return getPlanMetadata.premiumMonthlyWithExtraHelp(plan) ?? 0
+      return Number(getPlanMetadata.premium_monthly_with_extra_help(plan)) || 0
     } else {
       // Standard premium - use the regular monthly premium
-      return getPlanMetadata.premiumMonthly(plan)
+      return Number(getPlanMetadata.premium_monthly(plan)) || 0
     }
   },
 
@@ -265,8 +308,8 @@ export const premiumCalculations = {
    * @returns Object with min and max premium values
    */
   getPremiumRange: (plan: Plan): { min: number | null; max: number | null } => {
-    const standardPremium = getPlanMetadata.premiumMonthly(plan)
-    const extraHelpPremium = getPlanMetadata.premiumMonthlyWithExtraHelp(plan)
+    const standardPremium = Number(getPlanMetadata.premium_monthly(plan)) || 0
+    const extraHelpPremium = Number(getPlanMetadata.premium_monthly_with_extra_help(plan)) || 0
 
     return {
       min: extraHelpPremium ?? 0,
@@ -284,10 +327,10 @@ export const premiumCalculations = {
   getEffectiveMedicalDeductible: (plan: Plan, hasMedicaidCostSharing: boolean = false): number | null => {
     if (hasMedicaidCostSharing) {
       // If they have Medicaid cost-sharing, use the reduced deductible (typically $0)
-      return getPlanMetadata.medicalDeductibleWithMedicaid(plan) ?? 0
+      return Number(getPlanMetadata.medical_deductible_with_medicaid(plan)) || 0
     } else {
       // Standard deductible - use the regular medical deductible
-      return getPlanMetadata.medicalDeductible(plan)
+      return Number(getPlanMetadata.medical_deductible(plan)) || 0
     }
   },
 
@@ -297,8 +340,8 @@ export const premiumCalculations = {
    * @returns Object with min and max deductible values
    */
   getMedicalDeductibleRange: (plan: Plan): { min: number | null; max: number | null } => {
-    const standardDeductible = getPlanMetadata.medicalDeductible(plan)
-    const medicaidDeductible = getPlanMetadata.medicalDeductibleWithMedicaid(plan)
+    const standardDeductible = Number(getPlanMetadata.medical_deductible(plan)) || 0
+    const medicaidDeductible = Number(getPlanMetadata.medical_deductible_with_medicaid(plan)) || 0
 
     return {
       min: medicaidDeductible ?? 0,
