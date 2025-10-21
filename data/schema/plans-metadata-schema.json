@@ -1,0 +1,177 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://sirem.app/schemas/plans-metadata.json",
+  "title": "Plans Metadata Schema",
+  "description": "Schema definition for the metadata JSONB field in the plans table. ⚠️ IMPORTANT: This JSON Schema must be kept in sync with the TypeScript interface in src/lib/plan-metadata-utils.ts. 🔄 DYNAMIC: New fields may be added, changed, or removed at any time as business requirements evolve.",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "effective_start": {
+      "type": "string",
+      "format": "date",
+      "description": "Plan effective start date in YYYY-MM-DD format"
+    },
+    "effective_end": {
+      "type": "string",
+      "format": "date",
+      "description": "Plan effective end date in YYYY-MM-DD format"
+    },
+    "premium_monthly": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Monthly premium amount in dollars"
+    },
+    "premium_monthly_with_extra_help": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Monthly premium for LIS/Extra Help recipients (typically $0)"
+    },
+    "giveback_monthly": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Monthly giveback/rebate amount in dollars"
+    },
+    "otc_benefit_quarterly": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Quarterly OTC (Over-the-Counter) benefit amount in dollars"
+    },
+    "dental_benefit_yearly": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Annual dental benefit amount in dollars"
+    },
+    "hearing_benefit_yearly": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Annual hearing benefit amount in dollars"
+    },
+    "vision_benefit_yearly": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Annual vision benefit amount in dollars"
+    },
+    "primary_care_copay": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Primary care physician copay amount in dollars"
+    },
+    "specialist_copay": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Specialist physician copay amount in dollars"
+    },
+    "hospital_inpatient_per_day_copay": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Daily hospital inpatient copay amount in dollars"
+    },
+    "hospital_inpatient_days": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Number of covered hospital inpatient days"
+    },
+    "moop_annual": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Maximum Out-of-Pocket annual limit in dollars"
+    },
+    "ambulance_copay": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Ambulance service copay amount in dollars"
+    },
+    "emergency_room_copay": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Emergency room visit copay amount in dollars"
+    },
+    "urgent_care_copay": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Urgent care visit copay amount in dollars"
+    },
+    "medical_deductible": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Standard medical deductible amount in dollars"
+    },
+    "medical_deductible_with_medicaid": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Medical deductible for Medicaid cost-sharing recipients (typically $0)"
+    },
+    "rx_deductible_tier345": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Prescription drug deductible for tiers 3, 4, and 5 in dollars"
+    },
+    "rx_cost_share": {
+      "type": "string",
+      "description": "Prescription drug cost sharing details (e.g., '20% after deductible')"
+    },
+    "pharmacy_benefit": {
+      "type": "string",
+      "description": "Pharmacy benefit description"
+    },
+    "service_area": {
+      "type": "string",
+      "description": "Service area description (e.g., 'Statewide', 'Multi-state')"
+    },
+    "summary": {
+      "type": "string",
+      "description": "Plan summary or overview"
+    },
+    "notes": {
+      "type": "string",
+      "description": "General plan notes and additional information"
+    },
+    "card_benefit": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Prepaid debit card benefit amount in dollars"
+    },
+    "fitness_benefit": {
+      "type": "string",
+      "description": "Fitness/gym membership benefit description"
+    },
+    "transportation_benefit": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Transportation/rides benefit amount in dollars"
+    },
+    "medicaid_eligibility": {
+      "type": "string",
+      "enum": ["Required", "Not Required", "Optional"],
+      "description": "Medicaid eligibility requirements"
+    },
+    "transitioned_from": {
+      "type": "string",
+      "description": "Information about plan transitions or predecessor plans"
+    }
+  },
+  "examples": [
+    {
+      "premium_monthly": 45.50,
+      "premium_monthly_with_extra_help": 0,
+      "giveback_monthly": 25.00,
+      "otc_benefit_quarterly": 100.00,
+      "dental_benefit_yearly": 1500.00,
+      "hearing_benefit_yearly": 500.00,
+      "vision_benefit_yearly": 200.00,
+      "primary_care_copay": 0,
+      "specialist_copay": 45,
+      "hospital_inpatient_per_day_copay": 350,
+      "hospital_inpatient_days": 5,
+      "moop_annual": 8500,
+      "ambulance_copay": 200,
+      "emergency_room_copay": 110,
+      "urgent_care_copay": 25,
+      "medical_deductible": 0,
+      "medical_deductible_with_medicaid": 0,
+      "pharmacy_benefit": "Tier 1: $0, Tier 2: $5, Tier 3: $47",
+      "service_area": "Statewide",
+      "medicaid_eligibility": "Not Required"
+    }
+  ]
+}

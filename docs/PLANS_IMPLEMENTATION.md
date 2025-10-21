@@ -63,7 +63,11 @@ CREATE TABLE plans (
 
 **Metadata Fields:**
 
-The `metadata` JSONB field stores all plan benefits and additional information:
+The `metadata` JSONB field stores all plan benefits and additional information. The complete field definitions and validation rules are documented in:
+- `data/schema/plans-metadata-schema.json` (JSON Schema)
+- `src/lib/plan-metadata-utils.ts` (TypeScript interface)
+
+**🔄 DYNAMIC SCHEMA: New fields may be added, changed, or removed at any time as business requirements evolve.**
 
 **Dates:**
 - `effective_start` (date): Plan effective start date
@@ -603,6 +607,12 @@ Plans are typically version by year:
 ## Working with Metadata Fields
 
 The `metadata` JSONB field provides flexibility for storing additional plan information that doesn't fit into the standard schema. This is particularly useful for:
+
+**🎯 SCHEMA DEFINITION: The metadata structure is defined in two sources of truth that must be kept in sync:**
+- `data/schema/plans-metadata-schema.json` - JSON Schema for validation and tooling
+- `src/lib/plan-metadata-utils.ts` - TypeScript interface for type safety
+
+**⚠️ IMPORTANT: When adding, modifying, or removing metadata fields, update BOTH files to maintain consistency.**
 
 1. **Extended Benefits**: Benefits that vary by carrier or year (card, fitness, transportation)
 2. **Prescription Drug Details**: Complex RX coverage that needs more than the pharmacy_benefit field

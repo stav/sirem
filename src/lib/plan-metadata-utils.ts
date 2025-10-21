@@ -5,7 +5,24 @@ export type Plan = Database['public']['Tables']['plans']['Row']
 export type PlanInsert = Database['public']['Tables']['plans']['Insert']
 export type PlanUpdate = Database['public']['Tables']['plans']['Update']
 
-// Metadata fields that are now stored in JSONB
+/**
+ * Plan Metadata Interface
+ * 
+ * This interface defines the structure for the metadata JSONB field in the plans table.
+ * 
+ * ⚠️  IMPORTANT: TWO SOURCES OF TRUTH
+ * This TypeScript interface must be kept in sync with:
+ * - data/schema/plans-metadata-schema.json (JSON Schema for validation)
+ * 
+ * When adding, modifying, or removing fields, update BOTH files to maintain consistency.
+ * 
+ * 🔄 DYNAMIC SCHEMA
+ * New fields may be added, changed, or removed at any time as business requirements evolve.
+ * The metadata field is designed to be flexible and extensible.
+ * 
+ * All fields are optional to accommodate different plan types and data availability.
+ * The metadata field allows for additional properties beyond those defined here.
+ */
 export interface PlanMetadata {
   // Dates
   effective_start?: string
