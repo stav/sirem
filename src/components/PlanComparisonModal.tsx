@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label'
 import type { Database } from '@/lib/supabase'
 import { calculateCmsId } from '@/lib/plan-utils'
 import { getPlanMetadata } from '@/lib/plan-metadata-utils'
+import { plansMetadataSchema } from '@/schema/plans-metadata-schema'
+import { parseSchema } from '@/lib/schema-parser'
 
 type Plan = Database['public']['Tables']['plans']['Row']
 
@@ -38,6 +40,11 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
   })
 
   const [showCalculator, setShowCalculator] = useState(false)
+
+
+  // Parse schema and get ordered sections and fields
+  // Parse schema on every render to ensure it's always up-to-date
+  const parsedSchema = parseSchema(plansMetadataSchema)
 
   // Handle Escape key to close modal
   useEffect(() => {
@@ -103,76 +110,39 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
     return null
   }
 
-  // Collect all unique metadata keys across all plans
-  const getAllMetadataKeys = (): string[] => {
-    const keysSet = new Set<string>()
-    plans.forEach(plan => {
-      if (plan.metadata && typeof plan.metadata === 'object') {
-        Object.keys(plan.metadata as Record<string, unknown>).forEach(key => keysSet.add(key))
-      }
-    })
-    return Array.from(keysSet).sort()
-  }
-
-  // Categorize metadata keys
-  const categorizeMetadataKeys = () => {
-    const allKeys = getAllMetadataKeys()
-    const categories: Record<string, string[]> = {
-      'Deductibles & Cost Sharing': [],
-      'Additional Benefits': [],
-      'Copays & Coinsurance': [],
-      'Prescription Drug Details': [],
-      'Service Details': [],
-      'Optional Packages': [],
-      'Document Information': [],
-      'Other': []
-    }
-
-    allKeys.forEach(key => {
-      const lowerKey = key.toLowerCase()
+  // Get schema-ordered metadata sections with fields that exist in the plans
+  const getSchemaOrderedMetadataSections = () => {
+    const sectionsWithFields: Array<{section: {key: string, title: string, description: string, order: number}, fields: string[]}> = []
+    
+    // Go through schema sections in order
+    parsedSchema.sections.forEach(section => {
+      const sectionFields = parsedSchema.fieldsBySection[section.key] || []
       
-      // Categorize based on key patterns
-      if (lowerKey.includes('deductible')) {
-        categories['Deductibles & Cost Sharing'].push(key)
-      } else if (lowerKey.includes('benefit') || lowerKey.includes('card_benefit') || 
-                 lowerKey.includes('fitness') || lowerKey.includes('transportation') ||
-                 lowerKey.includes('meals') || lowerKey.includes('telehealth') ||
-                 lowerKey.includes('livehealth') || lowerKey.includes('nurseline') ||
-                 lowerKey.includes('worldwide')) {
-        categories['Additional Benefits'].push(key)
-      } else if (lowerKey.includes('copay') || lowerKey.includes('coinsurance') ||
-                 lowerKey.includes('ambulance') || lowerKey.includes('emergency') ||
-                 lowerKey.includes('therapy') || lowerKey.includes('xray') ||
-                 lowerKey.includes('radiology') || lowerKey.includes('surgical') ||
-                 lowerKey.includes('lab') || lowerKey.includes('dme') ||
-                 lowerKey.includes('diabetic') || lowerKey.includes('hearing_exam') ||
-                 lowerKey.includes('podiatry') || lowerKey.includes('dialysis') ||
-                 lowerKey.includes('acupuncture') || lowerKey.includes('chiropractic')) {
-        categories['Copays & Coinsurance'].push(key)
-      } else if (lowerKey.includes('tier') || lowerKey.includes('insulin') ||
-                 lowerKey.includes('catastrophic') || lowerKey.includes('part_d') ||
-                 lowerKey.includes('rx') || lowerKey.includes('pharmacy')) {
-        categories['Prescription Drug Details'].push(key)
-      } else if (lowerKey.includes('inpatient') || lowerKey.includes('hospital') ||
-                 lowerKey.includes('mental_health') || lowerKey.includes('skilled_nursing') ||
-                 lowerKey.includes('home_health') || lowerKey.includes('cardiac') ||
-                 lowerKey.includes('pulmonary')) {
-        categories['Service Details'].push(key)
-      } else if (lowerKey.includes('osb') || lowerKey.includes('package') ||
-                 lowerKey.includes('supplemental')) {
-        categories['Optional Packages'].push(key)
-      } else if (lowerKey.includes('document') || lowerKey.includes('source') ||
-                 lowerKey.includes('star_rating') || lowerKey.includes('updated') ||
-                 lowerKey.includes('code') || lowerKey.includes('transitioned') ||
-                 lowerKey.includes('medicaid_eligibility')) {
-        categories['Document Information'].push(key)
+      // Filter to only include fields that exist in at least one plan's metadata
+      const existingFields = sectionFields.filter(field => {
+        return plans.some(plan => 
+          plan.metadata && 
+          typeof plan.metadata === 'object' && 
+          field.key in (plan.metadata as Record<string, unknown>)
+        )
+      })
+      
+      // Include sections that have existing fields OR show all fields for debugging
+      if (existingFields.length > 0) {
+        sectionsWithFields.push({
+          section,
+          fields: existingFields.map(field => field.key)
+        })
       } else {
-        categories['Other'].push(key)
+        // Show section even if no fields exist (for debugging/development)
+        sectionsWithFields.push({
+          section,
+          fields: sectionFields.map(field => field.key)
+        })
       }
     })
-
-    // Remove empty categories
-    return Object.entries(categories).filter(([, keys]) => keys.length > 0)
+    
+    return sectionsWithFields
   }
 
   // Format metadata value for display
@@ -261,17 +231,17 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
 
   // Calculate estimated annual costs
   const calculateAnnualCost = (plan: Plan): number => {
-    const premium = (getPlanMetadata.premiumMonthly(plan) ?? 0) * 12
-    const giveback = (getPlanMetadata.givebackMonthly(plan) ?? 0) * 12
+    const premium = (Number(getPlanMetadata.premium_monthly(plan)) || 0) * 12
+    const giveback = (Number(getPlanMetadata.giveback_monthly(plan)) || 0) * 12
     
-    const primaryCareCosts = (getPlanMetadata.primaryCareCopay(plan) ?? 0) * usageInputs.primaryCareVisits
-    const specialistCosts = (getPlanMetadata.specialistCopay(plan) ?? 0) * usageInputs.specialistVisits
-    const erCosts = (getPlanMetadata.emergencyRoomCopay(plan) ?? 0) * usageInputs.emergencyRoomVisits
-    const urgentCareCosts = (getPlanMetadata.urgentCareCopay(plan) ?? 0) * usageInputs.urgentCareVisits
+    const primaryCareCosts = (Number(getPlanMetadata.primary_care_copay(plan)) || 0) * usageInputs.primaryCareVisits
+    const specialistCosts = (Number(getPlanMetadata.specialist_copay(plan)) || 0) * usageInputs.specialistVisits
+    const erCosts = (Number(getPlanMetadata.emergency_room_copay(plan)) || 0) * usageInputs.emergencyRoomVisits
+    const urgentCareCosts = (Number(getPlanMetadata.urgent_care_copay(plan)) || 0) * usageInputs.urgentCareVisits
     // Hospital cost = daily copay * days covered per stay * number of stays
-    const daysPerStay = getPlanMetadata.hospitalInpatientDays(plan) ?? 0
-    const hospitalCosts = (getPlanMetadata.hospitalInpatientPerDayCopay(plan) ?? 0) * daysPerStay * usageInputs.hospitalStays
-    const ambulanceCosts = (getPlanMetadata.ambulanceCopay(plan) ?? 0) * usageInputs.ambulanceUses
+    const daysPerStay = Number(getPlanMetadata.hospital_inpatient_days(plan)) || 0
+    const hospitalCosts = (Number(getPlanMetadata.hospital_inpatient_per_day_copay(plan)) || 0) * daysPerStay * usageInputs.hospitalStays
+    const ambulanceCosts = (Number(getPlanMetadata.ambulance_copay(plan)) || 0) * usageInputs.ambulanceUses
 
     const totalCopays = primaryCareCosts + specialistCosts + erCosts + urgentCareCosts + hospitalCosts + ambulanceCosts
 
@@ -527,84 +497,17 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                   </td>
                 ))}
               </tr>
-              <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
-                <td className="py-2 px-3 font-medium text-sm bg-muted/30">Effective Start</td>
-                {plans.map((plan, idx) => (
-                  <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
-                    {formatDate(getPlanMetadata.effectiveStart(plan))}
-                  </td>
-                ))}
-              </tr>
-              <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
-                <td className="py-2 px-3 font-medium text-sm bg-muted/30">Effective End</td>
-                {plans.map((plan, idx) => (
-                  <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
-                    {formatDate(getPlanMetadata.effectiveEnd(plan))}
-                  </td>
-                ))}
-              </tr>
 
-              {/* Monthly Costs */}
-              <tr className="bg-muted/50">
-                <th className="py-2 px-3 font-semibold text-sm text-right">
-                  Monthly Costs
-                </th>
-                <td colSpan={plans.length}></td>
-              </tr>
-              <ComparisonField
-                label="Premium (Monthly)"
-                values={plans.map(p => getPlanMetadata.premiumMonthly(p))}
-                lowerIsBetter={true}
-              />
-              <ComparisonField
-                label="Giveback (Monthly)"
-                values={plans.map(p => getPlanMetadata.givebackMonthly(p))}
-                lowerIsBetter={false}
-              />
-              <ComparisonField
-                label="Net Monthly Cost"
-                values={plans.map(p => (getPlanMetadata.premiumMonthly(p) ?? 0) - (getPlanMetadata.givebackMonthly(p) ?? 0))}
-                lowerIsBetter={true}
-              />
-
-              {/* Benefits */}
-              <tr className="bg-muted/50">
-                <th className="py-2 px-3 font-semibold text-sm text-right">
-                  Supplemental Benefits
-                </th>
-                <td colSpan={plans.length}></td>
-              </tr>
-              <ComparisonField
-                label="OTC Benefit (Quarterly)"
-                values={plans.map(p => getPlanMetadata.otcBenefitQuarterly(p))}
-                lowerIsBetter={false}
-              />
-              <ComparisonField
-                label="Dental Benefit (Yearly)"
-                values={plans.map(p => getPlanMetadata.dentalBenefitYearly(p))}
-                lowerIsBetter={false}
-              />
-              <ComparisonField
-                label="Hearing Benefit (Yearly)"
-                values={plans.map(p => getPlanMetadata.hearingBenefitYearly(p))}
-                lowerIsBetter={false}
-              />
-              <ComparisonField
-                label="Vision Benefit (Yearly)"
-                values={plans.map(p => getPlanMetadata.visionBenefitYearly(p))}
-                lowerIsBetter={false}
-              />
-
-              {/* Dynamic Metadata Sections */}
-              {categorizeMetadataKeys().map(([categoryName, keys]) => (
-                <React.Fragment key={categoryName}>
+              {/* Schema-Ordered Metadata Sections */}
+              {getSchemaOrderedMetadataSections().map(({section, fields}) => (
+                <React.Fragment key={section.key}>
                   <tr className="bg-muted/50">
                     <th className="py-2 px-3 font-semibold text-sm text-right">
-                      {categoryName}
+                      {section.title}
                     </th>
                     <td colSpan={plans.length}></td>
                   </tr>
-                  {keys.map(key => {
+                  {fields.map(key => {
                     const values = plans.map(p => getMetadata(p, key))
                     const isNumeric = isNumericField(key, values)
                     
@@ -672,69 +575,6 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                 </React.Fragment>
               ))}
 
-              {/* Medical Copays */}
-              <tr className="bg-muted/50">
-                <th className="py-2 px-3 font-semibold text-sm text-right">
-                  Medical Copays
-                </th>
-                <td colSpan={plans.length}></td>
-              </tr>
-              <ComparisonField
-                label="Primary Care Copay"
-                values={plans.map(p => getPlanMetadata.primaryCareCopay(p))}
-                lowerIsBetter={true}
-              />
-              <ComparisonField
-                label="Specialist Copay"
-                values={plans.map(p => getPlanMetadata.specialistCopay(p))}
-                lowerIsBetter={true}
-              />
-              <ComparisonField
-                label="Emergency Room Copay"
-                values={plans.map(p => getPlanMetadata.emergencyRoomCopay(p))}
-                lowerIsBetter={true}
-              />
-              <ComparisonField
-                label="Urgent Care Copay"
-                values={plans.map(p => getPlanMetadata.urgentCareCopay(p))}
-                lowerIsBetter={true}
-              />
-              <ComparisonField
-                label="Ambulance Copay"
-                values={plans.map(p => getPlanMetadata.ambulanceCopay(p))}
-                lowerIsBetter={true}
-              />
-
-              {/* Hospital */}
-              <tr className="bg-muted/50">
-                <th className="py-2 px-3 font-semibold text-sm text-right">
-                  Hospital Coverage
-                </th>
-                <td colSpan={plans.length}></td>
-              </tr>
-              <ComparisonField
-                label="Inpatient Copay (Per Day)"
-                values={plans.map(p => getPlanMetadata.hospitalInpatientPerDayCopay(p))}
-                lowerIsBetter={true}
-              />
-              <ComparisonField
-                label="Inpatient Days Covered"
-                values={plans.map(p => getPlanMetadata.hospitalInpatientDays(p))}
-                lowerIsBetter={false}
-                formatter={formatNumber}
-              />
-              <ComparisonField
-                label="Total Copay Per Stay"
-                values={plans.map(p => 
-                  (getPlanMetadata.hospitalInpatientPerDayCopay(p) ?? 0) * (getPlanMetadata.hospitalInpatientDays(p) ?? 0) || null
-                )}
-                lowerIsBetter={true}
-              />
-              <ComparisonField
-                label="MOOP (Annual)"
-                values={plans.map(p => getPlanMetadata.moopAnnual(p))}
-                lowerIsBetter={true}
-              />
 
 
               {/* Estimated Annual Cost */}
@@ -758,37 +598,13 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                 </>
               )}
 
-              {/* Service Area & Notes */}
-              <tr className="bg-muted/50">
-                <th className="py-2 px-3 font-semibold text-sm text-right">
-                  Service Area & Notes
-                </th>
-                <td colSpan={plans.length}></td>
-              </tr>
-              <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
-                <td className="py-2 px-3 font-medium text-sm bg-muted/30">Service Area</td>
-                {plans.map((plan, idx) => (
-                  <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
-                    {getPlanMetadata.serviceArea(plan) || '—'}
-                  </td>
-                ))}
-              </tr>
+              {/* Additional Database Fields */}
               <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
                 <td className="py-2 px-3 font-medium text-sm bg-muted/30">Counties</td>
                 {plans.map((plan, idx) => (
                   <td key={idx} className="py-2 px-3 text-center text-xs max-w-48 overflow-hidden">
                     <div className="line-clamp-3" title={plan.counties?.join(', ')}>
                       {plan.counties?.join(', ') || '—'}
-                    </div>
-                  </td>
-                ))}
-              </tr>
-              <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
-                <td className="py-2 px-3 font-medium text-sm bg-muted/30">Notes</td>
-                {plans.map((plan, idx) => (
-                  <td key={idx} className="py-2 px-3 text-center text-xs max-w-48 overflow-hidden">
-                    <div className="line-clamp-3" title={getPlanMetadata.notes(plan) || undefined}>
-                      {getPlanMetadata.notes(plan) || '—'}
                     </div>
                   </td>
                 ))}

@@ -2,8 +2,53 @@ import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase'
 import type { Json } from '@/lib/supabase-types'
 import { parseLegacyPlanType, mapCarrier } from '@/lib/plan-constants'
+import { plansMetadataSchema } from '@/schema/plans-metadata-schema'
 
 type PlanInsert = Database['public']['Tables']['plans']['Insert']
+
+/**
+ * Configuration mapping CSV column names to metadata field names
+ * This eliminates hardcoded field mappings by centralizing the configuration
+ */
+const CSV_TO_METADATA_MAPPING = {
+  // Monthly financials
+  premium: 'premium_monthly',
+  giveback: 'giveback_monthly',
+  
+  // Quarterly benefits
+  otc: 'otc_benefit_quarterly',
+  
+  // Yearly benefits
+  dental: 'dental_benefit_yearly',
+  vision: 'vision_benefit_yearly',
+  hearing: 'hearing_benefit_yearly',
+  
+  // Medical copays
+  pcp: 'primary_care_copay',
+  spc: 'specialist_copay',
+  ambulance: 'ambulance_copay',
+  er: 'emergency_room_copay',
+  urgent: 'urgent_care_copay',
+  hospPerDay: 'hospital_inpatient_per_day_copay',
+  hospDays: 'hospital_inpatient_days',
+  
+  // Annual limits
+  moop: 'moop_annual',
+  
+  // Additional information
+  rxCostShare: 'pharmacy_benefit',
+  description: 'notes',
+  
+  // Extended benefits
+  card: 'card_benefit',
+  fitness: 'fitness_benefit',
+  trans: 'transportation_benefit',
+  medDeduct: 'medical_deductible',
+  rxDeduct: 'rx_deductible_tier345',
+  medicaid: 'medicaid_eligibility',
+  transitioned: 'transitioned_from',
+  summary: 'summary',
+} as const
 
 function toNumber(value: string | null | undefined): number | null {
   if (!value) return null
@@ -155,34 +200,30 @@ export async function importPlansCsv(text: string): Promise<{
       // Build metadata object with all plan fields
       const metadata: Record<string, unknown> = {}
       
-      // Core plan benefits
-      if (col.premium >= 0) metadata.premium_monthly = toNumber(r[col.premium])
-      if (col.giveback >= 0) metadata.giveback_monthly = toNumber(r[col.giveback])
-      if (col.otc >= 0) metadata.otc_benefit_quarterly = toNumber(r[col.otc])
-      if (col.dental >= 0) metadata.dental_benefit_yearly = toNumber(r[col.dental])
-      if (col.vision >= 0) metadata.vision_benefit_yearly = toNumber(r[col.vision])
-      if (col.hearing >= 0) metadata.hearing_benefit_yearly = toNumber(r[col.hearing])
-      if (col.pcp >= 0) metadata.primary_care_copay = toNumber(r[col.pcp])
-      if (col.spc >= 0) metadata.specialist_copay = toNumber(r[col.spc])
-      if (col.ambulance >= 0) metadata.ambulance_copay = toNumber(r[col.ambulance])
-      if (col.er >= 0) metadata.emergency_room_copay = toNumber(r[col.er])
-      if (col.urgent >= 0) metadata.urgent_care_copay = toNumber(r[col.urgent])
-      if (col.moop >= 0) metadata.moop_annual = toNumber(r[col.moop])
-      if (col.hospPerDay >= 0) metadata.hospital_inpatient_per_day_copay = toNumber(r[col.hospPerDay])
-      if (days !== null) metadata.hospital_inpatient_days = days
-      if (col.rxCostShare >= 0 && r[col.rxCostShare]) metadata.pharmacy_benefit = r[col.rxCostShare]
-      if (r[col.description]) metadata.notes = r[col.description]
-      
-      // Additional benefits
-      if (col.card >= 0 && r[col.card]) metadata.card_benefit = r[col.card]
-      if (col.fitness >= 0 && r[col.fitness]) metadata.fitness_benefit = r[col.fitness]
-      if (col.trans >= 0 && r[col.trans]) metadata.transportation_benefit = r[col.trans]
-      if (col.medDeduct >= 0 && r[col.medDeduct]) metadata.medical_deductible = r[col.medDeduct]
-      if (col.rxDeduct >= 0 && r[col.rxDeduct]) metadata.rx_deductible_tier345 = r[col.rxDeduct]
-      if (col.medicaid >= 0 && r[col.medicaid]) metadata.medicaid_eligibility = r[col.medicaid]
-      if (col.transitioned >= 0 && r[col.transitioned]) metadata.transitioned_from = r[col.transitioned]
-      if (col.rxCostShare >= 0 && r[col.rxCostShare]) metadata.rx_cost_share = r[col.rxCostShare]
-      if (col.summary >= 0 && r[col.summary]) metadata.summary = r[col.summary]
+      // Dynamically map CSV columns to metadata fields using configuration
+      Object.entries(CSV_TO_METADATA_MAPPING).forEach(([csvColumn, metadataField]) => {
+        const columnIndex = col[csvColumn as keyof typeof col]
+        
+        if (columnIndex >= 0) {
+          const value = r[columnIndex]
+          
+          // Handle special cases
+          if (csvColumn === 'hospDays' && days !== null) {
+            metadata[metadataField] = days
+          } else if (value && value.trim() !== '') {
+            // Determine if this should be a number or string based on schema
+            const fieldSchema = plansMetadataSchema.properties[metadataField]
+            if (fieldSchema && fieldSchema.type === 'number') {
+              const numValue = toNumber(value)
+              if (numValue !== null) {
+                metadata[metadataField] = numValue
+              }
+            } else {
+              metadata[metadataField] = value
+            }
+          }
+        }
+      })
 
           // Parse the legacy plan type into normalized structure
           const planTypeStructure = parseLegacyPlanType(r[col.type])
