@@ -12,17 +12,17 @@ interface NumberFieldProps {
   className?: string
 }
 
-export default function NumberField({
+const NumberField = React.memo(function NumberField({
   field,
   value,
   onChange,
   isReadOnly = false,
   className = ''
 }: NumberFieldProps) {
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = e.target.value
     onChange(newValue)
-  }
+  }, [onChange])
 
   return (
     <Input
@@ -37,4 +37,6 @@ export default function NumberField({
       placeholder={field.validation?.minimum ? `Min: ${field.validation.minimum}` : ''}
     />
   )
-}
+})
+
+export default NumberField

@@ -16,7 +16,7 @@ interface FieldRendererProps {
   className?: string
 }
 
-export default function FieldRenderer({
+const FieldRenderer = React.memo(function FieldRenderer({
   field,
   value,
   onChange,
@@ -100,7 +100,9 @@ export default function FieldRenderer({
   }
 
   return renderField()
-}
+})
+
+export default FieldRenderer
 
 /**
  * Determine if a field should use a textarea instead of a regular input

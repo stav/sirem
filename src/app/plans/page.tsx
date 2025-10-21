@@ -15,7 +15,23 @@ import type { Database } from '@/lib/supabase'
 import { Pencil, Trash2, Scale, Copy, Plus, RefreshCw } from 'lucide-react'
 import ModalForm from '@/components/ui/modal-form'
 import PlanComparisonModal from '@/components/PlanComparisonModal'
-import DynamicPlanForm from '@/components/DynamicPlanForm'
+import dynamic from 'next/dynamic'
+
+// Lazy load the DynamicPlanForm to improve initial render performance
+const DynamicPlanForm = dynamic(() => import('@/components/DynamicPlanForm'), {
+  loading: () => <div className="animate-pulse space-y-4">
+    <div className="h-4 bg-muted rounded w-1/4"></div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="space-y-2">
+          <div className="h-3 bg-muted rounded w-1/2"></div>
+          <div className="h-10 bg-muted rounded"></div>
+        </div>
+      ))}
+    </div>
+  </div>,
+  ssr: false
+})
 import { useTheme } from '@/contexts/ThemeContext'
 import { useToast } from '@/hooks/use-toast'
 

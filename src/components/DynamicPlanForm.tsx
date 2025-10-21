@@ -48,25 +48,26 @@ export default function DynamicPlanForm({
     return result
   }, [schema.fieldsBySection, filteredSections, fields])
 
-  const handleFieldChange = (fieldKey: string, value: unknown) => {
+  const handleFieldChange = React.useCallback((fieldKey: string, value: unknown) => {
     onChange(fieldKey, value)
-  }
+  }, [onChange])
 
-  const renderField = (field: FieldDefinition) => {
+  const renderField = React.useCallback((field: FieldDefinition) => {
     const value = formData[field.key] || ''
     const isReadOnly = mode === 'compare'
 
     return (
       <FieldRenderer
+        key={field.key}
         field={field}
         value={value}
         onChange={(newValue) => handleFieldChange(field.key, newValue)}
         isReadOnly={isReadOnly}
       />
     )
-  }
+  }, [formData, mode, handleFieldChange])
 
-  const renderSection = (section: SectionDefinition) => {
+  const renderSection = React.useCallback((section: SectionDefinition) => {
     const sectionFields = filteredFieldsBySection[section.key] || []
     
     if (sectionFields.length === 0) return null
@@ -95,7 +96,7 @@ export default function DynamicPlanForm({
         </div>
       </div>
     )
-  }
+  }, [filteredFieldsBySection, renderField])
 
   return (
     <div className={`space-y-6 ${className}`}>

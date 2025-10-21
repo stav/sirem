@@ -12,16 +12,16 @@ interface SelectFieldProps {
   className?: string
 }
 
-export default function SelectField({
+const SelectField = React.memo(function SelectField({
   field,
   value,
   onChange,
   isReadOnly = false,
   className = ''
 }: SelectFieldProps) {
-  const handleValueChange = (newValue: string) => {
+  const handleValueChange = React.useCallback((newValue: string) => {
     onChange(newValue)
-  }
+  }, [onChange])
 
   return (
     <Select
@@ -41,4 +41,6 @@ export default function SelectField({
       </SelectContent>
     </Select>
   )
-}
+})
+
+export default SelectField

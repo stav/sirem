@@ -12,16 +12,16 @@ interface TextareaFieldProps {
   className?: string
 }
 
-export default function TextareaField({
+const TextareaField = React.memo(function TextareaField({
   field,
   value,
   onChange,
   isReadOnly = false,
   className = ''
 }: TextareaFieldProps) {
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleChange = React.useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     onChange(e.target.value)
-  }
+  }, [onChange])
 
   return (
     <Textarea
@@ -33,4 +33,6 @@ export default function TextareaField({
       rows={3}
     />
   )
-}
+})
+
+export default TextareaField

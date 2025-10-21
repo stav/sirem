@@ -12,16 +12,16 @@ interface TextFieldProps {
   className?: string
 }
 
-export default function TextField({
+const TextField = React.memo(function TextField({
   field,
   value,
   onChange,
   isReadOnly = false,
   className = ''
 }: TextFieldProps) {
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value)
-  }
+  }, [onChange])
 
   return (
     <Input
@@ -33,4 +33,6 @@ export default function TextField({
       placeholder={field.description}
     />
   )
-}
+})
+
+export default TextField

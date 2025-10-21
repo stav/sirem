@@ -12,15 +12,16 @@ interface DateFieldProps {
   className?: string
 }
 
-export default function DateField({
+const DateField = React.memo(function DateField({
+  field,
   value,
   onChange,
   isReadOnly = false,
   className = ''
 }: DateFieldProps) {
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     onChange(e.target.value)
-  }
+  }, [onChange])
 
   return (
     <Input
@@ -29,6 +30,9 @@ export default function DateField({
       onChange={handleChange}
       readOnly={isReadOnly}
       className={`${isReadOnly ? 'bg-muted' : ''} ${className}`}
+      placeholder={field.description}
     />
   )
-}
+})
+
+export default DateField
