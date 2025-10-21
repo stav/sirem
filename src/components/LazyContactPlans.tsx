@@ -21,29 +21,30 @@ export default function LazyContactPlans({ contactId, className = '' }: LazyCont
   const [shouldLoad, setShouldLoad] = useState(false)
   const [hasBeenVisible, setHasBeenVisible] = useState(false)
   const elementRef = useRef<HTMLDivElement>(null)
-  const { getCachedEnrollments, setCachedEnrollments, isCached } = usePlanCache()
+  const { getCachedEnrollments, setCachedEnrollments, isCached, refreshTrigger } = usePlanCache()
   
   // Memoize the contactId to prevent unnecessary re-renders
   const memoizedContactId = useMemo(() => {
     return shouldLoad ? contactId : undefined
-  }, [shouldLoad, contactId])
+  }, [shouldLoad, contactId, refreshTrigger])
   
-  const { enrollments, loading } = usePlanEnrollments(memoizedContactId)
+  const { enrollments, loading, fetchEnrollments } = usePlanEnrollments(memoizedContactId)
 
   // Check cache first
   const cachedEnrollments = getCachedEnrollments(contactId)
   const isDataCached = isCached(contactId)
 
+
   // Update cache when new data is loaded
   useEffect(() => {
-    if (shouldLoad && enrollments.length > 0 && !isDataCached) {
+    if (shouldLoad && enrollments.length >= 0) { // Allow empty arrays to update cache
       const enrollmentItems: EnrollmentWithPlan[] = enrollments.map(enrollment => ({
         ...enrollment,
         plans: (enrollment as Enrollment & { plans?: Plan | null }).plans || null
       }))
       setCachedEnrollments(contactId, enrollmentItems)
     }
-  }, [enrollments, shouldLoad, contactId, setCachedEnrollments, isDataCached])
+  }, [enrollments, shouldLoad, contactId, setCachedEnrollments])
 
   // Intersection Observer for lazy loading
   useEffect(() => {
@@ -103,6 +104,7 @@ export default function LazyContactPlans({ contactId, className = '' }: LazyCont
               plan?.name,
               plan ? calculateCmsId(plan) ? `(${calculateCmsId(plan)})` : '' : '',
               plan ? buildPlanTypeString(plan) : '',
+              plan?.plan_year ? `[${plan.plan_year}]` : '',
               effectiveDateOnly,
               `(${enr.enrollment_status})`,
             ].filter(Boolean)

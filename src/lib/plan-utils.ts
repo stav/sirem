@@ -48,13 +48,16 @@ export function buildPlanTypeString(plan: Pick<Plan, 'type_network' | 'type_exte
 }
 
 /**
- * Format plan display name with CMS ID
+ * Format plan display name with CMS ID and plan year
  */
-export function formatPlanDisplayName(plan: Pick<Plan, 'carrier' | 'name' | 'cms_contract_number' | 'cms_plan_number' | 'cms_geo_segment'>): string {
+export function formatPlanDisplayName(plan: Pick<Plan, 'carrier' | 'name' | 'plan_year' | 'cms_contract_number' | 'cms_plan_number' | 'cms_geo_segment'>): string {
   const parts = [plan.carrier, plan.name]
   const cmsId = calculateCmsId(plan)
   if (cmsId) {
     parts.push(`(${cmsId})`)
+  }
+  if (plan.plan_year) {
+    parts.push(`[${plan.plan_year}]`)
   }
   return parts.filter(Boolean).join(' ')
 }

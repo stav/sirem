@@ -139,4 +139,40 @@ export const logger = {
       contactDetails
     })
   },
+
+  enrollmentCreated: (contactName: string, planName: string, carrier?: string, year?: number, contactId?: string, planId?: string) => {
+    const message = `Enrollment created: ${contactName} enrolled in ${planName}${carrier ? ` (${carrier})` : ''}${year ? ` ${year}` : ''}`
+    useLogger.getState().addMessage(message, 'success', 'enrollment_create', { 
+      contactName, 
+      planName, 
+      carrier, 
+      year, 
+      contactId, 
+      planId 
+    })
+  },
+
+  enrollmentUpdated: (contactName: string, planName: string, carrier?: string, year?: number, contactId?: string, planId?: string) => {
+    const message = `Enrollment updated: ${contactName}'s enrollment in ${planName}${carrier ? ` (${carrier})` : ''}${year ? ` ${year}` : ''}`
+    useLogger.getState().addMessage(message, 'success', 'enrollment_update', { 
+      contactName, 
+      planName, 
+      carrier, 
+      year, 
+      contactId, 
+      planId 
+    })
+  },
+
+  enrollmentDeleted: (contactName: string, planName: string, carrier?: string, year?: number, contactId?: string, planId?: string) => {
+    const message = `Enrollment deleted: ${contactName} removed from ${planName}${carrier ? ` (${carrier})` : ''}${year ? ` ${year}` : ''}`
+    useLogger.getState().addMessage(message, 'warning', 'enrollment_delete', { 
+      contactName, 
+      planName, 
+      carrier, 
+      year, 
+      contactId, 
+      planId 
+    })
+  },
 }
