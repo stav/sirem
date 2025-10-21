@@ -534,7 +534,6 @@ export default function PlansPage() {
 
           {/* Plans list (AG Grid) */}
           <div className="flex-1 flex flex-col">
-            {loading && <div className="text-muted-foreground p-3 text-sm">Loading plans…</div>}
             {!loading && sortedPlans.length === 0 && (
               <div className="text-muted-foreground p-3 text-sm">No plans found</div>
             )}
@@ -557,7 +556,10 @@ export default function PlansPage() {
             </div>
             
             {/* Custom Footer */}
-            <div className="flex items-center justify-center px-4 py-2 border-t bg-muted/30 text-sm">
+            <div className="flex items-center px-4 py-2 border-t bg-muted/30 text-sm">
+              <div className="flex-1 flex items-center">
+                {loading && <div className="text-muted-foreground text-sm">Loading plans…</div>}
+              </div>
               <div className="flex items-center gap-2">
                 {selectedPlanIds.length >= 2 && (
                   <Button size="sm" variant="outline" onClick={() => setShowComparison(true)}>
@@ -608,6 +610,7 @@ export default function PlansPage() {
                   </>
                 )}
               </div>
+              <div className="flex-1"></div>
             </div>
           </div>
 
