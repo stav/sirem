@@ -50,9 +50,15 @@ export interface PlanMetadata {
   specialist_copay?: number
   hospital_inpatient_per_day_copay?: number
   hospital_inpatient_days?: number
+  hospital_inpatient_with_assistance_per_stay_copay?: number
+  hospital_inpatient_without_assistance_per_stay_copay?: number
   ambulance_copay?: number
+  ambulance_with_assistance_copay?: number
   emergency_room_copay?: number
+  emergency_with_assistance_copay?: number
   urgent_care_copay?: number
+  skilled_nursing_per_day_copay?: number
+  skilled_nursing_with_assistance_per_stay_copay?: number
 
   // Additional information
   pharmacy_benefit?: string
@@ -122,10 +128,16 @@ export const getPlanMetadata = {
   specialistCopay: (plan: Plan) => getMetadataNumber(plan, 'specialist_copay'),
   hospitalInpatientPerDayCopay: (plan: Plan) => getMetadataNumber(plan, 'hospital_inpatient_per_day_copay'),
   hospitalInpatientDays: (plan: Plan) => getMetadataNumber(plan, 'hospital_inpatient_days'),
+  hospitalInpatientWithAssistancePerStayCopay: (plan: Plan) => getMetadataNumber(plan, 'hospital_inpatient_with_assistance_per_stay_copay'),
+  hospitalInpatientWithoutAssistancePerStayCopay: (plan: Plan) => getMetadataNumber(plan, 'hospital_inpatient_without_assistance_per_stay_copay'),
   moopAnnual: (plan: Plan) => getMetadataNumber(plan, 'moop_annual'),
   ambulanceCopay: (plan: Plan) => getMetadataNumber(plan, 'ambulance_copay'),
+  ambulanceWithAssistanceCopay: (plan: Plan) => getMetadataNumber(plan, 'ambulance_with_assistance_copay'),
   emergencyRoomCopay: (plan: Plan) => getMetadataNumber(plan, 'emergency_room_copay'),
+  emergencyWithAssistanceCopay: (plan: Plan) => getMetadataNumber(plan, 'emergency_with_assistance_copay'),
   urgentCareCopay: (plan: Plan) => getMetadataNumber(plan, 'urgent_care_copay'),
+  skilledNursingPerDayCopay: (plan: Plan) => getMetadataNumber(plan, 'skilled_nursing_per_day_copay'),
+  skilledNursingWithAssistancePerStayCopay: (plan: Plan) => getMetadataNumber(plan, 'skilled_nursing_with_assistance_per_stay_copay'),
 
   medicalDeductible: (plan: Plan) => getMetadataNumber(plan, 'medical_deductible'),
   medicalDeductibleWithMedicaid: (plan: Plan) => getMetadataNumber(plan, 'medical_deductible_with_medicaid'),
@@ -163,10 +175,16 @@ export function buildMetadata(data: Record<string, unknown>): PlanMetadata {
     specialist_copay: 'specialist_copay',
     hospital_inpatient_per_day_copay: 'hospital_inpatient_per_day_copay',
     hospital_inpatient_days: 'hospital_inpatient_days',
+    hospital_inpatient_with_assistance_per_stay_copay: 'hospital_inpatient_with_assistance_per_stay_copay',
+    hospital_inpatient_without_assistance_per_stay_copay: 'hospital_inpatient_without_assistance_per_stay_copay',
     moop_annual: 'moop_annual',
     ambulance_copay: 'ambulance_copay',
+    ambulance_with_assistance_copay: 'ambulance_with_assistance_copay',
     emergency_room_copay: 'emergency_room_copay',
+    emergency_with_assistance_copay: 'emergency_with_assistance_copay',
     urgent_care_copay: 'urgent_care_copay',
+    skilled_nursing_per_day_copay: 'skilled_nursing_per_day_copay',
+    skilled_nursing_with_assistance_per_stay_copay: 'skilled_nursing_with_assistance_per_stay_copay',
     medical_deductible: 'medical_deductible',
     medical_deductible_with_medicaid: 'medical_deductible_with_medicaid',
     pharmacy_benefit: 'pharmacy_benefit',

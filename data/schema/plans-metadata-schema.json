@@ -71,6 +71,16 @@
       "minimum": 0,
       "description": "Number of covered hospital inpatient days"
     },
+    "hospital_inpatient_with_assistance_per_stay_copay": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Hospital inpatient per stay copay amount with assistance in dollars"
+    },
+    "hospital_inpatient_without_assistance_per_stay_copay": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Hospital inpatient per stay copay amount without assistance in dollars"
+    },
     "moop_annual": {
       "type": "number",
       "minimum": 0,
@@ -81,15 +91,35 @@
       "minimum": 0,
       "description": "Ambulance service copay amount in dollars"
     },
+    "ambulance_with_assistance_copay": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Ambulance service copay amount with assistance in dollars"
+    },
     "emergency_room_copay": {
       "type": "number",
       "minimum": 0,
       "description": "Emergency room visit copay amount in dollars"
     },
+    "emergency_with_assistance_copay": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Emergency room visit copay amount with assistance in dollars"
+    },
     "urgent_care_copay": {
       "type": "number",
       "minimum": 0,
       "description": "Urgent care visit copay amount in dollars"
+    },
+    "skilled_nursing_per_day_copay": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Skilled nursing per day copay amount in dollars"
+    },
+    "skilled_nursing_with_assistance_per_stay_copay": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Skilled nursing per stay copay amount with assistance in dollars"
     },
     "medical_deductible": {
       "type": "number",

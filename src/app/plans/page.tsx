@@ -82,10 +82,16 @@ export default function PlansPage() {
     specialist_copay: '',
     hospital_inpatient_per_day_copay: '',
     hospital_inpatient_days: '',
+    hospital_inpatient_with_assistance_per_stay_copay: '',
+    hospital_inpatient_without_assistance_per_stay_copay: '',
     moop_annual: '',
     ambulance_copay: '',
+    ambulance_with_assistance_copay: '',
     emergency_room_copay: '',
+    emergency_with_assistance_copay: '',
     urgent_care_copay: '',
+    skilled_nursing_per_day_copay: '',
+    skilled_nursing_with_assistance_per_stay_copay: '',
     pharmacy_benefit: '',
     service_area: '',
     counties: '', // comma-separated
@@ -131,10 +137,16 @@ export default function PlansPage() {
     specialist_copay: '',
     hospital_inpatient_per_day_copay: '',
     hospital_inpatient_days: '',
+    hospital_inpatient_with_assistance_per_stay_copay: '',
+    hospital_inpatient_without_assistance_per_stay_copay: '',
     moop_annual: '',
     ambulance_copay: '',
+    ambulance_with_assistance_copay: '',
     emergency_room_copay: '',
+    emergency_with_assistance_copay: '',
     urgent_care_copay: '',
+    skilled_nursing_per_day_copay: '',
+    skilled_nursing_with_assistance_per_stay_copay: '',
     pharmacy_benefit: '',
     service_area: '',
     counties: '',
@@ -338,10 +350,16 @@ export default function PlansPage() {
               specialist_copay: formData.specialist_copay != null ? String(formData.specialist_copay) : '',
               hospital_inpatient_per_day_copay: formData.hospital_inpatient_per_day_copay != null ? String(formData.hospital_inpatient_per_day_copay) : '',
               hospital_inpatient_days: formData.hospital_inpatient_days != null ? String(formData.hospital_inpatient_days) : '',
+              hospital_inpatient_with_assistance_per_stay_copay: formData.hospital_inpatient_with_assistance_per_stay_copay != null ? String(formData.hospital_inpatient_with_assistance_per_stay_copay) : '',
+              hospital_inpatient_without_assistance_per_stay_copay: formData.hospital_inpatient_without_assistance_per_stay_copay != null ? String(formData.hospital_inpatient_without_assistance_per_stay_copay) : '',
               moop_annual: formData.moop_annual != null ? String(formData.moop_annual) : '',
               ambulance_copay: formData.ambulance_copay != null ? String(formData.ambulance_copay) : '',
+              ambulance_with_assistance_copay: formData.ambulance_with_assistance_copay != null ? String(formData.ambulance_with_assistance_copay) : '',
               emergency_room_copay: formData.emergency_room_copay != null ? String(formData.emergency_room_copay) : '',
+              emergency_with_assistance_copay: formData.emergency_with_assistance_copay != null ? String(formData.emergency_with_assistance_copay) : '',
               urgent_care_copay: formData.urgent_care_copay != null ? String(formData.urgent_care_copay) : '',
+              skilled_nursing_per_day_copay: formData.skilled_nursing_per_day_copay != null ? String(formData.skilled_nursing_per_day_copay) : '',
+              skilled_nursing_with_assistance_per_stay_copay: formData.skilled_nursing_with_assistance_per_stay_copay != null ? String(formData.skilled_nursing_with_assistance_per_stay_copay) : '',
               pharmacy_benefit: String(formData.pharmacy_benefit ?? ''),
               service_area: String(formData.service_area ?? ''),
               counties: Array.isArray(formData.counties) ? formData.counties.join(', ') : String(formData.counties ?? ''),
@@ -421,10 +439,16 @@ export default function PlansPage() {
               specialist_copay: formData.specialist_copay != null ? String(formData.specialist_copay) : '',
               hospital_inpatient_per_day_copay: formData.hospital_inpatient_per_day_copay != null ? String(formData.hospital_inpatient_per_day_copay) : '',
               hospital_inpatient_days: formData.hospital_inpatient_days != null ? String(formData.hospital_inpatient_days) : '',
+              hospital_inpatient_with_assistance_per_stay_copay: formData.hospital_inpatient_with_assistance_per_stay_copay != null ? String(formData.hospital_inpatient_with_assistance_per_stay_copay) : '',
+              hospital_inpatient_without_assistance_per_stay_copay: formData.hospital_inpatient_without_assistance_per_stay_copay != null ? String(formData.hospital_inpatient_without_assistance_per_stay_copay) : '',
               moop_annual: formData.moop_annual != null ? String(formData.moop_annual) : '',
               ambulance_copay: formData.ambulance_copay != null ? String(formData.ambulance_copay) : '',
+              ambulance_with_assistance_copay: formData.ambulance_with_assistance_copay != null ? String(formData.ambulance_with_assistance_copay) : '',
               emergency_room_copay: formData.emergency_room_copay != null ? String(formData.emergency_room_copay) : '',
+              emergency_with_assistance_copay: formData.emergency_with_assistance_copay != null ? String(formData.emergency_with_assistance_copay) : '',
               urgent_care_copay: formData.urgent_care_copay != null ? String(formData.urgent_care_copay) : '',
+              skilled_nursing_per_day_copay: formData.skilled_nursing_per_day_copay != null ? String(formData.skilled_nursing_per_day_copay) : '',
+              skilled_nursing_with_assistance_per_stay_copay: formData.skilled_nursing_with_assistance_per_stay_copay != null ? String(formData.skilled_nursing_with_assistance_per_stay_copay) : '',
               pharmacy_benefit: String(formData.pharmacy_benefit ?? ''),
               service_area: String(formData.service_area ?? ''),
               counties: Array.isArray(formData.counties) ? formData.counties.join(', ') : String(formData.counties ?? ''),
@@ -806,6 +830,24 @@ export default function PlansPage() {
                   />
                 </div>
                 <div className="space-y-1">
+                  <Label className="text-xs">Hospital Copay (with assistance, per stay)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={form.hospital_inpatient_with_assistance_per_stay_copay}
+                    onChange={(e) => setForm((f) => ({ ...f, hospital_inpatient_with_assistance_per_stay_copay: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Hospital Copay (without assistance, per stay)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={form.hospital_inpatient_without_assistance_per_stay_copay}
+                    onChange={(e) => setForm((f) => ({ ...f, hospital_inpatient_without_assistance_per_stay_copay: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
                   <Label className="text-xs">MOOP (annual)</Label>
                   <Input
                     type="number"
@@ -825,6 +867,15 @@ export default function PlansPage() {
                   />
                 </div>
                 <div className="space-y-1">
+                  <Label className="text-xs">Ambulance Copay (with assistance)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={form.ambulance_with_assistance_copay}
+                    onChange={(e) => setForm((f) => ({ ...f, ambulance_with_assistance_copay: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
                   <Label className="text-xs">ER Copay</Label>
                   <Input
                     type="number"
@@ -834,12 +885,39 @@ export default function PlansPage() {
                   />
                 </div>
                 <div className="space-y-1">
+                  <Label className="text-xs">ER Copay (with assistance)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={form.emergency_with_assistance_copay}
+                    onChange={(e) => setForm((f) => ({ ...f, emergency_with_assistance_copay: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
                   <Label className="text-xs">Urgent Care Copay</Label>
                   <Input
                     type="number"
                     step="0.01"
                     value={form.urgent_care_copay}
                     onChange={(e) => setForm((f) => ({ ...f, urgent_care_copay: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Skilled Nursing (per day)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={form.skilled_nursing_per_day_copay}
+                    onChange={(e) => setForm((f) => ({ ...f, skilled_nursing_per_day_copay: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Skilled Nursing (with assistance, per stay)</Label>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    value={form.skilled_nursing_with_assistance_per_stay_copay}
+                    onChange={(e) => setForm((f) => ({ ...f, skilled_nursing_with_assistance_per_stay_copay: e.target.value }))}
                   />
                 </div>
 
@@ -1273,6 +1351,24 @@ export default function PlansPage() {
                     />
                   </div>
                   <div className="space-y-1">
+                    <Label className="text-xs">Hospital Copay (with assistance, per stay)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editForm.hospital_inpatient_with_assistance_per_stay_copay}
+                      onChange={(e) => setEditForm((f) => ({ ...f, hospital_inpatient_with_assistance_per_stay_copay: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Hospital Copay (without assistance, per stay)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editForm.hospital_inpatient_without_assistance_per_stay_copay}
+                      onChange={(e) => setEditForm((f) => ({ ...f, hospital_inpatient_without_assistance_per_stay_copay: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-1">
                     <Label className="text-xs">MOOP (annual)</Label>
                     <Input
                       type="number"
@@ -1292,6 +1388,15 @@ export default function PlansPage() {
                     />
                   </div>
                   <div className="space-y-1">
+                    <Label className="text-xs">Ambulance Copay (with assistance)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editForm.ambulance_with_assistance_copay}
+                      onChange={(e) => setEditForm((f) => ({ ...f, ambulance_with_assistance_copay: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-1">
                     <Label className="text-xs">ER Copay</Label>
                     <Input
                       type="number"
@@ -1301,12 +1406,39 @@ export default function PlansPage() {
                     />
                   </div>
                   <div className="space-y-1">
+                    <Label className="text-xs">ER Copay (with assistance)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editForm.emergency_with_assistance_copay}
+                      onChange={(e) => setEditForm((f) => ({ ...f, emergency_with_assistance_copay: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-1">
                     <Label className="text-xs">Urgent Care Copay</Label>
                     <Input
                       type="number"
                       step="0.01"
                       value={editForm.urgent_care_copay}
                       onChange={(e) => setEditForm((f) => ({ ...f, urgent_care_copay: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Skilled Nursing (per day)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editForm.skilled_nursing_per_day_copay}
+                      onChange={(e) => setEditForm((f) => ({ ...f, skilled_nursing_per_day_copay: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Skilled Nursing (with assistance, per stay)</Label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={editForm.skilled_nursing_with_assistance_per_stay_copay}
+                      onChange={(e) => setEditForm((f) => ({ ...f, skilled_nursing_with_assistance_per_stay_copay: e.target.value }))}
                     />
                   </div>
 
