@@ -12,7 +12,7 @@ export type PlanUpdate = Database['public']['Tables']['plans']['Update']
  * 
  * ⚠️  IMPORTANT: TWO SOURCES OF TRUTH
  * This TypeScript interface must be kept in sync with:
- * - data/schema/plans-metadata-schema.json (JSON Schema for validation)
+ * - @/schema/plans-metadata-schema.ts (TypeScript Schema for dynamic forms)
  * 
  * When adding, modifying, or removing fields, update BOTH files to maintain consistency.
  * 

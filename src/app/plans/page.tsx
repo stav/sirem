@@ -15,6 +15,7 @@ import type { Database } from '@/lib/supabase'
 import { Pencil, Trash2, Scale, Copy, Plus, RefreshCw } from 'lucide-react'
 import ModalForm from '@/components/ui/modal-form'
 import PlanComparisonModal from '@/components/PlanComparisonModal'
+import DynamicPlanForm from '@/components/DynamicPlanForm'
 import { useTheme } from '@/contexts/ThemeContext'
 import { useToast } from '@/hooks/use-toast'
 
@@ -544,6 +545,7 @@ export default function PlansPage() {
         effective_start: '',
         effective_end: '',
         premium_monthly: '',
+        premium_monthly_with_extra_help: '',
         giveback_monthly: '',
         otc_benefit_quarterly: '',
         dental_benefit_yearly: '',
@@ -553,10 +555,16 @@ export default function PlansPage() {
         specialist_copay: '',
         hospital_inpatient_per_day_copay: '',
         hospital_inpatient_days: '',
+        hospital_inpatient_with_assistance_per_stay_copay: '',
+        hospital_inpatient_without_assistance_per_stay_copay: '',
         moop_annual: '',
         ambulance_copay: '',
+        ambulance_with_assistance_copay: '',
         emergency_room_copay: '',
+        emergency_with_assistance_copay: '',
         urgent_care_copay: '',
+        skilled_nursing_per_day_copay: '',
+        skilled_nursing_with_assistance_per_stay_copay: '',
         pharmacy_benefit: '',
         service_area: '',
         counties: '',
@@ -565,6 +573,7 @@ export default function PlansPage() {
         fitness_benefit: '',
         transportation_benefit: '',
         medical_deductible: '',
+        medical_deductible_with_medicaid: '',
         rx_deductible_tier345: '',
         rx_cost_share: '',
         medicaid_eligibility: '',
@@ -728,223 +737,14 @@ export default function PlansPage() {
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <Label className="text-xs">Premium (monthly)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.premium_monthly}
-                    onChange={(e) => setForm((f) => ({ ...f, premium_monthly: e.target.value }))}
+                {/* Dynamic Metadata Form */}
+                <div className="md:col-span-3">
+                  <DynamicPlanForm
+                    formData={form}
+                    onChange={(field, value) => setForm((f) => ({ ...f, [field]: value }))}
+                    mode="create"
+                    className="space-y-4"
                   />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Premium with Extra Help (monthly)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.premium_monthly_with_extra_help}
-                    onChange={(e) => setForm((f) => ({ ...f, premium_monthly_with_extra_help: e.target.value }))}
-                    placeholder="$0"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Giveback (monthly)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.giveback_monthly}
-                    onChange={(e) => setForm((f) => ({ ...f, giveback_monthly: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">OTC (quarterly)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.otc_benefit_quarterly}
-                    onChange={(e) => setForm((f) => ({ ...f, otc_benefit_quarterly: e.target.value }))}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">Dental (yearly)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.dental_benefit_yearly}
-                    onChange={(e) => setForm((f) => ({ ...f, dental_benefit_yearly: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Hearing (yearly)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.hearing_benefit_yearly}
-                    onChange={(e) => setForm((f) => ({ ...f, hearing_benefit_yearly: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Vision (yearly)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.vision_benefit_yearly}
-                    onChange={(e) => setForm((f) => ({ ...f, vision_benefit_yearly: e.target.value }))}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">PCP Copay</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.primary_care_copay}
-                    onChange={(e) => setForm((f) => ({ ...f, primary_care_copay: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Specialist Copay</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.specialist_copay}
-                    onChange={(e) => setForm((f) => ({ ...f, specialist_copay: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Hospital Copay (daily)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.hospital_inpatient_per_day_copay}
-                    onChange={(e) => setForm((f) => ({ ...f, hospital_inpatient_per_day_copay: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Hospital Days</Label>
-                  <Input
-                    type="number"
-                    value={form.hospital_inpatient_days}
-                    onChange={(e) => setForm((f) => ({ ...f, hospital_inpatient_days: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Hospital Copay (with assistance, per stay)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.hospital_inpatient_with_assistance_per_stay_copay}
-                    onChange={(e) => setForm((f) => ({ ...f, hospital_inpatient_with_assistance_per_stay_copay: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Hospital Copay (without assistance, per stay)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.hospital_inpatient_without_assistance_per_stay_copay}
-                    onChange={(e) => setForm((f) => ({ ...f, hospital_inpatient_without_assistance_per_stay_copay: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">MOOP (annual)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.moop_annual}
-                    onChange={(e) => setForm((f) => ({ ...f, moop_annual: e.target.value }))}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">Ambulance Copay</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.ambulance_copay}
-                    onChange={(e) => setForm((f) => ({ ...f, ambulance_copay: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Ambulance Copay (with assistance)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.ambulance_with_assistance_copay}
-                    onChange={(e) => setForm((f) => ({ ...f, ambulance_with_assistance_copay: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">ER Copay</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.emergency_room_copay}
-                    onChange={(e) => setForm((f) => ({ ...f, emergency_room_copay: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">ER Copay (with assistance)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.emergency_with_assistance_copay}
-                    onChange={(e) => setForm((f) => ({ ...f, emergency_with_assistance_copay: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Urgent Care Copay</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.urgent_care_copay}
-                    onChange={(e) => setForm((f) => ({ ...f, urgent_care_copay: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Skilled Nursing (per day)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.skilled_nursing_per_day_copay}
-                    onChange={(e) => setForm((f) => ({ ...f, skilled_nursing_per_day_copay: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Skilled Nursing (with assistance, per stay)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.skilled_nursing_with_assistance_per_stay_copay}
-                    onChange={(e) => setForm((f) => ({ ...f, skilled_nursing_with_assistance_per_stay_copay: e.target.value }))}
-                  />
-                </div>
-
-                <div className="space-y-1 md:col-span-3">
-                  <Label className="text-xs">Pharmacy Benefit</Label>
-                  <Input
-                    value={form.pharmacy_benefit}
-                    onChange={(e) => setForm((f) => ({ ...f, pharmacy_benefit: e.target.value }))}
-                  />
-                </div>
-
-                <div className="space-y-1 md:col-span-3">
-                  <Label className="text-xs">Service Area</Label>
-                  <Input
-                    value={form.service_area}
-                    onChange={(e) => setForm((f) => ({ ...f, service_area: e.target.value }))}
-                  />
-                </div>
-
-                <div className="space-y-1 md:col-span-3">
-                  <Label className="text-xs">Counties (comma-separated)</Label>
-                  <Input value={form.counties} onChange={(e) => setForm((f) => ({ ...f, counties: e.target.value }))} />
-                </div>
-
-                <div className="space-y-1 md:col-span-3">
-                  <Label className="text-xs">Notes</Label>
-                  <Input value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
                 </div>
               </div>
 
