@@ -53,6 +53,19 @@ export default function PlansPage() {
   // Create theme object for AG Grid v34+ Theming API (client-side only)
   const [agGridTheme, setAgGridTheme] = useState<Theme | undefined>(undefined)
   
+  const [isAdding, setIsAdding] = useState(false)
+  const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([])
+  const [showComparison, setShowComparison] = useState(false)
+  const [activeFilters, setActiveFilters] = useState<Record<string, { filter?: unknown }>>({})
+  const [showQuickFilters, setShowQuickFilters] = useState(true)
+  const [savedSelections, setSavedSelections] = useState<Array<{name: string, selection: string[], filters: Record<string, unknown>}>>([])
+  const [showSaveDialog, setShowSaveDialog] = useState(false)
+  const [saveSelectionName, setSaveSelectionName] = useState('')
+  const [selectionPanelPosition, setSelectionPanelPosition] = useState({ x: 16, y: 16 })
+  const [isDragging, setIsDragging] = useState(false)
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
+  const [showSelectionPanel, setShowSelectionPanel] = useState(false)
+  
   useEffect(() => {
     const isDark = theme === 'dark' || (theme === 'system' && 
       window.matchMedia('(prefers-color-scheme: dark)').matches)
@@ -61,22 +74,53 @@ export default function PlansPage() {
     setAgGridTheme(isDark ? themeQuartz.withPart(colorSchemeDark) : themeQuartz)
   }, [theme])
 
+  // Load saved selections from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('ag-grid-saved-selections')
+    if (saved) {
+      try {
+        setSavedSelections(JSON.parse(saved))
+      } catch (error) {
+        console.error('Failed to parse saved selections:', error)
+      }
+    }
+
+    // Load panel position
+    const savedPosition = localStorage.getItem('ag-grid-panel-position')
+    if (savedPosition) {
+      try {
+        const position = JSON.parse(savedPosition)
+        setSelectionPanelPosition(position)
+      } catch (error) {
+        console.error('Failed to parse panel position:', error)
+      }
+    }
+  }, [])
+
+  // Save selections to localStorage whenever savedSelections changes
+  useEffect(() => {
+    localStorage.setItem('ag-grid-saved-selections', JSON.stringify(savedSelections))
+  }, [savedSelections])
+
+  // Save panel position to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('ag-grid-panel-position', JSON.stringify(selectionPanelPosition))
+  }, [selectionPanelPosition])
+
   // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (refreshTimeoutRef.current) {
         clearTimeout(refreshTimeoutRef.current)
       }
+      if (restoreTimeoutRef.current) {
+        clearTimeout(restoreTimeoutRef.current)
+      }
     }
   }, [])
-
-  const [isAdding, setIsAdding] = useState(false)
-  const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([])
-  const [showComparison, setShowComparison] = useState(false)
-  const [activeFilters, setActiveFilters] = useState<Record<string, { filter?: unknown }>>({})
-  const [showQuickFilters, setShowQuickFilters] = useState(true)
   const isRefreshingRef = useRef(false)
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const restoreTimeoutRef = useRef<NodeJS.Timeout | null>(null)
   // Helper function to get default core fields - type inferred from implementation
   const getDefaultCoreFields = () => ({
     name: '',
@@ -187,6 +231,121 @@ export default function PlansPage() {
     gridRef.current.api.setFilterModel({})
     setActiveFilters({})
   }
+
+  // Save current selection and filters
+  const saveCurrentSelection = () => {
+    if (selectedPlanIds.length === 0 && Object.keys(activeFilters).length === 0) {
+      toast({
+        title: "Nothing to save",
+        description: "Please select some plans or apply filters before saving.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    const newSelection = {
+      name: saveSelectionName.trim() || `Selection ${savedSelections.length + 1}`,
+      selection: selectedPlanIds,
+      filters: activeFilters
+    }
+
+    setSavedSelections(prev => [...prev, newSelection])
+    setSaveSelectionName('')
+    setShowSaveDialog(false)
+    
+    toast({
+      title: "Selection saved",
+      description: `Saved "${newSelection.name}" with ${selectedPlanIds.length} plans and ${Object.keys(activeFilters).length} filters.`
+    })
+  }
+
+  // Restore a saved selection
+  const restoreSelection = (savedSelection: {name: string, selection: string[], filters: Record<string, unknown>}) => {
+    if (!gridRef.current) return
+
+    // Clear any existing restore timeout
+    if (restoreTimeoutRef.current) {
+      clearTimeout(restoreTimeoutRef.current)
+    }
+
+    // Apply filters first
+    gridRef.current.api.setFilterModel(savedSelection.filters)
+    setActiveFilters(savedSelection.filters as Record<string, { filter?: unknown }>)
+
+    // Then restore selection
+    restoreTimeoutRef.current = setTimeout(() => {
+      if (gridRef.current) {
+        // Clear current selection
+        gridRef.current.api.deselectAll()
+        
+        // Use getRowNode with the plan ID now that we have getRowId configured
+        savedSelection.selection.forEach(planId => {
+          const rowNode = gridRef.current?.api.getRowNode(planId)
+          if (rowNode) {
+            rowNode.setSelected(true)
+          }
+        })
+      }
+      restoreTimeoutRef.current = null
+    }, 300) // Increased timeout to allow filters to apply
+
+    toast({
+      title: "Selection restored",
+      description: `Restored "${savedSelection.name}" with ${savedSelection.selection.length} plans.`
+    })
+  }
+
+  // Delete a saved selection
+  const deleteSavedSelection = (index: number) => {
+    setSavedSelections(prev => prev.filter((_, i) => i !== index))
+    toast({
+      title: "Selection deleted",
+      description: "Saved selection has been removed."
+    })
+  }
+
+  // Drag handlers for the selection panel
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault()
+    setIsDragging(true)
+    setDragStart({
+      x: e.clientX - selectionPanelPosition.x,
+      y: e.clientY - selectionPanelPosition.y
+    })
+  }
+
+  const handleMouseMove = React.useCallback((e: MouseEvent) => {
+    if (!isDragging) return
+    
+    const newX = e.clientX - dragStart.x
+    const newY = e.clientY - dragStart.y
+    
+    // Keep panel within viewport bounds
+    const maxX = window.innerWidth - 320 // Panel width is ~300px
+    const maxY = window.innerHeight - 200 // Panel height is ~200px
+    
+    setSelectionPanelPosition({
+      x: Math.max(0, Math.min(newX, maxX)),
+      y: Math.max(0, Math.min(newY, maxY))
+    })
+  }, [isDragging, dragStart])
+
+  const handleMouseUp = React.useCallback(() => {
+    setIsDragging(false)
+  }, [])
+
+  // Add global mouse event listeners when dragging
+  useEffect(() => {
+    if (isDragging) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+      }
+    }
+  }, [isDragging, handleMouseMove, handleMouseUp])
 
   // Custom header component for Actions column
   const ActionsHeaderComponent = React.useCallback(() => {
@@ -668,6 +827,7 @@ export default function PlansPage() {
                 rowData={sortedPlans}
                 columnDefs={columnDefs}
                 defaultColDef={defaultColDef}
+                getRowId={(params) => params.data.id}
                 onGridReady={onGridReady}
                 onFilterChanged={onFilterChanged}
                 pagination={true}
@@ -686,6 +846,30 @@ export default function PlansPage() {
                 {loading && <div className="text-muted-foreground text-sm">Loading plans…</div>}
               </div>
               <div className="flex items-center gap-2">
+                {/* Save Selection Button */}
+                {(selectedPlanIds.length > 0 || Object.keys(activeFilters).length > 0) && (
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => setShowSaveDialog(true)}
+                    title="Save current selection and filters"
+                  >
+                    💾 Save Selection
+                  </Button>
+                )}
+                
+                {/* Saved Selections Toggle */}
+                {savedSelections.length > 0 && (
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={() => setShowSelectionPanel(!showSelectionPanel)}
+                    title={showSelectionPanel ? "Hide saved selections" : "Show saved selections"}
+                  >
+                    📁 Saved ({savedSelections.length})
+                  </Button>
+                )}
+
                 {selectedPlanIds.length >= 2 && (
                   <Button size="sm" variant="outline" onClick={() => setShowComparison(true)}>
                     <Scale className="h-4 w-4 mr-2" />
@@ -915,6 +1099,113 @@ export default function PlansPage() {
           plans={selectedPlans} 
           onRefresh={refreshPlansWithSelection} 
         />
+
+        {/* Save Selection Dialog */}
+        {showSaveDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+            <div className="bg-background border border-border rounded-lg shadow-xl w-96 max-w-[90vw] p-6">
+              <h3 className="text-lg font-semibold mb-4">Save Selection</h3>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="selection-name">Selection Name</Label>
+                  <Input
+                    id="selection-name"
+                    value={saveSelectionName}
+                    onChange={(e) => setSaveSelectionName(e.target.value)}
+                    placeholder="Enter a name for this selection..."
+                    className="mt-1"
+                  />
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  <p>This will save:</p>
+                  <ul className="list-disc list-inside mt-1 space-y-1">
+                    <li>{selectedPlanIds.length} selected plans</li>
+                    <li>{Object.keys(activeFilters).length} active filters</li>
+                  </ul>
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setShowSaveDialog(false)
+                      setSaveSelectionName('')
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                  <Button onClick={saveCurrentSelection}>
+                    Save Selection
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Saved Selections Management */}
+        {savedSelections.length > 0 && showSelectionPanel && (
+          <div 
+            className="fixed z-40"
+            style={{
+              left: `${selectionPanelPosition.x}px`,
+              top: `${selectionPanelPosition.y}px`,
+              cursor: isDragging ? 'grabbing' : 'grab'
+            }}
+          >
+            <div className="bg-background border border-border rounded-lg shadow-lg p-4 max-w-sm">
+              <div 
+                className="flex items-center justify-between mb-2 cursor-grab active:cursor-grabbing select-none"
+                onMouseDown={handleMouseDown}
+              >
+                <h4 className="font-semibold text-sm">Saved Selections</h4>
+                <div className="flex items-center gap-2">
+                  <div className="text-muted-foreground text-xs">⋮⋮</div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => setShowSelectionPanel(false)}
+                    className="h-6 w-6 p-0"
+                    title="Close panel"
+                  >
+                    ✕
+                  </Button>
+                </div>
+              </div>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {savedSelections.map((selection, index) => (
+                  <div key={index} className="flex items-center justify-between text-sm">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium truncate">{selection.name}</div>
+                      <div className="text-muted-foreground text-xs">
+                        {selection.selection.length} plans, {Object.keys(selection.filters).length} filters
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 ml-2">
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => restoreSelection(selection)}
+                        className="h-6 w-6 p-0"
+                        title="Load this selection"
+                      >
+                        📁
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => deleteSavedSelection(index)}
+                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                        title="Delete this selection"
+                      >
+                        🗑️
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
