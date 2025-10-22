@@ -303,7 +303,7 @@ export default function ContactList({
                         {filter && (
                           <button
                             onClick={() => setFilter('')}
-                            className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer text-gray-400 hover:text-gray-600"
+                            className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
                           >
                             <X className="h-3 w-3" />
                           </button>

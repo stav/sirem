@@ -80,15 +80,15 @@ export default function FilterHelper({ isOpen, onAddFilter }: FilterHelperProps)
 
   return (
     <div className="bg-muted/50 mt-2 rounded-md border p-3">
-      <div className="mb-3 text-sm font-medium text-gray-700">Quick Filters:</div>
+      <div className="mb-3 text-sm font-medium text-muted-foreground">Quick Filters:</div>
 
       {/* Status Filters */}
       <div className="mb-3">
-        <div className="mb-2 text-xs font-medium text-gray-600">Status:</div>
+        <div className="mb-2 text-xs font-medium text-muted-foreground">Status:</div>
         {loading ? (
-          <div className="text-sm text-gray-500">Loading statuses...</div>
+          <div className="text-sm text-muted-foreground">Loading statuses...</div>
         ) : statuses.length === 0 ? (
-          <div className="text-sm text-gray-500">No statuses found</div>
+          <div className="text-sm text-muted-foreground">No statuses found</div>
         ) : (
           <div className="flex flex-wrap gap-1">
             {statuses.map((status) => (
@@ -108,7 +108,7 @@ export default function FilterHelper({ isOpen, onAddFilter }: FilterHelperProps)
 
       {/* Role Filters */}
       <div className="mb-3">
-        <div className="mb-2 text-xs font-medium text-gray-600">Roles:</div>
+        <div className="mb-2 text-xs font-medium text-muted-foreground">Roles:</div>
         <div className="flex flex-wrap gap-1">
           {roleTypes.map((roleType) => (
             <Button
@@ -126,11 +126,11 @@ export default function FilterHelper({ isOpen, onAddFilter }: FilterHelperProps)
 
       {/* Tag Filters */}
       <div>
-        <div className="mb-2 text-xs font-medium text-gray-600">Tags:</div>
+        <div className="mb-2 text-xs font-medium text-muted-foreground">Tags:</div>
         {tagsLoading ? (
-          <div className="text-sm text-gray-500">Loading tags...</div>
+          <div className="text-sm text-muted-foreground">Loading tags...</div>
         ) : tags.length === 0 ? (
-          <div className="text-sm text-gray-500">No tags found</div>
+          <div className="text-sm text-muted-foreground">No tags found</div>
         ) : (
           <div className="flex flex-wrap gap-1">
             {tags.map((tag) => (
