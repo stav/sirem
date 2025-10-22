@@ -15,6 +15,7 @@ interface PlanCacheContextType {
   setCachedEnrollments: (contactId: string, enrollments: CachedEnrollment[]) => void
   clearCache: (contactId?: string) => void
   isCached: (contactId: string) => boolean
+  refreshTrigger: number
 }
 
 const PlanCacheContext = createContext<PlanCacheContextType | undefined>(undefined)
@@ -25,6 +26,7 @@ interface PlanCacheProviderProps {
 
 export function PlanCacheProvider({ children }: PlanCacheProviderProps) {
   const [cache, setCache] = useState<Map<string, CachedEnrollment[]>>(new Map())
+  const [refreshTrigger, setRefreshTrigger] = useState(0)
 
   const getCachedEnrollments = useCallback((contactId: string): CachedEnrollment[] | null => {
     return cache.get(contactId) || null
@@ -44,6 +46,8 @@ export function PlanCacheProvider({ children }: PlanCacheProviderProps) {
     } else {
       setCache(new Map())
     }
+    // Increment refresh trigger to force components to refetch
+    setRefreshTrigger(prev => prev + 1)
   }, [])
 
   const isCached = useCallback((contactId: string): boolean => {
@@ -54,8 +58,9 @@ export function PlanCacheProvider({ children }: PlanCacheProviderProps) {
     getCachedEnrollments,
     setCachedEnrollments,
     clearCache,
-    isCached
-  }), [getCachedEnrollments, setCachedEnrollments, clearCache, isCached])
+    isCached,
+    refreshTrigger
+  }), [getCachedEnrollments, setCachedEnrollments, clearCache, isCached, refreshTrigger])
 
   return (
     <PlanCacheContext.Provider value={contextValue}>

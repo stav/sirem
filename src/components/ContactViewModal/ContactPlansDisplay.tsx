@@ -40,6 +40,9 @@ export default function ContactPlansDisplay({ contact }: ContactPlansDisplayProp
                   <div className="space-y-1">
                     <div className="text-sm font-medium">{plan ? renderPlanLabel(plan) : 'Plan'}</div>
                     <div className="text-muted-foreground text-xs">Status: {enr.enrollment_status || '—'}</div>
+                    {plan?.plan_year && (
+                      <div className="text-muted-foreground text-xs">Plan Year: {plan.plan_year}</div>
+                    )}
                   </div>
                   <div className="mt-2 grid grid-cols-1 gap-2 text-xs md:grid-cols-2">
                     <div>

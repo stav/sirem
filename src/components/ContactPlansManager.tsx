@@ -1,19 +1,20 @@
 import React, { useMemo, useState } from 'react'
 import type { Database } from '@/lib/supabase'
-import { Enums } from '@/lib/supabase-types'
+import { type EnrollmentStatus } from '@/lib/plan-constants'
 import { usePlanEnrollments } from '@/hooks/usePlanEnrollments'
 import { usePlans } from '@/hooks/usePlans'
+import { usePlanCache } from '@/contexts/PlanCacheContext'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
 import DateInput from '@/components/ui/date-input'
 import { formatDateTime } from '@/lib/utils'
 import { formatPlanDisplayName } from '@/lib/plan-utils'
+import { logger } from '@/lib/logger'
 import { Edit, Trash2, Plus, X } from 'lucide-react'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 type Plan = Database['public']['Tables']['plans']['Row']
-type EnrollmentStatus = Enums<'enrollment_status'>
 
 interface ContactPlansManagerProps {
   contact: Contact
@@ -23,6 +24,7 @@ interface ContactPlansManagerProps {
 export default function ContactPlansManager({ contact, onRefresh }: ContactPlansManagerProps) {
   const { enrollments, loading, createEnrollment, updateEnrollment, deleteEnrollment } = usePlanEnrollments(contact.id)
   const { plans } = usePlans()
+  const { clearCache } = usePlanCache()
 
   const [isAdding, setIsAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -69,6 +71,7 @@ export default function ContactPlansManager({ contact, onRefresh }: ContactPlans
 
   const handleAdd = async () => {
     if (!form.plan_id) return
+    const selectedPlan = plans.find(p => p.id === form.plan_id)
     const ok = await createEnrollment(contact.id, form.plan_id, {
       enrollment_status: form.enrollment_status,
       signed_up_at: form.signed_up_at || null,
@@ -84,6 +87,21 @@ export default function ContactPlansManager({ contact, onRefresh }: ContactPlans
       metadata: null,
     })
     if (ok) {
+      // Clear cache so contact card refreshes
+      clearCache(contact.id)
+      
+      // Log the enrollment creation
+      if (selectedPlan) {
+        const contactName = `${contact.first_name} ${contact.last_name}`
+        logger.enrollmentCreated(
+          contactName,
+          selectedPlan.name,
+          selectedPlan.carrier || undefined,
+          selectedPlan.plan_year || undefined,
+          contact.id,
+          selectedPlan.id
+        )
+      }
       resetForm()
       onRefresh?.()
     }
@@ -93,7 +111,7 @@ export default function ContactPlansManager({ contact, onRefresh }: ContactPlans
     setEditingId(enrollment.id)
     setForm({
       plan_id: enrollment.plan_id,
-      enrollment_status: enrollment.enrollment_status || 'active',
+      enrollment_status: (enrollment.enrollment_status as EnrollmentStatus) || 'active',
       signed_up_at: enrollment.signed_up_at ? enrollment.signed_up_at.split('T')[0] : '',
       coverage_effective_date: enrollment.coverage_effective_date ? enrollment.coverage_effective_date.split('T')[0] : '',
       coverage_end_date: enrollment.coverage_end_date ? enrollment.coverage_end_date.split('T')[0] : '',
@@ -107,7 +125,9 @@ export default function ContactPlansManager({ contact, onRefresh }: ContactPlans
 
   const handleUpdate = async () => {
     if (!editingId || !form.plan_id) return
+    const selectedPlan = plans.find(p => p.id === form.plan_id)
     const ok = await updateEnrollment(editingId, {
+      plan_id: form.plan_id,
       enrollment_status: form.enrollment_status,
       signed_up_at: form.signed_up_at || null,
       coverage_effective_date: form.coverage_effective_date || null,
@@ -122,6 +142,21 @@ export default function ContactPlansManager({ contact, onRefresh }: ContactPlans
       metadata: null,
     })
     if (ok) {
+      // Clear cache so contact card refreshes
+      clearCache(contact.id)
+      
+      // Log the enrollment update
+      if (selectedPlan) {
+        const contactName = `${contact.first_name} ${contact.last_name}`
+        logger.enrollmentUpdated(
+          contactName,
+          selectedPlan.name,
+          selectedPlan.carrier || undefined,
+          selectedPlan.plan_year || undefined,
+          contact.id,
+          selectedPlan.id
+        )
+      }
       resetForm()
       onRefresh?.()
     }
@@ -129,7 +164,28 @@ export default function ContactPlansManager({ contact, onRefresh }: ContactPlans
 
   const handleDelete = async (enrollmentId: string) => {
     if (confirm('Remove this enrollment?')) {
-      await deleteEnrollment(enrollmentId)
+      // Find the enrollment and plan details for logging
+      const enrollment = enrollments.find(e => e.id === enrollmentId)
+      const plan = enrollment ? plans.find(p => p.id === enrollment.plan_id) : null
+      
+      const ok = await deleteEnrollment(enrollmentId)
+      if (ok) {
+        // Clear cache so contact card refreshes
+        clearCache(contact.id)
+        
+        // Log the enrollment deletion
+        if (plan) {
+          const contactName = `${contact.first_name} ${contact.last_name}`
+          logger.enrollmentDeleted(
+            contactName,
+            plan.name,
+            plan.carrier || undefined,
+            plan.plan_year || undefined,
+            contact.id,
+            plan.id
+          )
+        }
+      }
       onRefresh?.()
     }
   }
@@ -154,6 +210,9 @@ export default function ContactPlansManager({ contact, onRefresh }: ContactPlans
                     <div className="space-y-1">
                       <div className="text-sm font-medium">{plan ? renderPlanLabel(plan) : 'Plan'}</div>
                       <div className="text-muted-foreground text-xs">Status: {enr.enrollment_status || '—'}</div>
+                      {plan?.plan_year && (
+                        <div className="text-muted-foreground text-xs">Plan Year: {plan.plan_year}</div>
+                      )}
                     </div>
                     <div className="flex items-center gap-2">
                       <Button

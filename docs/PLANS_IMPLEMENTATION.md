@@ -8,7 +8,7 @@ The Sirem CRM system includes a comprehensive Medicare plans management system t
 
 ### Plans Table
 
-The core plans catalog table stores master plan information with a simplified schema:
+The core plans catalog table stores master plan information with a normalized plan type structure:
 
 ```sql
 CREATE TABLE plans (
@@ -18,9 +18,14 @@ CREATE TABLE plans (
 
   -- Core identifiers (main database fields)
   name TEXT NOT NULL,
-  plan_type plan_type,
-  carrier carrier,
+  carrier TEXT,
   plan_year INTEGER,
+
+  -- Normalized plan type structure (replaces legacy plan_type field)
+  type_network TEXT, -- HMO, PPO, PFFS, MSA
+  type_extension TEXT, -- POS or null
+  type_snp TEXT, -- D, C, I or null
+  type_program TEXT, -- SNP, MA, MAPD, PDP, Supplement, Ancillary
 
   -- CMS identifiers
   cms_contract_number TEXT,
@@ -44,9 +49,12 @@ CREATE TABLE plans (
 **Main Database Fields:**
 - `id`, `created_at`, `updated_at` - System fields
 - `name` - Plan name (required)
-- `plan_type` - Plan type enum (HMO, PPO, D-SNP, etc.)
 - `carrier` - Insurance carrier
 - `plan_year` - Plan year (e.g., 2025)
+- `type_network` - Plan network type (HMO, PPO, PFFS, MSA)
+- `type_extension` - Plan extension (POS or null)
+- `type_snp` - SNP type (D, C, I or null)
+- `type_program` - Program type (SNP, MA, MAPD, PDP, Supplement, Ancillary)
 - `cms_contract_number` - CMS contract identifier
 - `cms_plan_number` - CMS plan identifier  
 - `cms_geo_segment` - Three-digit county identifier (e.g., "001")
@@ -55,7 +63,11 @@ CREATE TABLE plans (
 
 **Metadata Fields:**
 
-The `metadata` JSONB field stores all plan benefits and additional information:
+The `metadata` JSONB field stores all plan benefits and additional information. The complete field definitions and validation rules are documented in:
+- `@/schema/plans-metadata-schema.ts` (TypeScript Schema)
+- `src/lib/plan-metadata-utils.ts` (TypeScript interface)
+
+**🔄 DYNAMIC SCHEMA: New fields may be added, changed, or removed at any time as business requirements evolve.**
 
 **Dates:**
 - `effective_start` (date): Plan effective start date
@@ -63,6 +75,7 @@ The `metadata` JSONB field stores all plan benefits and additional information:
 
 **Financial Benefits:**
 - `premium_monthly` (numeric): Monthly premium amount
+- `premium_monthly_with_extra_help` (numeric): Monthly premium for LIS/Extra Help recipients (typically $0)
 - `giveback_monthly` (numeric): Monthly giveback/rebate amount
 - `otc_benefit_quarterly` (numeric): Quarterly OTC benefit amount
 
@@ -80,6 +93,10 @@ The `metadata` JSONB field stores all plan benefits and additional information:
 - `ambulance_copay` (numeric): Ambulance service copay
 - `emergency_room_copay` (numeric): Emergency room copay
 - `urgent_care_copay` (numeric): Urgent care copay
+
+**Medical Deductible with Medicaid Assistance:**
+- `medical_deductible` (numeric): Standard medical deductible amount
+- `medical_deductible_with_medicaid` (numeric): Medical deductible for Medicaid cost-sharing recipients (typically $0)
 
 **Additional Information:**
 - `pharmacy_benefit` (text): Pharmacy benefit description
@@ -134,55 +151,105 @@ CREATE TABLE enrollments (
 - **Status Tracking**: Lifecycle management (pending, active, cancelled, terminated, declined)
 - **Historical Data**: Captures premium and PCP at time of enrollment
 
-### Enum Types
+### Plan Type Structure
 
-#### Plan Types
+**🎯 SINGLE SOURCE OF TRUTH: All plan types are now managed in `src/lib/plan-constants.ts`**
 
+The plan type system has been refactored to use a normalized structure with separate fields for better data integrity and querying:
+
+#### Normalized Plan Type Fields
+
+**Database Structure:**
 ```sql
-CREATE TYPE plan_type AS ENUM (
-  'HMO',
-  'HMO-POS',
-  'HMO-POS-D-SNP',
-  'HMO-POS-C-SNP',
-  'PPO',
-  'D-SNP',
-  'C-SNP',
-  'PDP',
-  'Supplement',
-  'Ancillary'
-);
+-- Normalized plan type fields (no constraints - validation in code)
+type_network TEXT,    -- HMO, PPO, PFFS, MSA
+type_extension TEXT,  -- POS or null
+type_snp TEXT,        -- D, C, I or null  
+type_program TEXT     -- SNP, MA, MAPD, PDP, Supplement, Ancillary
 ```
+
+**TypeScript Types:**
+```typescript
+// Defined in src/lib/plan-constants.ts
+type TypeNetwork = 'HMO' | 'PPO' | 'PFFS' | 'MSA'
+type TypeExtension = 'POS' | null
+type TypeSnp = 'D' | 'C' | 'I' | null
+type TypeProgram = 'SNP' | 'MA' | 'MAPD' | 'PDP' | 'Supplement' | 'Ancillary'
+
+interface PlanTypeStructure {
+  type_network: TypeNetwork
+  type_extension: TypeExtension
+  type_snp: TypeSnp
+  type_program: TypeProgram
+}
+```
+
+**Legacy Plan Type Parsing:**
+```typescript
+// Converts legacy strings like "HMO-POS-D-SNP" into normalized structure
+function parseLegacyPlanType(value: string): PlanTypeStructure | null
+```
+
+**Plan Type Concatenation Logic:**
+The UI displays a combined plan type by concatenating the normalized fields:
+
+```typescript
+// Build the plan type string from normalized fields
+const parts = []
+if (plan.type_network) parts.push(plan.type_network)           // "HMO"
+if (plan.type_extension) parts.push(plan.type_extension)       // "POS"
+if (plan.type_snp) parts.push(`${plan.type_snp}-SNP`)         // "D-SNP"
+// Don't add type_program if it's already included in the SNP part
+if (plan.type_program && plan.type_program !== 'MA' && plan.type_program !== 'SNP') 
+  parts.push(plan.type_program)                                // "PDP", "Supplement", etc.
+
+const combinedType = parts.join('-')  // "HMO-POS-D-SNP"
+```
+
+**Examples:**
+- `HMO` + `null` + `null` + `MA` → **"HMO"**
+- `HMO` + `POS` + `null` + `MA` → **"HMO-POS"**
+- `HMO` + `null` + `D` + `SNP` → **"HMO-D-SNP"**
+- `HMO` + `POS` + `D` + `SNP` → **"HMO-POS-D-SNP"**
+- `PPO` + `null` + `null` + `MA` → **"PPO"**
+- `null` + `null` + `null` + `PDP` → **"PDP"**
+- `null` + `null` + `null` + `Supplement` → **"Supplement"**
+
+**Key Rules:**
+- `type_program` is omitted when it's "MA" (default for most plans)
+- `type_program` is omitted when it's "SNP" (already included in `type_snp` field)
+- Only non-null fields are included in the concatenation
+- Fields are joined with hyphens (`-`)
+
+**Benefits:**
+- ✅ **Better data integrity** - Separate fields prevent invalid combinations
+- ✅ **Easier querying** - Filter by network type, SNP type, etc.
+- ✅ **Single source of truth** - All types defined in `plan-constants.ts`
+- ✅ **Clean schema** - Legacy `plan_type` field removed after migration
+- ✅ **Type safety** - Full TypeScript support for all fields
 
 #### Carriers
 
-```sql
-CREATE TYPE carrier AS ENUM (
-  'United',
-  'Humana',
-  'Devoted',
-  'Anthem',
-  'MedMutual',
-  'Aetna',
-  'GTL',
-  'Medico',
-  'CareSource',
-  'SummaCare',
-  'Cigna',
-  'Heartland',
-  'Other'
-);
+**🎯 SINGLE SOURCE OF TRUTH: All carriers are now managed in `src/lib/plan-constants.ts`**
+
+Database enums eliminated! Now using TEXT columns with validation in code:
+
+```typescript
+// Defined in src/lib/plan-constants.ts
+type Carrier = 'Aetna' | 'Anthem' | 'CareSource' | 'Devoted' | 'GTL' | 
+               'Heartland' | 'Humana' | 'Medico' | 'MedMutual' | 
+               'SummaCare' | 'United' | 'Zing' | 'Other'
 ```
 
 #### Enrollment Status
 
-```sql
-CREATE TYPE enrollment_status AS ENUM (
-  'pending',
-  'active',
-  'cancelled',
-  'terminated',
-  'declined'
-);
+**🎯 SINGLE SOURCE OF TRUTH: All enrollment statuses are now managed in `src/lib/plan-constants.ts`**
+
+Database enums eliminated! Now using TEXT columns with validation in code:
+
+```typescript
+// Defined in src/lib/plan-constants.ts
+type EnrollmentStatus = 'pending' | 'active' | 'cancelled' | 'terminated' | 'declined' | 'ended'
 ```
 
 ### Database Indexes
@@ -192,9 +259,15 @@ Optimized indexes for performance:
 ```sql
 -- Plans table
 CREATE INDEX idx_plans_carrier ON plans(carrier);
-CREATE INDEX idx_plans_plan_type ON plans(plan_type);
 CREATE INDEX idx_plans_plan_year ON plans(plan_year);
 CREATE INDEX idx_plans_cms_lookup ON plans(plan_year, cms_contract_number, cms_plan_number, cms_geo_segment);
+
+-- Normalized plan type indexes
+CREATE INDEX idx_plans_type_network ON plans(type_network);
+CREATE INDEX idx_plans_type_extension ON plans(type_extension);
+CREATE INDEX idx_plans_type_snp ON plans(type_snp);
+CREATE INDEX idx_plans_type_program ON plans(type_program);
+CREATE INDEX idx_plans_type_composite ON plans(type_network, type_extension, type_snp, type_program);
 
 -- Enrollments table
 CREATE INDEX idx_enrollments_contact_id ON enrollments(contact_id);
@@ -227,12 +300,20 @@ type EnrollmentInsert = Database['public']['Tables']['enrollments']['Insert']
 type EnrollmentUpdate = Database['public']['Tables']['enrollments']['Update']
 ```
 
-### Enum Types
+### Plan Type Types
 
 ```typescript
-type Carrier = Enums<'carrier'>
-type PlanType = Enums<'plan_type'>
-type EnrollmentStatus = Enums<'enrollment_status'>
+// Normalized plan type structure
+type TypeNetwork = 'HMO' | 'PPO' | 'PFFS' | 'MSA'
+type TypeExtension = 'POS' | null
+type TypeSnp = 'D' | 'C' | 'I' | null
+type TypeProgram = 'SNP' | 'MA' | 'MAPD' | 'PDP' | 'Supplement' | 'Ancillary'
+
+// Legacy and other types
+type Carrier = 'Aetna' | 'Anthem' | 'CareSource' | 'Devoted' | 'GTL' | 
+               'Heartland' | 'Humana' | 'Medico' | 'MedMutual' | 
+               'SummaCare' | 'United' | 'Zing' | 'Other'
+type EnrollmentStatus = 'pending' | 'active' | 'cancelled' | 'terminated' | 'declined' | 'ended'
 ```
 
 ## React Hooks
@@ -269,7 +350,10 @@ const { plans, loading, createPlan, updatePlan, deletePlan } = usePlans()
 // Create a new plan
 await createPlan({
   name: 'Gold Plus',
-  plan_type: 'HMO',
+  type_network: 'HMO',
+  type_extension: null,
+  type_snp: null,
+  type_program: 'MA',
   carrier: 'Humana',
   plan_year: 2025,
   premium_monthly: 0,
@@ -314,10 +398,15 @@ Main plans management interface featuring:
 
 - **Dark Mode Support**: Automatically switches between light (`quartz`) and dark (`quartz-dark`) themes
 - **Plan Selection**: Checkbox column for selecting up to 3 plans for comparison
-- Sortable, filterable columns
-- Plan name, carrier, type, year
-- CMS ID display
-- Premium display with currency formatting
+- **Comprehensive Columns**:
+  - Plan name, carrier, year
+  - **Type** - Combined plan type (e.g., "HMO-POS", "D-SNP", "PPO-D-SNP")
+  - **Network** - Individual network type (HMO, PPO, PFFS, MSA)
+  - **Extension** - Individual extension type (POS or —)
+  - **SNP** - Individual SNP type (D-SNP, C-SNP, I-SNP, or —)
+  - **Program** - Individual program type (MA, SNP, PDP, Supplement, Ancillary)
+  - CMS ID display
+- All columns are sortable and filterable
 - Inline edit/delete actions
 
 **Theme Integration:**
@@ -337,7 +426,10 @@ Comprehensive inline form with two main sections:
 
 **Main Database Fields:**
 - Plan name (required)
-- Plan type (select dropdown)
+- Network Type (HMO, PPO, PFFS, MSA)
+- Extension (POS or None)
+- SNP Type (D-SNP, C-SNP, I-SNP, or None)
+- Program Type (SNP, MA, MAPD, PDP, Supplement, Ancillary)
 - Carrier (select dropdown)
 - Plan year (defaults to current year)
 - CMS contract number
@@ -516,6 +608,12 @@ Plans are typically version by year:
 
 The `metadata` JSONB field provides flexibility for storing additional plan information that doesn't fit into the standard schema. This is particularly useful for:
 
+**🎯 SCHEMA DEFINITION: The metadata structure is defined in two sources of truth that must be kept in sync:**
+- `@/schema/plans-metadata-schema.ts` - TypeScript Schema for dynamic forms and validation
+- `src/lib/plan-metadata-utils.ts` - TypeScript interface for type safety
+
+**⚠️ IMPORTANT: When adding, modifying, or removing metadata fields, update BOTH files to maintain consistency.**
+
 1. **Extended Benefits**: Benefits that vary by carrier or year (card, fitness, transportation)
 2. **Prescription Drug Details**: Complex RX coverage that needs more than the pharmacy_benefit field
 3. **Eligibility Requirements**: Medicaid or other special eligibility criteria
@@ -560,7 +658,7 @@ AND plan_year = 2025;
 -- Find D-SNP plans (typically have Medicaid eligibility)
 SELECT name, carrier, metadata->>'medicaid_eligibility' as medicaid
 FROM plans
-WHERE plan_type IN ('D-SNP', 'HMO-D-SNP', 'PPO-D-SNP')
+WHERE type_snp = 'D'
 AND plan_year = 2025;
 ```
 
@@ -763,6 +861,23 @@ Potential queries and reports:
 
 ### Database Schema Updates (2025)
 
+#### Plan Type Normalization Migration (Completed)
+
+The database schema has been completely refactored to use a normalized plan type structure:
+
+**Migration Steps Completed:**
+1. **Added Normalized Fields** - Added `type_network`, `type_extension`, `type_snp`, `type_program` columns
+2. **Populated Data** - Migrated all existing `plan_type` data to normalized fields
+3. **Updated Application** - Modified all UI components to use normalized fields
+4. **Removed Legacy Field** - Dropped the `plan_type` column and its index
+
+**Benefits Achieved:**
+- ✅ **Better Data Integrity** - Separate fields prevent invalid combinations
+- ✅ **Easier Querying** - Filter by specific plan type components
+- ✅ **Single Source of Truth** - All validation in `src/lib/plan-constants.ts`
+- ✅ **Clean Schema** - No legacy fields or database enums
+- ✅ **Type Safety** - Full TypeScript support for all fields
+
 #### CMS Constraint and Index Optimization
 
 The database schema has been updated to improve both data integrity and query performance:
@@ -778,8 +893,8 @@ The database schema has been updated to improve both data integrity and query pe
 
 ```sql
 -- Example: Bulk insert 2024 plans from previous year
-INSERT INTO plans (name, plan_type, carrier, plan_year, ...)
-SELECT name, plan_type, carrier, 2024, ...
+INSERT INTO plans (name, type_network, type_extension, type_snp, type_program, carrier, plan_year, ...)
+SELECT name, type_network, type_extension, type_snp, type_program, carrier, 2024, ...
 FROM plans
 WHERE plan_year = 2023;
 ```

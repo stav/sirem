@@ -7,6 +7,7 @@ type EnrollmentInsert = Database['public']['Tables']['enrollments']['Insert']
 type EnrollmentUpdate = Database['public']['Tables']['enrollments']['Update']
 
 export type EnrollmentForm = Omit<EnrollmentInsert, 'id' | 'created_at' | 'updated_at' | 'contact_id' | 'plan_id'>
+export type EnrollmentUpdateForm = Omit<EnrollmentInsert, 'id' | 'created_at' | 'updated_at' | 'contact_id'>
 
 export function usePlanEnrollments(contactId?: string) {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([])
@@ -71,7 +72,7 @@ export function usePlanEnrollments(contactId?: string) {
     }
   }
 
-  const updateEnrollment = async (enrollmentId: string, form: EnrollmentForm) => {
+  const updateEnrollment = async (enrollmentId: string, form: EnrollmentUpdateForm) => {
     try {
       const updateData: EnrollmentUpdate = {
         ...form,

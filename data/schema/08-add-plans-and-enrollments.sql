@@ -5,16 +5,18 @@
 -- Plan types
 DO $$ BEGIN
   CREATE TYPE plan_type AS ENUM (
-    'HMO',
-    'HMO-POS',
-    'HMO-POS-D-SNP',
-    'HMO-POS-C-SNP',
-    'PPO',
-    'D-SNP',
+    'Ancillary',
     'C-SNP',
+    'D-SNP',
+    'HMO',
+    'HMO-D-SNP',
+    'HMO-POS',
+    'HMO-POS-C-SNP',
+    'HMO-POS-D-SNP',
     'PDP',
+    'PPO',
+    'PPO-D-SNP',
     'Supplement',
-    'Ancillary'
   );
 EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 

@@ -115,6 +115,7 @@ git diff data/schema/current-schema.sql
 - **Missing Project ID**: Ensure `SUPABASE_PROJECT_ID` is set in `.env.local`
 - **Network Issues**: Retry the command if Supabase is temporarily unavailable
 - **Permission Issues**: Ensure your Supabase project allows CLI access
+- **Connection Termination**: The `npm run dump-schema` command may fail with connection issues
 
 ## Troubleshooting
 
@@ -258,3 +259,55 @@ Use the schema files to:
 ### Automated Backups
 
 Set up cron jobs or scheduled tasks to run `npm run dump-data` regularly for automated backups.
+
+## Manual Schema Creation
+
+When the `npm run dump-schema` command fails due to connection issues, you can manually create the current schema file:
+
+### Steps for Manual Schema Creation
+
+1. **Access Supabase Dashboard**: Go to your Supabase project dashboard
+2. **SQL Editor**: Navigate to the SQL Editor
+3. **Generate Schema**: Run the following query to get the current schema:
+
+```sql
+-- Get current table definitions
+SELECT 
+    schemaname,
+    tablename,
+    tableowner
+FROM pg_tables 
+WHERE schemaname = 'public'
+ORDER BY tablename;
+
+-- Get column information for each table
+SELECT 
+    table_name,
+    column_name,
+    data_type,
+    is_nullable,
+    column_default
+FROM information_schema.columns 
+WHERE table_schema = 'public'
+ORDER BY table_name, ordinal_position;
+```
+
+4. **Create Schema File**: Manually create `data/schema/current-schema.sql` with the current database structure
+5. **Include Indexes**: Add any custom indexes and constraints
+6. **Document Changes**: Note any differences from the previous schema
+
+### Alternative: Use Database Tools
+
+If you have access to database management tools:
+- **pgAdmin**: Connect directly and export schema
+- **DBeaver**: Use the schema export feature
+- **VS Code Extensions**: Use PostgreSQL extensions to connect and export
+
+### When to Use Manual Creation
+
+- Connection termination errors persist
+- Supabase CLI is temporarily unavailable
+- You need to document schema changes immediately
+- Debugging schema-related issues
+
+**Note**: Manual schema creation should be a temporary workaround. The automated `npm run dump-schema` command should be used when possible for consistency.

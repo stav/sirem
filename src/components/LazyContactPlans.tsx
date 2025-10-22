@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react'
 import { usePlanEnrollments } from '@/hooks/usePlanEnrollments'
 import { usePlanCache } from '@/contexts/PlanCacheContext'
 import { formatDateTime } from '@/lib/utils'
-import { calculateCmsId } from '@/lib/plan-utils'
+import { calculateCmsId, buildPlanTypeString } from '@/lib/plan-utils'
 import type { Database } from '@/lib/supabase'
 
 type Enrollment = Database['public']['Tables']['enrollments']['Row']
@@ -21,7 +21,7 @@ export default function LazyContactPlans({ contactId, className = '' }: LazyCont
   const [shouldLoad, setShouldLoad] = useState(false)
   const [hasBeenVisible, setHasBeenVisible] = useState(false)
   const elementRef = useRef<HTMLDivElement>(null)
-  const { getCachedEnrollments, setCachedEnrollments, isCached } = usePlanCache()
+  const { getCachedEnrollments, setCachedEnrollments } = usePlanCache()
   
   // Memoize the contactId to prevent unnecessary re-renders
   const memoizedContactId = useMemo(() => {
@@ -32,18 +32,18 @@ export default function LazyContactPlans({ contactId, className = '' }: LazyCont
 
   // Check cache first
   const cachedEnrollments = getCachedEnrollments(contactId)
-  const isDataCached = isCached(contactId)
+
 
   // Update cache when new data is loaded
   useEffect(() => {
-    if (shouldLoad && enrollments.length > 0 && !isDataCached) {
+    if (shouldLoad && enrollments.length >= 0) { // Allow empty arrays to update cache
       const enrollmentItems: EnrollmentWithPlan[] = enrollments.map(enrollment => ({
         ...enrollment,
         plans: (enrollment as Enrollment & { plans?: Plan | null }).plans || null
       }))
       setCachedEnrollments(contactId, enrollmentItems)
     }
-  }, [enrollments, shouldLoad, contactId, setCachedEnrollments, isDataCached])
+  }, [enrollments, shouldLoad, contactId, setCachedEnrollments])
 
   // Intersection Observer for lazy loading
   useEffect(() => {
@@ -102,7 +102,8 @@ export default function LazyContactPlans({ contactId, className = '' }: LazyCont
               plan?.carrier,
               plan?.name,
               plan ? calculateCmsId(plan) ? `(${calculateCmsId(plan)})` : '' : '',
-              plan?.plan_type,
+              plan ? buildPlanTypeString(plan) : '',
+              plan?.plan_year ? `[${plan.plan_year}]` : '',
               effectiveDateOnly,
               `(${enr.enrollment_status})`,
             ].filter(Boolean)

@@ -2,60 +2,51 @@
 
 import React, { useMemo, useRef, useState, useEffect } from 'react'
 import Navigation from '@/components/Navigation'
-import { usePlans } from '@/hooks/usePlans'
+import { usePlans, type PlanForm } from '@/hooks/usePlans'
 import { calculateCmsId } from '@/lib/plan-utils'
-import { buildMetadata, extractMetadataForForm } from '@/lib/plan-metadata-utils'
+import { populateFormFromPlan, buildPlanDataFromForm, getDefaultMetadataFormData } from '@/lib/plan-metadata-utils'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { Enums } from '@/lib/supabase-types'
+import { TYPE_NETWORKS_LIST, TYPE_EXTENSIONS_LIST, TYPE_SNPS_LIST, TYPE_PROGRAMS_LIST, CARRIERS, type TypeNetwork, type TypeExtension, type TypeSnp, type TypeProgram, type Carrier } from '@/lib/plan-constants'
 import { AgGridReact } from 'ag-grid-react'
 import { AllCommunityModule, ColDef, GridReadyEvent, ICellRendererParams, ModuleRegistry, Theme, themeQuartz, colorSchemeDark } from 'ag-grid-community'
 import type { Database } from '@/lib/supabase'
-import { Pencil, Trash2, Scale, Copy } from 'lucide-react'
+import { Pencil, Trash2, Scale, Copy, Plus, RefreshCw, Filter } from 'lucide-react'
 import ModalForm from '@/components/ui/modal-form'
 import PlanComparisonModal from '@/components/PlanComparisonModal'
+import dynamic from 'next/dynamic'
+
+// Lazy load the DynamicPlanForm to improve initial render performance
+const DynamicPlanForm = dynamic(() => import('@/components/DynamicPlanForm'), {
+  loading: () => <div className="animate-pulse space-y-4">
+    <div className="h-4 bg-muted rounded w-1/4"></div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      {Array.from({ length: 6 }).map((_, i) => (
+        <div key={i} className="space-y-2">
+          <div className="h-3 bg-muted rounded w-1/2"></div>
+          <div className="h-10 bg-muted rounded"></div>
+        </div>
+      ))}
+    </div>
+  </div>,
+  ssr: false
+})
 import { useTheme } from '@/contexts/ThemeContext'
 import { useToast } from '@/hooks/use-toast'
 
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule])
 
-type Carrier = Enums<'carrier'>
-type PlanType = Enums<'plan_type'>
-
-const carrierOptions: Carrier[] = [
-  'Aetna',
-  'Anthem',
-  'CareSource',
-  'Devoted',
-  'GTL',
-  'Heartland',
-  'Humana',
-  'Medico',
-  'MedMutual',
-  'SummaCare',
-  'United',
-  'Zing',
-  'Other',
-]
-
-const planTypeOptions: PlanType[] = [
-  'Ancillary',
-  'C-SNP',
-  'D-SNP',
-  'HMO-D-SNP',
-  'HMO-POS-C-SNP',
-  'HMO-POS-D-SNP',
-  'HMO-POS',
-  'HMO',
-  'PDP',
-  'PPO',
-  'Supplement',
-]
+// Use centralized constants instead of hardcoded arrays
+const carrierOptions = CARRIERS
+const typeNetworkOptions = TYPE_NETWORKS_LIST
+const typeExtensionOptions = TYPE_EXTENSIONS_LIST
+const typeSnpOptions = TYPE_SNPS_LIST
+const typeProgramOptions = TYPE_PROGRAMS_LIST
 
 export default function PlansPage() {
-  const { plans, loading, error, createPlan, updatePlan, deletePlan, deletePlans } = usePlans()
+  const { plans, loading, error, fetchPlans, createPlan, updatePlan, deletePlan, deletePlans } = usePlans()
   const { theme } = useTheme()
   const { toast } = useToast()
 
@@ -70,92 +61,60 @@ export default function PlansPage() {
     setAgGridTheme(isDark ? themeQuartz.withPart(colorSchemeDark) : themeQuartz)
   }, [theme])
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current)
+      }
+    }
+  }, [])
+
   const [isAdding, setIsAdding] = useState(false)
   const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([])
   const [showComparison, setShowComparison] = useState(false)
-  const [form, setForm] = useState({
+  const [activeFilters, setActiveFilters] = useState<Record<string, { filter?: unknown }>>({})
+  const [showQuickFilters, setShowQuickFilters] = useState(true)
+  const isRefreshingRef = useRef(false)
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  // Helper function to get default core fields - type inferred from implementation
+  const getDefaultCoreFields = () => ({
     name: '',
-    plan_type: '' as PlanType | '',
+    type_network: '' as TypeNetwork | '',
+    type_extension: '' as TypeExtension | '',
+    type_snp: '' as TypeSnp | '',
+    type_program: '' as TypeProgram | '',
     carrier: '' as Carrier | '',
     plan_year: new Date().getUTCFullYear().toString(),
     cms_contract_number: '',
     cms_plan_number: '',
     cms_geo_segment: '',
-    effective_start: '',
-    effective_end: '',
-    premium_monthly: '',
-    giveback_monthly: '',
-    otc_benefit_quarterly: '',
-    dental_benefit_yearly: '',
-    hearing_benefit_yearly: '',
-    vision_benefit_yearly: '',
-    primary_care_copay: '',
-    specialist_copay: '',
-    hospital_inpatient_per_day_copay: '',
-    hospital_inpatient_days: '',
-    moop_annual: '',
-    ambulance_copay: '',
-    emergency_room_copay: '',
-    urgent_care_copay: '',
-    pharmacy_benefit: '',
-    service_area: '',
-    counties: '', // comma-separated
-    notes: '',
-    // Metadata fields
-    card_benefit: '',
-    fitness_benefit: '',
-    transportation_benefit: '',
-    medical_deductible: '',
-    rx_deductible_tier345: '',
-    rx_cost_share: '',
-    medicaid_eligibility: '',
-    transitioned_from: '',
-    summary: '',
+    counties: '',
   })
+
+  // Type inferred from the function implementation
+  type CoreFormFields = ReturnType<typeof getDefaultCoreFields>
+
+  // Combined form type (core fields + dynamic metadata fields)
+  type FormData = CoreFormFields & Record<string, unknown>
+
+  const [form, setForm] = useState<FormData>(() => ({
+    // Core database fields with default values
+    ...getDefaultCoreFields(),
+    // Dynamic metadata fields
+    ...getDefaultMetadataFormData()
+  }))
 
   const gridRef = useRef<AgGridReact>(null)
 
   const [isEditing, setIsEditing] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editForm, setEditForm] = useState({
-    name: '',
-    plan_type: '' as PlanType | '',
-    carrier: '' as Carrier | '',
-    plan_year: new Date().getUTCFullYear().toString(),
-    cms_contract_number: '',
-    cms_plan_number: '',
-    cms_geo_segment: '',
-    effective_start: '',
-    effective_end: '',
-    premium_monthly: '',
-    giveback_monthly: '',
-    otc_benefit_quarterly: '',
-    dental_benefit_yearly: '',
-    hearing_benefit_yearly: '',
-    vision_benefit_yearly: '',
-    primary_care_copay: '',
-    specialist_copay: '',
-    hospital_inpatient_per_day_copay: '',
-    hospital_inpatient_days: '',
-    moop_annual: '',
-    ambulance_copay: '',
-    emergency_room_copay: '',
-    urgent_care_copay: '',
-    pharmacy_benefit: '',
-    service_area: '',
-    counties: '',
-    notes: '',
-    // Metadata fields
-    card_benefit: '',
-    fitness_benefit: '',
-    transportation_benefit: '',
-    medical_deductible: '',
-    rx_deductible_tier345: '',
-    rx_cost_share: '',
-    medicaid_eligibility: '',
-    transitioned_from: '',
-    summary: '',
-  })
+  const [editForm, setEditForm] = useState<FormData>(() => ({
+    // Core database fields with default values
+    ...getDefaultCoreFields(),
+    // Dynamic metadata fields
+    ...getDefaultMetadataFormData()
+  }))
 
   const sortedPlans = useMemo(() => {
     return [...plans].sort((a, b) => {
@@ -171,16 +130,111 @@ export default function PlansPage() {
   }, [plans])
 
   const onSelectionChanged = () => {
-    if (!gridRef.current) return
+    if (!gridRef.current || isRefreshingRef.current) return
     
     const selectedNodes = gridRef.current.api.getSelectedNodes()
     const selectedIds = selectedNodes.map(node => node.data?.id).filter(Boolean) as string[]
     setSelectedPlanIds(selectedIds)
   }
 
+  const onFilterChanged = () => {
+    if (!gridRef.current) return
+    
+    const filterModel = gridRef.current.api.getFilterModel()
+    setActiveFilters(filterModel)
+  }
+
+  const applyQuickFilter = (field: string, value: string) => {
+    if (!gridRef.current) return
+    
+    const api = gridRef.current.api
+    
+    // Check if this filter is already active
+    const currentFilter = activeFilters[field]
+    const isActive = field === 'plan_year' 
+      ? currentFilter?.filter === parseInt(value)
+      : currentFilter?.filter === value
+    
+    if (isActive) {
+      // Remove this filter
+      const newFilters = { ...activeFilters }
+      delete newFilters[field]
+      api.setFilterModel(newFilters)
+    } else {
+      // Set the filter value with appropriate filter type
+      const filterConfig = field === 'plan_year' 
+        ? {
+            type: 'equals',
+            filter: parseInt(value),
+            filterType: 'number'
+          }
+        : {
+            type: 'contains',
+            filter: value,
+            filterType: 'text'
+          }
+      
+      api.setFilterModel({
+        ...activeFilters,
+        [field]: filterConfig
+      })
+    }
+  }
+
+  const clearAllFilters = () => {
+    if (!gridRef.current) return
+    
+    gridRef.current.api.setFilterModel({})
+    setActiveFilters({})
+  }
+
+  // Custom header component for Actions column
+  const ActionsHeaderComponent = React.useCallback(() => {
+    return (
+      <div className="flex items-center justify-between w-full">
+        <span>Actions</span>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setShowQuickFilters(!showQuickFilters)}
+          className="h-6 w-6 p-0"
+          title="Toggle Quick Filters"
+        >
+          <Filter className="h-3 w-3" />
+        </Button>
+      </div>
+    )
+  }, [showQuickFilters])
+
   const selectedPlans = useMemo(() => {
+    if (selectedPlanIds.length === 0) return []
     return plans.filter((p) => selectedPlanIds.includes(p.id))
   }, [plans, selectedPlanIds])
+
+  // Custom refresh function that preserves selection
+  const refreshPlansWithSelection = async () => {
+    // Clear any existing timeout
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current)
+    }
+    
+    isRefreshingRef.current = true
+    await fetchPlans()
+    
+    // Wait for the grid to update with new data, then restore selection
+    refreshTimeoutRef.current = setTimeout(() => {
+      if (gridRef.current && selectedPlanIds.length > 0) {
+        selectedPlanIds.forEach(planId => {
+          const rowNode = gridRef.current?.api.getRowNode(planId)
+          if (rowNode) {
+            rowNode.setSelected(true)
+          }
+        })
+      }
+      isRefreshingRef.current = false
+      refreshTimeoutRef.current = null
+    }, 200)
+  }
 
   const columnDefs: ColDef[] = useMemo(
     () => [
@@ -210,11 +264,56 @@ export default function PlansPage() {
         minWidth: 140,
       },
       {
-        field: 'plan_type',
         headerName: 'Type',
+        minWidth: 120,
+        valueGetter: (p) => {
+          const plan = p.data
+          if (!plan) return '—'
+          
+          // Build the plan type string from normalized fields
+          const parts = []
+          if (plan.type_network) parts.push(plan.type_network)
+          if (plan.type_extension) parts.push(plan.type_extension)
+          if (plan.type_snp) parts.push(`${plan.type_snp}-SNP`)
+          // Don't add type_program if it's already included in the SNP part
+          if (plan.type_program && plan.type_program !== 'MA' && plan.type_program !== 'SNP') parts.push(plan.type_program)
+          
+          return parts.length > 0 ? parts.join('-') : '—'
+        },
         sortable: true,
         filter: true,
-        minWidth: 120,
+      },
+      {
+        field: 'type_network',
+        headerName: 'Network',
+        sortable: true,
+        filter: true,
+        minWidth: 100,
+        valueFormatter: (p) => p.value || '—',
+      },
+      {
+        field: 'type_extension',
+        headerName: 'Extension',
+        sortable: true,
+        filter: true,
+        minWidth: 100,
+        valueFormatter: (p) => p.value || '—',
+      },
+      {
+        field: 'type_snp',
+        headerName: 'SNP',
+        sortable: true,
+        filter: true,
+        minWidth: 80,
+        valueFormatter: (p) => p.value ? `${p.value}-SNP` : '—',
+      },
+      {
+        field: 'type_program',
+        headerName: 'Program',
+        sortable: true,
+        filter: true,
+        minWidth: 100,
+        valueFormatter: (p) => p.value || '—',
       },
       {
         field: 'plan_year',
@@ -235,6 +334,7 @@ export default function PlansPage() {
       },
       {
         headerName: 'Actions',
+        headerComponent: ActionsHeaderComponent,
         minWidth: 150,
         maxWidth: 170,
         cellRenderer: (p: ICellRendererParams<Database['public']['Tables']['plans']['Row']>) => {
@@ -245,48 +345,9 @@ export default function PlansPage() {
             if (!plan) return
             setEditingId(plan.id)
             
-            // Extract all form data from plan using the helper function
-            const formData = extractMetadataForForm(plan)
-            
-            setEditForm({
-              name: String(formData.name ?? ''),
-              plan_type: (formData.plan_type as PlanType) ?? '',
-              carrier: (formData.carrier as Carrier) ?? '',
-              plan_year: formData.plan_year != null ? String(formData.plan_year) : '',
-              cms_contract_number: String(formData.cms_contract_number ?? ''),
-              cms_plan_number: String(formData.cms_plan_number ?? ''),
-              cms_geo_segment: String(formData.cms_geo_segment ?? ''),
-              effective_start: String(formData.effective_start ?? ''),
-              effective_end: String(formData.effective_end ?? ''),
-              premium_monthly: formData.premium_monthly != null ? String(formData.premium_monthly) : '',
-              giveback_monthly: formData.giveback_monthly != null ? String(formData.giveback_monthly) : '',
-              otc_benefit_quarterly: formData.otc_benefit_quarterly != null ? String(formData.otc_benefit_quarterly) : '',
-              dental_benefit_yearly: formData.dental_benefit_yearly != null ? String(formData.dental_benefit_yearly) : '',
-              hearing_benefit_yearly: formData.hearing_benefit_yearly != null ? String(formData.hearing_benefit_yearly) : '',
-              vision_benefit_yearly: formData.vision_benefit_yearly != null ? String(formData.vision_benefit_yearly) : '',
-              primary_care_copay: formData.primary_care_copay != null ? String(formData.primary_care_copay) : '',
-              specialist_copay: formData.specialist_copay != null ? String(formData.specialist_copay) : '',
-              hospital_inpatient_per_day_copay: formData.hospital_inpatient_per_day_copay != null ? String(formData.hospital_inpatient_per_day_copay) : '',
-              hospital_inpatient_days: formData.hospital_inpatient_days != null ? String(formData.hospital_inpatient_days) : '',
-              moop_annual: formData.moop_annual != null ? String(formData.moop_annual) : '',
-              ambulance_copay: formData.ambulance_copay != null ? String(formData.ambulance_copay) : '',
-              emergency_room_copay: formData.emergency_room_copay != null ? String(formData.emergency_room_copay) : '',
-              urgent_care_copay: formData.urgent_care_copay != null ? String(formData.urgent_care_copay) : '',
-              pharmacy_benefit: String(formData.pharmacy_benefit ?? ''),
-              service_area: String(formData.service_area ?? ''),
-              counties: Array.isArray(formData.counties) ? formData.counties.join(', ') : String(formData.counties ?? ''),
-              notes: String(formData.notes ?? ''),
-              // Extended metadata fields
-              card_benefit: formData.card_benefit != null ? String(formData.card_benefit) : '',
-              fitness_benefit: formData.fitness_benefit != null ? String(formData.fitness_benefit) : '',
-              transportation_benefit: formData.transportation_benefit != null ? String(formData.transportation_benefit) : '',
-              medical_deductible: formData.medical_deductible != null ? String(formData.medical_deductible) : '',
-              rx_deductible_tier345: formData.rx_deductible_tier345 != null ? String(formData.rx_deductible_tier345) : '',
-              rx_cost_share: String(formData.rx_cost_share ?? ''),
-              medicaid_eligibility: String(formData.medicaid_eligibility ?? ''),
-              transitioned_from: String(formData.transitioned_from ?? ''),
-              summary: String(formData.summary ?? ''),
-            })
+            // Dynamically populate form data from plan using the helper function
+            const formData = populateFormFromPlan(plan)
+            setEditForm(formData as typeof editForm)
             setIsEditing(true)
           }
           const handleDelete = async () => {
@@ -322,49 +383,17 @@ export default function PlansPage() {
             const plan = p.data
             if (!plan) return
             
-            // Extract all form data from plan using the helper function
-            const formData = extractMetadataForForm(plan)
+            // Dynamically populate form data from plan using the helper function
+            const formData = populateFormFromPlan(plan)
             
-            // Populate the add plan form with the plan data
-            setForm({
-              name: String(formData.name ?? ''),
-              plan_type: (formData.plan_type as PlanType) ?? '',
-              carrier: (formData.carrier as Carrier) ?? '',
-              plan_year: formData.plan_year != null ? String(Number(formData.plan_year) + 1) : new Date().getUTCFullYear().toString(),
-              cms_contract_number: String(formData.cms_contract_number ?? ''),
-              cms_plan_number: String(formData.cms_plan_number ?? ''),
-              cms_geo_segment: String(formData.cms_geo_segment ?? ''),
-              effective_start: String(formData.effective_start ?? ''),
-              effective_end: String(formData.effective_end ?? ''),
-              premium_monthly: formData.premium_monthly != null ? String(formData.premium_monthly) : '',
-              giveback_monthly: formData.giveback_monthly != null ? String(formData.giveback_monthly) : '',
-              otc_benefit_quarterly: formData.otc_benefit_quarterly != null ? String(formData.otc_benefit_quarterly) : '',
-              dental_benefit_yearly: formData.dental_benefit_yearly != null ? String(formData.dental_benefit_yearly) : '',
-              hearing_benefit_yearly: formData.hearing_benefit_yearly != null ? String(formData.hearing_benefit_yearly) : '',
-              vision_benefit_yearly: formData.vision_benefit_yearly != null ? String(formData.vision_benefit_yearly) : '',
-              primary_care_copay: formData.primary_care_copay != null ? String(formData.primary_care_copay) : '',
-              specialist_copay: formData.specialist_copay != null ? String(formData.specialist_copay) : '',
-              hospital_inpatient_per_day_copay: formData.hospital_inpatient_per_day_copay != null ? String(formData.hospital_inpatient_per_day_copay) : '',
-              hospital_inpatient_days: formData.hospital_inpatient_days != null ? String(formData.hospital_inpatient_days) : '',
-              moop_annual: formData.moop_annual != null ? String(formData.moop_annual) : '',
-              ambulance_copay: formData.ambulance_copay != null ? String(formData.ambulance_copay) : '',
-              emergency_room_copay: formData.emergency_room_copay != null ? String(formData.emergency_room_copay) : '',
-              urgent_care_copay: formData.urgent_care_copay != null ? String(formData.urgent_care_copay) : '',
-              pharmacy_benefit: String(formData.pharmacy_benefit ?? ''),
-              service_area: String(formData.service_area ?? ''),
-              counties: Array.isArray(formData.counties) ? formData.counties.join(', ') : String(formData.counties ?? ''),
-              notes: String(formData.notes ?? ''),
-              // Extended metadata fields
-              card_benefit: formData.card_benefit != null ? String(formData.card_benefit) : '',
-              fitness_benefit: formData.fitness_benefit != null ? String(formData.fitness_benefit) : '',
-              transportation_benefit: formData.transportation_benefit != null ? String(formData.transportation_benefit) : '',
-              medical_deductible: formData.medical_deductible != null ? String(formData.medical_deductible) : '',
-              rx_deductible_tier345: formData.rx_deductible_tier345 != null ? String(formData.rx_deductible_tier345) : '',
-              rx_cost_share: String(formData.rx_cost_share ?? ''),
-              medicaid_eligibility: String(formData.medicaid_eligibility ?? ''),
-              transitioned_from: String(formData.transitioned_from ?? ''),
-              summary: String(formData.summary ?? ''),
-            })
+            // Increment the plan year for copying to next year
+            if (formData.plan_year) {
+              formData.plan_year = String(Number(formData.plan_year) + 1)
+            } else {
+              formData.plan_year = new Date().getUTCFullYear().toString()
+            }
+            
+            setForm(formData as typeof form)
             // Open the add plan form
             setIsAdding(true)
           }
@@ -385,7 +414,7 @@ export default function PlansPage() {
         pinned: 'right',
       },
     ],
-        [deletePlan, toast]
+        [deletePlan, toast, ActionsHeaderComponent]
   )
 
   const defaultColDef = useMemo(
@@ -404,66 +433,17 @@ export default function PlansPage() {
   const handleCreate = async () => {
     if (!form.name) return
     
-    // Build metadata object from form fields using the helper function
-    const metadata = buildMetadata(form)
-    
-    const data = {
-      name: form.name,
-      plan_type: (form.plan_type as PlanType) || null,
-      carrier: (form.carrier as Carrier) || null,
-      plan_year: form.plan_year ? Number(form.plan_year) : null,
-      cms_contract_number: form.cms_contract_number || null,
-      cms_plan_number: form.cms_plan_number || null,
-      cms_geo_segment: form.cms_geo_segment || null,
-      counties: form.counties
-        ? form.counties
-            .split(',')
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : null,
-      metadata: Object.keys(metadata).length > 0 ? (metadata as Database['public']['Tables']['plans']['Insert']['metadata']) : null,
-    }
+    // Build complete plan data from form using the helper function
+    const data = buildPlanDataFromForm(form)
 
-    const ok = await createPlan(data)
+    const ok = await createPlan(data as PlanForm)
     if (ok) {
       setIsAdding(false)
       setForm({
-        name: '',
-        plan_type: '',
-        carrier: '',
-        plan_year: new Date().getUTCFullYear().toString(),
-        cms_contract_number: '',
-        cms_plan_number: '',
-        cms_geo_segment: '',
-        effective_start: '',
-        effective_end: '',
-        premium_monthly: '',
-        giveback_monthly: '',
-        otc_benefit_quarterly: '',
-        dental_benefit_yearly: '',
-        hearing_benefit_yearly: '',
-        vision_benefit_yearly: '',
-        primary_care_copay: '',
-        specialist_copay: '',
-        hospital_inpatient_per_day_copay: '',
-        hospital_inpatient_days: '',
-        moop_annual: '',
-        ambulance_copay: '',
-        emergency_room_copay: '',
-        urgent_care_copay: '',
-        pharmacy_benefit: '',
-        service_area: '',
-        counties: '',
-        notes: '',
-        card_benefit: '',
-        fitness_benefit: '',
-        transportation_benefit: '',
-        medical_deductible: '',
-        rx_deductible_tier345: '',
-        rx_cost_share: '',
-        medicaid_eligibility: '',
-        transitioned_from: '',
-        summary: '',
+        // Core database fields with default values
+        ...getDefaultCoreFields(),
+        // Dynamic metadata fields
+        ...getDefaultMetadataFormData()
       })
     }
   }
@@ -472,26 +452,9 @@ export default function PlansPage() {
     e.preventDefault()
     if (!editingId) return
     
-    // Build metadata object from form fields using the helper function
-    const metadata = buildMetadata(editForm)
-    
-    const data = {
-      name: editForm.name,
-      plan_type: (editForm.plan_type as PlanType) || null,
-      carrier: (editForm.carrier as Carrier) || null,
-      plan_year: editForm.plan_year ? Number(editForm.plan_year) : null,
-      cms_contract_number: editForm.cms_contract_number || null,
-      cms_plan_number: editForm.cms_plan_number || null,
-      cms_geo_segment: editForm.cms_geo_segment || null,
-      counties: editForm.counties
-        ? editForm.counties
-            .split(',')
-            .map((s) => s.trim())
-            .filter(Boolean)
-        : null,
-      metadata: Object.keys(metadata).length > 0 ? (metadata as Database['public']['Tables']['plans']['Insert']['metadata']) : null,
-    }
-    const ok = await updatePlan(editingId, data)
+    // Build complete plan data from form using the helper function
+    const data = buildPlanDataFromForm(editForm)
+    const ok = await updatePlan(editingId, data as PlanForm)
     if (ok) {
       setIsEditing(false)
       setEditingId(null)
@@ -502,54 +465,8 @@ export default function PlansPage() {
     <div className="bg-background min-h-screen">
       <Navigation pageTitle="Plans" />
 
-      <div className="p-6">
-        <div className="mx-auto max-w-7xl space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Plans Catalog</h2>
-            <div className="flex items-center gap-2">
-              {selectedPlanIds.length >= 2 && (
-                <Button size="sm" variant="outline" onClick={() => setShowComparison(true)}>
-                  <Scale className="h-4 w-4 mr-2" />
-                  Compare ({selectedPlanIds.length})
-                </Button>
-              )}
-            {selectedPlanIds.length > 1 && (
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={async () => {
-                  if (!confirm(`Delete ${selectedPlanIds.length} selected plans?`)) return
-                  const result = await deletePlans(selectedPlanIds)
-                  if (result === true) {
-                    setSelectedPlanIds([])
-                    if (gridRef.current) gridRef.current.api.deselectAll()
-                  } else if (result === false) {
-                    toast({
-                      title: 'Failed to delete plans',
-                      description: 'An unexpected error occurred while deleting the plans.',
-                      variant: 'destructive'
-                    })
-                  } else if (typeof result === 'object' && result.success === false) {
-                    // Enrollment blocking case - the error is already logged to history
-                    toast({
-                      title: 'Cannot delete plans',
-                      description: 'Some plans cannot be deleted because they have existing enrollments. Please remove all enrollments first.',
-                      variant: 'destructive'
-                    })
-                  }
-                }}
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete ({selectedPlanIds.length})
-              </Button>
-            )}
-              {!isAdding && (
-                <Button size="sm" onClick={() => setIsAdding(true)}>
-                  Add Plan
-                </Button>
-              )}
-            </div>
-          </div>
+      <div className="h-[calc(100vh-4rem)] flex flex-col">
+        <div className="flex-1 flex flex-col">
 
           {isAdding && (
             <div className="rounded border p-4">
@@ -559,16 +476,61 @@ export default function PlansPage() {
                   <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">Plan Type</Label>
+                  <Label className="text-xs">Network Type</Label>
                   <select
                     className="bg-background w-full rounded border p-2 text-sm"
-                    value={form.plan_type}
-                    onChange={(e) => setForm((f) => ({ ...f, plan_type: e.target.value as PlanType }))}
+                    value={form.type_network}
+                    onChange={(e) => setForm((f) => ({ ...f, type_network: e.target.value as TypeNetwork }))}
                   >
                     <option value="">—</option>
-                    {planTypeOptions.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
+                    {typeNetworkOptions.map((network) => (
+                      <option key={network} value={network}>
+                        {network}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Extension</Label>
+                  <select
+                    className="bg-background w-full rounded border p-2 text-sm"
+                    value={form.type_extension || ''}
+                    onChange={(e) => setForm((f) => ({ ...f, type_extension: e.target.value as TypeExtension }))}
+                  >
+                    <option value="">—</option>
+                    {typeExtensionOptions.map((extension) => (
+                      <option key={extension || 'null'} value={extension || ''}>
+                        {extension || 'None'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">SNP Type</Label>
+                  <select
+                    className="bg-background w-full rounded border p-2 text-sm"
+                    value={form.type_snp || ''}
+                    onChange={(e) => setForm((f) => ({ ...f, type_snp: e.target.value as TypeSnp }))}
+                  >
+                    <option value="">—</option>
+                    {typeSnpOptions.map((snp) => (
+                      <option key={snp || 'null'} value={snp || ''}>
+                        {snp ? `${snp}-SNP` : 'None'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Program Type</Label>
+                  <select
+                    className="bg-background w-full rounded border p-2 text-sm"
+                    value={form.type_program}
+                    onChange={(e) => setForm((f) => ({ ...f, type_program: e.target.value as TypeProgram }))}
+                  >
+                    <option value="">—</option>
+                    {typeProgramOptions.map((program) => (
+                      <option key={program} value={program}>
+                        {program}
                       </option>
                     ))}
                   </select>
@@ -620,159 +582,14 @@ export default function PlansPage() {
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <Label className="text-xs">Premium (monthly)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.premium_monthly}
-                    onChange={(e) => setForm((f) => ({ ...f, premium_monthly: e.target.value }))}
+                {/* Dynamic Metadata Form */}
+                <div className="md:col-span-3">
+                  <DynamicPlanForm
+                    formData={form}
+                    onChange={(field, value) => setForm((f) => ({ ...f, [field]: value }))}
+                    mode="create"
+                    className="space-y-4"
                   />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Giveback (monthly)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.giveback_monthly}
-                    onChange={(e) => setForm((f) => ({ ...f, giveback_monthly: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">OTC (quarterly)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.otc_benefit_quarterly}
-                    onChange={(e) => setForm((f) => ({ ...f, otc_benefit_quarterly: e.target.value }))}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">Dental (yearly)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.dental_benefit_yearly}
-                    onChange={(e) => setForm((f) => ({ ...f, dental_benefit_yearly: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Hearing (yearly)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.hearing_benefit_yearly}
-                    onChange={(e) => setForm((f) => ({ ...f, hearing_benefit_yearly: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Vision (yearly)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.vision_benefit_yearly}
-                    onChange={(e) => setForm((f) => ({ ...f, vision_benefit_yearly: e.target.value }))}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">PCP Copay</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.primary_care_copay}
-                    onChange={(e) => setForm((f) => ({ ...f, primary_care_copay: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Specialist Copay</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.specialist_copay}
-                    onChange={(e) => setForm((f) => ({ ...f, specialist_copay: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Hospital Copay (daily)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.hospital_inpatient_per_day_copay}
-                    onChange={(e) => setForm((f) => ({ ...f, hospital_inpatient_per_day_copay: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Hospital Days</Label>
-                  <Input
-                    type="number"
-                    value={form.hospital_inpatient_days}
-                    onChange={(e) => setForm((f) => ({ ...f, hospital_inpatient_days: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">MOOP (annual)</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.moop_annual}
-                    onChange={(e) => setForm((f) => ({ ...f, moop_annual: e.target.value }))}
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <Label className="text-xs">Ambulance Copay</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.ambulance_copay}
-                    onChange={(e) => setForm((f) => ({ ...f, ambulance_copay: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">ER Copay</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.emergency_room_copay}
-                    onChange={(e) => setForm((f) => ({ ...f, emergency_room_copay: e.target.value }))}
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Urgent Care Copay</Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={form.urgent_care_copay}
-                    onChange={(e) => setForm((f) => ({ ...f, urgent_care_copay: e.target.value }))}
-                  />
-                </div>
-
-                <div className="space-y-1 md:col-span-3">
-                  <Label className="text-xs">Pharmacy Benefit</Label>
-                  <Input
-                    value={form.pharmacy_benefit}
-                    onChange={(e) => setForm((f) => ({ ...f, pharmacy_benefit: e.target.value }))}
-                  />
-                </div>
-
-                <div className="space-y-1 md:col-span-3">
-                  <Label className="text-xs">Service Area</Label>
-                  <Input
-                    value={form.service_area}
-                    onChange={(e) => setForm((f) => ({ ...f, service_area: e.target.value }))}
-                  />
-                </div>
-
-                <div className="space-y-1 md:col-span-3">
-                  <Label className="text-xs">Counties (comma-separated)</Label>
-                  <Input value={form.counties} onChange={(e) => setForm((f) => ({ ...f, counties: e.target.value }))} />
-                </div>
-
-                <div className="space-y-1 md:col-span-3">
-                  <Label className="text-xs">Notes</Label>
-                  <Input value={form.notes} onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value }))} />
                 </div>
               </div>
 
@@ -787,13 +604,64 @@ export default function PlansPage() {
             </div>
           )}
 
+          {/* Quick Filter Buttons */}
+          {showQuickFilters && (
+            <div className="border-b bg-muted/20 p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-sm font-medium text-muted-foreground">Quick Filters:</span>
+              
+              {/* Carrier Filters */}
+              <div className="flex flex-wrap gap-1">
+                {carrierOptions.map((carrier) => (
+                  <Button
+                    key={carrier}
+                    variant={activeFilters.carrier?.filter === carrier ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => applyQuickFilter('carrier', carrier)}
+                    className="text-xs cursor-pointer"
+                  >
+                    {carrier}
+                  </Button>
+                ))}
+              </div>
+
+              {/* Year Filters */}
+              <div className="flex flex-wrap gap-1">
+                {[2025, 2026].map((year) => (
+                  <Button
+                    key={year}
+                    variant={activeFilters.plan_year?.filter === year ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => applyQuickFilter('plan_year', year.toString())}
+                    className="text-xs cursor-pointer"
+                  >
+                    {year}
+                  </Button>
+                ))}
+              </div>
+
+              {/* Clear All Filters */}
+              {Object.keys(activeFilters).length > 0 && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={clearAllFilters}
+                  className="text-xs text-muted-foreground hover:text-foreground cursor-pointer"
+                  title="Clear all filters"
+                >
+                  ✕
+                </Button>
+              )}
+            </div>
+          </div>
+          )}
+
           {/* Plans list (AG Grid) */}
-          <div className="rounded border">
-            {loading && <div className="text-muted-foreground p-3 text-sm">Loading plans…</div>}
+          <div className="flex-1 flex flex-col">
             {!loading && sortedPlans.length === 0 && (
               <div className="text-muted-foreground p-3 text-sm">No plans found</div>
             )}
-            <div className="w-full" style={{ height: '70vh' }}>
+            <div className="flex-1 w-full">
               <AgGridReact
                 ref={gridRef}
                 theme={agGridTheme}
@@ -801,6 +669,7 @@ export default function PlansPage() {
                 columnDefs={columnDefs}
                 defaultColDef={defaultColDef}
                 onGridReady={onGridReady}
+                onFilterChanged={onFilterChanged}
                 pagination={true}
                 paginationPageSize={100}
                 animateRows={true}
@@ -809,6 +678,64 @@ export default function PlansPage() {
                 rowSelection="multiple"
                 onSelectionChanged={onSelectionChanged}
               />
+            </div>
+            
+            {/* Custom Footer */}
+            <div className="flex items-center px-4 py-2 border-t bg-muted/30 text-sm">
+              <div className="flex-1 flex items-center">
+                {loading && <div className="text-muted-foreground text-sm">Loading plans…</div>}
+              </div>
+              <div className="flex items-center gap-2">
+                {selectedPlanIds.length >= 2 && (
+                  <Button size="sm" variant="outline" onClick={() => setShowComparison(true)}>
+                    <Scale className="h-4 w-4 mr-2" />
+                    Compare ({selectedPlanIds.length})
+                  </Button>
+                )}
+                {selectedPlanIds.length > 1 && (
+                  <Button
+                    size="sm"
+                    variant="destructive"
+                    onClick={async () => {
+                      if (!confirm(`Delete ${selectedPlanIds.length} selected plans?`)) return
+                      const result = await deletePlans(selectedPlanIds)
+                      if (result === true) {
+                        setSelectedPlanIds([])
+                        if (gridRef.current) gridRef.current.api.deselectAll()
+                      } else if (result === false) {
+                        toast({
+                          title: 'Failed to delete plans',
+                          description: 'An unexpected error occurred while deleting the plans.',
+                          variant: 'destructive'
+                        })
+                      } else if (typeof result === 'object' && result.success === false) {
+                        // Enrollment blocking case - the error is already logged to history
+                        toast({
+                          title: 'Cannot delete plans',
+                          description: 'Some plans cannot be deleted because they have existing enrollments. Please remove all enrollments first.',
+                          variant: 'destructive'
+                        })
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete ({selectedPlanIds.length})
+                  </Button>
+                )}
+                {!isAdding && (
+                  <>
+                    <Button size="sm" onClick={() => setIsAdding(true)}>
+                      <Plus className="h-4 w-4 mr-2" />
+                      Add Plan
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={fetchPlans}>
+                      <RefreshCw className="h-4 w-4 mr-2" />
+                      Refresh
+                    </Button>
+                  </>
+                )}
+              </div>
+              <div className="flex-1"></div>
             </div>
           </div>
 
@@ -826,6 +753,17 @@ export default function PlansPage() {
             submitText="Save Changes"
           >
             <div className="space-y-6">
+              {/* Plan ID Display */}
+              {editingId && (
+                <div className="bg-muted/50 rounded-lg p-4 border">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {editingId}
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Main Database Fields Section */}
               <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
                 <div className="space-y-1 md:col-span-3">
@@ -834,16 +772,61 @@ export default function PlansPage() {
                 </div>
 
                 <div className="space-y-1">
-                  <Label className="text-xs">Plan Type</Label>
+                  <Label className="text-xs">Network Type</Label>
                   <select
                     className="bg-background w-full rounded border p-2 text-sm"
-                    value={editForm.plan_type}
-                    onChange={(e) => setEditForm((f) => ({ ...f, plan_type: e.target.value as PlanType }))}
+                    value={editForm.type_network}
+                    onChange={(e) => setEditForm((f) => ({ ...f, type_network: e.target.value as TypeNetwork }))}
                   >
                     <option value="">—</option>
-                    {planTypeOptions.map((t) => (
-                      <option key={t} value={t}>
-                        {t}
+                    {typeNetworkOptions.map((network) => (
+                      <option key={network} value={network}>
+                        {network}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Extension</Label>
+                  <select
+                    className="bg-background w-full rounded border p-2 text-sm"
+                    value={editForm.type_extension || ''}
+                    onChange={(e) => setEditForm((f) => ({ ...f, type_extension: e.target.value as TypeExtension }))}
+                  >
+                    <option value="">—</option>
+                    {typeExtensionOptions.map((extension) => (
+                      <option key={extension || 'null'} value={extension || ''}>
+                        {extension || 'None'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">SNP Type</Label>
+                  <select
+                    className="bg-background w-full rounded border p-2 text-sm"
+                    value={editForm.type_snp || ''}
+                    onChange={(e) => setEditForm((f) => ({ ...f, type_snp: e.target.value as TypeSnp }))}
+                  >
+                    <option value="">—</option>
+                    {typeSnpOptions.map((snp) => (
+                      <option key={snp || 'null'} value={snp || ''}>
+                        {snp ? `${snp}-SNP` : 'None'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Program Type</Label>
+                  <select
+                    className="bg-background w-full rounded border p-2 text-sm"
+                    value={editForm.type_program}
+                    onChange={(e) => setEditForm((f) => ({ ...f, type_program: e.target.value as TypeProgram }))}
+                  >
+                    <option value="">—</option>
+                    {typeProgramOptions.map((program) => (
+                      <option key={program} value={program}>
+                        {program}
                       </option>
                     ))}
                   </select>
@@ -908,276 +891,31 @@ export default function PlansPage() {
               {/* Separator */}
               <div className="border-t border-gray-200 dark:border-gray-700"></div>
 
-              {/* Metadata Section */}
+              {/* Dynamic Metadata Form */}
               <div>
                 <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Plan Benefits & Details (Metadata)</h3>
-                <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-                  {/* Dates */}
-                  <div className="space-y-1">
-                    <Label className="text-xs">Effective Start</Label>
-                    <Input
-                      type="date"
-                      value={editForm.effective_start}
-                      onChange={(e) => setEditForm((f) => ({ ...f, effective_start: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Effective End</Label>
-                    <Input
-                      type="date"
-                      value={editForm.effective_end}
-                      onChange={(e) => setEditForm((f) => ({ ...f, effective_end: e.target.value }))}
-                    />
-                  </div>
-
-                  {/* Financial Benefits */}
-                  <div className="space-y-1">
-                    <Label className="text-xs">Premium (monthly)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={editForm.premium_monthly}
-                      onChange={(e) => setEditForm((f) => ({ ...f, premium_monthly: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Giveback (monthly)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={editForm.giveback_monthly}
-                      onChange={(e) => setEditForm((f) => ({ ...f, giveback_monthly: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">OTC (quarterly)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={editForm.otc_benefit_quarterly}
-                      onChange={(e) => setEditForm((f) => ({ ...f, otc_benefit_quarterly: e.target.value }))}
-                    />
-                  </div>
-
-                  {/* Yearly Benefits */}
-                  <div className="space-y-1">
-                    <Label className="text-xs">Dental (yearly)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={editForm.dental_benefit_yearly}
-                      onChange={(e) => setEditForm((f) => ({ ...f, dental_benefit_yearly: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Hearing (yearly)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={editForm.hearing_benefit_yearly}
-                      onChange={(e) => setEditForm((f) => ({ ...f, hearing_benefit_yearly: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Vision (yearly)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={editForm.vision_benefit_yearly}
-                      onChange={(e) => setEditForm((f) => ({ ...f, vision_benefit_yearly: e.target.value }))}
-                    />
-                  </div>
-
-                  {/* Medical Copays */}
-                  <div className="space-y-1">
-                    <Label className="text-xs">PCP Copay</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={editForm.primary_care_copay}
-                      onChange={(e) => setEditForm((f) => ({ ...f, primary_care_copay: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Specialist Copay</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={editForm.specialist_copay}
-                      onChange={(e) => setEditForm((f) => ({ ...f, specialist_copay: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Hospital Copay (daily)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={editForm.hospital_inpatient_per_day_copay}
-                      onChange={(e) => setEditForm((f) => ({ ...f, hospital_inpatient_per_day_copay: e.target.value }))}
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-xs">Hospital Days</Label>
-                    <Input
-                      type="number"
-                      value={editForm.hospital_inpatient_days}
-                      onChange={(e) => setEditForm((f) => ({ ...f, hospital_inpatient_days: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">MOOP (annual)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={editForm.moop_annual}
-                      onChange={(e) => setEditForm((f) => ({ ...f, moop_annual: e.target.value }))}
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-xs">Ambulance Copay</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={editForm.ambulance_copay}
-                      onChange={(e) => setEditForm((f) => ({ ...f, ambulance_copay: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">ER Copay</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={editForm.emergency_room_copay}
-                      onChange={(e) => setEditForm((f) => ({ ...f, emergency_room_copay: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Urgent Care Copay</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={editForm.urgent_care_copay}
-                      onChange={(e) => setEditForm((f) => ({ ...f, urgent_care_copay: e.target.value }))}
-                    />
-                  </div>
-
-                  {/* Additional Information */}
-                  <div className="space-y-1 md:col-span-3">
-                    <Label className="text-xs">Pharmacy Benefit</Label>
-                    <Input
-                      value={editForm.pharmacy_benefit}
-                      onChange={(e) => setEditForm((f) => ({ ...f, pharmacy_benefit: e.target.value }))}
-                    />
-                  </div>
-
-                  <div className="space-y-1 md:col-span-3">
-                    <Label className="text-xs">Service Area</Label>
-                    <Input
-                      value={editForm.service_area}
-                      onChange={(e) => setEditForm((f) => ({ ...f, service_area: e.target.value }))}
-                    />
-                  </div>
-
-                  <div className="space-y-1 md:col-span-3">
-                    <Label className="text-xs">Notes</Label>
-                    <Input value={editForm.notes} onChange={(e) => setEditForm((f) => ({ ...f, notes: e.target.value }))} />
-                  </div>
-
-                  {/* Extended Benefits */}
-                  <div className="space-y-1">
-                    <Label className="text-xs">Card Benefit</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={editForm.card_benefit}
-                      onChange={(e) => setEditForm((f) => ({ ...f, card_benefit: e.target.value }))}
-                      placeholder="$0"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Fitness Benefit</Label>
-                    <Input
-                      type="text"
-                      value={editForm.fitness_benefit}
-                      onChange={(e) => setEditForm((f) => ({ ...f, fitness_benefit: e.target.value }))}
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Transportation Rides</Label>
-                    <Input
-                      type="number"
-                      value={editForm.transportation_benefit}
-                      onChange={(e) => setEditForm((f) => ({ ...f, transportation_benefit: e.target.value }))}
-                      placeholder="0"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-xs">Medical Deductible</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={editForm.medical_deductible}
-                      onChange={(e) => setEditForm((f) => ({ ...f, medical_deductible: e.target.value }))}
-                      placeholder="$0"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">RX Deductible (T345)</Label>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      value={editForm.rx_deductible_tier345}
-                      onChange={(e) => setEditForm((f) => ({ ...f, rx_deductible_tier345: e.target.value }))}
-                      placeholder="$0"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">RX Cost Share</Label>
-                    <Input
-                      value={editForm.rx_cost_share}
-                      onChange={(e) => setEditForm((f) => ({ ...f, rx_cost_share: e.target.value }))}
-                      placeholder="e.g., $0 Tier 1, $10 Tier 2"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <Label className="text-xs">Medicaid Eligibility</Label>
-                    <Input
-                      value={editForm.medicaid_eligibility}
-                      onChange={(e) => setEditForm((f) => ({ ...f, medicaid_eligibility: e.target.value }))}
-                      placeholder="e.g., Required, Not Required"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Transitioned From</Label>
-                    <Input
-                      value={editForm.transitioned_from}
-                      onChange={(e) => setEditForm((f) => ({ ...f, transitioned_from: e.target.value }))}
-                      placeholder="Previous plan name"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">Summary</Label>
-                    <Input
-                      value={editForm.summary}
-                      onChange={(e) => setEditForm((f) => ({ ...f, summary: e.target.value }))}
-                      placeholder="Plan summary or highlights"
-                    />
-                  </div>
-                </div>
+                <DynamicPlanForm
+                  formData={editForm}
+                  onChange={(field, value) => setEditForm((f) => ({ ...f, [field]: value }))}
+                  mode="edit"
+                  className="space-y-4"
+                />
               </div>
             </div>
           </ModalForm>
 
           {error && <div className="text-destructive text-sm">{error}</div>}
         </div>
-      </div>
 
-      {/* Plan Comparison Modal */}
-      <PlanComparisonModal isOpen={showComparison} onClose={() => setShowComparison(false)} plans={selectedPlans} />
+        {/* Plan Comparison Modal */}
+        <PlanComparisonModal 
+          key={`comparison-${selectedPlanIds.join('-')}`}
+          isOpen={showComparison} 
+          onClose={() => setShowComparison(false)} 
+          plans={selectedPlans} 
+          onRefresh={refreshPlansWithSelection} 
+        />
+      </div>
     </div>
   )
 }
