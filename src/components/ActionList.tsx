@@ -233,7 +233,7 @@ export default function ActionList({
           <div className="flex items-center space-x-2">
             {!isCollapsed && (
               <span className="text-muted-foreground text-sm">
-                {displayActions.length} / {actions.length}
+                {displayActions.length} / {selectedContact ? actions.filter(action => action.contact_id === selectedContact.id).length : actions.length}
               </span>
             )}
             {selectedContact && (
@@ -305,7 +305,7 @@ export default function ActionList({
             </div>
           ) : displayActions.length === 0 ? (
             <div className="py-8 text-center">
-              <p className="text-muted-foreground">No actions for this contact</p>
+              <p className="text-muted-foreground">No actions displayed for this contact.</p>
               <Button onClick={onAddAction} className="mt-2 cursor-pointer">
                 <Plus className="mr-2 h-4 w-4" />
                 Add action

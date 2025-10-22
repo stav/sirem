@@ -273,14 +273,13 @@ export default function ContactList({
         <CardHeader>
           <div className="flex flex-wrap items-center gap-2">
             {/* Title and collapse button */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2" title="Back to Contact List">
               {singleContactView && selectedContact && (
-                <Button variant="ghost" size="sm" onClick={onBackToAll} className="cursor-pointer px-2">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Show all contacts
+                <Button variant="ghost" size="sm" onClick={onBackToAll} className="cursor-pointer px-8">
+                  <ArrowLeft className="h-4 w-4" />
                 </Button>
               )}
-              <CardTitle>{singleContactView && selectedContact ? <span>Contact Details</span> : 'Contacts'}</CardTitle>
+              <CardTitle>{singleContactView && selectedContact ? <span>Contact</span> : 'Contacts'}</CardTitle>
               <Button variant="ghost" size="sm" onClick={toggleCollapse} className="cursor-pointer px-2">
                 {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
               </Button>
