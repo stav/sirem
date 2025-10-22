@@ -337,6 +337,7 @@ export default function ContactList({
                         let hasName = false
                         let hasTag = false
                         let hasStatus = false
+                        let hasRole = false
 
                         terms.forEach((term) => {
                           const trimmedTerm = term.trim()
@@ -344,6 +345,8 @@ export default function ContactList({
                             hasTag = true
                           } else if (trimmedTerm.startsWith('s:')) {
                             hasStatus = true
+                          } else if (trimmedTerm.startsWith('r:')) {
+                            hasRole = true
                           } else {
                             const numericValue = parseInt(trimmedTerm, 10)
                             if (!isNaN(numericValue) && numericValue > 0 && numericValue.toString() === trimmedTerm) {
@@ -358,6 +361,7 @@ export default function ContactList({
                         if (hasName) filterTypes.push('Name')
                         if (hasTag) filterTypes.push('Tag')
                         if (hasStatus) filterTypes.push('Status')
+                        if (hasRole) filterTypes.push('Role')
 
                         return filterTypes.join(' + ') + ' filter'
                       })()}
