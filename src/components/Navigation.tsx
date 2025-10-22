@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { Users, BarChart3, Table, Upload, ClipboardList, Tags } from 'lucide-react'
+import { Users, BarChart3, Upload, ClipboardList, Tags } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
 
 interface NavigationProps {
@@ -10,7 +10,7 @@ interface NavigationProps {
 const pages = [
   { title: 'Dashboard', path: '/', icon: BarChart3 },
   { title: 'Manage', path: '/manage', icon: Users },
-  { title: 'Sheets', path: '/sheets', icon: Table },
+  // { title: 'Sheets', path: '/sheets', icon: Table },
   { title: 'Plans', path: '/plans', icon: ClipboardList },
   { title: 'Tags', path: '/tags', icon: Tags },
   { title: 'Import', path: '/import', icon: Upload },
@@ -23,7 +23,7 @@ export default function Navigation({ pageTitle }: NavigationProps) {
         <div className="flex h-16 justify-between">
           <div className="flex items-center space-x-6">
             <h1 className="text-foreground text-xl font-semibold">Sirem CRM</h1>
-            <span className="text-muted-foreground text-lg font-medium">{pageTitle}</span>
+            <span className="hidden md:block text-muted-foreground text-lg font-medium">{pageTitle}</span>
           </div>
           <div className="flex items-center space-x-4">
             {pages.map((page) => {

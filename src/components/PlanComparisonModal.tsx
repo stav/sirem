@@ -275,7 +275,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
     formatter?: (v: number | null) => string
   }) => (
     <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
-      <td className="py-2 px-3 font-medium text-sm bg-muted/30">{label}</td>
+      <td className="py-2 px-3 font-medium text-sm bg-muted sticky left-0 z-10 min-w-48">{label}</td>
       {values.map((value, idx) => {
         const others = values.filter((_, i) => i !== idx)
         const hasDiscrep = false // No discrepancy checking needed with new schema
@@ -420,7 +420,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b-2 border-border">
-                <th className="py-3 px-3 text-left font-semibold text-sm bg-muted sticky top-0"></th>
+                <th className="py-3 px-3 text-left font-semibold text-sm bg-muted sticky top-0 left-0 z-10 min-w-48"></th>
                 {plans.map((plan, idx) => (
                   <th key={idx} className="py-3 px-3 text-center font-semibold text-sm bg-muted sticky top-0 max-w-48">
                     <div className="font-bold">{plan.name}</div>
@@ -446,7 +446,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
             <tbody>
               {/* Basic Information */}
               <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
-                <td className="py-2 px-3 font-medium text-sm bg-muted/30">CMS ID (Full)</td>
+                <td className="py-2 px-3 font-medium text-sm bg-muted sticky left-0 z-10 min-w-48">CMS ID (Full)</td>
                 {plans.map((plan, idx) => (
                   <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
                     {calculateCmsId(plan) || '—'}
@@ -454,7 +454,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                 ))}
               </tr>
               <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
-                <td className="py-2 px-3 font-medium text-sm bg-muted/30">CMS Contract Number</td>
+                <td className="py-2 px-3 font-medium text-sm bg-muted sticky left-0 z-10 min-w-48">CMS Contract Number</td>
                 {plans.map((plan, idx) => (
                   <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
                     {formatText(plan.cms_contract_number)}
@@ -462,7 +462,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                 ))}
               </tr>
               <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
-                <td className="py-2 px-3 font-medium text-sm bg-muted/30">CMS Plan Number</td>
+                <td className="py-2 px-3 font-medium text-sm bg-muted sticky left-0 z-10 min-w-48">CMS Plan Number</td>
                 {plans.map((plan, idx) => (
                   <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
                     {formatText(plan.cms_plan_number)}
@@ -470,7 +470,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                 ))}
               </tr>
               <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
-                <td className="py-2 px-3 font-medium text-sm bg-muted/30">CMS Geo Segment</td>
+                <td className="py-2 px-3 font-medium text-sm bg-muted sticky left-0 z-10 min-w-48">CMS Geo Segment</td>
                 {plans.map((plan, idx) => (
                   <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
                     {formatText(plan.cms_geo_segment)}
@@ -482,7 +482,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
               {getSchemaOrderedMetadataSections().map(({section, fields}) => (
                 <React.Fragment key={section.key}>
                   <tr className="bg-muted/50">
-                    <th className="py-2 px-3 font-semibold text-sm text-right">
+                    <th className="py-2 px-3 font-semibold text-sm text-right bg-muted sticky left-0 z-10 min-w-48">
                       {section.title}
                     </th>
                     <td colSpan={plans.length}></td>
@@ -513,7 +513,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                       // Render as text field
                       return (
                         <tr key={key} className="border-b border-border hover:bg-blue-500/20 transition-colors">
-                          <td className="py-2 px-3 font-medium text-sm bg-muted/30">
+                          <td className="py-2 px-3 font-medium text-sm bg-muted sticky left-0 z-10 min-w-48">
                             {formatLabel(key)}
                           </td>
                           {plans.map((plan, idx) => {
@@ -561,13 +561,13 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
               {showCalculator && (
                 <>
                   <tr className="bg-muted/50">
-                    <th className="py-2 px-3 font-semibold text-sm text-right">
+                    <th className="py-2 px-3 font-semibold text-sm text-right bg-muted sticky left-0 z-10 min-w-48">
                       Estimated Annual Cost
                     </th>
                     <td colSpan={plans.length}></td>
                   </tr>
                   <tr className="border-b-2 border-border bg-blue-50 dark:bg-blue-950/30">
-                    <td className="py-3 px-3 font-bold text-sm">Total Estimated Annual Cost</td>
+                    <td className="py-3 px-3 font-bold text-sm bg-muted sticky left-0 z-10 min-w-48">Total Estimated Annual Cost</td>
                     {annualCosts.map((cost, idx) => (
                       <td key={idx} className={`py-3 px-3 text-center font-bold text-sm ${cost === lowestCost ? 'text-green-600' : ''}`}>
                         {formatCurrency(cost)}
@@ -580,7 +580,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
 
               {/* Additional Database Fields */}
               <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
-                <td className="py-2 px-3 font-medium text-sm bg-muted/30">Counties</td>
+                <td className="py-2 px-3 font-medium text-sm bg-muted sticky left-0 z-10 min-w-48">Counties</td>
                 {plans.map((plan, idx) => (
                   <td key={idx} className="py-2 px-3 text-center text-xs max-w-48 overflow-hidden">
                     <div className="line-clamp-3" title={plan.counties?.join(', ')}>
