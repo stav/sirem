@@ -21,18 +21,17 @@ export default function LazyContactPlans({ contactId, className = '' }: LazyCont
   const [shouldLoad, setShouldLoad] = useState(false)
   const [hasBeenVisible, setHasBeenVisible] = useState(false)
   const elementRef = useRef<HTMLDivElement>(null)
-  const { getCachedEnrollments, setCachedEnrollments, isCached, refreshTrigger } = usePlanCache()
+  const { getCachedEnrollments, setCachedEnrollments } = usePlanCache()
   
   // Memoize the contactId to prevent unnecessary re-renders
   const memoizedContactId = useMemo(() => {
     return shouldLoad ? contactId : undefined
-  }, [shouldLoad, contactId, refreshTrigger])
+  }, [shouldLoad, contactId])
   
-  const { enrollments, loading, fetchEnrollments } = usePlanEnrollments(memoizedContactId)
+  const { enrollments, loading } = usePlanEnrollments(memoizedContactId)
 
   // Check cache first
   const cachedEnrollments = getCachedEnrollments(contactId)
-  const isDataCached = isCached(contactId)
 
 
   // Update cache when new data is loaded

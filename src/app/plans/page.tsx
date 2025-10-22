@@ -73,7 +73,7 @@ export default function PlansPage() {
   const [isAdding, setIsAdding] = useState(false)
   const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([])
   const [showComparison, setShowComparison] = useState(false)
-  const [activeFilters, setActiveFilters] = useState<Record<string, any>>({})
+  const [activeFilters, setActiveFilters] = useState<Record<string, { filter?: unknown }>>({})
   const [showQuickFilters, setShowQuickFilters] = useState(true)
   const isRefreshingRef = useRef(false)
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null)
@@ -189,7 +189,7 @@ export default function PlansPage() {
   }
 
   // Custom header component for Actions column
-  const ActionsHeaderComponent = () => {
+  const ActionsHeaderComponent = React.useCallback(() => {
     return (
       <div className="flex items-center justify-between w-full">
         <span>Actions</span>
@@ -204,7 +204,7 @@ export default function PlansPage() {
         </Button>
       </div>
     )
-  }
+  }, [showQuickFilters])
 
   const selectedPlans = useMemo(() => {
     if (selectedPlanIds.length === 0) return []
@@ -414,7 +414,7 @@ export default function PlansPage() {
         pinned: 'right',
       },
     ],
-        [deletePlan, toast]
+        [deletePlan, toast, ActionsHeaderComponent]
   )
 
   const defaultColDef = useMemo(

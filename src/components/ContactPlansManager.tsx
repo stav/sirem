@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
 import type { Database } from '@/lib/supabase'
 import { type EnrollmentStatus } from '@/lib/plan-constants'
-import { usePlanEnrollments, type EnrollmentUpdateForm } from '@/hooks/usePlanEnrollments'
+import { usePlanEnrollments } from '@/hooks/usePlanEnrollments'
 import { usePlans } from '@/hooks/usePlans'
 import { usePlanCache } from '@/contexts/PlanCacheContext'
 import { Button } from '@/components/ui/button'

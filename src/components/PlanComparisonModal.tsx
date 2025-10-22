@@ -73,26 +73,6 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
     return hasCents ? `$${value.toFixed(2)}` : `$${value.toFixed(0)}`
   }
 
-  // Helper to format numbers
-  const formatNumber = (value: number | null | undefined): string => {
-    if (value == null) return '—'
-    return String(value)
-  }
-
-  // Helper to format dates
-  const formatDate = (value: string | null | undefined): string => {
-    if (!value) return '—'
-    try {
-      return new Date(value).toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
-        day: 'numeric',
-        timeZone: 'UTC'
-      })
-    } catch {
-      return '—'
-    }
-  }
 
   // Helper to format text values
   const formatText = (value: string | null | undefined): string => {
