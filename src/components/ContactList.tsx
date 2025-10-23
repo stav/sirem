@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { Plus, ArrowLeft, ChevronDown, ChevronUp, X, List, Filter, RefreshCw } from 'lucide-react'
+import { Plus, ArrowLeft, ChevronDown, ChevronUp, X, List, Filter, RefreshCw, Mail } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
@@ -33,6 +33,7 @@ interface ContactListProps {
   refreshTimestamp?: number
   onFilteredContactsChange?: (filteredContacts: Contact[]) => void
   onRefresh?: () => void
+  onCreateCampaign?: () => void
 }
 
 export default function ContactList({
@@ -48,6 +49,7 @@ export default function ContactList({
   refreshTimestamp,
   onFilteredContactsChange,
   onRefresh,
+  onCreateCampaign,
 }: ContactListProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [filter, setFilter] = useState('')
@@ -430,6 +432,25 @@ export default function ContactList({
                       </Tooltip>
                     </TooltipProvider>
                   </>
+                )}
+                {onCreateCampaign && filteredContacts.length > 0 && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          onClick={onCreateCampaign} 
+                          size="sm" 
+                          variant="outline"
+                          className="cursor-pointer"
+                        >
+                          <Mail className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" align="end" sideOffset={5}>
+                        <p>Create Email Campaign</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 )}
                 <TooltipProvider>
                   <Tooltip>

@@ -9,6 +9,7 @@ import ActionForm from '@/components/ActionForm'
 import ActionViewModal from '@/components/ActionViewModal'
 import ContactViewModal from '@/components/ContactViewModal'
 import ContactForm from '@/components/ContactForm'
+import CampaignFromFilter from '@/components/CampaignFromFilter'
 import { useContacts } from '@/hooks/useContacts'
 import { useActions } from '@/hooks/useActions'
 import type { Database } from '@/lib/supabase'
@@ -79,6 +80,7 @@ function ManagePageContent() {
   const [showActionForm, setShowActionForm] = useState(false)
   const [showActionViewModal, setShowActionViewModal] = useState(false)
   const [showContactViewModal, setShowContactViewModal] = useState(false)
+  const [showCampaignModal, setShowCampaignModal] = useState(false)
   const [viewingAction, setViewingAction] = useState<Action | null>(null)
   const [viewingContact, setViewingContact] = useState<Contact | null>(null)
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
@@ -542,6 +544,7 @@ function ManagePageContent() {
               refreshTimestamp={refreshTimestamp}
               onFilteredContactsChange={handleFilteredContactsChange}
               onRefresh={fetchContacts}
+              onCreateCampaign={() => setShowCampaignModal(true)}
             />
 
             {/* Actions Section */}
@@ -623,6 +626,16 @@ function ManagePageContent() {
             roleRefreshTrigger={roleRefreshTrigger}
             onContactUpdated={fetchContacts}
           />
+
+          {/* Campaign Modal */}
+          {showCampaignModal && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+              <CampaignFromFilter
+                filteredContacts={filteredContacts}
+                onClose={() => setShowCampaignModal(false)}
+              />
+            </div>
+          )}
         </div>
       </div>
     </div>
