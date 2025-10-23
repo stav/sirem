@@ -37,35 +37,32 @@ export interface SendEmailResult {
  */
 export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
   try {
-    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 're_fallback_key_for_development') {
-      console.warn('RESEND_API_KEY not configured. Email sending is disabled.')
-      return {
-        success: false,
-        error: 'Email service not configured. Please set RESEND_API_KEY environment variable.'
-      }
-    }
-
-    const { data, error } = await resend.emails.send({
-      from: options.from,
-      to: options.to.map(recipient => recipient.email),
-      subject: options.subject,
-      html: options.htmlContent,
-      text: options.textContent,
-      reply_to: options.replyTo,
-      tags: options.tags,
+    const response = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: options.from || getDefaultEmailConfig().from,
+        to: options.to.map(recipient => recipient.email),
+        subject: options.subject,
+        html: options.htmlContent,
+        text: options.textContent,
+      }),
     })
 
-    if (error) {
-      console.error('Resend API error:', error)
+    const result = await response.json()
+
+    if (!result.success) {
       return {
         success: false,
-        error: error.message || 'Failed to send email'
+        error: result.error || 'Failed to send email'
       }
     }
 
     return {
       success: true,
-      messageId: data?.id
+      messageId: result.messageId
     }
   } catch (error) {
     console.error('Email sending error:', error)
@@ -86,16 +83,6 @@ export async function sendBulkEmails(
   batchSize: number = 10,
   delayMs: number = 1000
 ): Promise<{ success: number; failed: number; errors: string[] }> {
-  // Check if API key is configured
-  if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY === 're_fallback_key_for_development') {
-    console.warn('RESEND_API_KEY not configured. Bulk email sending is disabled.')
-    return {
-      success: 0,
-      failed: recipients.length,
-      errors: ['Email service not configured. Please set RESEND_API_KEY environment variable.']
-    }
-  }
-
   let successCount = 0
   let failedCount = 0
   const errors: string[] = []
@@ -107,7 +94,7 @@ export async function sendBulkEmails(
     // Send batch
     const result = await sendEmail({
       to: batch,
-      from,
+      from: from || getDefaultEmailConfig().from,
       subject: template.subject,
       htmlContent: template.htmlContent,
       textContent: template.textContent
@@ -213,7 +200,7 @@ export function extractEmailAddresses(contacts: any[]): EmailRecipient[] {
  */
 export function getDefaultEmailConfig() {
   return {
-    from: process.env.RESEND_FROM_EMAIL || 'noreply@yourdomain.com',
-    replyTo: process.env.RESEND_REPLY_TO_EMAIL || 'support@yourdomain.com'
+    from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
+    replyTo: process.env.RESEND_REPLY_TO_EMAIL || 'onboarding@resend.dev'
   }
 }

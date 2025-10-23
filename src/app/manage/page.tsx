@@ -10,12 +10,15 @@ import ActionViewModal from '@/components/ActionViewModal'
 import ContactViewModal from '@/components/ContactViewModal'
 import ContactForm from '@/components/ContactForm'
 import CampaignFromFilter from '@/components/CampaignFromFilter'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useContacts } from '@/hooks/useContacts'
 import { useActions } from '@/hooks/useActions'
+import { useContactFilter } from '@/contexts/ContactFilterContext'
 import type { Database } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 import { logger } from '@/lib/logger'
 import { RoleData, RoleType } from '@/types/roles'
+import { Mail } from 'lucide-react'
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
   addresses?: Database['public']['Tables']['addresses']['Row'][]
@@ -91,12 +94,19 @@ function ManagePageContent() {
   const [refreshTimestamp, setRefreshTimestamp] = useState<number>(Date.now())
   const [roleRefreshTrigger, setRoleRefreshTrigger] = useState<number>(0)
   const [pendingRoles, setPendingRoles] = useState<PendingRole[]>([])
-  const [filteredContacts, setFilteredContacts] = useState<Contact[]>([])
+  const { filteredContacts, setFilteredContacts } = useContactFilter()
 
   // Memoize the callback to prevent infinite re-renders
   const handleFilteredContactsChange = useCallback((contacts: Contact[]) => {
     setFilteredContacts(contacts)
-  }, [])
+  }, [setFilteredContacts])
+
+  // Initialize filteredContacts with all contacts when contacts are loaded
+  useEffect(() => {
+    if (contacts.length > 0 && filteredContacts.length === 0) {
+      setFilteredContacts(contacts)
+    }
+  }, [contacts, filteredContacts.length, setFilteredContacts])
 
   // Update selectedContact when contacts list changes
   useEffect(() => {
@@ -628,14 +638,20 @@ function ManagePageContent() {
           />
 
           {/* Campaign Modal */}
-          {showCampaignModal && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <Dialog open={showCampaignModal} onOpenChange={setShowCampaignModal}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Mail className="h-5 w-5" />
+                  Create Email Campaign
+                </DialogTitle>
+              </DialogHeader>
               <CampaignFromFilter
                 filteredContacts={filteredContacts}
                 onClose={() => setShowCampaignModal(false)}
               />
-            </div>
-          )}
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>

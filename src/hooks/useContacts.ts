@@ -14,6 +14,7 @@ type Contact = Database['public']['Tables']['contacts']['Row'] & {
     }
   }[]
   contact_roles?: Database['public']['Tables']['contact_roles']['Row'][]
+  emails?: Database['public']['Tables']['emails']['Row'][]
 }
 
 interface ContactForm {
@@ -76,6 +77,14 @@ export function useContacts() {
             role_data,
             is_active,
             is_primary,
+            created_at,
+            updated_at
+          ),
+          emails (
+            id,
+            email_address,
+            email_label,
+            inactive,
             created_at,
             updated_at
           )

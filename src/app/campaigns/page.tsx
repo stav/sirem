@@ -7,6 +7,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Plus, Mail, BarChart3 } from 'lucide-react'
 import { useCampaigns, Campaign } from '@/hooks/useCampaigns'
+import { useContactFilter } from '@/contexts/ContactFilterContext'
 import CampaignList from '@/components/CampaignList'
 import CampaignForm from '@/components/CampaignForm'
 import { useToast } from '@/hooks/use-toast'
@@ -18,6 +19,7 @@ export default function CampaignsPage() {
   const [viewingCampaign, setViewingCampaign] = useState<Campaign | null>(null)
   
   const { toast } = useToast()
+  const { filteredContacts } = useContactFilter()
   const {
     campaigns,
     loading,
@@ -29,11 +31,17 @@ export default function CampaignsPage() {
 
   const handleCreateCampaign = async (campaignData: any) => {
     try {
-      // For now, we'll need to get contacts from the current filter
-      // This will be integrated with the contact filtering system
-      const contacts = [] // TODO: Get from contact filter context
+      // Use filtered contacts from the context
+      if (filteredContacts.length === 0) {
+        toast({
+          title: "No Contacts Selected",
+          description: "Please go to the Manage page to filter contacts before creating a campaign.",
+          variant: "destructive"
+        })
+        return
+      }
       
-      const result = await createCampaign(campaignData, contacts)
+      const result = await createCampaign(campaignData, filteredContacts)
       
       if (result) {
         toast({
@@ -209,18 +217,39 @@ export default function CampaignsPage() {
         </TabsContent>
 
         <TabsContent value="create" className="space-y-6">
-          <CampaignForm
-            onSubmit={editingCampaign ? handleUpdateCampaign : handleCreateCampaign}
-            onCancel={handleCancelForm}
-            loading={loading}
-            initialData={editingCampaign ? {
-              name: editingCampaign.name,
-              subject: editingCampaign.subject,
-              content: editingCampaign.content,
-              html_content: editingCampaign.html_content,
-              scheduled_at: editingCampaign.scheduled_at
-            } : undefined}
-          />
+          {filteredContacts.length === 0 && !editingCampaign ? (
+            <Card className="p-6">
+              <div className="text-center space-y-4">
+                <div className="mx-auto w-12 h-12 bg-muted rounded-full flex items-center justify-center">
+                  <Mail className="h-6 w-6 text-muted-foreground" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold">No Contacts Selected</h3>
+                  <p className="text-muted-foreground">
+                    To create an email campaign, you need to select contacts first.
+                  </p>
+                </div>
+                <Button asChild>
+                  <a href="/manage">
+                    Go to Manage Contacts
+                  </a>
+                </Button>
+              </div>
+            </Card>
+          ) : (
+            <CampaignForm
+              onSubmit={editingCampaign ? handleUpdateCampaign : handleCreateCampaign}
+              onCancel={handleCancelForm}
+              loading={loading}
+              initialData={editingCampaign ? {
+                name: editingCampaign.name,
+                subject: editingCampaign.subject,
+                content: editingCampaign.content,
+                html_content: editingCampaign.html_content,
+                scheduled_at: editingCampaign.scheduled_at
+              } : undefined}
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-6">

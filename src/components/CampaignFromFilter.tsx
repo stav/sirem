@@ -76,17 +76,7 @@ export default function CampaignFromFilter({
 
   if (step === 'preview') {
     return (
-      <Card className="w-full max-w-2xl mx-auto">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5" />
-            Create Email Campaign
-          </CardTitle>
-          <CardDescription>
-            Create an email campaign for your filtered contacts
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <div className="space-y-6">
           {/* Filter Summary */}
           <div className="space-y-3">
             <div className="flex items-center gap-2">
@@ -114,19 +104,19 @@ export default function CampaignFromFilter({
             <h4 className="font-medium">Email Recipients</h4>
             <div className="max-h-40 overflow-y-auto space-y-2">
               {emailRecipients.slice(0, 10).map((recipient, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
                   <div>
                     <span className="font-medium">
                       {recipient.firstName} {recipient.lastName}
                     </span>
-                    <span className="text-sm text-gray-500 ml-2">
+                    <span className="text-sm text-muted-foreground ml-2">
                       {recipient.email}
                     </span>
                   </div>
                 </div>
               ))}
               {emailRecipients.length > 10 && (
-                <div className="text-sm text-gray-500 text-center py-2">
+                <div className="text-sm text-muted-foreground text-center py-2">
                   ... and {emailRecipients.length - 10} more recipients
                 </div>
               )}
@@ -135,9 +125,9 @@ export default function CampaignFromFilter({
 
           {emailRecipients.length === 0 && (
             <div className="text-center py-8">
-              <Mail className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">No Email Addresses</h3>
-              <p className="text-gray-500">
+              <Mail className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2">No Email Addresses</h3>
+              <p className="text-muted-foreground">
                 None of the filtered contacts have email addresses. 
                 Please adjust your filter or add email addresses to your contacts.
               </p>
@@ -156,24 +146,13 @@ export default function CampaignFromFilter({
               Continue
               <ArrowRight className="h-4 w-4" />
             </Button>
-          </div>
-        </CardContent>
-      </Card>
-    )
+        </div>
+      </div>
+  )
   }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Mail className="h-5 w-5" />
-          Campaign Details
-        </CardTitle>
-        <CardDescription>
-          Configure your email campaign for {emailRecipients.length} recipients
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
+    <div className="space-y-6">
         {/* Campaign Form Fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
@@ -183,7 +162,7 @@ export default function CampaignFromFilter({
               value={campaignData.name}
               onChange={(e) => setCampaignData(prev => ({ ...prev, name: e.target.value }))}
               placeholder="Enter campaign name"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
               required
             />
           </div>
@@ -194,7 +173,7 @@ export default function CampaignFromFilter({
               value={campaignData.subject}
               onChange={(e) => setCampaignData(prev => ({ ...prev, subject: e.target.value }))}
               placeholder="Enter email subject"
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
               required
             />
           </div>
@@ -206,21 +185,21 @@ export default function CampaignFromFilter({
             value={campaignData.content}
             onChange={(e) => setCampaignData(prev => ({ ...prev, content: e.target.value }))}
             placeholder="Enter your email content. Use {{firstName}} for personalization..."
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 h-32"
+            className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground h-32"
             required
           />
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-muted-foreground">
             Use <code>{'{{firstName}}'}</code>, <code>{'{{lastName}}'}</code>, or <code>{'{{fullName}}'}</code> for personalization
           </p>
         </div>
 
         {/* Recipients Summary */}
-        <div className="bg-blue-50 p-4 rounded-lg">
+        <div className="bg-muted p-4 rounded-lg">
           <div className="flex items-center gap-2 mb-2">
-            <Users className="h-4 w-4 text-blue-600" />
-            <span className="font-medium text-blue-900">Recipients</span>
+            <Users className="h-4 w-4 text-primary" />
+            <span className="font-medium">Recipients</span>
           </div>
-          <p className="text-sm text-blue-700">
+          <p className="text-sm text-muted-foreground">
             This campaign will be sent to <strong>{emailRecipients.length}</strong> contacts with email addresses.
           </p>
         </div>
@@ -238,7 +217,6 @@ export default function CampaignFromFilter({
             Create Campaign
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
   )
 }
