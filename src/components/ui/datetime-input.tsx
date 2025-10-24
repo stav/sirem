@@ -1,5 +1,5 @@
 import React from 'react'
-import { X, Clock } from 'lucide-react'
+import { X, Clock, Calendar } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -70,7 +70,7 @@ export default function DateTimeInput({
           onChange={handleInputChange}
           required={required}
           placeholder={placeholder}
-          className="pr-20"
+          className="pr-24 datetime-input [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-datetime-edit]:text-foreground [&::-webkit-datetime-edit-fields-wrapper]:text-foreground [&::-webkit-datetime-edit-text]:text-foreground [&::-webkit-datetime-edit-month-field]:text-foreground [&::-webkit-datetime-edit-day-field]:text-foreground [&::-webkit-datetime-edit-year-field]:text-foreground [&::-webkit-datetime-edit-hour-field]:text-foreground [&::-webkit-datetime-edit-minute-field]:text-foreground [&::-webkit-datetime-edit-second-field]:text-foreground [&::-webkit-datetime-edit-millisecond-field]:text-foreground [&::-webkit-datetime-edit-ampm-field]:text-foreground"
         />
         <div className="absolute top-1/2 right-1 flex -translate-y-1/2 items-center space-x-1">
           {value && (
@@ -85,6 +85,16 @@ export default function DateTimeInput({
               <X className="h-3 w-3" />
             </Button>
           )}
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={() => (document.getElementById(id) as HTMLInputElement)?.showPicker?.()}
+            className="hover:bg-muted h-6 w-6 p-0"
+            aria-label="Open calendar"
+          >
+            <Calendar className="h-3 w-3" />
+          </Button>
           <Button
             type="button"
             variant="ghost"
