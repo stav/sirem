@@ -91,6 +91,7 @@ function ManagePageContent() {
   const [pendingRoles, setPendingRoles] = useState<PendingRole[]>([])
   const [filteredContacts, setFilteredContacts] = useState<Contact[]>([])
 
+
   // Memoize the callback to prevent infinite re-renders
   const handleFilteredContactsChange = useCallback((contacts: Contact[]) => {
     setFilteredContacts(contacts)
@@ -377,7 +378,7 @@ function ManagePageContent() {
         closeActionForm()
       }
     } else {
-      // Create new action - needs selectedContact
+      // Create new action - needs a contact
       if (!selectedContact) return
 
       const success = await createAction(selectedContact.id, actionForm)

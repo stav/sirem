@@ -133,6 +133,12 @@ export default function ActionList({
     }
   }
 
+  // Calculate total actions for the selected contact (before any filtering)
+  const totalActionsForContact = useMemo(() => {
+    if (!selectedContact) return 0
+    return actions.filter((a) => String(a.contact_id) === String(selectedContact.id)).length
+  }, [actions, selectedContact])
+
   // Memoize filtered and sorted actions to prevent expensive re-computations
   const displayActions = useMemo(() => {
     let filteredActions = actions
@@ -277,11 +283,21 @@ export default function ActionList({
         <CardContent>
           {!selectedContact && displayActions.length === 0 ? (
             <div className="py-8 text-center">
-              <p className="text-muted-foreground">No actions yet</p>
-              <Button onClick={onAddAction} className="mt-2 cursor-pointer">
-                <Plus className="mr-2 h-4 w-4" />
-                Add your first action
-              </Button>
+              {totalActionsForContact > 0 ? (
+                <>
+                  <p className="text-muted-foreground">
+                    {totalActionsForContact} cards not displayed, maybe try a different filter.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-muted-foreground">No actions yet</p>
+                  <Button onClick={onAddAction} className="mt-2 cursor-pointer">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add your first action
+                  </Button>
+                </>
+              )}
             </div>
           ) : !selectedContact ? (
             <div className="space-y-3">
@@ -305,11 +321,21 @@ export default function ActionList({
             </div>
           ) : displayActions.length === 0 ? (
             <div className="py-8 text-center">
-              <p className="text-muted-foreground">No actions displayed for this contact.</p>
-              <Button onClick={onAddAction} className="mt-2 cursor-pointer">
-                <Plus className="mr-2 h-4 w-4" />
-                Add action
-              </Button>
+              {totalActionsForContact > 0 ? (
+                <>
+                  <p className="text-muted-foreground">
+                    {totalActionsForContact} cards not displayed, maybe try a different filter.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-muted-foreground">No actions yet</p>
+                  <Button onClick={onAddAction} className="mt-2 cursor-pointer">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Add your first action
+                  </Button>
+                </>
+              )}
             </div>
           ) : (
             <div className="space-y-3">
