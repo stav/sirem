@@ -90,6 +90,7 @@ function ManagePageContent() {
   const [roleRefreshTrigger, setRoleRefreshTrigger] = useState<number>(0)
   const [pendingRoles, setPendingRoles] = useState<PendingRole[]>([])
   const [filteredContacts, setFilteredContacts] = useState<Contact[]>([])
+  const [filteredContactForActions, setFilteredContactForActions] = useState<Contact | null>(null)
 
   // Memoize the callback to prevent infinite re-renders
   const handleFilteredContactsChange = useCallback((contacts: Contact[]) => {
@@ -493,6 +494,17 @@ function ManagePageContent() {
     window.history.replaceState({}, '', url.toString())
   }
 
+  const handleFilterActions = (contact: Contact) => {
+    setFilteredContactForActions(contact)
+    const contactName = `${contact.first_name} ${contact.last_name}`
+    logger.info(`Actions filtered for contact: ${contactName}`, 'action_filter', contact.id)
+  }
+
+  const handleClearActionFilter = () => {
+    setFilteredContactForActions(null)
+    logger.info('Action filter cleared', 'action_filter_clear')
+  }
+
   const loading = contactsLoading || actionsLoading
 
   if (loading) {
@@ -503,9 +515,13 @@ function ManagePageContent() {
           <div className="mx-auto max-w-7xl">
             <div className="animate-pulse">
               <div className="bg-muted mb-8 h-8 w-1/4 rounded"></div>
-              <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-                <div className="bg-muted h-96 rounded"></div>
-                <div className="bg-muted h-96 rounded"></div>
+              <div className="flex h-[calc(100vh-8rem)] flex-col gap-8 lg:flex-row">
+                <div className="flex-1 min-w-0 lg:flex-1">
+                  <div className="bg-muted h-full rounded"></div>
+                </div>
+                <div className="flex-1 min-w-0 lg:flex-1">
+                  <div className="bg-muted h-full rounded"></div>
+                </div>
               </div>
             </div>
           </div>
@@ -520,53 +536,64 @@ function ManagePageContent() {
 
       <div className="p-6">
         <div className="mx-auto max-w-7xl">
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-            {/* Contacts Section */}
-            <ContactList
-              contacts={contacts}
-              selectedContact={selectedContact}
-              singleContactView={singleContactView}
-              onAddContact={handleAddContact}
-              onSelectContact={(contact) => {
-                // Only log if selecting a different contact
-                if (!selectedContact || selectedContact.id !== contact.id) {
-                  const contactName = `${contact.first_name} ${contact.last_name}`
-                  logger.contactSelected(contactName, contact.id)
-                }
-                router.push(`/manage?contact=${contact.id}`)
-              }}
-              onEditContact={handleEditContact}
-              onDeleteContact={handleDeleteContact}
-              onViewContact={handleViewContact}
-              onBackToAll={handleBackToAll}
-              refreshTimestamp={refreshTimestamp}
-              onFilteredContactsChange={handleFilteredContactsChange}
-              onRefresh={fetchContacts}
-            />
+          <div className="flex h-[calc(100vh-8rem)] flex-col gap-8 lg:flex-row">
+            {/* Contacts Section - Left Column */}
+            <div className="flex-1 min-w-0 lg:flex-1">
+              <div className="h-full flex flex-col">
+                <ContactList
+                  contacts={contacts}
+                  selectedContact={selectedContact}
+                  singleContactView={singleContactView}
+                  onAddContact={handleAddContact}
+                  onSelectContact={(contact) => {
+                    // Only log if selecting a different contact
+                    if (!selectedContact || selectedContact.id !== contact.id) {
+                      const contactName = `${contact.first_name} ${contact.last_name}`
+                      logger.contactSelected(contactName, contact.id)
+                    }
+                    router.push(`/manage?contact=${contact.id}`)
+                  }}
+                  onEditContact={handleEditContact}
+                  onDeleteContact={handleDeleteContact}
+                  onViewContact={handleViewContact}
+                  onFilterActions={handleFilterActions}
+                  onBackToAll={handleBackToAll}
+                  refreshTimestamp={refreshTimestamp}
+                  onFilteredContactsChange={handleFilteredContactsChange}
+                  onRefresh={fetchContacts}
+                />
+              </div>
+            </div>
 
-            {/* Actions Section */}
-            <ActionList
-              actions={actions}
-              contacts={contacts}
-              selectedContact={selectedContact}
-              filteredContacts={filteredContacts}
-              onAddAction={handleAddAction}
-              onToggleComplete={handleToggleActionComplete}
-              onCompleteWithCreatedDate={handleCompleteActionWithCreatedDate}
-              onEditAction={handleEditAction}
-              onViewAction={handleViewAction}
-              onDeleteAction={handleDeleteAction}
-              showCompletedActions={showCompletedActions}
-              onToggleShowCompleted={() => setShowCompletedActions((v) => !v)}
-              onSelectContact={(contactId) => {
-                const contact = contacts.find((c) => c.id === contactId)
-                if (contact && (!selectedContact || selectedContact.id !== contact.id)) {
-                  const contactName = `${contact.first_name} ${contact.last_name}`
-                  logger.contactSelected(contactName, contact.id)
-                }
-                router.push(`/manage?contact=${contactId}`)
-              }}
-            />
+            {/* Actions Section - Right Column */}
+            <div className="flex-1 min-w-0 lg:flex-1">
+              <div className="h-full flex flex-col">
+                <ActionList
+                  actions={actions}
+                  contacts={contacts}
+                  selectedContact={selectedContact}
+                  filteredContacts={filteredContacts}
+                  filteredContactForActions={filteredContactForActions}
+                  onClearActionFilter={handleClearActionFilter}
+                  onAddAction={handleAddAction}
+                  onToggleComplete={handleToggleActionComplete}
+                  onCompleteWithCreatedDate={handleCompleteActionWithCreatedDate}
+                  onEditAction={handleEditAction}
+                  onViewAction={handleViewAction}
+                  onDeleteAction={handleDeleteAction}
+                  showCompletedActions={showCompletedActions}
+                  onToggleShowCompleted={() => setShowCompletedActions((v) => !v)}
+                  onSelectContact={(contactId) => {
+                    const contact = contacts.find((c) => c.id === contactId)
+                    if (contact && (!selectedContact || selectedContact.id !== contact.id)) {
+                      const contactName = `${contact.first_name} ${contact.last_name}`
+                      logger.contactSelected(contactName, contact.id)
+                    }
+                    router.push(`/manage?contact=${contactId}`)
+                  }}
+                />
+              </div>
+            </div>
           </div>
 
           {/* Contact Form Modal */}
@@ -639,9 +666,13 @@ export default function ManagePage() {
             <div className="mx-auto max-w-7xl">
               <div className="animate-pulse">
                 <div className="bg-muted mb-8 h-8 w-1/4 rounded"></div>
-                <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
-                  <div className="bg-muted h-96 rounded"></div>
-                  <div className="bg-muted h-96 rounded"></div>
+                <div className="flex h-[calc(100vh-8rem)] flex-col gap-8 lg:flex-row">
+                  <div className="flex-1 min-w-0 lg:flex-1">
+                    <div className="bg-muted h-full rounded"></div>
+                  </div>
+                  <div className="flex-1 min-w-0 lg:flex-1">
+                    <div className="bg-muted h-full rounded"></div>
+                  </div>
                 </div>
               </div>
             </div>

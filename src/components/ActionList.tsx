@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react'
-import { Plus, ChevronDown, ChevronUp } from 'lucide-react'
+import { Plus, ChevronDown, ChevronUp, X } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import ActionCard from './ActionCard'
@@ -17,6 +17,8 @@ interface ActionListProps {
   contacts: Contact[]
   selectedContact: Contact | null
   filteredContacts?: Contact[] // New prop for filtered contacts
+  filteredContactForActions?: Contact | null // New prop for filtering actions by specific contact
+  onClearActionFilter?: () => void // New prop for clearing action filter
   onAddAction: () => void
   onToggleComplete: (action: Action) => void
   onCompleteWithCreatedDate: (action: Action) => void
@@ -33,6 +35,8 @@ export default function ActionList({
   contacts,
   selectedContact,
   filteredContacts,
+  filteredContactForActions,
+  onClearActionFilter,
   onAddAction,
   onToggleComplete,
   onCompleteWithCreatedDate,
@@ -140,6 +144,9 @@ export default function ActionList({
     if (selectedContact) {
       // When a specific contact is selected, show only that contact's actions
       filteredActions = filteredActions.filter((a) => String(a.contact_id) === String(selectedContact.id))
+    } else if (filteredContactForActions) {
+      // When a contact is selected for action filtering, show only that contact's actions
+      filteredActions = filteredActions.filter((a) => String(a.contact_id) === String(filteredContactForActions.id))
     } else if (filteredContacts && filteredContacts.length > 0) {
       // When no contact is selected but we have filtered contacts, show only actions for those contacts
       const filteredContactIds = new Set(filteredContacts.map((c) => c.id))
@@ -167,7 +174,7 @@ export default function ActionList({
       const dateB = getDisplayDate(b)
       return new Date(dateA).getTime() - new Date(dateB).getTime()
     })
-  }, [actions, selectedContact, filteredContacts, showCompletedActions, showWeekRange])
+  }, [actions, selectedContact, filteredContactForActions, filteredContacts, showCompletedActions, showWeekRange])
 
   // Pagination logic
   const totalPages = Math.ceil(displayActions.length / itemsPerPage)
@@ -176,8 +183,8 @@ export default function ActionList({
   const paginatedActions = displayActions.slice(startIndex, endIndex)
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="h-full flex flex-col">
+      <CardHeader className="flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex min-h-9 items-center space-x-3">
             <CardTitle>
@@ -187,7 +194,28 @@ export default function ActionList({
                   for {selectedContact.first_name} {selectedContact.last_name}
                 </span>
               )}
+              {!selectedContact && filteredContactForActions && (
+                <span className="text-muted-foreground ml-2 text-sm font-normal">
+                  for {filteredContactForActions.first_name} {filteredContactForActions.last_name}
+                </span>
+              )}
             </CardTitle>
+            {!selectedContact && filteredContactForActions && onClearActionFilter && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={onClearActionFilter}
+                    className="h-8 w-8 cursor-pointer p-0 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-950/50 dark:hover:text-red-400"
+                    aria-label="Clear action filter"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Clear action filter</TooltipContent>
+              </Tooltip>
+            )}
             <Button variant="ghost" size="sm" onClick={toggleCollapse} className="ml-2 cursor-pointer px-2">
               {isCollapsed ? <ChevronDown className="h-4 w-4" /> : <ChevronUp className="h-4 w-4" />}
             </Button>
@@ -265,7 +293,7 @@ export default function ActionList({
         )}
       </CardHeader>
       {isCollapsed && (
-        <CardContent>
+        <CardContent className="flex-1 overflow-y-auto">
           <div className="py-8 text-center">
             <p className="text-muted-foreground">
               {displayActions.length} cards rolled up, use arrow above to roll down.
@@ -274,7 +302,7 @@ export default function ActionList({
         </CardContent>
       )}
       {!isCollapsed && (
-        <CardContent>
+        <CardContent className="flex-1 overflow-y-auto">
           {!selectedContact && displayActions.length === 0 ? (
             <div className="py-8 text-center">
               <p className="text-muted-foreground">No actions yet</p>

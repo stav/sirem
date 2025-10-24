@@ -29,6 +29,7 @@ interface ContactListProps {
   onEditContact: (contact: Contact) => void
   onDeleteContact: (contactId: string) => void
   onViewContact: (contact: Contact) => void
+  onFilterActions?: (contact: Contact) => void
   onBackToAll: () => void
   refreshTimestamp?: number
   onFilteredContactsChange?: (filteredContacts: Contact[]) => void
@@ -44,6 +45,7 @@ export default function ContactList({
   onEditContact,
   onDeleteContact,
   onViewContact,
+  onFilterActions,
   onBackToAll,
   refreshTimestamp,
   onFilteredContactsChange,
@@ -269,8 +271,8 @@ export default function ContactList({
 
   return (
     <>
-      <Card>
-        <CardHeader>
+      <Card className="h-full flex flex-col">
+        <CardHeader className="flex-shrink-0">
           <div className="flex flex-wrap items-center gap-2">
             {/* Title and collapse button */}
             <div className="flex items-center space-x-2" title="Back to Contact List">
@@ -451,7 +453,7 @@ export default function ContactList({
           )}
         </CardHeader>
         {!isCollapsed && (
-          <CardContent>
+          <CardContent className="flex-1 overflow-y-auto">
             {contacts.length === 0 ? (
               <div className="py-8 text-center">
                 <p className="text-muted-foreground">No contacts yet</p>
@@ -480,6 +482,7 @@ export default function ContactList({
                     onEdit={onEditContact}
                     onDelete={onDeleteContact}
                     onView={onViewContact}
+                    onFilterActions={onFilterActions}
                     refreshTimestamp={refreshTimestamp}
                   />
                 ))}
