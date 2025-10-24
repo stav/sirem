@@ -33,7 +33,7 @@
     "deploymentEnabled": {
       "*": false,
       "dev": true,
-      "master": false,
+      "master": true,
       "release-*": true
     }
   }
