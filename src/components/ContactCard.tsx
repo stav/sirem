@@ -144,7 +144,7 @@ export default function ContactCard({
                       <TooltipTrigger asChild>
                         <Badge variant="outline" className={`text-xs ${config.color.split(' ')[1]}`}>
                           <IconComponent className="mr-1 h-3 w-3" />
-                          {orgName ? formatOrgNameForDisplay(orgName, 30) : config.label}
+                          <span className="hidden xl:inline">{orgName ? formatOrgNameForDisplay(orgName, 30) : config.label}</span>
                         </Badge>
                       </TooltipTrigger>
                       <TooltipContent>
