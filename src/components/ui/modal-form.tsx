@@ -14,6 +14,7 @@ interface ModalFormProps {
   editingInfo?: ReactNode
   zIndex?: number
   allowBackdropClose?: boolean
+  maxWidth?: string
 }
 
 export default function ModalForm({
@@ -27,6 +28,7 @@ export default function ModalForm({
   editingInfo,
   zIndex = 50,
   allowBackdropClose = false,
+  maxWidth = 'max-w-md',
 }: ModalFormProps) {
   const modalRef = useRef<HTMLDivElement>(null)
 
@@ -54,7 +56,7 @@ export default function ModalForm({
         }
       } : undefined}
     >
-      <Card className="flex max-h-[90vh] w-full max-w-md flex-col" ref={modalRef}>
+      <Card className={`flex max-h-[90vh] w-full ${maxWidth} flex-col`} ref={modalRef}>
         <CardHeader className="relative flex-shrink-0">
           <Button
             variant="ghost"

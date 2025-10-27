@@ -9,6 +9,7 @@ import ActionForm from '@/components/ActionForm'
 import ActionViewModal from '@/components/ActionViewModal'
 import ContactViewModal from '@/components/ContactViewModal'
 import ContactForm from '@/components/ContactForm'
+import ContactNotesModal from '@/components/ContactNotesModal'
 import { useContacts } from '@/hooks/useContacts'
 import { useActions } from '@/hooks/useActions'
 import type { Database } from '@/lib/supabase'
@@ -79,9 +80,11 @@ function ManagePageContent() {
   const [showActionForm, setShowActionForm] = useState(false)
   const [showActionViewModal, setShowActionViewModal] = useState(false)
   const [showContactViewModal, setShowContactViewModal] = useState(false)
+  const [showContactNotesModal, setShowContactNotesModal] = useState(false)
   const [viewingAction, setViewingAction] = useState<Action | null>(null)
   const [viewingContact, setViewingContact] = useState<Contact | null>(null)
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
+  const [editingContactForNotes, setEditingContactForNotes] = useState<Contact | null>(null)
   const [editingAction, setEditingAction] = useState<Action | null>(null)
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
   const [singleContactView, setSingleContactView] = useState(false)
@@ -358,6 +361,11 @@ function ManagePageContent() {
     setShowContactViewModal(true)
   }
 
+  const handleEditNotes = (contact: Contact) => {
+    setEditingContactForNotes(contact)
+    setShowContactNotesModal(true)
+  }
+
   const handleActionSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -484,6 +492,11 @@ function ManagePageContent() {
     setViewingContact(null)
   }
 
+  const closeContactNotesModal = () => {
+    setShowContactNotesModal(false)
+    setEditingContactForNotes(null)
+  }
+
   const handleBackToAll = () => {
     setSingleContactView(false)
     setSelectedContact(null)
@@ -523,27 +536,28 @@ function ManagePageContent() {
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
             {/* Contacts Section */}
-            <ContactList
-              contacts={contacts}
-              selectedContact={selectedContact}
-              singleContactView={singleContactView}
-              onAddContact={handleAddContact}
-              onSelectContact={(contact) => {
-                // Only log if selecting a different contact
-                if (!selectedContact || selectedContact.id !== contact.id) {
-                  const contactName = `${contact.first_name} ${contact.last_name}`
-                  logger.contactSelected(contactName, contact.id)
-                }
-                router.push(`/manage?contact=${contact.id}`)
-              }}
-              onEditContact={handleEditContact}
-              onDeleteContact={handleDeleteContact}
-              onViewContact={handleViewContact}
-              onBackToAll={handleBackToAll}
-              refreshTimestamp={refreshTimestamp}
-              onFilteredContactsChange={handleFilteredContactsChange}
-              onRefresh={fetchContacts}
-            />
+             <ContactList
+               contacts={contacts}
+               selectedContact={selectedContact}
+               singleContactView={singleContactView}
+               onAddContact={handleAddContact}
+               onSelectContact={(contact) => {
+                 // Only log if selecting a different contact
+                 if (!selectedContact || selectedContact.id !== contact.id) {
+                   const contactName = `${contact.first_name} ${contact.last_name}`
+                   logger.contactSelected(contactName, contact.id)
+                 }
+                 router.push(`/manage?contact=${contact.id}`)
+               }}
+               onEditContact={handleEditContact}
+               onDeleteContact={handleDeleteContact}
+               onViewContact={handleViewContact}
+               onEditNotes={handleEditNotes}
+               onBackToAll={handleBackToAll}
+               refreshTimestamp={refreshTimestamp}
+               onFilteredContactsChange={handleFilteredContactsChange}
+               onRefresh={fetchContacts}
+             />
 
             {/* Actions Section */}
             <ActionList
@@ -622,6 +636,14 @@ function ManagePageContent() {
               handleEditContact(contact)
             }}
             roleRefreshTrigger={roleRefreshTrigger}
+            onContactUpdated={fetchContacts}
+          />
+
+          {/* Contact Notes Modal */}
+          <ContactNotesModal
+            isOpen={showContactNotesModal}
+            onClose={closeContactNotesModal}
+            contact={editingContactForNotes}
             onContactUpdated={fetchContacts}
           />
         </div>

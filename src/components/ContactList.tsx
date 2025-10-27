@@ -29,6 +29,7 @@ interface ContactListProps {
   onEditContact: (contact: Contact) => void
   onDeleteContact: (contactId: string) => void
   onViewContact: (contact: Contact) => void
+  onEditNotes: (contact: Contact) => void
   onBackToAll: () => void
   refreshTimestamp?: number
   onFilteredContactsChange?: (filteredContacts: Contact[]) => void
@@ -44,6 +45,7 @@ export default function ContactList({
   onEditContact,
   onDeleteContact,
   onViewContact,
+  onEditNotes,
   onBackToAll,
   refreshTimestamp,
   onFilteredContactsChange,
@@ -480,6 +482,7 @@ export default function ContactList({
                     onEdit={onEditContact}
                     onDelete={onDeleteContact}
                     onView={onViewContact}
+                    onEditNotes={onEditNotes}
                     refreshTimestamp={refreshTimestamp}
                   />
                 ))}

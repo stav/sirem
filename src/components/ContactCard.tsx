@@ -1,6 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
-import { Edit, Trash2, Eye } from 'lucide-react'
+import { Edit, Trash2, Eye, FileText } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -70,6 +70,7 @@ interface ContactCardProps {
   onEdit: (contact: Contact) => void
   onDelete: (contactId: string) => void
   onView: (contact: Contact) => void
+  onEditNotes: (contact: Contact) => void
   refreshTimestamp?: number
 }
 
@@ -81,6 +82,7 @@ export default function ContactCard({
   onEdit,
   onDelete,
   onView,
+  onEditNotes,
   refreshTimestamp, // eslint-disable-line @typescript-eslint/no-unused-vars
 }: ContactCardProps) {
   // Removed usePlanEnrollments to prevent excessive API calls
@@ -195,6 +197,23 @@ export default function ContactCard({
               </Button>
             </TooltipTrigger>
             <TooltipContent>Edit contact</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onEditNotes(contact)
+                }}
+                className="h-8 w-8 cursor-pointer p-0 hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-950/50 dark:hover:text-green-400"
+                aria-label="Edit notes"
+              >
+                <FileText className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Edit notes</TooltipContent>
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
