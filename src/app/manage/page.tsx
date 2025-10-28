@@ -541,14 +541,10 @@ function ManagePageContent() {
                selectedContact={selectedContact}
                singleContactView={singleContactView}
                onAddContact={handleAddContact}
-               onSelectContact={(contact) => {
-                 // Only log if selecting a different contact
-                 if (!selectedContact || selectedContact.id !== contact.id) {
-                   const contactName = `${contact.first_name} ${contact.last_name}`
-                   logger.contactSelected(contactName, contact.id)
-                 }
-                 router.push(`/manage?contact=${contact.id}`)
-               }}
+              onSelectContact={(contact) => {
+                // Navigate to contact - logging will happen in the useEffect when URL changes
+                router.push(`/manage?contact=${contact.id}`)
+              }}
                onEditContact={handleEditContact}
                onDeleteContact={handleDeleteContact}
                onViewContact={handleViewContact}
@@ -574,11 +570,7 @@ function ManagePageContent() {
               showCompletedActions={showCompletedActions}
               onToggleShowCompleted={() => setShowCompletedActions((v) => !v)}
               onSelectContact={(contactId) => {
-                const contact = contacts.find((c) => c.id === contactId)
-                if (contact && (!selectedContact || selectedContact.id !== contact.id)) {
-                  const contactName = `${contact.first_name} ${contact.last_name}`
-                  logger.contactSelected(contactName, contact.id)
-                }
+                // Navigate to contact - logging will happen in the useEffect when URL changes
                 router.push(`/manage?contact=${contactId}`)
               }}
             />
