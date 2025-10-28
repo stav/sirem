@@ -1,6 +1,6 @@
 import React from 'react'
 import Link from 'next/link'
-import { Edit, Trash2, Eye, FileText } from 'lucide-react'
+import { Edit, Trash2, Eye, FileText, List } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
@@ -71,6 +71,7 @@ interface ContactCardProps {
   onDelete: (contactId: string) => void
   onView: (contact: Contact) => void
   onEditNotes: (contact: Contact) => void
+  onFilterActions?: (contact: Contact) => void
   refreshTimestamp?: number
 }
 
@@ -83,6 +84,7 @@ export default function ContactCard({
   onDelete,
   onView,
   onEditNotes,
+  onFilterActions,
   refreshTimestamp, // eslint-disable-line @typescript-eslint/no-unused-vars
 }: ContactCardProps) {
   // Removed usePlanEnrollments to prevent excessive API calls
@@ -215,6 +217,25 @@ export default function ContactCard({
             </TooltipTrigger>
             <TooltipContent>Edit notes</TooltipContent>
           </Tooltip>
+          {onFilterActions && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onFilterActions(contact)
+                  }}
+                  className="hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/50 dark:hover:text-blue-400 h-8 w-8 cursor-pointer p-0"
+                  aria-label="Filter actions for this contact"
+                >
+                  <List className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Show only actions for this contact</TooltipContent>
+            </Tooltip>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
