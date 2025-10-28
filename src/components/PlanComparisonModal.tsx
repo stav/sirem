@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useState, useEffect } from 'react'
-import { X, TrendingUp, TrendingDown, Calculator, RefreshCw } from 'lucide-react'
+import { X, TrendingUp, TrendingDown, Calculator, RefreshCw, Star } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -40,7 +40,8 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
   })
 
   const [showCalculator, setShowCalculator] = useState(false)
-
+  const [sourcePlanId, setSourcePlanId] = useState<string | null>(null)
+  const [highlightedRows, setHighlightedRows] = useState<Set<string>>(new Set())
 
   // Parse schema and get ordered sections and fields
   // Parse schema on every render to ensure it's always up-to-date
@@ -64,6 +65,24 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
   }, [isOpen, onClose])
 
   if (!isOpen) return null
+
+  // Helper to generate unique row IDs for highlighting
+  const getRowId = (label: string, section?: string): string => {
+    return section ? `${section}-${label}` : label
+  }
+
+  // Helper to toggle row highlighting
+  const toggleRowHighlight = (rowId: string) => {
+    setHighlightedRows(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(rowId)) {
+        newSet.delete(rowId)
+      } else {
+        newSet.add(rowId)
+      }
+      return newSet
+    })
+  }
 
   // Helper to format currency (hide .00 cents only)
   const formatCurrency = (value: number | null | undefined): string => {
@@ -228,9 +247,20 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
     return premium - giveback + totalCopays
   }
 
-  // Compare two values and return indicator
+  // Compare two values and return indicator (compares against source plan or average)
   const getComparisonIndicator = (current: number | null, others: (number | null)[], lowerIsBetter: boolean = true) => {
     if (current == null) return null
+    
+    // If we have a source plan, compare against it
+    if (sourcePlanId) {
+      const sourcePlan = plans.find(p => p.id === sourcePlanId)
+      const sourceValue = sourcePlan ? others[plans.indexOf(sourcePlan)] : null
+      if (sourceValue != null) {
+        return compareAgainstSource(current, sourceValue, lowerIsBetter)
+      }
+    }
+    
+    // Fall back to average comparison when no source plan is selected
     const validOthers = others.filter(v => v != null) as number[]
     if (validOthers.length === 0) return null
 
@@ -262,36 +292,78 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
     }
   }
 
+  // Helper function to compare against source plan
+  const compareAgainstSource = (current: number | null, sourceValue: number | null, lowerIsBetter: boolean = true) => {
+    if (current == null || sourceValue == null) return null
+
+    const currentValue = current
+    const source = sourceValue
+
+    // Only show indicators when there's a meaningful difference (no dash for equal values)
+    if (Math.abs(currentValue - source) < 0.01) {
+      return null
+    }
+
+    const isHigher = currentValue > source
+    const isBetter = lowerIsBetter ? currentValue < source : currentValue > source
+    
+    // For inbound (benefits): higher = green up, lower = red down
+    // For outbound (expenses): lower = green down, higher = red up
+    if (isBetter && isHigher) {
+      // Higher and it's good (benefits)
+      return <span title="Better than source plan"><TrendingUp className="h-4 w-4 text-green-600 inline ml-1" /></span>
+    } else if (isBetter && !isHigher) {
+      // Lower and it's good (expenses)
+      return <span title="Better than source plan"><TrendingDown className="h-4 w-4 text-green-600 inline ml-1" /></span>
+    } else if (!isBetter && isHigher) {
+      // Higher and it's bad (expenses)
+      return <span title="Worse than source plan"><TrendingUp className="h-4 w-4 text-red-600 inline ml-1" /></span>
+    } else {
+      // Lower and it's bad (benefits)
+      return <span title="Worse than source plan"><TrendingDown className="h-4 w-4 text-red-600 inline ml-1" /></span>
+    }
+  }
+
   // Comparison field component
   const ComparisonField = ({ 
     label, 
     values, 
     lowerIsBetter = true,
-    formatter = formatCurrency
+    formatter = formatCurrency,
+    rowId
   }: { 
     label: string
     values: (number | null)[]
     lowerIsBetter?: boolean
     formatter?: (v: number | null) => string
-  }) => (
-    <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
-      <td className="py-2 px-3 font-medium text-sm bg-muted sticky left-0 z-10 min-w-48">{label}</td>
-      {values.map((value, idx) => {
-        const others = values.filter((_, i) => i !== idx)
-        const hasDiscrep = false // No discrepancy checking needed with new schema
-        return (
-          <td 
-            key={idx} 
-            className={`py-2 px-3 text-center text-sm max-w-48 ${hasDiscrep ? 'bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-500' : ''}`}
-            title={hasDiscrep ? `⚠️ Discrepancy: Metadata value differs from main field` : undefined}
-          >
-            {formatter(value)}
-            {getComparisonIndicator(value, others, lowerIsBetter)}
-          </td>
-        )
-      })}
-    </tr>
-  )
+    rowId: string
+  }) => {
+    const isHighlighted = highlightedRows.has(rowId)
+    
+    return (
+      <tr 
+        className={`border-b border-border hover:bg-blue-500/20 transition-colors cursor-pointer ${isHighlighted ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
+        onClick={() => toggleRowHighlight(rowId)}
+        title="Click to highlight/unhighlight this row"
+      >
+        <td className="py-2 px-3 font-medium text-sm bg-muted sticky left-0 z-10 min-w-48">{label}</td>
+        {values.map((value, idx) => {
+          const hasDiscrep = false // No discrepancy checking needed with new schema
+          const isSourcePlan = plans[idx].id === sourcePlanId
+          return (
+            <td 
+              key={idx} 
+              className={`py-2 px-3 text-center text-sm max-w-48 ${hasDiscrep ? 'bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-500' : ''} ${isSourcePlan ? 'bg-blue-100/50 dark:bg-blue-900/30 border-l-4 border-l-blue-500' : ''}`}
+              title={hasDiscrep ? `⚠️ Discrepancy: Metadata value differs from main field` : isSourcePlan ? 'Current Plan (Source)' : undefined}
+            >
+              {formatter(value)}
+              {!isSourcePlan && getComparisonIndicator(value, values, lowerIsBetter)}
+            </td>
+          )
+        })}
+      </tr>
+    )
+  }
 
   const annualCosts = plans.map(calculateAnnualCost)
   const lowestCost = Math.min(...annualCosts)
@@ -421,61 +493,103 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
             <thead>
               <tr className="border-b-2 border-border">
                 <th className="py-3 px-3 text-left font-semibold text-sm bg-muted sticky top-0 left-0 z-10 min-w-48"></th>
-                {plans.map((plan, idx) => (
-                  <th key={idx} className="py-3 px-3 text-center font-semibold text-sm bg-muted sticky top-0 max-w-48">
-                    <div className="font-bold">{plan.name}</div>
-                    <div className="text-xs font-normal text-muted-foreground">
-                      {plan.carrier} • {(() => {
-                        // Build the plan type string from normalized fields
-                        const parts = []
-                        if (plan.type_network) parts.push(plan.type_network)
-                        if (plan.type_extension) parts.push(plan.type_extension)
-                        if (plan.type_snp) parts.push(`${plan.type_snp}-SNP`)
-                        // Don't add type_program if it's already included in the SNP part
-                        if (plan.type_program && plan.type_program !== 'MA' && plan.type_program !== 'SNP') parts.push(plan.type_program)
-                        return parts.length > 0 ? parts.join('-') : '—'
-                      })()}
-                    </div>
-                    {plan.plan_year && (
-                      <div className="text-xs font-normal text-muted-foreground">{plan.plan_year}</div>
-                    )}
-                  </th>
-                ))}
+                {plans.map((plan, idx) => {
+                  const isSourcePlan = plan.id === sourcePlanId
+                  return (
+                    <th 
+                      key={idx} 
+                      className={`py-3 px-3 text-center font-semibold text-sm bg-muted sticky top-0 max-w-48 ${isSourcePlan ? 'border-l-4 border-l-blue-500' : ''} cursor-pointer hover:bg-muted/80 transition-colors`}
+                      onClick={() => setSourcePlanId(isSourcePlan ? null : plan.id)}
+                      title={isSourcePlan ? 'Source Plan (click to deselect)' : 'Click to set as source plan'}
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <div className="font-bold">{plan.name}</div>
+                        {isSourcePlan && <Star className="h-4 w-4 text-blue-500" />}
+                      </div>
+                      <div className="text-xs font-normal text-muted-foreground">
+                        {plan.carrier} • {(() => {
+                          // Build the plan type string from normalized fields
+                          const parts = []
+                          if (plan.type_network) parts.push(plan.type_network)
+                          if (plan.type_extension) parts.push(plan.type_extension)
+                          if (plan.type_snp) parts.push(`${plan.type_snp}-SNP`)
+                          // Don't add type_program if it's already included in the SNP part
+                          if (plan.type_program && plan.type_program !== 'MA' && plan.type_program !== 'SNP') parts.push(plan.type_program)
+                          return parts.length > 0 ? parts.join('-') : '—'
+                        })()}
+                      </div>
+                      {plan.plan_year && (
+                        <div className="text-xs font-normal text-muted-foreground">{plan.plan_year}</div>
+                      )}
+                      {isSourcePlan && (
+                        <div className="text-xs font-semibold text-blue-500 mt-1">Source Plan</div>
+                      )}
+                    </th>
+                  )
+                })}
               </tr>
             </thead>
             <tbody>
               {/* Basic Information */}
-              <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
+              <tr 
+                className={`border-b border-border hover:bg-blue-500/20 transition-colors cursor-pointer ${highlightedRows.has('cms-id-full') ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
+                onClick={() => toggleRowHighlight('cms-id-full')}
+                title="Click to highlight/unhighlight this row"
+              >
                 <td className="py-2 px-3 font-medium text-sm bg-muted sticky left-0 z-10 min-w-48">CMS ID (Full)</td>
-                {plans.map((plan, idx) => (
-                  <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
-                    {calculateCmsId(plan) || '—'}
-                  </td>
-                ))}
+                {plans.map((plan, idx) => {
+                  const isSourcePlan = plan.id === sourcePlanId
+                  return (
+                    <td key={idx} className={`py-2 px-3 text-center text-sm max-w-48 ${isSourcePlan ? 'bg-blue-100/50 dark:bg-blue-900/30 border-l-4 border-l-blue-500' : ''}`}>
+                      {calculateCmsId(plan) || '—'}
+                    </td>
+                  )
+                })}
               </tr>
-              <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
+              <tr 
+                className={`border-b border-border hover:bg-blue-500/20 transition-colors cursor-pointer ${highlightedRows.has('cms-contract-number') ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
+                onClick={() => toggleRowHighlight('cms-contract-number')}
+                title="Click to highlight/unhighlight this row"
+              >
                 <td className="py-2 px-3 font-medium text-sm bg-muted sticky left-0 z-10 min-w-48">CMS Contract Number</td>
-                {plans.map((plan, idx) => (
-                  <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
-                    {formatText(plan.cms_contract_number)}
-                  </td>
-                ))}
+                {plans.map((plan, idx) => {
+                  const isSourcePlan = plan.id === sourcePlanId
+                  return (
+                    <td key={idx} className={`py-2 px-3 text-center text-sm max-w-48 ${isSourcePlan ? 'bg-blue-100/50 dark:bg-blue-900/30 border-l-4 border-l-blue-500' : ''}`}>
+                      {formatText(plan.cms_contract_number)}
+                    </td>
+                  )
+                })}
               </tr>
-              <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
+              <tr 
+                className={`border-b border-border hover:bg-blue-500/20 transition-colors cursor-pointer ${highlightedRows.has('cms-plan-number') ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
+                onClick={() => toggleRowHighlight('cms-plan-number')}
+                title="Click to highlight/unhighlight this row"
+              >
                 <td className="py-2 px-3 font-medium text-sm bg-muted sticky left-0 z-10 min-w-48">CMS Plan Number</td>
-                {plans.map((plan, idx) => (
-                  <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
-                    {formatText(plan.cms_plan_number)}
-                  </td>
-                ))}
+                {plans.map((plan, idx) => {
+                  const isSourcePlan = plan.id === sourcePlanId
+                  return (
+                    <td key={idx} className={`py-2 px-3 text-center text-sm max-w-48 ${isSourcePlan ? 'bg-blue-100/50 dark:bg-blue-900/30 border-l-4 border-l-blue-500' : ''}`}>
+                      {formatText(plan.cms_plan_number)}
+                    </td>
+                  )
+                })}
               </tr>
-              <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
+              <tr 
+                className={`border-b border-border hover:bg-blue-500/20 transition-colors cursor-pointer ${highlightedRows.has('cms-geo-segment') ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
+                onClick={() => toggleRowHighlight('cms-geo-segment')}
+                title="Click to highlight/unhighlight this row"
+              >
                 <td className="py-2 px-3 font-medium text-sm bg-muted sticky left-0 z-10 min-w-48">CMS Geo Segment</td>
-                {plans.map((plan, idx) => (
-                  <td key={idx} className="py-2 px-3 text-center text-sm max-w-48">
-                    {formatText(plan.cms_geo_segment)}
-                  </td>
-                ))}
+                {plans.map((plan, idx) => {
+                  const isSourcePlan = plan.id === sourcePlanId
+                  return (
+                    <td key={idx} className={`py-2 px-3 text-center text-sm max-w-48 ${isSourcePlan ? 'bg-blue-100/50 dark:bg-blue-900/30 border-l-4 border-l-blue-500' : ''}`}>
+                      {formatText(plan.cms_geo_segment)}
+                    </td>
+                  )
+                })}
               </tr>
 
               {/* Schema-Ordered Metadata Sections */}
@@ -505,19 +619,29 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                             if (key.toLowerCase().includes('coinsurance') || key.toLowerCase().includes('%')) {
                               return `${v}%`
                             }
+                            if (key.toLowerCase().includes('transportation_benefit')) {
+                              return `${v} rides`
+                            }
                             return formatCurrency(v)
                           }}
+                          rowId={getRowId(key, section.key)}
                         />
                       )
                     } else {
                       // Render as text field
                       return (
-                        <tr key={key} className="border-b border-border hover:bg-blue-500/20 transition-colors">
+                        <tr 
+                          key={key} 
+                          className={`border-b border-border hover:bg-blue-500/20 transition-colors cursor-pointer ${highlightedRows.has(getRowId(key, section.key)) ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
+                          onClick={() => toggleRowHighlight(getRowId(key, section.key))}
+                          title="Click to highlight/unhighlight this row"
+                        >
                           <td className="py-2 px-3 font-medium text-sm bg-muted sticky left-0 z-10 min-w-48">
                             {formatLabel(key)}
                           </td>
                           {plans.map((plan, idx) => {
                             const hasDiscrep = false // No discrepancy checking needed with new schema
+                            const isSourcePlan = plan.id === sourcePlanId
                             const value = getMetadata(plan, key)
                             const displayValue = formatMetadataValue(value)
                             const isLongText = isLongTextField(key, value)
@@ -527,7 +651,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                               return (
                                 <td 
                                   key={idx} 
-                                  className={`py-2 px-3 text-center text-xs max-w-48 overflow-hidden ${hasDiscrep ? 'bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-500' : ''}`}
+                                  className={`py-2 px-3 text-center text-xs max-w-48 overflow-hidden ${hasDiscrep ? 'bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-500' : ''} ${isSourcePlan ? 'bg-blue-100/50 dark:bg-blue-900/30 border-l-4 border-l-blue-500' : ''}`}
                                   title={hasDiscrep ? `⚠️ Discrepancy: Metadata value differs from main field` : value}
                                 >
                                   <div className="line-clamp-3">
@@ -540,7 +664,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                               return (
                                 <td 
                                   key={idx} 
-                                  className={`py-2 px-3 text-center text-xs max-w-48 ${hasDiscrep ? 'bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-500' : ''}`}
+                                  className={`py-2 px-3 text-center text-xs max-w-48 ${hasDiscrep ? 'bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-500' : ''} ${isSourcePlan ? 'bg-blue-100/50 dark:bg-blue-900/30 border-l-4 border-l-blue-500' : ''}`}
                                   title={hasDiscrep ? `⚠️ Discrepancy: Metadata value differs from main field` : undefined}
                                 >
                                   {displayValue}
@@ -566,28 +690,42 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                     </th>
                     <td colSpan={plans.length}></td>
                   </tr>
-                  <tr className="border-b-2 border-border bg-blue-50 dark:bg-blue-950/30">
+                  <tr 
+                    className={`border-b-2 border-border bg-blue-50 dark:bg-blue-950/30 cursor-pointer ${highlightedRows.has('annual-cost') ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
+                    onClick={() => toggleRowHighlight('annual-cost')}
+                    title="Click to highlight/unhighlight this row"
+                  >
                     <td className="py-3 px-3 font-bold text-sm bg-muted sticky left-0 z-10 min-w-48">Total Estimated Annual Cost</td>
-                    {annualCosts.map((cost, idx) => (
-                      <td key={idx} className={`py-3 px-3 text-center font-bold text-sm ${cost === lowestCost ? 'text-green-600' : ''}`}>
-                        {formatCurrency(cost)}
-                        {cost === lowestCost && ' ★'}
-                      </td>
-                    ))}
+                    {annualCosts.map((cost, idx) => {
+                      const isSourcePlan = plans[idx].id === sourcePlanId
+                      return (
+                        <td key={idx} className={`py-3 px-3 text-center font-bold text-sm ${cost === lowestCost ? 'text-green-600' : ''} ${isSourcePlan ? 'bg-blue-100/50 dark:bg-blue-900/30 border-l-4 border-l-blue-500' : ''}`}>
+                          {formatCurrency(cost)}
+                          {cost === lowestCost && ' ★'}
+                        </td>
+                      )
+                    })}
                   </tr>
                 </>
               )}
 
               {/* Additional Database Fields */}
-              <tr className="border-b border-border hover:bg-blue-500/20 transition-colors">
+              <tr 
+                className={`border-b border-border hover:bg-blue-500/20 transition-colors cursor-pointer ${highlightedRows.has('counties') ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
+                onClick={() => toggleRowHighlight('counties')}
+                title="Click to highlight/unhighlight this row"
+              >
                 <td className="py-2 px-3 font-medium text-sm bg-muted sticky left-0 z-10 min-w-48">Counties</td>
-                {plans.map((plan, idx) => (
-                  <td key={idx} className="py-2 px-3 text-center text-xs max-w-48 overflow-hidden">
-                    <div className="line-clamp-3" title={plan.counties?.join(', ')}>
-                      {plan.counties?.join(', ') || '—'}
-                    </div>
-                  </td>
-                ))}
+                {plans.map((plan, idx) => {
+                  const isSourcePlan = plan.id === sourcePlanId
+                  return (
+                    <td key={idx} className={`py-2 px-3 text-center text-xs max-w-48 overflow-hidden ${isSourcePlan ? 'bg-blue-100/50 dark:bg-blue-900/30 border-l-4 border-l-blue-500' : ''}`}>
+                      <div className="line-clamp-3" title={plan.counties?.join(', ')}>
+                        {plan.counties?.join(', ') || '—'}
+                      </div>
+                    </td>
+                  )
+                })}
               </tr>
             </tbody>
           </table>
@@ -598,15 +736,25 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
           <div className="flex items-center gap-6 text-xs text-muted-foreground">
             <div className="flex items-center gap-1">
               <TrendingUp className="h-4 w-4 text-green-600" />
-              <span>Better than average</span>
+              <span>Better than {sourcePlanId ? 'source plan' : 'average'}</span>
             </div>
             <div className="flex items-center gap-1">
               <TrendingDown className="h-4 w-4 text-red-600" />
-              <span>Worse than average</span>
+              <span>Worse than {sourcePlanId ? 'source plan' : 'average'}</span>
             </div>
             <div className="flex items-center gap-1">
               <span className="inline-block w-4 h-4 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-500 rounded"></span>
               <span>⚠️ Discrepancy with main field</span>
+            </div>
+            {sourcePlanId && (
+              <div className="flex items-center gap-1">
+                <Star className="h-4 w-4 text-blue-500" />
+                <span>Source plan (click column header to change)</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1">
+              <span className="inline-block w-4 h-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-400 rounded"></span>
+              <span>Click row to highlight (multiple rows)</span>
             </div>
             {showCalculator && (
               <div className="ml-auto font-semibold">
