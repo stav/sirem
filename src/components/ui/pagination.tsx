@@ -1,5 +1,5 @@
 import React from 'react'
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Loader2 } from 'lucide-react'
+import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Loader2, ArrowUp, ArrowDown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
@@ -17,6 +17,10 @@ interface PaginationProps {
   showItemCount?: boolean
   className?: string
   isLoading?: boolean
+  // Sorting props
+  showSortToggle?: boolean
+  sortOrder?: 'newest' | 'oldest'
+  onSortToggle?: () => void
 }
 
 export default function Pagination({
@@ -33,6 +37,9 @@ export default function Pagination({
   showItemCount = true,
   className = '',
   isLoading = false,
+  showSortToggle = false,
+  sortOrder = 'newest',
+  onSortToggle,
 }: PaginationProps) {
   // Only hide if there are no items to paginate
   if (totalItems === 0) return null
@@ -41,8 +48,23 @@ export default function Pagination({
     <div className={`flex items-center justify-between ${className}`}>
       {showItemCount && (
         <div className="flex items-center space-x-2">
+          {showSortToggle && onSortToggle && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onSortToggle}
+              className="cursor-pointer"
+              title={`Currently sorts ${sortOrder === 'newest' ? 'newest to oldest' : 'oldest to newest'}, click to toggle.`}
+            >
+              {sortOrder === 'newest' ? (
+                <ArrowUp className="h-4 w-4" />
+              ) : (
+                <ArrowDown className="h-4 w-4" />
+              )}
+            </Button>
+          )}
           <span className="text-muted-foreground text-sm">
-            Showing {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} items
+            {startIndex + 1}-{Math.min(endIndex, totalItems)} of {totalItems} items
           </span>
           {showItemsPerPage && (
             <div className="flex items-center space-x-2">

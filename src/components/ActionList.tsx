@@ -45,9 +45,10 @@ export default function ActionList({
 }: ActionListProps) {
   const [showWeekRange, setShowWeekRange] = useState(false)
   const [currentPage, setCurrentPage] = useState(1)
-  const [itemsPerPage, setItemsPerPage] = useState(50) // Configurable page size
+  const [itemsPerPage, setItemsPerPage] = useState(10) // Configurable page size
   const [isRendering, setIsRendering] = useState(false)
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [sortOrder, setSortOrder] = useState<'newest' | 'oldest'>('newest')
   const timeoutRef = useRef<NodeJS.Timeout | null>(null)
 
   // Load week range state from localStorage on component mount
@@ -66,6 +67,18 @@ export default function ActionList({
     }
   }, [])
 
+  // Load sort order state from localStorage on component mount
+  useEffect(() => {
+    const savedSortOrder = localStorage.getItem('actionListSortOrder')
+    if (savedSortOrder === 'newest' || savedSortOrder === 'oldest') {
+      setSortOrder(savedSortOrder)
+    } else {
+      // Ensure default is 'newest' and save it to localStorage
+      setSortOrder('newest')
+      localStorage.setItem('actionListSortOrder', 'newest')
+    }
+  }, [])
+
   const toggleWeekRange = () => {
     const newState = !showWeekRange
     setShowWeekRange(newState)
@@ -78,6 +91,13 @@ export default function ActionList({
     setIsCollapsed(newState)
     // Save to localStorage
     localStorage.setItem('actionListCollapsed', JSON.stringify(newState))
+  }
+
+  const toggleSortOrder = () => {
+    const newSortOrder = sortOrder === 'oldest' ? 'newest' : 'oldest'
+    setSortOrder(newSortOrder)
+    // Save to localStorage
+    localStorage.setItem('actionListSortOrder', newSortOrder)
   }
 
   // Helper function to check if a date is within 30 days of today
@@ -167,13 +187,20 @@ export default function ActionList({
       })
     }
 
-    // Sort actions by display date
+    // Sort actions by display date (same logic as ActionCard "days ago" calculation)
     return filteredActions.slice().sort((a, b) => {
       const dateA = getDisplayDate(a)
       const dateB = getDisplayDate(b)
-      return new Date(dateA).getTime() - new Date(dateB).getTime()
+      const timeA = new Date(dateA).getTime()
+      const timeB = new Date(dateB).getTime()
+      
+      if (sortOrder === 'newest') {
+        return timeB - timeA // Newest first
+      } else {
+        return timeA - timeB // Oldest first
+      }
     })
-  }, [actions, selectedContact, filteredContacts, showCompletedActions, showWeekRange])
+  }, [actions, selectedContact, filteredContacts, showCompletedActions, showWeekRange, sortOrder])
 
   // Pagination logic
   const totalPages = Math.ceil(displayActions.length / itemsPerPage)
@@ -267,6 +294,9 @@ export default function ActionList({
             onPageChange={setCurrentPage}
             onItemsPerPageChange={handleItemsPerPageChange}
             isLoading={isRendering}
+            showSortToggle={true}
+            sortOrder={sortOrder}
+            onSortToggle={toggleSortOrder}
           />
         )}
       </CardHeader>
@@ -372,6 +402,9 @@ export default function ActionList({
             onItemsPerPageChange={handleItemsPerPageChange}
             className="mt-6"
             isLoading={isRendering}
+            showSortToggle={true}
+            sortOrder={sortOrder}
+            onSortToggle={toggleSortOrder}
           />
         </CardContent>
       )}
