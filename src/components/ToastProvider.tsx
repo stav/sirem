@@ -93,7 +93,7 @@ function renderMessageWithLinks(message: LogMessage, onLinkClick: () => void) {
 }
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
-  const { toast, toasts } = useToast()
+  const { toast, toasts, dismiss } = useToast()
   const { messages } = useLogger()
   const [showHistory, setShowHistory] = useState(false)
   const [lastMessageId, setLastMessageId] = useState<string | null>(null)
@@ -198,9 +198,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
               description={toast.description}
               variant={toast.variant}
               contactDetails={toast.contactDetails}
-              onDismiss={() => {
-                // This will be handled by the auto-remove timeout
-              }}
+              onDismiss={dismiss}
             />
           </div>
         ))}

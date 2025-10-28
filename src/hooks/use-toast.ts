@@ -37,5 +37,17 @@ export const useToast = () => {
     timeoutsRef.current.set(newToast.id, timeoutId)
   }
 
-  return { toast, toasts }
+  const dismiss = (id: number) => {
+    // Clear the timeout if it exists
+    const timeout = timeoutsRef.current.get(id)
+    if (timeout) {
+      clearTimeout(timeout)
+      timeoutsRef.current.delete(id)
+    }
+    
+    // Remove the toast immediately
+    setToasts((prev) => prev.filter((t) => t.id !== id))
+  }
+
+  return { toast, toasts, dismiss }
 }

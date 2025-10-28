@@ -75,7 +75,8 @@ export function Toast({ id, title, description, variant = 'default', onDismiss, 
 
   return (
     <div
-      className={`w-full max-w-sm rounded-lg border p-4 shadow-xl ${getBackgroundColor()} animate-in slide-in-from-right-full duration-300 relative z-[9999]`}
+      className={`w-full max-w-sm rounded-lg border p-4 shadow-xl ${getBackgroundColor()} animate-in slide-in-from-right-full duration-300 relative z-[9999] cursor-pointer`}
+      onClick={() => onDismiss(id)}
     >
       <div className="flex items-start space-x-3">
         <div className="mt-0.5 flex-shrink-0">{getIcon()}</div>
@@ -83,7 +84,11 @@ export function Toast({ id, title, description, variant = 'default', onDismiss, 
           <p className={`text-sm font-medium ${variant === 'destructive' ? 'text-red-900 dark:text-red-100' : 'text-foreground'}`}>{renderTextWithLinks(title, contactDetails)}</p>
           {description && <p className={`mt-1 text-sm ${variant === 'destructive' ? 'text-red-800 dark:text-red-200' : 'text-muted-foreground'}`}>{description}</p>}
         </div>
-        <Button variant="ghost" size="sm" onClick={() => onDismiss(id)} className={`h-6 w-6 flex-shrink-0 p-0 ${variant === 'destructive' ? 'text-red-700 hover:text-red-900 dark:text-red-300 dark:hover:text-red-100' : ''}`}>
+        <Button 
+          variant="ghost" 
+          size="sm" 
+          className={`h-6 w-6 flex-shrink-0 p-0 ${variant === 'destructive' ? 'text-red-700 hover:text-red-900 dark:text-red-300 dark:hover:text-red-100' : ''}`}
+        >
           <X className="h-3 w-3" />
         </Button>
       </div>
