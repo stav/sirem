@@ -297,7 +297,7 @@ export default function ActionList({
                 {displayActions.length} / {selectedContact ? actions.filter(action => action.contact_id === selectedContact.id).length : actions.length}
               </span>
             )}
-            {selectedContact && (
+            {(selectedContact || filteredContactForActions) && (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button onClick={onAddAction} size="sm" className="cursor-pointer">

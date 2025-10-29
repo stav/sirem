@@ -315,7 +315,9 @@ function ManagePageContent() {
 
   // Action handlers
   const handleAddAction = () => {
-    if (!selectedContact) return
+    // Allow adding action if we have selectedContact OR filteredContactForActions
+    const contactToUse = selectedContact || filteredContactForActions
+    if (!contactToUse) return
     setEditingAction(null)
     setActionForm({
       title: '',
@@ -385,16 +387,18 @@ function ManagePageContent() {
       }
     } else {
       // Create new action - needs a contact
-      if (!selectedContact) return
+      const contactToUse = selectedContact || filteredContactForActions
+      if (!contactToUse) return
 
-      const success = await createAction(selectedContact.id, actionForm)
+      const success = await createAction(contactToUse.id, actionForm)
 
       if (success) {
+        const contactName = contactToUse ? `${contactToUse.first_name} ${contactToUse.last_name}` : 'Unknown Contact'
         toast({
           title: 'Action created',
-          description: `"${actionForm.title}" was successfully created.`,
+          description: `"${actionForm.title}" for ${contactName} was successfully created.`,
         })
-        logger.info(`Action created: ${actionForm.title}`, 'action_create', selectedContact.id)
+        logger.info(`Action created: ${actionForm.title}`, 'action_create', contactToUse.id)
         closeActionForm()
       }
     }
