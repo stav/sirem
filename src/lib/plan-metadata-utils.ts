@@ -7,52 +7,64 @@ export type PlanInsert = Database['public']['Tables']['plans']['Insert']
 export type PlanUpdate = Database['public']['Tables']['plans']['Update']
 
 /**
- * Generate TypeScript interface from JSON Schema
- * This utility creates a type-safe interface from the schema properties
+ * Property type from schema sections
  */
 type SchemaProperty = {
+  key: string
   type: string
   format?: string
   label?: string
-  section?: string
   description?: string
   enum?: readonly string[]
   minimum?: number
   maximum?: number
 }
 
-type SchemaProperties = Record<string, SchemaProperty>
+/**
+ * Section type from schema
+ */
+type SchemaSection = {
+  title: string
+  description: string
+  properties?: SchemaProperty[]
+}
 
 /**
- * Convert JSON Schema type to TypeScript type
+ * Extract all properties from all sections into a flat object
  */
-type JsonSchemaToTsType<T extends string> = 
-  T extends 'string' ? string :
-  T extends 'number' ? number :
-  T extends 'boolean' ? boolean :
-  T extends 'array' ? unknown[] :
-  unknown
-
-/**
- * Generate TypeScript interface from schema properties
- */
-type GenerateInterfaceFromSchema<T extends SchemaProperties> = {
-  [K in keyof T]?: JsonSchemaToTsType<T[K]['type']>
-} & {
-  // Allow any additional fields for future flexibility
-  [key: string]: unknown
+export function getAllProperties(): Record<string, SchemaProperty> {
+  const properties: Record<string, SchemaProperty> = {}
+  
+  if (plansMetadataSchema.sections && Array.isArray(plansMetadataSchema.sections)) {
+    // Type assertion needed because schema uses 'as const' which creates very specific literal types
+    const sections = plansMetadataSchema.sections as unknown as SchemaSection[]
+    sections.forEach((section: SchemaSection) => {
+      if (section.properties && Array.isArray(section.properties)) {
+        section.properties.forEach((prop: SchemaProperty) => {
+          if (prop.key) {
+            properties[prop.key] = prop
+          }
+        })
+      }
+    })
+  }
+  
+  return properties
 }
 
 /**
  * PlanMetadata interface - dynamically generated from schema
  * 
  * This interface is automatically generated from the JSON Schema properties.
- * No manual field definitions needed - the schema is the single source of truth.
+ * Since properties are now nested within sections, we use a Record type
+ * that allows any string keys with appropriate value types.
  * 
  * 🔄 DYNAMIC: New fields added to the schema automatically appear in this interface.
  * ✅ SINGLE SOURCE OF TRUTH: Schema drives both runtime validation and compile-time types.
  */
-export type PlanMetadata = GenerateInterfaceFromSchema<typeof plansMetadataSchema.properties>
+export type PlanMetadata = {
+  [key: string]: string | number | null | undefined
+}
 
 // Helper type for plan with typed metadata
 export interface PlanWithMetadata extends Omit<Plan, 'metadata'> {
@@ -92,9 +104,10 @@ export function getMetadataDate(plan: Plan, key: string): string | null {
  */
 export const getPlanMetadata = (() => {
   const getters: Record<string, (plan: Plan) => unknown> = {}
+  const properties = getAllProperties()
   
   // Generate getters for all schema properties
-  Object.entries(plansMetadataSchema.properties).forEach(([fieldName, fieldSchema]) => {
+  Object.entries(properties).forEach(([fieldName, fieldSchema]) => {
     const fieldType = fieldSchema.type
     
     // Choose appropriate getter based on field type
@@ -117,9 +130,10 @@ export const getPlanMetadata = (() => {
  */
 export function getDefaultMetadataFormData(): Record<string, unknown> {
   const formData: Record<string, unknown> = {}
+  const properties = getAllProperties()
   
   // Dynamically generate metadata fields from schema
-  Object.keys(plansMetadataSchema.properties).forEach(fieldName => {
+  Object.keys(properties).forEach(fieldName => {
     formData[fieldName] = ''
   })
   
@@ -176,9 +190,10 @@ export function populateFormFromPlan(plan: Plan): Record<string, unknown> {
   // Metadata fields - dynamically populate based on what's in the metadata
   if (plan.metadata) {
     const metadata = plan.metadata as Record<string, unknown>
+    const properties = getAllProperties()
     
     // Get all possible metadata fields from the schema
-    const metadataFields = Object.keys(plansMetadataSchema.properties)
+    const metadataFields = Object.keys(properties)
     
     // Populate each field if it exists in the metadata
     metadataFields.forEach(field => {
@@ -242,12 +257,22 @@ export function buildPlanDataFromForm(formData: Record<string, unknown>): {
  */
 export function buildMetadata(data: Record<string, unknown>): PlanMetadata {
   const metadata: PlanMetadata = {}
+  const properties = getAllProperties()
 
   // Dynamically process all schema properties
-  Object.keys(plansMetadataSchema.properties).forEach(fieldName => {
+  Object.keys(properties).forEach(fieldName => {
     const value = data[fieldName]
     if (value !== null && value !== undefined && value !== '') {
-      metadata[fieldName] = value
+      // Ensure value is assignable to PlanMetadata type
+      if (typeof value === 'string' || typeof value === 'number') {
+        metadata[fieldName] = value
+      } else if (typeof value === 'object') {
+        // Skip objects - they shouldn't be in metadata based on schema
+        return
+      } else {
+        // Convert other types to string
+        metadata[fieldName] = String(value)
+      }
     }
   })
 

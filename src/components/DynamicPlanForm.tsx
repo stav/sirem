@@ -75,7 +75,7 @@ export default function DynamicPlanForm({
     return (
       <div key={section.key} className="space-y-4">
         {/* Section Header */}
-        <div className="border-b pb-2">
+        <div className="border-b border-t pt-2 pb-2">
           <h3 className="text-sm font-semibold text-foreground">{section.title}</h3>
           {section.description && (
             <p className="text-xs text-muted-foreground mt-1">{section.description}</p>

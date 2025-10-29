@@ -111,7 +111,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
 
   // Get schema-ordered metadata sections with fields that exist in the plans
   const getSchemaOrderedMetadataSections = () => {
-    const sectionsWithFields: Array<{section: {key: string, title: string, description: string, order: number}, fields: string[]}> = []
+    const sectionsWithFields: Array<{section: {key: string, title: string, description: string}, fields: string[]}> = []
     
     // Go through schema sections in order
     parsedSchema.sections.forEach(section => {

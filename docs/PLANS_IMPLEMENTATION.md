@@ -608,11 +608,19 @@ Plans are typically version by year:
 
 The `metadata` JSONB field provides flexibility for storing additional plan information that doesn't fit into the standard schema. This is particularly useful for:
 
-**🎯 SCHEMA DEFINITION: The metadata structure is defined in two sources of truth that must be kept in sync:**
-- `@/schema/plans-metadata-schema.ts` - TypeScript Schema for dynamic forms and validation
-- `src/lib/plan-metadata-utils.ts` - TypeScript interface for type safety
+**🎯 SCHEMA DEFINITION: The metadata structure uses a hierarchical schema as the single source of truth:**
+- `@/schema/plans-metadata-schema.ts` - Hierarchical TypeScript Schema (sections with nested properties arrays) for dynamic forms and validation
+- `src/lib/plan-metadata-utils.ts` - Runtime utilities that automatically extract properties from the schema using `getAllProperties()`
 
-**⚠️ IMPORTANT: When adding, modifying, or removing metadata fields, update BOTH files to maintain consistency.**
+**✅ AUTOMATIC SYNCHRONIZATION: The schema is the single source of truth. Properties are extracted at runtime from the hierarchical sections structure, so adding fields to the schema automatically makes them available throughout the application. No manual updates needed in plan-metadata-utils.ts when adding new fields.**
+
+**🔑 KEY PROPERTY REQUIREMENT: Each property in the `properties` array must have a `key` field. This key serves as:**
+- The property name in the database JSONB metadata (e.g., `metadata.premium_monthly`)
+- The field identifier for form data binding and React keys
+- The lookup key for property indexing in `getAllProperties()`
+- The unique identifier in `FieldDefinition` objects
+
+Since properties are stored in an array (not an object), the `key` must be explicit - it cannot be inferred from object keys like in flat schemas. This key maps directly to how values are stored and retrieved in the `plan.metadata` JSONB field.
 
 1. **Extended Benefits**: Benefits that vary by carrier or year (card, fitness, transportation)
 2. **Prescription Drug Details**: Complex RX coverage that needs more than the pharmacy_benefit field

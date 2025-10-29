@@ -21,11 +21,39 @@ export interface FieldDefinition {
   format?: 'date' | 'email' | 'url'
 }
 
+/**
+ * Generate a stable key from a section title
+ * Uses a mapping for backward compatibility with existing section keys
+ */
+function generateSectionKey(title: string): string {
+  // Map specific titles to their legacy keys for backward compatibility
+  const titleToKeyMap: Record<string, string> = {
+    "Plan Dates": "dates",
+    "Financials": "financials",
+    "Deductibles": "deductibles",
+    "Annual Limits": "annual_limits",
+    "Quarterly Benefits": "quarterly_benefits",
+    "Yearly Benefits": "yearly_benefits",
+    "Medical Copays": "medical_copays",
+    "Additional Benefits": "additional_benefits",
+    "Plan Information": "plan_information"
+  }
+  
+  if (titleToKeyMap[title]) {
+    return titleToKeyMap[title]
+  }
+  
+  // Fallback: generate key from title
+  return title
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+}
+
 export interface SectionDefinition {
   key: string
   title: string
   description: string
-  order: number
 }
 
 export interface ParsedSchema {
@@ -42,49 +70,45 @@ export function parseSchema(schema: Record<string, unknown>): ParsedSchema {
   const fields: FieldDefinition[] = []
   const fieldsBySection: Record<string, FieldDefinition[]> = {}
 
-  // Extract sections
-  if (schema.sections) {
-    Object.entries(schema.sections as Record<string, unknown>).forEach(([key, section]) => {
+  // Extract sections with nested properties (preserve order)
+  if (schema.sections && Array.isArray(schema.sections)) {
+    (schema.sections as Array<Record<string, unknown>>).forEach((section) => {
+      const title = section.title as string
+      const sectionKey = generateSectionKey(title)
+      
       sections.push({
-        key,
-        title: (section as Record<string, unknown>).title as string,
-        description: (section as Record<string, unknown>).description as string,
-        order: (section as Record<string, unknown>).order as number
+        key: sectionKey,
+        title,
+        description: section.description as string
+      })
+
+      // Extract fields from section properties
+      const sectionProperties = (section.properties as Array<Record<string, unknown>>) || []
+      sectionProperties.forEach((property) => {
+        const key = property.key as string
+        const field: FieldDefinition = {
+          key,
+          type: mapJsonSchemaTypeToFieldType(property.type as string, property.format as string),
+          label: (property.label as string) || key,
+          section: sectionKey,
+          description: (property.description as string) || '',
+          validation: extractValidation(property),
+          format: property.format as 'url' | 'email' | 'date' | undefined
+        }
+
+        fields.push(field)
+
+        // Group by section
+        if (!fieldsBySection[sectionKey]) {
+          fieldsBySection[sectionKey] = []
+        }
+        fieldsBySection[sectionKey].push(field)
       })
     })
   }
 
-  // Sort sections by order
-  sections.sort((a, b) => a.order - b.order)
-
-  // Extract fields
-  if (schema.properties) {
-    Object.entries(schema.properties as Record<string, unknown>).forEach(([key, property]) => {
-      const prop = property as Record<string, unknown>
-      const field: FieldDefinition = {
-        key,
-        type: mapJsonSchemaTypeToFieldType(prop.type as string, prop.format as string),
-        label: (prop.label as string) || key,
-        section: (prop.section as string) || 'uncategorized',
-        description: (prop.description as string) || '',
-        validation: extractValidation(prop),
-        format: prop.format as 'url' | 'email' | 'date' | undefined
-      }
-
-      fields.push(field)
-
-      // Group by section
-      if (!fieldsBySection[field.section]) {
-        fieldsBySection[field.section] = []
-      }
-      fieldsBySection[field.section].push(field)
-    })
-  }
-
-  // Sort fields within each section
-  Object.keys(fieldsBySection).forEach(sectionKey => {
-    fieldsBySection[sectionKey].sort((a, b) => a.label.localeCompare(b.label))
-  })
+  // Note: Fields preserve their order from the schema properties array
+  // No sorting is applied - the array order in the schema determines the display order
 
   return {
     sections,

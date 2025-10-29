@@ -3,309 +3,332 @@
  * 
  * This file exports the schema data for the plans metadata fields.
  * It serves as a TypeScript module that can be imported by components.
+ * 
+ * Schema Structure:
+ * - Hierarchical sections array containing ordered property arrays
+ * - Each section has: title, description, and properties array
+ * - Each property in the properties array must have a "key" field
+ * 
+ * 🔑 KEY PROPERTY REQUIREMENT:
+ * The "key" property is essential because properties are stored in arrays (not objects).
+ * The key serves as:
+ * - The database property name in plan.metadata JSONB (e.g., metadata.premium_monthly)
+ * - The field identifier for form data binding
+ * - The lookup key for property indexing in getAllProperties()
+ * - The unique identifier in FieldDefinition objects
+ * 
+ * Without the key, we cannot map schema definitions to actual database storage.
  */
 
 export const plansMetadataSchema = {
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://sirem.app/schemas/plans-metadata.json",
   "title": "Plans Metadata Schema",
-  "description": "Schema definition for the metadata JSONB field in the plans table. ⚠️ IMPORTANT: This TypeScript Schema must be kept in sync with the TypeScript interface in src/lib/plan-metadata-utils.ts. 🔄 DYNAMIC: New fields may be added, changed, or removed at any time as business requirements evolve.",
+  "description": "Schema definition for the metadata JSONB field in the plans table. ⚠️ IMPORTANT: This is the single source of truth for metadata field definitions. The schema uses a hierarchical structure with sections containing ordered property arrays. Runtime extraction in src/lib/plan-metadata-utils.ts uses getAllProperties() to automatically extract all properties from all sections, ensuring automatic synchronization. 🔄 DYNAMIC: New fields may be added, changed, or removed at any time as business requirements evolve - simply add them to the appropriate section's properties array.",
   "type": "object",
   "additionalProperties": true,
-  "sections": {
-    "dates": {
+  "sections": [
+    {
       "title": "Plan Dates",
       "description": "Plan effective dates and periods",
-      "order": 1
+      "properties": [
+        {
+          "key": "effective_start",
+          "type": "string",
+          "format": "date",
+          "label": "Effective Start Date",
+          "description": "Plan effective start date in YYYY-MM-DD format"
+        },
+        {
+          "key": "effective_end",
+          "type": "string",
+          "format": "date",
+          "label": "Effective End Date",
+          "description": "Plan effective end date in YYYY-MM-DD format"
+        }
+      ]
     },
-    "monthly_financials": {
-      "title": "Monthly Financials",
-      "description": "Monthly premiums, givebacks, and benefits",
-      "order": 2
+    {
+      "title": "Financials",
+      "description": "Monthly premiums, givebacks, and maximum out-of-pocket limits",
+      "properties": [
+        {
+          "key": "premium_monthly",
+          "type": "number",
+          "minimum": 0,
+          "label": "Premium (monthly)",
+          "description": "Monthly premium amount in dollars"
+        },
+        {
+          "key": "premium_monthly_with_extra_help",
+          "type": "number",
+          "minimum": 0,
+          "label": "Premium (monthly, with Extra Help)",
+          "description": "Monthly premium for LIS/Extra Help recipients (typically $0)"
+        },
+        {
+          "key": "giveback_monthly",
+          "type": "number",
+          "minimum": 0,
+          "label": "Giveback (monthly)",
+          "description": "Monthly giveback/rebate amount in dollars"
+        },
+        {
+          "key": "moop_annual",
+          "type": "number",
+          "minimum": 0,
+          "label": "MOOP (annual)",
+          "description": "Maximum Out-of-Pocket annual limit in dollars"
+        }
+      ]
     },
-    "quarterly_benefits": {
-      "title": "Quarterly Benefits",
-      "description": "Quarterly benefits and allowances",
-      "order": 3
-    },
-    "yearly_benefits": {
-      "title": "Yearly Benefits",
-      "description": "Annual benefits for dental, hearing, and vision",
-      "order": 4
-    },
-    "medical_copays": {
-      "title": "Medical Copays",
-      "description": "Copays for medical services and visits",
-      "order": 5
-    },
-    "deductibles": {
+    {
       "title": "Deductibles",
       "description": "Medical and prescription drug deductibles",
-      "order": 6
+      "properties": [
+        {
+          "key": "medical_deductible",
+          "type": "number",
+          "minimum": 0,
+          "label": "Medical Deductible",
+          "description": "Standard medical deductible amount in dollars"
+        },
+        {
+          "key": "medical_deductible_with_medicaid",
+          "type": "number",
+          "minimum": 0,
+          "label": "Medical Deductible (with Medicaid)",
+          "description": "Medical deductible for Medicaid cost-sharing recipients (typically $0)"
+        },
+        {
+          "key": "rx_deductible_tier345",
+          "type": "number",
+          "minimum": 0,
+          "label": "RX Deductible (Tiers 3-5)",
+          "description": "Prescription drug deductible for tiers 3, 4, and 5 in dollars"
+        }
+      ]
     },
-    "annual_limits": {
-      "title": "Annual Limits",
-      "description": "Maximum out-of-pocket and annual limits",
-      "order": 7
+    {
+      "title": "Benefits",
+      "description": "Benefits and allowances",
+      "properties": [
+        {
+          "key": "otc_benefit_quarterly",
+          "type": "number",
+          "minimum": 0,
+          "label": "OTC Benefit (quarterly)",
+          "description": "Quarterly OTC (Over-the-Counter) benefit amount in dollars"
+        },
+        {
+          "key": "card_benefit",
+          "type": "number",
+          "minimum": 0,
+          "label": "Card Benefit",
+          "description": "Prepaid debit card benefit amount in dollars"
+        },
+        {
+          "key": "dental_benefit_yearly",
+          "type": "number",
+          "minimum": 0,
+          "label": "Dental (yearly)",
+          "description": "Annual dental benefit amount in dollars"
+        },
+        {
+          "key": "vision_benefit_yearly",
+          "type": "number",
+          "minimum": 0,
+          "label": "Vision (yearly)",
+          "description": "Annual vision benefit amount in dollars"
+        },
+        {
+          "key": "hearing_benefit_yearly",
+          "type": "number",
+          "minimum": 0,
+          "label": "Hearing (yearly)",
+          "description": "Annual hearing benefit amount in dollars"
+        }
+      ]
     },
-    "additional_benefits": {
+    {
+      "title": "Doctor Copays",
+      "description": "Copays for doctor visits and attendance",
+      "properties": [
+        {
+          "key": "primary_care_copay",
+          "type": "number",
+          "minimum": 0,
+          "label": "PCP Copay",
+          "description": "Primary care physician copay amount in dollars"
+        },
+        {
+          "key": "specialist_copay",
+          "type": "number",
+          "minimum": 0,
+          "label": "Specialist Copay",
+          "description": "Specialist physician copay amount in dollars"
+        }
+      ]
+    },
+    {
+      "title": "Hospital Copays",
+      "description": "Copays for hospital stays and visits",
+      "properties": [
+
+        {
+          "key": "hospital_inpatient_per_day_copay",
+          "type": "number",
+          "minimum": 0,
+          "label": "Hospital Copay (daily)",
+          "description": "Daily hospital inpatient copay amount in dollars"
+        },
+        {
+          "key": "hospital_inpatient_days",
+          "type": "integer",
+          "minimum": 0,
+          "label": "Hospital Days",
+          "description": "Number of covered hospital inpatient days"
+        },
+        {
+          "key": "hospital_inpatient_with_assistance_per_stay_copay",
+          "type": "number",
+          "minimum": 0,
+          "label": "Hospital Copay (with assistance, per stay)",
+          "description": "Hospital inpatient per stay copay amount with assistance in dollars"
+        },
+        {
+          "key": "hospital_inpatient_without_assistance_per_stay_copay",
+          "type": "number",
+          "minimum": 0,
+          "label": "Hospital Copay (without assistance, per stay)",
+          "description": "Hospital inpatient per stay copay amount without assistance in dollars"
+        },
+        {
+          "key": "skilled_nursing_per_day_copay",
+          "type": "number",
+          "minimum": 0,
+          "label": "Skilled Nursing (per day)",
+          "description": "Skilled nursing per day copay amount in dollars"
+        },
+        {
+          "key": "skilled_nursing_with_assistance_per_stay_copay",
+          "type": "number",
+          "minimum": 0,
+          "label": "Skilled Nursing (with assistance, per stay)",
+          "description": "Skilled nursing per stay copay amount with assistance in dollars"
+        }
+      ]
+    },
+    {
+      "title": "Emergency Copays",
+      "description": "Copays for emergency services",
+      "properties": [
+        {
+          "key": "ambulance_copay",
+          "type": "number",
+          "minimum": 0,
+          "label": "Ambulance Copay",
+          "description": "Ambulance service copay amount in dollars"
+        },
+        {
+          "key": "ambulance_with_assistance_copay",
+          "type": "number",
+          "minimum": 0,
+          "label": "Ambulance Copay (with assistance)",
+          "description": "Ambulance service copay amount with assistance in dollars"
+        },
+        {
+          "key": "emergency_room_copay",
+          "type": "number",
+          "minimum": 0,
+          "label": "ER Copay",
+          "description": "Emergency room visit copay amount in dollars"
+        },
+        {
+          "key": "emergency_with_assistance_copay",
+          "type": "number",
+          "minimum": 0,
+          "label": "ER Copay (with assistance)",
+          "description": "Emergency room visit copay amount with assistance in dollars"
+        },
+        {
+          "key": "urgent_care_copay",
+          "type": "number",
+          "minimum": 0,
+          "label": "Urgent Care Copay",
+          "description": "Urgent care visit copay amount in dollars"
+        }
+      ]
+    },
+    {
       "title": "Additional Benefits",
       "description": "Card, fitness, and transportation benefits",
-      "order": 8
+      "properties": [
+        {
+          "key": "fitness_benefit",
+          "type": "string",
+          "label": "Fitness Benefit",
+          "description": "Fitness/gym membership benefit description"
+        },
+        {
+          "key": "transportation_benefit",
+          "type": "number",
+          "minimum": 0,
+          "label": "Transportation Benefit",
+          "description": "Transportation/rides benefit amount in dollars"
+        }
+      ]
     },
-    "plan_information": {
+    {
       "title": "Plan Information",
       "description": "General plan details and descriptions",
-      "order": 9
+      "properties": [
+        {
+          "key": "rx_cost_share",
+          "type": "string",
+          "label": "RX Cost Share",
+          "description": "Prescription drug cost sharing details (e.g., '20% after deductible')"
+        },
+        {
+          "key": "pharmacy_benefit",
+          "type": "string",
+          "label": "Pharmacy Benefit",
+          "description": "Pharmacy benefit description"
+        },
+        {
+          "key": "service_area",
+          "type": "string",
+          "label": "Service Area",
+          "description": "Service area description (e.g., 'Statewide', 'Multi-state')"
+        },
+        {
+          "key": "summary",
+          "type": "string",
+          "label": "Summary",
+          "description": "Plan summary or overview"
+        },
+        {
+          "key": "notes",
+          "type": "string",
+          "label": "Notes",
+          "description": "General plan notes and additional information"
+        },
+        {
+          "key": "medicaid_eligibility",
+          "type": "string",
+          "enum": ["Required", "Not Required", "Optional"],
+          "label": "Medicaid Eligibility",
+          "description": "Medicaid eligibility requirements"
+        },
+        {
+          "key": "transitioned_from",
+          "type": "string",
+          "label": "Transitioned From",
+          "description": "Information about plan transitions or predecessor plans"
+        }
+      ]
     }
-  },
-  "properties": {
-    "effective_start": {
-      "type": "string",
-      "format": "date",
-      "label": "Effective Start Date",
-      "section": "dates",
-      "description": "Plan effective start date in YYYY-MM-DD format"
-    },
-    "effective_end": {
-      "type": "string",
-      "format": "date",
-      "label": "Effective End Date",
-      "section": "dates",
-      "description": "Plan effective end date in YYYY-MM-DD format"
-    },
-    "premium_monthly": {
-      "type": "number",
-      "minimum": 0,
-      "label": "Premium (monthly)",
-      "section": "monthly_financials",
-      "description": "Monthly premium amount in dollars"
-    },
-    "premium_monthly_with_extra_help": {
-      "type": "number",
-      "minimum": 0,
-      "label": "Premium (monthly, with Extra Help)",
-      "section": "monthly_financials",
-      "description": "Monthly premium for LIS/Extra Help recipients (typically $0)"
-    },
-    "giveback_monthly": {
-      "type": "number",
-      "minimum": 0,
-      "label": "Giveback (monthly)",
-      "section": "monthly_financials",
-      "description": "Monthly giveback/rebate amount in dollars"
-    },
-    "otc_benefit_quarterly": {
-      "type": "number",
-      "minimum": 0,
-      "label": "OTC Benefit (quarterly)",
-      "section": "quarterly_benefits",
-      "description": "Quarterly OTC (Over-the-Counter) benefit amount in dollars"
-    },
-    "dental_benefit_yearly": {
-      "type": "number",
-      "minimum": 0,
-      "label": "Dental (yearly)",
-      "section": "yearly_benefits",
-      "description": "Annual dental benefit amount in dollars"
-    },
-    "hearing_benefit_yearly": {
-      "type": "number",
-      "minimum": 0,
-      "label": "Hearing (yearly)",
-      "section": "yearly_benefits",
-      "description": "Annual hearing benefit amount in dollars"
-    },
-    "vision_benefit_yearly": {
-      "type": "number",
-      "minimum": 0,
-      "label": "Vision (yearly)",
-      "section": "yearly_benefits",
-      "description": "Annual vision benefit amount in dollars"
-    },
-    "primary_care_copay": {
-      "type": "number",
-      "minimum": 0,
-      "label": "PCP Copay",
-      "section": "medical_copays",
-      "description": "Primary care physician copay amount in dollars"
-    },
-    "specialist_copay": {
-      "type": "number",
-      "minimum": 0,
-      "label": "Specialist Copay",
-      "section": "medical_copays",
-      "description": "Specialist physician copay amount in dollars"
-    },
-    "hospital_inpatient_per_day_copay": {
-      "type": "number",
-      "minimum": 0,
-      "label": "Hospital Copay (daily)",
-      "section": "medical_copays",
-      "description": "Daily hospital inpatient copay amount in dollars"
-    },
-    "hospital_inpatient_days": {
-      "type": "integer",
-      "minimum": 0,
-      "label": "Hospital Days",
-      "section": "medical_copays",
-      "description": "Number of covered hospital inpatient days"
-    },
-    "hospital_inpatient_with_assistance_per_stay_copay": {
-      "type": "number",
-      "minimum": 0,
-      "label": "Hospital Copay (with assistance, per stay)",
-      "section": "medical_copays",
-      "description": "Hospital inpatient per stay copay amount with assistance in dollars"
-    },
-    "hospital_inpatient_without_assistance_per_stay_copay": {
-      "type": "number",
-      "minimum": 0,
-      "label": "Hospital Copay (without assistance, per stay)",
-      "section": "medical_copays",
-      "description": "Hospital inpatient per stay copay amount without assistance in dollars"
-    },
-    "moop_annual": {
-      "type": "number",
-      "minimum": 0,
-      "label": "MOOP (annual)",
-      "section": "annual_limits",
-      "description": "Maximum Out-of-Pocket annual limit in dollars"
-    },
-    "ambulance_copay": {
-      "type": "number",
-      "minimum": 0,
-      "label": "Ambulance Copay",
-      "section": "medical_copays",
-      "description": "Ambulance service copay amount in dollars"
-    },
-    "ambulance_with_assistance_copay": {
-      "type": "number",
-      "minimum": 0,
-      "label": "Ambulance Copay (with assistance)",
-      "section": "medical_copays",
-      "description": "Ambulance service copay amount with assistance in dollars"
-    },
-    "emergency_room_copay": {
-      "type": "number",
-      "minimum": 0,
-      "label": "ER Copay",
-      "section": "medical_copays",
-      "description": "Emergency room visit copay amount in dollars"
-    },
-    "emergency_with_assistance_copay": {
-      "type": "number",
-      "minimum": 0,
-      "label": "ER Copay (with assistance)",
-      "section": "medical_copays",
-      "description": "Emergency room visit copay amount with assistance in dollars"
-    },
-    "urgent_care_copay": {
-      "type": "number",
-      "minimum": 0,
-      "label": "Urgent Care Copay",
-      "section": "medical_copays",
-      "description": "Urgent care visit copay amount in dollars"
-    },
-    "skilled_nursing_per_day_copay": {
-      "type": "number",
-      "minimum": 0,
-      "label": "Skilled Nursing (per day)",
-      "section": "medical_copays",
-      "description": "Skilled nursing per day copay amount in dollars"
-    },
-    "skilled_nursing_with_assistance_per_stay_copay": {
-      "type": "number",
-      "minimum": 0,
-      "label": "Skilled Nursing (with assistance, per stay)",
-      "section": "medical_copays",
-      "description": "Skilled nursing per stay copay amount with assistance in dollars"
-    },
-    "medical_deductible": {
-      "type": "number",
-      "minimum": 0,
-      "label": "Medical Deductible",
-      "section": "deductibles",
-      "description": "Standard medical deductible amount in dollars"
-    },
-    "medical_deductible_with_medicaid": {
-      "type": "number",
-      "minimum": 0,
-      "label": "Medical Deductible (with Medicaid)",
-      "section": "deductibles",
-      "description": "Medical deductible for Medicaid cost-sharing recipients (typically $0)"
-    },
-    "rx_deductible_tier345": {
-      "type": "number",
-      "minimum": 0,
-      "label": "RX Deductible (Tiers 3-5)",
-      "section": "deductibles",
-      "description": "Prescription drug deductible for tiers 3, 4, and 5 in dollars"
-    },
-    "rx_cost_share": {
-      "type": "string",
-      "label": "RX Cost Share",
-      "section": "plan_information",
-      "description": "Prescription drug cost sharing details (e.g., '20% after deductible')"
-    },
-    "pharmacy_benefit": {
-      "type": "string",
-      "label": "Pharmacy Benefit",
-      "section": "plan_information",
-      "description": "Pharmacy benefit description"
-    },
-    "service_area": {
-      "type": "string",
-      "label": "Service Area",
-      "section": "plan_information",
-      "description": "Service area description (e.g., 'Statewide', 'Multi-state')"
-    },
-    "summary": {
-      "type": "string",
-      "label": "Summary",
-      "section": "plan_information",
-      "description": "Plan summary or overview"
-    },
-    "notes": {
-      "type": "string",
-      "label": "Notes",
-      "section": "plan_information",
-      "description": "General plan notes and additional information"
-    },
-    "card_benefit": {
-      "type": "number",
-      "minimum": 0,
-      "label": "Card Benefit",
-      "section": "additional_benefits",
-      "description": "Prepaid debit card benefit amount in dollars"
-    },
-    "fitness_benefit": {
-      "type": "string",
-      "label": "Fitness Benefit",
-      "section": "additional_benefits",
-      "description": "Fitness/gym membership benefit description"
-    },
-    "transportation_benefit": {
-      "type": "number",
-      "minimum": 0,
-      "label": "Transportation Benefit",
-      "section": "additional_benefits",
-      "description": "Transportation/rides benefit amount in dollars"
-    },
-    "medicaid_eligibility": {
-      "type": "string",
-      "enum": ["Required", "Not Required", "Optional"],
-      "label": "Medicaid Eligibility",
-      "section": "plan_information",
-      "description": "Medicaid eligibility requirements"
-    },
-    "transitioned_from": {
-      "type": "string",
-      "label": "Transitioned From",
-      "section": "plan_information",
-      "description": "Information about plan transitions or predecessor plans"
-    }
-  },
+  ],
   "examples": [
     {
       "premium_monthly": 45.50,

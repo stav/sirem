@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase'
 import type { Json } from '@/lib/supabase-types'
 import { parseLegacyPlanType, mapCarrier } from '@/lib/plan-constants'
-import { plansMetadataSchema } from '@/schema/plans-metadata-schema'
+import { getAllProperties } from '@/lib/plan-metadata-utils'
 
 type PlanInsert = Database['public']['Tables']['plans']['Insert']
 
@@ -212,7 +212,9 @@ export async function importPlansCsv(text: string): Promise<{
             metadata[metadataField] = days
           } else if (value && value.trim() !== '') {
             // Determine if this should be a number or string based on schema
-            const fieldSchema = plansMetadataSchema.properties[metadataField]
+            // Use getAllProperties helper to get field schema from hierarchical structure
+            const allProperties = getAllProperties()
+            const fieldSchema = allProperties[metadataField]
             if (fieldSchema && fieldSchema.type === 'number') {
               const numValue = toNumber(value)
               if (numValue !== null) {
