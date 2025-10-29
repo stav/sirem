@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react'
 import { Plus, ArrowLeft, ChevronDown, ChevronUp, X, List, Filter, RefreshCw } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import ContactCard from './ContactCard'
 import FilterHelper from './FilterHelper'
 import { getT65Days, formatLocalDate, calculateAge, getDaysPast65 } from '@/lib/contact-utils'
@@ -292,41 +292,39 @@ export default function ContactList({
             {/* Filter section - only when not in single contact view */}
             {!singleContactView && (
               <div className="flex items-center space-x-2">
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="relative">
-                        <input
-                          type="text"
-                          value={filter}
-                          onChange={(e) => setFilter(e.target.value)}
-                          placeholder="Multi-filter: name, T65 days, t:tag, s:status (e.g., john 180 t:n2m s:client)..."
-                          className="focus:ring-primary rounded border px-2 py-1 pr-8 text-sm focus:ring-2 focus:outline-none"
-                          style={{ minWidth: 0, width: '280px' }}
-                        />
-                        {filter && (
-                          <button
-                            onClick={() => setFilter('')}
-                            className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
-                          >
-                            <X className="h-3 w-3" />
-                          </button>
-                        )}
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" align="start" className="max-w-sm">
-                      <div className="space-y-1">
-                        <p className="font-semibold">Multi-Filter Options:</p>
-                        <p className="text-xs">• <strong>Name:</strong> Type any text (e.g., &quot;john&quot;)</p>
-                        <p className="text-xs">• <strong>T65 Days:</strong> Type a number (e.g., &quot;180&quot;)</p>
-                        <p className="text-xs">• <strong>Tag:</strong> Use t: prefix (e.g., &quot;t:n2m&quot;)</p>
-                        <p className="text-xs">• <strong>Status:</strong> Use s: prefix (e.g., &quot;s:client&quot;)</p>
-                        <p className="text-xs">• <strong>Role:</strong> Use r: prefix (e.g., &quot;r:primary&quot;)</p>
-                        <p className="text-xs mt-2">Combine filters with spaces for AND logic</p>
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        value={filter}
+                        onChange={(e) => setFilter(e.target.value)}
+                        placeholder="Multi-filter: name, T65 days, t:tag, s:status (e.g., john 180 t:n2m s:client)..."
+                        className="focus:ring-primary rounded border px-2 py-1 pr-8 text-sm focus:ring-2 focus:outline-none"
+                        style={{ minWidth: 0, width: '280px' }}
+                      />
+                      {filter && (
+                        <button
+                          onClick={() => setFilter('')}
+                          className="absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer text-muted-foreground hover:text-foreground"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" align="start" className="max-w-sm">
+                    <div className="space-y-1">
+                      <p className="font-semibold">Multi-Filter Options:</p>
+                      <p className="text-xs">• <strong>Name:</strong> Type any text (e.g., &quot;john&quot;)</p>
+                      <p className="text-xs">• <strong>T65 Days:</strong> Type a number (e.g., &quot;180&quot;)</p>
+                      <p className="text-xs">• <strong>Tag:</strong> Use t: prefix (e.g., &quot;t:n2m&quot;)</p>
+                      <p className="text-xs">• <strong>Status:</strong> Use s: prefix (e.g., &quot;s:client&quot;)</p>
+                      <p className="text-xs">• <strong>Role:</strong> Use r: prefix (e.g., &quot;r:primary&quot;)</p>
+                      <p className="text-xs mt-2">Combine filters with spaces for AND logic</p>
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
                 <div className="flex items-center space-x-2">
                   <span className="text-muted-foreground text-xs">
                     {filteredContacts.length}/{contacts.length}
@@ -380,73 +378,65 @@ export default function ContactList({
               <div className="flex space-x-2">
                 {contacts.length > 0 && (
                   <>
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <Button
-                            onClick={() => setShowFilterHelper(!showFilterHelper)}
-                            size="sm"
-                            variant={showFilterHelper ? 'default' : 'outline'}
-                            className="cursor-pointer"
-                          >
-                            <Filter className="h-4 w-4" />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Filter helper</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={() => setShowFilterHelper(!showFilterHelper)}
+                          size="sm"
+                          variant={showFilterHelper ? 'default' : 'outline'}
+                          className="cursor-pointer"
+                        >
+                          <Filter className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Filter helper</p>
+                      </TooltipContent>
+                    </Tooltip>
                     {onRefresh && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              onClick={onRefresh}
-                              size="sm"
-                              variant="outline"
-                              className="cursor-pointer"
-                            >
-                              <RefreshCw className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Refresh contact list</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-                    <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <Button
-                            onClick={() => setShowListModal(true)}
+                            onClick={onRefresh}
                             size="sm"
                             variant="outline"
                             className="cursor-pointer"
                           >
-                            <List className="h-4 w-4" />
+                            <RefreshCw className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Copy contact list for printing</p>
+                          <p>Refresh contact list</p>
                         </TooltipContent>
                       </Tooltip>
-                    </TooltipProvider>
+                    )}
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={() => setShowListModal(true)}
+                          size="sm"
+                          variant="outline"
+                          className="cursor-pointer"
+                        >
+                          <List className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Copy contact list for printing</p>
+                      </TooltipContent>
+                    </Tooltip>
                   </>
                 )}
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button onClick={onAddContact} size="sm" className="cursor-pointer">
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side="bottom" align="end" sideOffset={5}>
-                      <p>Add Contact</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button onClick={onAddContact} size="sm" className="cursor-pointer">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side="bottom" align="end" sideOffset={5}>
+                    <p>Add Contact</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
             )}
           </div>
@@ -459,18 +449,16 @@ export default function ContactList({
             {contacts.length === 0 ? (
               <div className="py-8 text-center">
                 <p className="text-muted-foreground">No contacts yet</p>
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button onClick={onAddContact} className="mt-2 cursor-pointer">
-                        <Plus className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Add your first contact</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button onClick={onAddContact} className="mt-2 cursor-pointer">
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Add your first contact</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
             ) : (
               <div className="space-y-3">
