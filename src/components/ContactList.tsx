@@ -7,6 +7,7 @@ import ContactCard from './ContactCard'
 import FilterHelper from './FilterHelper'
 import { getT65Days, formatLocalDate, calculateAge, getDaysPast65 } from '@/lib/contact-utils'
 import { getPrimaryAddress } from '@/lib/address-utils'
+import { getDisplayDate } from '@/lib/action-utils'
 import type { Database } from '@/lib/supabase'
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
@@ -15,10 +16,16 @@ type Contact = Database['public']['Tables']['contacts']['Row'] & {
     tags: {
       id: string
       label: string
+      tag_categories: {
+        id: string
+        name: string
+      }
     }
   }[]
   contact_roles?: Database['public']['Tables']['contact_roles']['Row'][]
 }
+
+type Action = Database['public']['Tables']['actions']['Row']
 
 interface ContactListProps {
   contacts: Contact[]
@@ -35,6 +42,7 @@ interface ContactListProps {
   refreshTimestamp?: number
   onFilteredContactsChange?: (filteredContacts: Contact[]) => void
   onRefresh?: () => void
+  actions?: Action[]
 }
 
 export default function ContactList({
@@ -52,6 +60,7 @@ export default function ContactList({
   refreshTimestamp,
   onFilteredContactsChange,
   onRefresh,
+  actions = [],
 }: ContactListProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [filter, setFilter] = useState('')
@@ -119,6 +128,51 @@ export default function ContactList({
           return contactRoles.some((role) => role.role_type?.toLowerCase().includes(roleQuery) && role.is_active !== false)
         }
         return true
+      } else if (trimmedTerm.startsWith('x:')) {
+        // Custom filtering: x:filter_name
+        const customFilterQuery = trimmedTerm.substring(2).toLowerCase()
+        if (customFilterQuery === 'medicare_phone') {
+          // Medicare Phone filter: must have Medicare role, have phone, NOT have AEP-2026_Ready tag, NOT have recent actions, NOT have "Cannot-Help" tag, and NOT have status "Brandon"
+          // Check for Medicare role
+          const hasMedicareRole = contact.contact_roles?.some(
+            (role) => role.role_type?.toLowerCase().includes('medicare') && role.is_active !== false
+          ) || false
+          
+          // Check if phone field has a value
+          const hasPhone = !!contact.phone && contact.phone.trim() !== ''
+          
+          // Check if contact does NOT have the "Ready" tag in the "AEP 2026" category
+          const contactTags = contact.contact_tags || []
+          const hasAEP2026ReadyTag = contactTags.some(ct => 
+            ct.tags.label.toLowerCase() === 'ready' && 
+            ct.tags.tag_categories?.name === 'AEP 2026'
+          )
+          
+          // Check if contact does NOT have the "Cannot-Help" tag in the "Other" category
+          const hasCannotHelpTag = contactTags.some(ct => 
+            ct.tags.label.toLowerCase() === 'cannot-help' && 
+            ct.tags.tag_categories?.name === 'Other'
+          )
+          
+          // Check if contact does NOT have status "Brandon"
+          const hasBrandonStatus = contact.status?.toLowerCase() === 'brandon'
+          
+          // Check if contact does NOT have status "Not-eligible"
+          const hasNotEligibleStatus = contact.status?.toLowerCase() === 'not-eligible'
+          
+          // Check if contact has any action within the last 7 days
+          const now = new Date()
+          const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
+          const hasRecentAction = actions.some(action => {
+            if (action.contact_id !== contact.id) return false
+            const displayDate = new Date(getDisplayDate(action))
+            return displayDate >= sevenDaysAgo
+          })
+          
+          // All conditions must be true: has Medicare role AND has phone AND does NOT have AEP-2026_Ready tag AND does NOT have recent action AND does NOT have Cannot-Help tag AND does NOT have Brandon status AND does NOT have Not-eligible status
+          return hasMedicareRole && hasPhone && !hasAEP2026ReadyTag && !hasRecentAction && !hasCannotHelpTag && !hasBrandonStatus && !hasNotEligibleStatus
+        }
+        return true
       } else {
         const numericValue = parseInt(trimmedTerm, 10)
         if (!isNaN(numericValue) && numericValue > 0 && numericValue.toString() === trimmedTerm) {
@@ -157,7 +211,7 @@ export default function ContactList({
     }
 
     return filtered
-  }, [contacts, filter])
+  }, [contacts, filter, actions])
 
   // Notify parent component when filtered contacts change
   useEffect(() => {

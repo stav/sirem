@@ -569,6 +569,7 @@ function ManagePageContent() {
                   refreshTimestamp={refreshTimestamp}
                   onFilteredContactsChange={handleFilteredContactsChange}
                   onRefresh={fetchContacts}
+                  actions={actions}
                 />
               </div>
             </div>

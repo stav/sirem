@@ -124,6 +124,36 @@ The contact filtering system uses a text input box with space-separated filter t
 - `r:referral` - contacts with referral-related roles
 - `r:client` - contacts with client-related roles
 
+### 6. Custom Filtering
+
+**Format**: `x:[filter_name]`  
+**Description**: Pre-configured complex filters that combine multiple criteria with AND logic  
+**Case**: Case-insensitive exact matching
+
+**Available Custom Filters**:
+
+#### Medicare Phone Filter
+
+**Format**: `x:medicare_phone`  
+**Description**: A comprehensive filter for finding Medicare contacts ready for phone outreach  
+
+**Requirements** (ALL must be true):
+- Has an active Medicare role (e.g., medicare_client)
+- Has a value in the phone field
+- Does NOT have the "Ready" tag in the "AEP 2026" category
+- Does NOT have the "Cannot-Help" tag in the "Other" category
+- Does NOT have status "Brandon"
+- Does NOT have status "Not-eligible"
+- Does NOT have any actions within the last 7 days (based on action display date)
+
+**Use Case**: Perfect for identifying Medicare contacts who are eligible for follow-up calls, excluding those who are already ready, can't be helped, assigned to Brandon, not eligible, or were recently contacted.
+
+**Example**:
+
+```
+x:medicare_phone
+```
+
 ## Combining Filters
 
 Multiple filters can be combined using spaces. The system uses **AND logic** between different filter terms, meaning a contact will appear only if it matches ALL of the specified criteria.
@@ -197,6 +227,13 @@ The Filter Helper provides quick access to common filter values:
 - Dynamically loads all active tags from the database
 - Click any tag button to add `t:[tag_label]` to the filter
 - Tags are organized by categories and displayed alphabetically
+
+### Custom Filters
+
+- Pre-configured complex filters for common use cases
+- Click any custom filter button to add the complete filter to the text box
+- Currently includes:
+  - **Medicare Phone**: Find Medicare contacts ready for phone outreach (excludes those who are ready, cannot be helped, assigned to Brandon, not eligible, or recently contacted)
 
 ## Best Practices
 

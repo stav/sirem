@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { supabase } from '@/lib/supabase'
 import { getAllRoleTypes } from '@/lib/role-config'
 import { getAllTagsWithCategories, type TagWithCategory } from '@/lib/tag-utils'
@@ -76,6 +77,10 @@ export default function FilterHelper({ isOpen, onAddFilter }: FilterHelperProps)
     onAddFilter(`t:${tagLabel.toLowerCase()}`)
   }
 
+  const handleCustomFilterClick = (filterName: string) => {
+    onAddFilter(`x:${filterName}`)
+  }
+
   if (!isOpen) return null
 
   return (
@@ -125,7 +130,7 @@ export default function FilterHelper({ isOpen, onAddFilter }: FilterHelperProps)
       </div>
 
       {/* Tag Filters */}
-      <div>
+      <div className="mb-3">
         <div className="mb-2 text-xs font-medium text-muted-foreground">Tags:</div>
         {tagsLoading ? (
           <div className="text-sm text-muted-foreground">Loading tags...</div>
@@ -151,6 +156,42 @@ export default function FilterHelper({ isOpen, onAddFilter }: FilterHelperProps)
             ))}
           </div>
         )}
+      </div>
+
+      {/* Custom Filters */}
+      <div>
+        <div className="mb-2 text-xs font-medium text-muted-foreground">Custom:</div>
+        <div className="flex flex-wrap gap-1">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleCustomFilterClick('medicare_phone')}
+                className="cursor-pointer text-xs"
+              >
+                Medicare Phone
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="right" className="max-w-xs">
+              <div className="space-y-1">
+                <div className="font-semibold">Medicare Phone Filter</div>
+                <div className="text-xs">
+                  Shows contacts that meet ALL conditions:
+                </div>
+                <ul className="list-inside list-disc space-y-0.5 text-xs">
+                  <li>Has Medicare role (active)</li>
+                  <li>Has phone number</li>
+                  <li>Does NOT have &quot;Ready&quot; tag in &quot;AEP 2026&quot; category</li>
+                  <li>Does NOT have &quot;Cannot-Help&quot; tag in &quot;Other&quot; category</li>
+                  <li>Does NOT have status &quot;Brandon&quot;</li>
+                  <li>Does NOT have status &quot;Not-eligible&quot;</li>
+                  <li>Does NOT have actions within last 7 days</li>
+                </ul>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </div>
       </div>
     </div>
   )

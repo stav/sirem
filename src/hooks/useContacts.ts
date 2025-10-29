@@ -11,6 +11,10 @@ type Contact = Database['public']['Tables']['contacts']['Row'] & {
     tags: {
       id: string
       label: string
+      tag_categories: {
+        id: string
+        name: string
+      }
     }
   }[]
   contact_roles?: Database['public']['Tables']['contact_roles']['Row'][]
@@ -66,7 +70,11 @@ export function useContacts() {
           contact_tags (
             tags (
               id,
-              label
+              label,
+              tag_categories (
+                id,
+                name
+              )
             )
           ),
           contact_roles (
