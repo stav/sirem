@@ -309,6 +309,7 @@ export default function ContactCard({
             const parts = []
             if (address.address1) parts.push(address.address1)
             if (address.city) parts.push(address.city)
+            if (address.postal_code) parts.push(address.postal_code)
 
             if (parts.length === 0) return null
 
