@@ -173,6 +173,61 @@ export default function PlansPage() {
     })
   }, [plans])
 
+  // County quick filter state
+  const [countyFilter, setCountyFilter] = useState<string>('')
+  const [selectedCountyButtons, setSelectedCountyButtons] = useState<Set<string>>(new Set())
+
+  // Precompute a normalized county Set for each plan for efficient lookups
+  const planIdToCountySet = useMemo(() => {
+    const normalize = (s: string) => s.trim().toLowerCase()
+    const map = new Map<string, Set<string>>()
+    for (const p of plans) {
+      const values: string[] = []
+      // Prefer core column if present
+      if (Array.isArray(p.counties) && p.counties.length > 0) {
+        for (const c of p.counties) {
+          if (typeof c === 'string' && c.trim()) values.push(c)
+        }
+      }
+      map.set(String(p.id), new Set(values.map(normalize)))
+    }
+    return map
+  }, [plans])
+
+  // Apply county filter: include plans with no counties; otherwise require match
+  const countyFilteredPlans = useMemo(() => {
+    // Build the set of target counties from buttons and the text box (OR logic)
+    const targets = new Set<string>()
+    for (const c of selectedCountyButtons) targets.add(c)
+    const query = countyFilter.trim().toLowerCase()
+    if (query) targets.add(query)
+
+    if (targets.size === 0) return sortedPlans
+    return sortedPlans.filter((p) => {
+      const set = planIdToCountySet.get(String(p.id))
+      // Include when there are no counties defined
+      if (!set || set.size === 0) return true
+      // OR logic: any target county present passes
+      for (const t of targets) {
+        if (set.has(t)) return true
+      }
+      return false
+    })
+  }, [sortedPlans, countyFilter, selectedCountyButtons, planIdToCountySet])
+
+  const toggleCountyButton = (name: string) => {
+    const key = name.toLowerCase()
+    setSelectedCountyButtons(prev => {
+      const next = new Set(prev)
+      if (next.has(key)) {
+        next.delete(key)
+      } else {
+        next.add(key)
+      }
+      return next
+    })
+  }
+
   const onSelectionChanged = () => {
     if (!gridRef.current || isRefreshingRef.current) return
     
@@ -766,9 +821,39 @@ export default function PlansPage() {
           {/* Quick Filter Buttons */}
           {showQuickFilters && (
             <div className="border-b bg-muted/20 p-4">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-sm font-medium text-muted-foreground">Quick Filters:</span>
+              <div className="flex flex-wrap items-center gap-4">
               
+              <div className="flex items-center gap-1">
+              {/* County text filter */}
+              <div className="flex items-center gap-2">
+                <Input
+                  id="county-filter"
+                  placeholder="County"
+                  className="h-8 w-[80px] text-xs"
+                  value={countyFilter}
+                  onChange={(e) => setCountyFilter(e.target.value)}
+                />
+              </div>
+
+              {/* County quick buttons (OR logic with text box) */}
+              <div className="flex flex-wrap gap-1">
+                {["Butler", "Cuyahoga", "Lake", "Lorain"].map((c) => {
+                  const key = c.toLowerCase()
+                  const isActive = selectedCountyButtons.has(key)
+                  return (
+                    <Button
+                      key={c}
+                      variant={isActive ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => toggleCountyButton(c)}
+                      className="text-xs cursor-pointer"
+                    >
+                      {c}
+                    </Button>
+                  )
+                })}
+              </div>
+              </div>
               {/* Carrier Filters */}
               <div className="flex flex-wrap gap-1">
                 {carrierOptions.map((carrier) => (
@@ -800,11 +885,15 @@ export default function PlansPage() {
               </div>
 
               {/* Clear All Filters */}
-              {Object.keys(activeFilters).length > 0 && (
+              {(Object.keys(activeFilters).length > 0 || countyFilter || selectedCountyButtons.size > 0) && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={clearAllFilters}
+                  onClick={() => {
+                    clearAllFilters()
+                    setCountyFilter('')
+                    setSelectedCountyButtons(new Set())
+                  }}
                   className="text-xs text-muted-foreground hover:text-foreground cursor-pointer"
                   title="Clear all filters"
                 >
@@ -824,7 +913,7 @@ export default function PlansPage() {
               <AgGridReact
                 ref={gridRef}
                 theme={agGridTheme}
-                rowData={sortedPlans}
+                rowData={countyFilteredPlans}
                 columnDefs={columnDefs}
                 defaultColDef={defaultColDef}
                 getRowId={(params) => params.data.id}
