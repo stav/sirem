@@ -190,23 +190,6 @@ export default function ContactCard({
                 size="sm"
                 onClick={(e) => {
                   e.stopPropagation()
-                  onEdit(contact)
-                }}
-                className="h-8 w-8 cursor-pointer p-0 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/50 dark:hover:text-blue-400"
-                aria-label="Edit contact"
-              >
-                <Edit className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Edit contact</TooltipContent>
-          </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation()
                   onEditNotes(contact)
                 }}
                 className="h-8 w-8 cursor-pointer p-0 hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-950/50 dark:hover:text-green-400"
@@ -216,6 +199,23 @@ export default function ContactCard({
               </Button>
             </TooltipTrigger>
             <TooltipContent>Edit notes</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onEdit(contact)
+                }}
+                className="h-8 w-8 cursor-pointer p-0 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/50 dark:hover:text-blue-400"
+                aria-label="Edit contact"
+              >
+                <Edit className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Edit contact</TooltipContent>
           </Tooltip>
           {onFilterActions && (
             <Tooltip>
