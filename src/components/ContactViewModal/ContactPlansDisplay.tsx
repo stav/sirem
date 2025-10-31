@@ -60,7 +60,7 @@ export default function ContactPlansDisplay({ contact }: ContactPlansDisplayProp
                     {enr.premium_monthly_at_enrollment != null && (
                       <div>
                         <span className="text-muted-foreground">Premium at enrollment:</span> $
-                        {enr.premium_monthly_at_enrollment % 1 === 0 
+                        {enr.premium_monthly_at_enrollment % 1 === 0
                           ? enr.premium_monthly_at_enrollment.toFixed(0)
                           : enr.premium_monthly_at_enrollment.toFixed(2)}
                       </div>

@@ -40,7 +40,14 @@ const DEFAULT_COLORS = [
   '#A9A9A9', // Gray
 ]
 
-export default function CategoryForm({ isOpen, onClose, editingCategory, categories, onCreateCategory, onUpdateCategory }: CategoryFormProps) {
+export default function CategoryForm({
+  isOpen,
+  onClose,
+  editingCategory,
+  categories,
+  onCreateCategory,
+  onUpdateCategory,
+}: CategoryFormProps) {
   const { toast } = useToast()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -95,10 +102,10 @@ export default function CategoryForm({ isOpen, onClose, editingCategory, categor
       }
 
       const success = editingCategory
-        ? onUpdateCategory 
+        ? onUpdateCategory
           ? await onUpdateCategory(editingCategory.id, formData)
           : false
-        : onCreateCategory 
+        : onCreateCategory
           ? await onCreateCategory(formData)
           : false
 
@@ -149,7 +156,9 @@ export default function CategoryForm({ isOpen, onClose, editingCategory, categor
                   key={color}
                   type="button"
                   className={`h-10 w-10 rounded-md border-2 transition-all hover:scale-110 ${
-                    formData.color === color ? 'border-foreground ring-2 ring-foreground ring-offset-2' : 'border-transparent'
+                    formData.color === color
+                      ? 'border-foreground ring-foreground ring-2 ring-offset-2'
+                      : 'border-transparent'
                   }`}
                   style={{ backgroundColor: color }}
                   onClick={() => setFormData({ ...formData, color })}
@@ -168,7 +177,7 @@ export default function CategoryForm({ isOpen, onClose, editingCategory, categor
                 onChange={(e) => setFormData({ ...formData, color: e.target.value })}
                 className="h-10 w-20"
               />
-              <span className="text-sm text-muted-foreground">{formData.color}</span>
+              <span className="text-muted-foreground text-sm">{formData.color}</span>
             </div>
           </div>
 
@@ -195,4 +204,3 @@ export default function CategoryForm({ isOpen, onClose, editingCategory, categor
     </Dialog>
   )
 }
-

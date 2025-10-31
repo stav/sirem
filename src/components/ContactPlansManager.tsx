@@ -71,7 +71,7 @@ export default function ContactPlansManager({ contact, onRefresh }: ContactPlans
 
   const handleAdd = async () => {
     if (!form.plan_id) return
-    const selectedPlan = plans.find(p => p.id === form.plan_id)
+    const selectedPlan = plans.find((p) => p.id === form.plan_id)
     const ok = await createEnrollment(contact.id, form.plan_id, {
       enrollment_status: form.enrollment_status,
       signed_up_at: form.signed_up_at || null,
@@ -89,7 +89,7 @@ export default function ContactPlansManager({ contact, onRefresh }: ContactPlans
     if (ok) {
       // Clear cache so contact card refreshes
       clearCache(contact.id)
-      
+
       // Log the enrollment creation
       if (selectedPlan) {
         const contactName = `${contact.first_name} ${contact.last_name}`
@@ -113,7 +113,9 @@ export default function ContactPlansManager({ contact, onRefresh }: ContactPlans
       plan_id: enrollment.plan_id,
       enrollment_status: (enrollment.enrollment_status as EnrollmentStatus) || 'active',
       signed_up_at: enrollment.signed_up_at ? enrollment.signed_up_at.split('T')[0] : '',
-      coverage_effective_date: enrollment.coverage_effective_date ? enrollment.coverage_effective_date.split('T')[0] : '',
+      coverage_effective_date: enrollment.coverage_effective_date
+        ? enrollment.coverage_effective_date.split('T')[0]
+        : '',
       coverage_end_date: enrollment.coverage_end_date ? enrollment.coverage_end_date.split('T')[0] : '',
       premium_monthly_at_enrollment: enrollment.premium_monthly_at_enrollment?.toString() || '',
       pcp_name: enrollment.pcp_name || '',
@@ -125,7 +127,7 @@ export default function ContactPlansManager({ contact, onRefresh }: ContactPlans
 
   const handleUpdate = async () => {
     if (!editingId || !form.plan_id) return
-    const selectedPlan = plans.find(p => p.id === form.plan_id)
+    const selectedPlan = plans.find((p) => p.id === form.plan_id)
     const ok = await updateEnrollment(editingId, {
       plan_id: form.plan_id,
       enrollment_status: form.enrollment_status,
@@ -144,7 +146,7 @@ export default function ContactPlansManager({ contact, onRefresh }: ContactPlans
     if (ok) {
       // Clear cache so contact card refreshes
       clearCache(contact.id)
-      
+
       // Log the enrollment update
       if (selectedPlan) {
         const contactName = `${contact.first_name} ${contact.last_name}`
@@ -165,14 +167,14 @@ export default function ContactPlansManager({ contact, onRefresh }: ContactPlans
   const handleDelete = async (enrollmentId: string) => {
     if (confirm('Remove this enrollment?')) {
       // Find the enrollment and plan details for logging
-      const enrollment = enrollments.find(e => e.id === enrollmentId)
-      const plan = enrollment ? plans.find(p => p.id === enrollment.plan_id) : null
-      
+      const enrollment = enrollments.find((e) => e.id === enrollmentId)
+      const plan = enrollment ? plans.find((p) => p.id === enrollment.plan_id) : null
+
       const ok = await deleteEnrollment(enrollmentId)
       if (ok) {
         // Clear cache so contact card refreshes
         clearCache(contact.id)
-        
+
         // Log the enrollment deletion
         if (plan) {
           const contactName = `${contact.first_name} ${contact.last_name}`
@@ -251,7 +253,7 @@ export default function ContactPlansManager({ contact, onRefresh }: ContactPlans
                     {enr.premium_monthly_at_enrollment != null && (
                       <div>
                         <span className="text-muted-foreground">Premium at enrollment:</span> $
-                        {enr.premium_monthly_at_enrollment % 1 === 0 
+                        {enr.premium_monthly_at_enrollment % 1 === 0
                           ? enr.premium_monthly_at_enrollment.toFixed(0)
                           : enr.premium_monthly_at_enrollment.toFixed(2)}
                       </div>
@@ -278,27 +280,19 @@ export default function ContactPlansManager({ contact, onRefresh }: ContactPlans
       {!isAdding ? (
         <div>
           <Button type="button" size="sm" variant="outline" onClick={() => setIsAdding(true)}>
-            <Plus className="h-3 w-3 mr-1" />
+            <Plus className="mr-1 h-3 w-3" />
             Add Enrollment
           </Button>
         </div>
       ) : (
         <div className="rounded border p-3 md:p-4">
           <div className="mb-3 flex items-center justify-between">
-            <h4 className="text-sm font-medium">
-              {editingId ? 'Edit Enrollment' : 'Add New Enrollment'}
-            </h4>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              onClick={resetForm}
-              className="h-6 w-6 p-0"
-            >
+            <h4 className="text-sm font-medium">{editingId ? 'Edit Enrollment' : 'Add New Enrollment'}</h4>
+            <Button type="button" variant="ghost" size="sm" onClick={resetForm} className="h-6 w-6 p-0">
               <X className="h-3 w-3" />
             </Button>
           </div>
-          
+
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
             <div className="space-y-1 md:col-span-2">
               <Label className="text-xs">Plan</Label>
@@ -388,12 +382,7 @@ export default function ContactPlansManager({ contact, onRefresh }: ContactPlans
           </div>
 
           <div className="mt-3 flex items-center gap-2">
-            <Button 
-              type="button"
-              size="sm" 
-              onClick={editingId ? handleUpdate : handleAdd} 
-              disabled={!form.plan_id}
-            >
+            <Button type="button" size="sm" onClick={editingId ? handleUpdate : handleAdd} disabled={!form.plan_id}>
               {editingId ? 'Update Enrollment' : 'Save Enrollment'}
             </Button>
             <Button type="button" size="sm" variant="outline" onClick={resetForm}>

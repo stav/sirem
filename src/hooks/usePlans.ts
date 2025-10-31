@@ -78,10 +78,12 @@ export function usePlans() {
     }
   }
 
-  const deletePlan = async (planId: string): Promise<boolean | { success: false, reason: string, enrollments?: EnrollmentWithContact[], plan?: Plan }> => {
+  const deletePlan = async (
+    planId: string
+  ): Promise<boolean | { success: false; reason: string; enrollments?: EnrollmentWithContact[]; plan?: Plan }> => {
     try {
       // Get plan details before deletion for logging
-      const planToDelete = plans.find(p => p.id === planId)
+      const planToDelete = plans.find((p) => p.id === planId)
       if (!planToDelete) {
         setError('Plan not found')
         return false
@@ -101,19 +103,19 @@ export function usePlans() {
 
       if (enrollments && enrollments.length > 0) {
         const enrollmentCount = enrollments.length
-        const activeEnrollments = enrollments.filter(e => e.enrollment_status === 'active').length
+        const activeEnrollments = enrollments.filter((e) => e.enrollment_status === 'active').length
         const contactNames = enrollments
-          .map(e => e.contacts ? `${e.contacts.first_name} ${e.contacts.last_name}` : 'Unknown')
+          .map((e) => (e.contacts ? `${e.contacts.first_name} ${e.contacts.last_name}` : 'Unknown'))
           .slice(0, 3) // Show first 3 contacts
-        
+
         // Log to history with contact details for linking
         const contactDetails = enrollments
-          .map(e => ({
+          .map((e) => ({
             id: e.contacts?.id || '',
-            name: e.contacts ? `${e.contacts.first_name} ${e.contacts.last_name}` : 'Unknown'
+            name: e.contacts ? `${e.contacts.first_name} ${e.contacts.last_name}` : 'Unknown',
           }))
-          .filter(c => c.id) // Only include contacts with valid IDs
-        
+          .filter((c) => c.id) // Only include contacts with valid IDs
+
         logger.planDeletionBlocked(
           planToDelete.name || 'Unnamed Plan',
           enrollmentCount,
@@ -122,14 +124,14 @@ export function usePlans() {
           planToDelete.id,
           contactDetails
         )
-        
+
         // Don't set error state - let the UI handle the toast
         return { success: false, reason: 'enrollments_exist', enrollments, plan: planToDelete }
       }
 
       const { error } = await supabase.from('plans').delete().eq('id', planId)
       if (error) throw error
-      
+
       // Log the deletion
       const cmsId = calculateCmsId(planToDelete)
       logger.planDeleted(
@@ -139,14 +141,16 @@ export function usePlans() {
         cmsId || undefined,
         planToDelete.id
       )
-      
+
       await fetchPlans()
       return true
     } catch (err) {
       console.error('Error deleting plan:', err)
       // Check if it's a foreign key constraint error
       if (err instanceof Error && err.message.includes('violates foreign key constraint')) {
-        setError('Cannot delete plan: it is still referenced by existing enrollments. Please remove all enrollments first.')
+        setError(
+          'Cannot delete plan: it is still referenced by existing enrollments. Please remove all enrollments first.'
+        )
       } else {
         setError(err instanceof Error ? err.message : 'Failed to delete plan')
       }
@@ -154,11 +158,13 @@ export function usePlans() {
     }
   }
 
-  const deletePlans = async (planIds: string[]): Promise<boolean | { success: false, reason: string, enrollments?: EnrollmentWithContact[], plans?: Plan[] }> => {
+  const deletePlans = async (
+    planIds: string[]
+  ): Promise<boolean | { success: false; reason: string; enrollments?: EnrollmentWithContact[]; plans?: Plan[] }> => {
     if (!planIds || planIds.length === 0) return true
     try {
       // Get plan details before deletion for logging
-      const plansToDelete = plans.filter(p => planIds.includes(p.id))
+      const plansToDelete = plans.filter((p) => planIds.includes(p.id))
       if (plansToDelete.length === 0) {
         setError('No plans found to delete')
         return false
@@ -178,29 +184,32 @@ export function usePlans() {
 
       if (enrollments && enrollments.length > 0) {
         // Group enrollments by plan
-        const enrollmentsByPlan = enrollments.reduce((acc, enrollment) => {
-          if (!acc[enrollment.plan_id]) {
-            acc[enrollment.plan_id] = []
-          }
-          acc[enrollment.plan_id].push(enrollment)
-          return acc
-        }, {} as Record<string, typeof enrollments>)
+        const enrollmentsByPlan = enrollments.reduce(
+          (acc, enrollment) => {
+            if (!acc[enrollment.plan_id]) {
+              acc[enrollment.plan_id] = []
+            }
+            acc[enrollment.plan_id].push(enrollment)
+            return acc
+          },
+          {} as Record<string, typeof enrollments>
+        )
 
-        const plansWithEnrollments = plansToDelete.filter(plan => enrollmentsByPlan[plan.id])
-        
+        const plansWithEnrollments = plansToDelete.filter((plan) => enrollmentsByPlan[plan.id])
+
         if (plansWithEnrollments.length > 0) {
-          const planNames = plansWithEnrollments.map(plan => plan.name || 'Unnamed Plan')
+          const planNames = plansWithEnrollments.map((plan) => plan.name || 'Unnamed Plan')
           const totalEnrollments = enrollments.length
-          const activeEnrollments = enrollments.filter(e => e.enrollment_status === 'active').length
-          
+          const activeEnrollments = enrollments.filter((e) => e.enrollment_status === 'active').length
+
           // Log to history with contact details for linking
           const contactDetails = enrollments
-            .map(e => ({
+            .map((e) => ({
               id: e.contacts?.id || '',
-              name: e.contacts ? `${e.contacts.first_name} ${e.contacts.last_name}` : 'Unknown'
+              name: e.contacts ? `${e.contacts.first_name} ${e.contacts.last_name}` : 'Unknown',
             }))
-            .filter(c => c.id) // Only include contacts with valid IDs
-          
+            .filter((c) => c.id) // Only include contacts with valid IDs
+
           logger.planDeletionBlocked(
             planNames.join(', '),
             totalEnrollments,
@@ -209,7 +218,7 @@ export function usePlans() {
             undefined,
             contactDetails
           )
-          
+
           // Don't set error state - let the UI handle the toast
           return { success: false, reason: 'enrollments_exist', enrollments, plans: plansWithEnrollments }
         }
@@ -217,25 +226,27 @@ export function usePlans() {
 
       const { error } = await supabase.from('plans').delete().in('id', planIds)
       if (error) throw error
-      
+
       // Log the bulk deletion
-      const planDetails = plansToDelete.map(plan => ({
+      const planDetails = plansToDelete.map((plan) => ({
         name: plan.name || 'Unnamed Plan',
         carrier: plan.carrier || undefined,
         year: plan.plan_year || undefined,
         cmsId: calculateCmsId(plan) || undefined,
-        id: plan.id
+        id: plan.id,
       }))
-      
+
       logger.plansDeleted(planDetails)
-      
+
       await fetchPlans()
       return true
     } catch (err) {
       console.error('Error deleting plans:', err)
       // Check if it's a foreign key constraint error
       if (err instanceof Error && err.message.includes('violates foreign key constraint')) {
-        setError('Cannot delete plans: some are still referenced by existing enrollments. Please remove all enrollments first.')
+        setError(
+          'Cannot delete plans: some are still referenced by existing enrollments. Please remove all enrollments first.'
+        )
       } else {
         setError(err instanceof Error ? err.message : 'Failed to delete plans')
       }
@@ -248,13 +259,15 @@ export function usePlans() {
     try {
       const { data, error } = await supabase
         .from('enrollments')
-        .select(`
+        .select(
+          `
           id,
           enrollment_status,
           coverage_effective_date,
           coverage_end_date,
           contacts:contact_id(id, first_name, last_name)
-        `)
+        `
+        )
         .eq('plan_id', planId)
         .order('coverage_effective_date', { ascending: true })
 

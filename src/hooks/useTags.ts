@@ -63,10 +63,7 @@ export function useTags() {
 
   const fetchCategories = async () => {
     try {
-      const { data, error } = await supabase
-        .from('tag_categories')
-        .select('*')
-        .order('name', { ascending: true })
+      const { data, error } = await supabase.from('tag_categories').select('*').order('name', { ascending: true })
 
       if (error) {
         console.error('Error fetching tag categories:', error)
@@ -221,7 +218,7 @@ export function useTags() {
         // Get contact name and tag name for logging
         const [contactResult, tagResult] = await Promise.all([
           supabase.from('contacts').select('first_name, last_name').eq('id', contactId).single(),
-          supabase.from('tags').select('label').eq('id', tagId).single()
+          supabase.from('tags').select('label').eq('id', tagId).single(),
         ])
 
         if (contactResult.data && tagResult.data) {
@@ -245,11 +242,11 @@ export function useTags() {
       // Get contact name and tag name for logging before deletion
       let contactName = 'Unknown Contact'
       let tagName = 'Unknown Tag'
-      
+
       try {
         const [contactResult, tagResult] = await Promise.all([
           supabase.from('contacts').select('first_name, last_name').eq('id', contactId).single(),
-          supabase.from('tags').select('label').eq('id', tagId).single()
+          supabase.from('tags').select('label').eq('id', tagId).single(),
         ])
 
         if (contactResult.data && tagResult.data) {
@@ -260,11 +257,7 @@ export function useTags() {
         console.error('Error getting contact/tag info for logging:', logError)
       }
 
-      const { error } = await supabase
-        .from('contact_tags')
-        .delete()
-        .eq('contact_id', contactId)
-        .eq('tag_id', tagId)
+      const { error } = await supabase.from('contact_tags').delete().eq('contact_id', contactId).eq('tag_id', tagId)
 
       if (error) {
         console.error('Error removing tag from contact:', error)
@@ -349,4 +342,3 @@ export function useTags() {
     getContactTags,
   }
 }
-

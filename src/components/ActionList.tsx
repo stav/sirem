@@ -142,7 +142,7 @@ export default function ActionList({
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current)
     }
-    
+
     const isLargePageSize = newItemsPerPage >= 100 || newItemsPerPage === displayActions.length
     if (isLargePageSize && displayActions.length > 50) {
       setIsRendering(true)
@@ -200,14 +200,22 @@ export default function ActionList({
       const dateB = getDisplayDate(b)
       const timeA = new Date(dateA).getTime()
       const timeB = new Date(dateB).getTime()
-      
+
       if (sortOrder === 'newest') {
         return timeB - timeA // Newest first
       } else {
         return timeA - timeB // Oldest first
       }
     })
-  }, [actions, selectedContact, filteredContactForActions, filteredContacts, showCompletedActions, showWeekRange, sortOrder])
+  }, [
+    actions,
+    selectedContact,
+    filteredContactForActions,
+    filteredContacts,
+    showCompletedActions,
+    showWeekRange,
+    sortOrder,
+  ])
 
   // Pagination logic
   const totalPages = Math.ceil(displayActions.length / itemsPerPage)
@@ -216,7 +224,7 @@ export default function ActionList({
   const paginatedActions = displayActions.slice(startIndex, endIndex)
 
   return (
-    <Card className="h-full flex flex-col">
+    <Card className="flex h-full flex-col">
       <CardHeader className="flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex min-h-9 items-center space-x-3">
@@ -294,7 +302,10 @@ export default function ActionList({
           <div className="flex items-center space-x-2">
             {!isCollapsed && (
               <span className="text-muted-foreground text-sm">
-                {displayActions.length} / {selectedContact ? actions.filter(action => action.contact_id === selectedContact.id).length : actions.length}
+                {displayActions.length} /{' '}
+                {selectedContact
+                  ? actions.filter((action) => action.contact_id === selectedContact.id).length
+                  : actions.length}
               </span>
             )}
             {(selectedContact || filteredContactForActions) && (

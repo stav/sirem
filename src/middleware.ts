@@ -8,15 +8,15 @@ export function middleware(request: NextRequest) {
 
   // Get the authorization header
   const authorization = request.headers.get('authorization')
-  
+
   // Check if user is already authenticated (has valid credentials)
   if (authorization) {
     const credentials = authorization.split(' ')[1]
     const [username, password] = Buffer.from(credentials, 'base64').toString().split(':')
-    
+
     const validUsername = process.env.BASIC_AUTH_USERNAME || 'admin'
     const validPassword = process.env.BASIC_AUTH_PASSWORD || 'password'
-    
+
     if (username === validUsername && password === validPassword) {
       return NextResponse.next()
     }
@@ -43,4 +43,3 @@ export const config = {
     '/((?!api|_next/static|_next/image|favicon.ico).*)',
   ],
 }
-

@@ -22,24 +22,24 @@ export default function LazyContactPlans({ contactId, className = '' }: LazyCont
   const [hasBeenVisible, setHasBeenVisible] = useState(false)
   const elementRef = useRef<HTMLDivElement>(null)
   const { getCachedEnrollments, setCachedEnrollments } = usePlanCache()
-  
+
   // Memoize the contactId to prevent unnecessary re-renders
   const memoizedContactId = useMemo(() => {
     return shouldLoad ? contactId : undefined
   }, [shouldLoad, contactId])
-  
+
   const { enrollments, loading } = usePlanEnrollments(memoizedContactId)
 
   // Check cache first
   const cachedEnrollments = getCachedEnrollments(contactId)
 
-
   // Update cache when new data is loaded
   useEffect(() => {
-    if (shouldLoad && enrollments.length >= 0) { // Allow empty arrays to update cache
-      const enrollmentItems: EnrollmentWithPlan[] = enrollments.map(enrollment => ({
+    if (shouldLoad && enrollments.length >= 0) {
+      // Allow empty arrays to update cache
+      const enrollmentItems: EnrollmentWithPlan[] = enrollments.map((enrollment) => ({
         ...enrollment,
-        plans: (enrollment as Enrollment & { plans?: Plan | null }).plans || null
+        plans: (enrollment as Enrollment & { plans?: Plan | null }).plans || null,
       }))
       setCachedEnrollments(contactId, enrollmentItems)
     }
@@ -60,7 +60,7 @@ export default function LazyContactPlans({ contactId, className = '' }: LazyCont
       },
       {
         threshold: 0.1,
-        rootMargin: '50px' // Start loading when element is 50px away from viewport
+        rootMargin: '50px', // Start loading when element is 50px away from viewport
       }
     )
 
@@ -72,10 +72,14 @@ export default function LazyContactPlans({ contactId, className = '' }: LazyCont
   }, [hasBeenVisible])
 
   // Use cached data if available, otherwise use loading state
-  const enrollmentItems = cachedEnrollments || (shouldLoad ? enrollments.map(enrollment => ({
-    ...enrollment,
-    plans: (enrollment as Enrollment & { plans?: Plan | null }).plans || null
-  })) : [])
+  const enrollmentItems =
+    cachedEnrollments ||
+    (shouldLoad
+      ? enrollments.map((enrollment) => ({
+          ...enrollment,
+          plans: (enrollment as Enrollment & { plans?: Plan | null }).plans || null,
+        }))
+      : [])
 
   const isLoading = shouldLoad && loading && !cachedEnrollments
 
@@ -101,7 +105,7 @@ export default function LazyContactPlans({ contactId, className = '' }: LazyCont
             const parts = [
               plan?.carrier,
               plan?.name,
-              plan ? calculateCmsId(plan) ? `(${calculateCmsId(plan)})` : '' : '',
+              plan ? (calculateCmsId(plan) ? `(${calculateCmsId(plan)})` : '') : '',
               plan ? buildPlanTypeString(plan) : '',
               plan?.plan_year ? `[${plan.plan_year}]` : '',
               effectiveDateOnly,

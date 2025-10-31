@@ -59,7 +59,7 @@ interface ActionFormData {
 function ManagePageContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  
+
   // Custom hooks for data management
   const {
     contacts,
@@ -445,7 +445,11 @@ function ManagePageContent() {
         title: 'Action completed',
         description: `"${action.title}" for ${contactName} was marked as complete using the created date.`,
       })
-      logger.info(`Action completed with created date: ${action.title} for ${contactName}`, 'action_complete_created', action.contact_id)
+      logger.info(
+        `Action completed with created date: ${action.title} for ${contactName}`,
+        'action_complete_created',
+        action.contact_id
+      )
     }
   }
 
@@ -528,10 +532,10 @@ function ManagePageContent() {
             <div className="animate-pulse">
               <div className="bg-muted mb-8 h-8 w-1/4 rounded"></div>
               <div className="flex h-[calc(100vh-8rem)] flex-col gap-8 lg:flex-row">
-                <div className="flex-1 min-w-0 lg:flex-1">
+                <div className="min-w-0 flex-1 lg:flex-1">
                   <div className="bg-muted h-full rounded"></div>
                 </div>
-                <div className="flex-1 min-w-0 lg:flex-1">
+                <div className="min-w-0 flex-1 lg:flex-1">
                   <div className="bg-muted h-full rounded"></div>
                 </div>
               </div>
@@ -550,8 +554,8 @@ function ManagePageContent() {
         <div className="mx-auto max-w-7xl">
           <div className="flex h-[calc(100vh-8rem)] flex-col gap-8 lg:flex-row">
             {/* Contacts Section - Left Column */}
-            <div className="flex-1 min-w-0 lg:flex-1">
-              <div className="h-full flex flex-col">
+            <div className="min-w-0 flex-1 lg:flex-1">
+              <div className="flex h-full flex-col">
                 <ContactList
                   contacts={contacts}
                   selectedContact={selectedContact}
@@ -575,8 +579,8 @@ function ManagePageContent() {
             </div>
 
             {/* Actions Section - Right Column */}
-            <div className="flex-1 min-w-0 lg:flex-1">
-              <div className="h-full flex flex-col">
+            <div className="min-w-0 flex-1 lg:flex-1">
+              <div className="flex h-full flex-col">
                 <ActionList
                   actions={actions}
                   contacts={contacts}
@@ -684,10 +688,10 @@ export default function ManagePage() {
               <div className="animate-pulse">
                 <div className="bg-muted mb-8 h-8 w-1/4 rounded"></div>
                 <div className="flex h-[calc(100vh-8rem)] flex-col gap-8 lg:flex-row">
-                  <div className="flex-1 min-w-0 lg:flex-1">
+                  <div className="min-w-0 flex-1 lg:flex-1">
                     <div className="bg-muted h-full rounded"></div>
                   </div>
-                  <div className="flex-1 min-w-0 lg:flex-1">
+                  <div className="min-w-0 flex-1 lg:flex-1">
                     <div className="bg-muted h-full rounded"></div>
                   </div>
                 </div>

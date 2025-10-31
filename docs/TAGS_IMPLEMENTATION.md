@@ -17,6 +17,7 @@ The tagging system provides a flexible way to organize and categorize contacts u
 ### Core Tables
 
 #### `tag_categories`
+
 ```sql
 CREATE TABLE tag_categories (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -30,6 +31,7 @@ CREATE TABLE tag_categories (
 ```
 
 #### `tags`
+
 ```sql
 CREATE TABLE tags (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -44,6 +46,7 @@ CREATE TABLE tags (
 ```
 
 #### `contact_tags` (Junction Table)
+
 ```sql
 CREATE TABLE contact_tags (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -65,11 +68,13 @@ CREATE TABLE contact_tags (
 ### Hooks
 
 #### `useTags` (Global Hook)
+
 - **Location**: `src/hooks/useTags.ts`
 - **Purpose**: General-purpose tag operations used across the application
 - **Features**: CRUD operations for tags and categories, contact-tag assignments
 
 #### `useTagsPage` (Isolated Hook)
+
 - **Location**: `src/hooks/useTagsPage.ts`
 - **Purpose**: Dedicated hook for the Tags management page
 - **Features**: Real-time UI updates, isolated state management
@@ -78,6 +83,7 @@ CREATE TABLE contact_tags (
 ### Components
 
 #### `TagPicker`
+
 - **Location**: `src/components/TagPicker.tsx`
 - **Purpose**: Multi-select tag assignment interface for contacts
 - **Features**:
@@ -87,6 +93,7 @@ CREATE TABLE contact_tags (
   - Memoized for performance
 
 #### `TagForm`
+
 - **Location**: `src/components/TagForm.tsx`
 - **Purpose**: Create/edit individual tags
 - **Features**:
@@ -95,6 +102,7 @@ CREATE TABLE contact_tags (
   - Form validation
 
 #### `CategoryForm`
+
 - **Location**: `src/components/CategoryForm.tsx`
 - **Purpose**: Create/edit tag categories
 - **Features**:
@@ -103,6 +111,7 @@ CREATE TABLE contact_tags (
   - Active/inactive toggle
 
 #### Tags Management Page
+
 - **Location**: `src/app/tags/page.tsx`
 - **Purpose**: Admin interface for managing tags and categories
 - **Features**:
@@ -115,30 +124,30 @@ CREATE TABLE contact_tags (
 ### Contact Tag Assignment
 
 #### In Contact View Modal
+
 ```tsx
 // ContactBasicInfo component includes TagPicker
-<TagPicker
-  contactId={contact.id}
-  selectedTagIds={tags.map((t) => t.id)}
-  onTagsChange={handleTagsChange}
-/>
+<TagPicker contactId={contact.id} selectedTagIds={tags.map((t) => t.id)} onTagsChange={handleTagsChange} />
 ```
 
 #### In Contact Edit Form
+
 ```tsx
 // ContactForm includes TagPicker for existing contacts
-{editingContact && (
-  <TagPicker
-    contactId={editingContact.id}
-    selectedTagIds={contactTagIds}
-    onTagsChange={(tagIds) => {
-      setContactTagIds(tagIds)
-      if (onRefreshContact) {
-        onRefreshContact()
-      }
-    }}
-  />
-)}
+{
+  editingContact && (
+    <TagPicker
+      contactId={editingContact.id}
+      selectedTagIds={contactTagIds}
+      onTagsChange={(tagIds) => {
+        setContactTagIds(tagIds)
+        if (onRefreshContact) {
+          onRefreshContact()
+        }
+      }}
+    />
+  )
+}
 ```
 
 ### Tag Filtering
@@ -152,6 +161,7 @@ The system supports tag-based filtering using the format `t:tagname`:
 ### Navigation
 
 Tags management is accessible via:
+
 - **URL**: `/tags`
 - **Navigation**: "Tags" link in the main navigation
 - **Icon**: Tags icon (lucide-react)
@@ -159,22 +169,26 @@ Tags management is accessible via:
 ## Key Features
 
 ### Real-Time Updates
+
 - All CRUD operations update the UI immediately
 - No page refresh required
 - Consistent state across all components
 
 ### Performance Optimizations
+
 - **Memoized components** to prevent unnecessary re-renders
 - **Isolated hooks** to prevent state synchronization issues
 - **Efficient queries** with proper indexing
 
 ### User Experience
+
 - **Visual indicators** with color-coded categories
 - **Search functionality** in tag picker
 - **Grouped display** by category
 - **Responsive design** for all screen sizes
 
 ### History Logging
+
 - **Automatic logging** of tag additions and removals
 - **Contact history** tracks all tag changes with timestamps
 - **Detailed information** includes contact name and tag name
@@ -183,6 +197,7 @@ Tags management is accessible via:
 ## Common Operations
 
 ### Creating a New Category
+
 1. Navigate to `/tags`
 2. Click "New Category"
 3. Enter category name and select color
@@ -190,6 +205,7 @@ Tags management is accessible via:
 5. Category appears immediately in the UI
 
 ### Creating a New Tag
+
 1. Navigate to `/tags`
 2. Click "+ New Tag"
 3. Enter tag label and select category
@@ -198,6 +214,7 @@ Tags management is accessible via:
 6. Tag appears immediately in the category
 
 ### Assigning Tags to Contacts
+
 1. Open contact view or edit modal
 2. Click "Edit" button in the Tags section
 3. Use the tag picker to select/deselect tags
@@ -205,6 +222,7 @@ Tags management is accessible via:
 5. Tag changes are automatically logged to contact history
 
 ### Filtering by Tags
+
 1. In the contact list, use the filter input
 2. Type `t:tagname` to filter by specific tags
 3. Combine with other filters: `john t:referral 90`
@@ -214,20 +232,24 @@ Tags management is accessible via:
 ### Common Issues
 
 #### UI Not Updating After Changes
+
 - **Cause**: State synchronization issues between hooks
 - **Solution**: Use the isolated `useTagsPage` hook for the Tags management page
 
 #### Tag Picker Appearing Behind Modal
+
 - **Cause**: Z-index layering issues
 - **Solution**: Tag picker uses `z-[70]` class for proper layering
 
 #### Infinite Loop in Network Requests
+
 - **Cause**: Improper dependency arrays in useEffect hooks
 - **Solution**: Use `useCallback` for stable function references
 
 ### Debug Information
 
 Enable console logging to debug issues:
+
 - `useTagsPage fetchCategories: Received data: X categories`
 - `useTagsPage Category created successfully, refreshing categories list...`
 - `TagsPage render - categories: X [category names]`
@@ -235,6 +257,7 @@ Enable console logging to debug issues:
 ## Future Enhancements
 
 ### Potential Improvements
+
 - **Bulk tag operations** for multiple contacts
 - **Tag analytics** and usage statistics
 - **Tag templates** for common tag sets
@@ -242,6 +265,7 @@ Enable console logging to debug issues:
 - **Tag-based workflows** and automation
 
 ### Technical Considerations
+
 - **Database indexing** on frequently queried fields
 - **Caching strategies** for large tag datasets
 - **Migration tools** for tag data restructuring

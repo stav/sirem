@@ -118,7 +118,7 @@ export function usePlanEnrollments(contactId?: string) {
     // Only fetch if contactId has actually changed
     if (contactId !== lastContactIdRef.current) {
       lastContactIdRef.current = contactId
-      
+
       if (contactId) {
         fetchEnrollments(contactId)
       } else {

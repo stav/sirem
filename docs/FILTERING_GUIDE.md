@@ -135,9 +135,10 @@ The contact filtering system uses a text input box with space-separated filter t
 #### Medicare Phone Filter
 
 **Format**: `x:medicare_phone`  
-**Description**: A comprehensive filter for finding Medicare contacts ready for phone outreach  
+**Description**: A comprehensive filter for finding Medicare contacts ready for phone outreach
 
 **Requirements** (ALL must be true):
+
 - Has an active Medicare role (e.g., medicare_client)
 - Has a value in the phone field
 - Does NOT have the "Ready" tag in the "AEP 2026" category

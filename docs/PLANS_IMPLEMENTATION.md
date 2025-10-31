@@ -41,12 +41,14 @@ CREATE TABLE plans (
 ```
 
 **Key Features:**
+
 - **Simplified Schema**: Only essential fields stored as database columns
 - **CMS ID Construction**: Dynamically combines contract, plan, and geo segment numbers in the UI
 - **Flexible Metadata**: All plan benefits and details stored in JSONB metadata field
 - **Timezone Handling**: All timestamps use UTC [[memory:5285941]]
 
 **Main Database Fields:**
+
 - `id`, `created_at`, `updated_at` - System fields
 - `name` - Plan name (required)
 - `carrier` - Insurance carrier
@@ -56,7 +58,7 @@ CREATE TABLE plans (
 - `type_snp` - SNP type (D, C, I or null)
 - `type_program` - Program type (SNP, MA, MAPD, PDP, Supplement, Ancillary)
 - `cms_contract_number` - CMS contract identifier
-- `cms_plan_number` - CMS plan identifier  
+- `cms_plan_number` - CMS plan identifier
 - `cms_geo_segment` - Three-digit county identifier (e.g., "001")
 - `counties` - Array of county names covered
 - `metadata` - JSONB field containing all other plan data
@@ -64,27 +66,32 @@ CREATE TABLE plans (
 **Metadata Fields:**
 
 The `metadata` JSONB field stores all plan benefits and additional information. The complete field definitions and validation rules are documented in:
+
 - `@/schema/plans-metadata-schema.ts` (TypeScript Schema)
 - `src/lib/plan-metadata-utils.ts` (TypeScript interface)
 
 **🔄 DYNAMIC SCHEMA: New fields may be added, changed, or removed at any time as business requirements evolve.**
 
 **Dates:**
+
 - `effective_start` (date): Plan effective start date
 - `effective_end` (date): Plan effective end date
 
 **Financial Benefits:**
+
 - `premium_monthly` (numeric): Monthly premium amount
 - `premium_monthly_with_extra_help` (numeric): Monthly premium for LIS/Extra Help recipients (typically $0)
 - `giveback_monthly` (numeric): Monthly giveback/rebate amount
 - `otc_benefit_quarterly` (numeric): Quarterly OTC benefit amount
 
 **Yearly Benefits:**
+
 - `dental_benefit_yearly` (numeric): Annual dental benefit
 - `hearing_benefit_yearly` (numeric): Annual hearing benefit
 - `vision_benefit_yearly` (numeric): Annual vision benefit
 
 **Medical Copays:**
+
 - `primary_care_copay` (numeric): Primary care physician copay
 - `specialist_copay` (numeric): Specialist copay
 - `hospital_inpatient_per_day_copay` (numeric): Daily hospital inpatient copay
@@ -95,15 +102,18 @@ The `metadata` JSONB field stores all plan benefits and additional information. 
 - `urgent_care_copay` (numeric): Urgent care copay
 
 **Medical Deductible with Medicaid Assistance:**
+
 - `medical_deductible` (numeric): Standard medical deductible amount
 - `medical_deductible_with_medicaid` (numeric): Medical deductible for Medicaid cost-sharing recipients (typically $0)
 
 **Additional Information:**
+
 - `pharmacy_benefit` (text): Pharmacy benefit description
 - `service_area` (text): Service area description
 - `notes` (text): General plan notes
 
 **Extended Benefits:**
+
 - `card_benefit` (numeric): Prepaid debit card benefit amount
 - `fitness_benefit` (text): Fitness/gym membership benefit
 - `transportation_benefit` (numeric): Transportation/rides benefit amount
@@ -146,6 +156,7 @@ CREATE TABLE enrollments (
 ```
 
 **Key Features:**
+
 - **Contact Relationship**: Foreign key with cascade delete for contacts
 - **Plan Protection**: Restrict deletion of plans with active enrollments
 - **Status Tracking**: Lifecycle management (pending, active, cancelled, terminated, declined)
@@ -160,15 +171,17 @@ The plan type system has been refactored to use a normalized structure with sepa
 #### Normalized Plan Type Fields
 
 **Database Structure:**
+
 ```sql
 -- Normalized plan type fields (no constraints - validation in code)
 type_network TEXT,    -- HMO, PPO, PFFS, MSA
 type_extension TEXT,  -- POS or null
-type_snp TEXT,        -- D, C, I or null  
+type_snp TEXT,        -- D, C, I or null
 type_program TEXT     -- SNP, MA, MAPD, PDP, Supplement, Ancillary
 ```
 
 **TypeScript Types:**
+
 ```typescript
 // Defined in src/lib/plan-constants.ts
 type TypeNetwork = 'HMO' | 'PPO' | 'PFFS' | 'MSA'
@@ -185,6 +198,7 @@ interface PlanTypeStructure {
 ```
 
 **Legacy Plan Type Parsing:**
+
 ```typescript
 // Converts legacy strings like "HMO-POS-D-SNP" into normalized structure
 function parseLegacyPlanType(value: string): PlanTypeStructure | null
@@ -196,17 +210,17 @@ The UI displays a combined plan type by concatenating the normalized fields:
 ```typescript
 // Build the plan type string from normalized fields
 const parts = []
-if (plan.type_network) parts.push(plan.type_network)           // "HMO"
-if (plan.type_extension) parts.push(plan.type_extension)       // "POS"
-if (plan.type_snp) parts.push(`${plan.type_snp}-SNP`)         // "D-SNP"
+if (plan.type_network) parts.push(plan.type_network) // "HMO"
+if (plan.type_extension) parts.push(plan.type_extension) // "POS"
+if (plan.type_snp) parts.push(`${plan.type_snp}-SNP`) // "D-SNP"
 // Don't add type_program if it's already included in the SNP part
-if (plan.type_program && plan.type_program !== 'MA' && plan.type_program !== 'SNP') 
-  parts.push(plan.type_program)                                // "PDP", "Supplement", etc.
+if (plan.type_program && plan.type_program !== 'MA' && plan.type_program !== 'SNP') parts.push(plan.type_program) // "PDP", "Supplement", etc.
 
-const combinedType = parts.join('-')  // "HMO-POS-D-SNP"
+const combinedType = parts.join('-') // "HMO-POS-D-SNP"
 ```
 
 **Examples:**
+
 - `HMO` + `null` + `null` + `MA` → **"HMO"**
 - `HMO` + `POS` + `null` + `MA` → **"HMO-POS"**
 - `HMO` + `null` + `D` + `SNP` → **"HMO-D-SNP"**
@@ -216,12 +230,14 @@ const combinedType = parts.join('-')  // "HMO-POS-D-SNP"
 - `null` + `null` + `null` + `Supplement` → **"Supplement"**
 
 **Key Rules:**
+
 - `type_program` is omitted when it's "MA" (default for most plans)
 - `type_program` is omitted when it's "SNP" (already included in `type_snp` field)
 - Only non-null fields are included in the concatenation
 - Fields are joined with hyphens (`-`)
 
 **Benefits:**
+
 - ✅ **Better data integrity** - Separate fields prevent invalid combinations
 - ✅ **Easier querying** - Filter by network type, SNP type, etc.
 - ✅ **Single source of truth** - All types defined in `plan-constants.ts`
@@ -236,9 +252,20 @@ Database enums eliminated! Now using TEXT columns with validation in code:
 
 ```typescript
 // Defined in src/lib/plan-constants.ts
-type Carrier = 'Aetna' | 'Anthem' | 'CareSource' | 'Devoted' | 'GTL' | 
-               'Heartland' | 'Humana' | 'Medico' | 'MedMutual' | 
-               'SummaCare' | 'United' | 'Zing' | 'Other'
+type Carrier =
+  | 'Aetna'
+  | 'Anthem'
+  | 'CareSource'
+  | 'Devoted'
+  | 'GTL'
+  | 'Heartland'
+  | 'Humana'
+  | 'Medico'
+  | 'MedMutual'
+  | 'SummaCare'
+  | 'United'
+  | 'Zing'
+  | 'Other'
 ```
 
 #### Enrollment Status
@@ -276,7 +303,7 @@ CREATE INDEX idx_enrollments_status ON enrollments(enrollment_status);
 CREATE INDEX idx_enrollments_effective ON enrollments(coverage_effective_date);
 
 -- CMS uniqueness constraint (prevents duplicate plans)
-ALTER TABLE plans ADD CONSTRAINT plans_unique_cms_complete 
+ALTER TABLE plans ADD CONSTRAINT plans_unique_cms_complete
 UNIQUE (plan_year, cms_contract_number, cms_plan_number, cms_geo_segment);
 ```
 
@@ -310,9 +337,20 @@ type TypeSnp = 'D' | 'C' | 'I' | null
 type TypeProgram = 'SNP' | 'MA' | 'MAPD' | 'PDP' | 'Supplement' | 'Ancillary'
 
 // Legacy and other types
-type Carrier = 'Aetna' | 'Anthem' | 'CareSource' | 'Devoted' | 'GTL' | 
-               'Heartland' | 'Humana' | 'Medico' | 'MedMutual' | 
-               'SummaCare' | 'United' | 'Zing' | 'Other'
+type Carrier =
+  | 'Aetna'
+  | 'Anthem'
+  | 'CareSource'
+  | 'Devoted'
+  | 'GTL'
+  | 'Heartland'
+  | 'Humana'
+  | 'Medico'
+  | 'MedMutual'
+  | 'SummaCare'
+  | 'United'
+  | 'Zing'
+  | 'Other'
 type EnrollmentStatus = 'pending' | 'active' | 'cancelled' | 'terminated' | 'declined' | 'ended'
 ```
 
@@ -337,6 +375,7 @@ interface UsePlansReturn {
 ```
 
 **Features:**
+
 - Automatic fetching on mount
 - Sorted by year (descending), carrier, and name
 - Error handling with user-friendly messages
@@ -381,6 +420,7 @@ interface UsePlanEnrollmentsReturn {
 ```
 
 **Features:**
+
 - Fetch all enrollments or filter by contact
 - Includes plan details with enrollments
 - Status updates and lifecycle management
@@ -410,6 +450,7 @@ Main plans management interface featuring:
 - Inline edit/delete actions
 
 **Theme Integration:**
+
 ```typescript
 const { theme } = useTheme()
 const [gridTheme, setGridTheme] = useState(getCurrentTheme())
@@ -425,6 +466,7 @@ React.useEffect(() => {
 Comprehensive inline form with two main sections:
 
 **Main Database Fields:**
+
 - Plan name (required)
 - Network Type (HMO, PPO, PFFS, MSA)
 - Extension (POS or None)
@@ -438,6 +480,7 @@ Comprehensive inline form with two main sections:
 - Counties (comma-separated array)
 
 **Plan Benefits & Details (Metadata):**
+
 - **Dates**: Effective start, Effective end
 - **Financial Benefits**: Premium (monthly), Giveback (monthly), OTC (quarterly)
 - **Yearly Benefits**: Dental, Hearing, Vision
@@ -448,6 +491,7 @@ Comprehensive inline form with two main sections:
 #### Edit Modal
 
 Modal-based editing with `ModalForm` component featuring:
+
 - **Main Database Fields** section at the top (essential plan identifiers)
 - **Plan Benefits & Details (Metadata)** section below with all benefits and additional information
 - Pre-populated with existing data using `extractMetadataForForm` helper
@@ -461,6 +505,7 @@ Modal-based editing with `ModalForm` component featuring:
 Provides side-by-side comparison of 2-3 plans with visual indicators and cost calculations.
 
 **Features:**
+
 - **Side-by-Side Comparison**: Compare up to 3 plans simultaneously
 - **Visual Indicators**: Shows which plan has better/worse values
   - 🟢 Green arrow up = Better than average
@@ -484,6 +529,7 @@ Provides side-by-side comparison of 2-3 plans with visual indicators and cost ca
 - **Responsive Design**: Works on all screen sizes with horizontal scrolling
 
 **Usage:**
+
 ```typescript
 <PlanComparisonModal
   isOpen={showComparison}
@@ -493,6 +539,7 @@ Provides side-by-side comparison of 2-3 plans with visual indicators and cost ca
 ```
 
 **Integration:**
+
 - Triggered from Plans Page when 2+ plans are selected
 - "Compare (X)" button appears in header
 - Modal opens with selected plans pre-loaded
@@ -504,6 +551,7 @@ Provides side-by-side comparison of 2-3 plans with visual indicators and cost ca
 Manages plan enrollments for individual contacts:
 
 **Features:**
+
 - Display active enrollments
 - Add new enrollments
 - Update enrollment status
@@ -512,6 +560,7 @@ Manages plan enrollments for individual contacts:
 - Agent notes
 
 **Integration:**
+
 - Used within Contact View Modal
 - Links to plans catalog
 - Shows plan details with enrollment
@@ -609,12 +658,14 @@ Plans are typically version by year:
 The `metadata` JSONB field provides flexibility for storing additional plan information that doesn't fit into the standard schema. This is particularly useful for:
 
 **🎯 SCHEMA DEFINITION: The metadata structure uses a hierarchical schema as the single source of truth:**
+
 - `@/schema/plans-metadata-schema.ts` - Hierarchical TypeScript Schema (sections with nested properties arrays) for dynamic forms and validation
 - `src/lib/plan-metadata-utils.ts` - Runtime utilities that automatically extract properties from the schema using `getAllProperties()`
 
 **✅ AUTOMATIC SYNCHRONIZATION: The schema is the single source of truth. Properties are extracted at runtime from the hierarchical sections structure, so adding fields to the schema automatically makes them available throughout the application. No manual updates needed in plan-metadata-utils.ts when adding new fields.**
 
 **🔑 KEY PROPERTY REQUIREMENT: Each property in the `properties` array must have a `key` field. This key serves as:**
+
 - The property name in the database JSONB metadata (e.g., `metadata.premium_monthly`)
 - The field identifier for form data binding and React keys
 - The lookup key for property indexing in `getAllProperties()`
@@ -691,12 +742,14 @@ AND plan_year = 2025;
 5. Adjust usage inputs to see how costs change
 
 **Visual Indicators in Comparison:**
+
 - Green arrow up (↑): This plan's value is better than average
 - Red arrow down (↓): This plan's value is worse than average
 - No indicator: This plan's value matches the average (cleaner display)
 
 **Cost Calculator Usage:**
 Enter expected annual usage for:
+
 - Primary care visits
 - Specialist visits
 - Emergency room visits
@@ -710,11 +763,13 @@ The calculator will compute total estimated annual cost including premiums, give
 
 ```typescript
 // Filter plans by criteria
-const matchingPlans = plans.filter(plan => {
-  return plan.plan_year === currentYear &&
-         plan.carrier === preferredCarrier &&
-         (plan.giveback_monthly ?? 0) > 0 &&
-         (plan.moop_annual ?? Infinity) < 5000
+const matchingPlans = plans.filter((plan) => {
+  return (
+    plan.plan_year === currentYear &&
+    plan.carrier === preferredCarrier &&
+    (plan.giveback_monthly ?? 0) > 0 &&
+    (plan.moop_annual ?? Infinity) < 5000
+  )
 })
 ```
 
@@ -735,7 +790,7 @@ function calculateAnnualCost(plan: Plan): number {
 await updateEnrollment(enrollmentId, {
   enrollment_status: 'terminated',
   coverage_end_date: new Date().toISOString(),
-  disenrollment_reason: 'Member requested change'
+  disenrollment_reason: 'Member requested change',
 })
 ```
 
@@ -836,9 +891,9 @@ Potential queries and reports:
    - Renewal reminders
 
 9. **Benefit Utilization**
-    - Track benefit usage (OTC, dental, vision)
-    - Remaining benefits calculator
-    - Utilization reports
+   - Track benefit usage (OTC, dental, vision)
+   - Remaining benefits calculator
+   - Utilization reports
 
 ### Technical Improvements
 
@@ -874,12 +929,14 @@ Potential queries and reports:
 The database schema has been completely refactored to use a normalized plan type structure:
 
 **Migration Steps Completed:**
+
 1. **Added Normalized Fields** - Added `type_network`, `type_extension`, `type_snp`, `type_program` columns
 2. **Populated Data** - Migrated all existing `plan_type` data to normalized fields
 3. **Updated Application** - Modified all UI components to use normalized fields
 4. **Removed Legacy Field** - Dropped the `plan_type` column and its index
 
 **Benefits Achieved:**
+
 - ✅ **Better Data Integrity** - Separate fields prevent invalid combinations
 - ✅ **Easier Querying** - Filter by specific plan type components
 - ✅ **Single Source of Truth** - All validation in `src/lib/plan-constants.ts`
@@ -935,6 +992,3 @@ The Plans and Enrollments system provides comprehensive Medicare plan management
 - `DATETIME_IMPLEMENTATION.md` - Handling dates in enrollment tracking
 - `COMPONENT_ARCHITECTURE.md` - General component patterns
 - `ROLES_IMPLEMENTATION.md` - Medicare client role integration
-
-
-

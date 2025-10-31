@@ -74,5 +74,5 @@ export const getAllTags = async (): Promise<Tag[]> => {
  * @returns Array of tag labels
  */
 export const getTagLabels = (tags: Tag[]): string[] => {
-  return tags.map(tag => tag.label)
+  return tags.map((tag) => tag.label)
 }

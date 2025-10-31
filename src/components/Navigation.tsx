@@ -19,12 +19,12 @@ const pages = [
 export default function Navigation({ pageTitle }: NavigationProps) {
   return (
     <nav className="bg-background border-b shadow-sm">
-      <div className="w-full overflow-x-auto scrollbar-hide">
+      <div className="scrollbar-hide w-full overflow-x-auto">
         <div className="min-w-max px-4 sm:px-6 lg:px-8">
           <div className="flex h-16 justify-between">
             <div className="flex items-center space-x-6">
               <h1 className="text-foreground text-xl font-semibold">Sirem CRM</h1>
-              <span className="hidden md:block text-muted-foreground text-lg font-medium">{pageTitle}</span>
+              <span className="text-muted-foreground hidden text-lg font-medium md:block">{pageTitle}</span>
             </div>
             <div className="flex items-center space-x-4">
               {pages.map((page) => {
@@ -35,7 +35,7 @@ export default function Navigation({ pageTitle }: NavigationProps) {
                   <Link
                     key={page.path}
                     href={page.path}
-                    className={`flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap ${
+                    className={`flex items-center rounded-md px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
                       isActive
                         ? 'border-primary/20 bg-primary/10 text-primary border'
                         : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'

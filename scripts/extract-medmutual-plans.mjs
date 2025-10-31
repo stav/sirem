@@ -28,14 +28,14 @@ async function readPdfContent(filePath) {
  */
 function extractCmsIdFromContent(pdfText) {
   if (!pdfText) return null
-  
+
   // Look for full CMS ID pattern: H####-###-###
   const fullCmsIdPattern = /(H\d{4}-\d{3}-\d{3})/g
   const fullMatches = pdfText.match(fullCmsIdPattern)
   if (fullMatches && fullMatches.length > 0) {
     return fullMatches[0]
   }
-  
+
   return null
 }
 
@@ -44,28 +44,28 @@ function extractCmsIdFromContent(pdfText) {
  */
 function extractPlanNameFromContent(pdfText) {
   if (!pdfText) return null
-  
+
   // Look for plan name patterns in the PDF
   const planNamePatterns = [
-    /MedMutual Advantage ([^(]+) \(H\d{4}-\d{3}-\d{3}\)/,  // "MedMutual Advantage Access PPO (H4497-005-003)"
+    /MedMutual Advantage ([^(]+) \(H\d{4}-\d{3}-\d{3}\)/, // "MedMutual Advantage Access PPO (H4497-005-003)"
     /Summary of Benefits \| ([^|]+)/,
     /Plan Name: ([^\n]+)/,
     /([A-Za-z\s]+) HMO/,
-    /([A-Za-z\s]+) PPO/
+    /([A-Za-z\s]+) PPO/,
   ]
-  
+
   for (const pattern of planNamePatterns) {
     const match = pdfText.match(pattern)
     if (match && match[1]) {
       let name = match[1].trim()
-      
+
       // Remove plan type suffixes from the name
       name = name.replace(/\s+(HMO|PPO|POS)(\s*-\s*POS)?$/i, '')
-      
+
       return name
     }
   }
-  
+
   return null
 }
 
@@ -74,21 +74,17 @@ function extractPlanNameFromContent(pdfText) {
  */
 function extractYearFromContent(pdfText) {
   if (!pdfText) return null
-  
+
   // Look for year patterns
-  const yearPatterns = [
-    /(\d{4}) Summary of Benefits/,
-    /Plan Year: (\d{4})/,
-    /Effective: (\d{4})/
-  ]
-  
+  const yearPatterns = [/(\d{4}) Summary of Benefits/, /Plan Year: (\d{4})/, /Effective: (\d{4})/]
+
   for (const pattern of yearPatterns) {
     const match = pdfText.match(pattern)
     if (match && match[1]) {
       return parseInt(match[1])
     }
   }
-  
+
   return null
 }
 
@@ -97,11 +93,11 @@ function extractYearFromContent(pdfText) {
  */
 function extractPlanTypeFromContent(pdfText) {
   if (!pdfText) return null
-  
+
   if (pdfText.includes('HMO')) return 'HMO'
   if (pdfText.includes('PPO')) return 'PPO'
   if (pdfText.includes('POS')) return 'POS'
-  
+
   return null
 }
 
@@ -124,12 +120,24 @@ function extractPlanDataFromPdf(pdfText, filename) {
     carrier: 'MedMutual',
     plan_year: extractYearFromContent(pdfText),
     cms_id: extractCmsIdFromContent(pdfText),
-    
+
     // Counties (default for Medical Mutual service area)
-    counties: ['Ashland', 'Cuyahoga', 'Erie', 'Geauga', 'Lake', 'Lorain', 'Medina', 'Portage', 'Stark', 'Summit', 'Wayne'],
-    
+    counties: [
+      'Ashland',
+      'Cuyahoga',
+      'Erie',
+      'Geauga',
+      'Lake',
+      'Lorain',
+      'Medina',
+      'Portage',
+      'Stark',
+      'Summit',
+      'Wayne',
+    ],
+
     // Metadata with all benefits
-    metadata: {}
+    metadata: {},
   }
 
   // Extract premium information
@@ -159,7 +167,9 @@ function extractPlanDataFromPdf(pdfText, filename) {
   }
 
   // Extract MOOP
-  const moopSection = pdfText.match(/Maximum Out-of-Pocket Responsibility[\s\S]*?\$([\d,]+) annually for services you receive from[\s\S]*?in-network providers[\s\S]*?\$([\d,]+) annually for services you receive from[\s\S]*?any provider/)
+  const moopSection = pdfText.match(
+    /Maximum Out-of-Pocket Responsibility[\s\S]*?\$([\d,]+) annually for services you receive from[\s\S]*?in-network providers[\s\S]*?\$([\d,]+) annually for services you receive from[\s\S]*?any provider/
+  )
   if (moopSection) {
     data.metadata.moop_in_network = parseFloat(moopSection[1].replace(/,/g, ''))
     data.metadata.moop_any_network = parseFloat(moopSection[2].replace(/,/g, ''))
@@ -225,7 +235,6 @@ function extractPlanDataFromPdf(pdfText, filename) {
     data.metadata.hearing_benefit_yearly = parseFloat(hearingMatch[1])
   }
 
-
   // Extract skilled nursing facility copay
   const skilledNursingMatch = pdfText.match(/Skilled Nursing Facility[\s\S]*?In-network: \$(\d+) copay/)
   if (skilledNursingMatch) {
@@ -233,7 +242,9 @@ function extractPlanDataFromPdf(pdfText, filename) {
   }
 
   // Extract physical therapy copay
-  const physicalTherapyMatch = pdfText.match(/Physical therapy or speech\/ language therapy visit:[\s\S]*?In-network: \$(\d+) copay/)
+  const physicalTherapyMatch = pdfText.match(
+    /Physical therapy or speech\/ language therapy visit:[\s\S]*?In-network: \$(\d+) copay/
+  )
   if (physicalTherapyMatch) {
     data.metadata.physical_therapy_copay = parseFloat(physicalTherapyMatch[1])
   }
@@ -245,19 +256,25 @@ function extractPlanDataFromPdf(pdfText, filename) {
   }
 
   // Extract speech therapy copay (same as physical therapy in this plan)
-  const speechTherapyMatch = pdfText.match(/Physical therapy or speech\/ language therapy visit:[\s\S]*?In-network: \$(\d+) copay/)
+  const speechTherapyMatch = pdfText.match(
+    /Physical therapy or speech\/ language therapy visit:[\s\S]*?In-network: \$(\d+) copay/
+  )
   if (speechTherapyMatch) {
     data.metadata.speech_therapy_copay = parseFloat(speechTherapyMatch[1])
   }
 
   // Extract mental health copay (inpatient)
-  const mentalHealthMatch = pdfText.match(/Mental Health Care[\s\S]*?In-network:[\s\S]*?\$(\d+) copay per day for days 1 through 5/)
+  const mentalHealthMatch = pdfText.match(
+    /Mental Health Care[\s\S]*?In-network:[\s\S]*?\$(\d+) copay per day for days 1 through 5/
+  )
   if (mentalHealthMatch) {
     data.metadata.mental_health_copay = parseFloat(mentalHealthMatch[1])
   }
 
   // Extract substance abuse copay
-  const substanceAbuseMatch = pdfText.match(/Outpatient Substance Use Disorder Services[\s\S]*?In-network: \$(\d+) copay/)
+  const substanceAbuseMatch = pdfText.match(
+    /Outpatient Substance Use Disorder Services[\s\S]*?In-network: \$(\d+) copay/
+  )
   if (substanceAbuseMatch) {
     data.metadata.substance_abuse_copay = parseFloat(substanceAbuseMatch[1])
   }
@@ -269,7 +286,9 @@ function extractPlanDataFromPdf(pdfText, filename) {
   }
 
   // Extract chiropractor copays (in-network and out-of-network)
-  const chiropractorSection = pdfText.match(/Chiropractic Care[\s\S]*?In-network: \$(\d+) copay[\s\S]*?Out-of-network: \$(\d+) copay/)
+  const chiropractorSection = pdfText.match(
+    /Chiropractic Care[\s\S]*?In-network: \$(\d+) copay[\s\S]*?Out-of-network: \$(\d+) copay/
+  )
   if (chiropractorSection) {
     data.metadata.chiro_in_network_copay = parseFloat(chiropractorSection[1])
     data.metadata.chiro_out_network_copay = parseFloat(chiropractorSection[2])
@@ -328,16 +347,16 @@ function extractPlanDataFromPdf(pdfText, filename) {
  */
 function parseCmsId(cmsId) {
   if (!cmsId) return null
-  
+
   const match = cmsId.match(/H(\d{4})-(\d{3})-(\d{3})/)
   if (match) {
     return {
       contractNumber: `H${match[1]}`,
       planNumber: match[2],
-      geoSegment: match[3]
+      geoSegment: match[3],
     }
   }
-  
+
   return null
 }
 
@@ -349,10 +368,10 @@ async function main() {
 
   // Get all PDF files
   const files = await fs.readdir(PDF_DIR)
-  const pdfFiles = files.filter(file => file.endsWith('.pdf'))
-  
+  const pdfFiles = files.filter((file) => file.endsWith('.pdf'))
+
   console.log(`📄 Found ${pdfFiles.length} PDF files:`)
-  pdfFiles.forEach(file => console.log(`  - ${file}`))
+  pdfFiles.forEach((file) => console.log(`  - ${file}`))
   console.log()
 
   const extractedPlans = []
@@ -361,7 +380,7 @@ async function main() {
   for (const filename of pdfFiles) {
     const filePath = path.join(PDF_DIR, filename)
     console.log(`🔍 Processing: ${filename}`)
-    
+
     // Read PDF content
     const pdfText = await readPdfContent(filePath)
     if (!pdfText) {
@@ -390,47 +409,47 @@ async function main() {
 
   // Save to JSON file with sorted keys
   const outputFile = 'medmutual-plans-extracted.json'
-  
+
   // Function to recursively sort object keys with priority fields
   function sortObjectKeys(obj) {
     if (obj === null || typeof obj !== 'object' || Array.isArray(obj)) {
       return obj
     }
-    
+
     const sorted = {}
-    
+
     // Priority fields for top-level plan objects
     const priorityFields = ['carrier', 'plan_year', 'name', 'plan_type']
-    
+
     // Add priority fields first
-    priorityFields.forEach(key => {
+    priorityFields.forEach((key) => {
       if (obj.hasOwnProperty(key)) {
         sorted[key] = sortObjectKeys(obj[key])
       }
     })
-    
+
     // Add remaining fields alphabetically
     Object.keys(obj)
-      .filter(key => !priorityFields.includes(key))
+      .filter((key) => !priorityFields.includes(key))
       .sort()
-      .forEach(key => {
+      .forEach((key) => {
         sorted[key] = sortObjectKeys(obj[key])
       })
-    
+
     return sorted
   }
-  
-  const sortedPlans = extractedPlans.map(plan => sortObjectKeys(plan))
+
+  const sortedPlans = extractedPlans.map((plan) => sortObjectKeys(plan))
   await fs.writeFile(outputFile, JSON.stringify(sortedPlans, null, 2))
-  
+
   console.log(`\n📊 Summary:`)
   console.log(`  - Processed: ${pdfFiles.length} PDFs`)
   console.log(`  - Successfully extracted: ${extractedPlans.length} plans`)
   console.log(`  - Output file: ${outputFile}`)
-  
+
   // Display extracted plans
   console.log(`\n📋 Extracted Plans:`)
-  extractedPlans.forEach(plan => {
+  extractedPlans.forEach((plan) => {
     console.log(`  - ${plan.name} (${plan.cms_id}) - ${plan.plan_year}`)
   })
 }

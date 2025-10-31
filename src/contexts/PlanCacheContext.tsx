@@ -28,17 +28,20 @@ export function PlanCacheProvider({ children }: PlanCacheProviderProps) {
   const [cache, setCache] = useState<Map<string, CachedEnrollment[]>>(new Map())
   const [refreshTrigger, setRefreshTrigger] = useState(0)
 
-  const getCachedEnrollments = useCallback((contactId: string): CachedEnrollment[] | null => {
-    return cache.get(contactId) || null
-  }, [cache])
+  const getCachedEnrollments = useCallback(
+    (contactId: string): CachedEnrollment[] | null => {
+      return cache.get(contactId) || null
+    },
+    [cache]
+  )
 
   const setCachedEnrollments = useCallback((contactId: string, enrollments: CachedEnrollment[]) => {
-    setCache(prev => new Map(prev).set(contactId, enrollments))
+    setCache((prev) => new Map(prev).set(contactId, enrollments))
   }, [])
 
   const clearCache = useCallback((contactId?: string) => {
     if (contactId) {
-      setCache(prev => {
+      setCache((prev) => {
         const newCache = new Map(prev)
         newCache.delete(contactId)
         return newCache
@@ -47,26 +50,28 @@ export function PlanCacheProvider({ children }: PlanCacheProviderProps) {
       setCache(new Map())
     }
     // Increment refresh trigger to force components to refetch
-    setRefreshTrigger(prev => prev + 1)
+    setRefreshTrigger((prev) => prev + 1)
   }, [])
 
-  const isCached = useCallback((contactId: string): boolean => {
-    return cache.has(contactId)
-  }, [cache])
-
-  const contextValue = useMemo(() => ({
-    getCachedEnrollments,
-    setCachedEnrollments,
-    clearCache,
-    isCached,
-    refreshTrigger
-  }), [getCachedEnrollments, setCachedEnrollments, clearCache, isCached, refreshTrigger])
-
-  return (
-    <PlanCacheContext.Provider value={contextValue}>
-      {children}
-    </PlanCacheContext.Provider>
+  const isCached = useCallback(
+    (contactId: string): boolean => {
+      return cache.has(contactId)
+    },
+    [cache]
   )
+
+  const contextValue = useMemo(
+    () => ({
+      getCachedEnrollments,
+      setCachedEnrollments,
+      clearCache,
+      isCached,
+      refreshTrigger,
+    }),
+    [getCachedEnrollments, setCachedEnrollments, clearCache, isCached, refreshTrigger]
+  )
+
+  return <PlanCacheContext.Provider value={contextValue}>{children}</PlanCacheContext.Provider>
 }
 
 export function usePlanCache() {

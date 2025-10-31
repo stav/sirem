@@ -34,7 +34,7 @@ type SchemaSection = {
  */
 export function getAllProperties(): Record<string, SchemaProperty> {
   const properties: Record<string, SchemaProperty> = {}
-  
+
   if (plansMetadataSchema.sections && Array.isArray(plansMetadataSchema.sections)) {
     // Type assertion needed because schema uses 'as const' which creates very specific literal types
     const sections = plansMetadataSchema.sections as unknown as SchemaSection[]
@@ -48,17 +48,17 @@ export function getAllProperties(): Record<string, SchemaProperty> {
       }
     })
   }
-  
+
   return properties
 }
 
 /**
  * PlanMetadata interface - dynamically generated from schema
- * 
+ *
  * This interface is automatically generated from the JSON Schema properties.
  * Since properties are now nested within sections, we use a Record type
  * that allows any string keys with appropriate value types.
- * 
+ *
  * 🔄 DYNAMIC: New fields added to the schema automatically appear in this interface.
  * ✅ SINGLE SOURCE OF TRUTH: Schema drives both runtime validation and compile-time types.
  */
@@ -105,11 +105,11 @@ export function getMetadataDate(plan: Plan, key: string): string | null {
 export const getPlanMetadata = (() => {
   const getters: Record<string, (plan: Plan) => unknown> = {}
   const properties = getAllProperties()
-  
+
   // Generate getters for all schema properties
   Object.entries(properties).forEach(([fieldName, fieldSchema]) => {
     const fieldType = fieldSchema.type
-    
+
     // Choose appropriate getter based on field type
     if (fieldType === 'string' && 'format' in fieldSchema && fieldSchema.format === 'date') {
       getters[fieldName] = (plan: Plan) => getMetadataDate(plan, fieldName)
@@ -119,7 +119,7 @@ export const getPlanMetadata = (() => {
       getters[fieldName] = (plan: Plan) => getMetadataString(plan, fieldName)
     }
   })
-  
+
   return getters
 })() as Record<string, (plan: Plan) => number | string | null>
 
@@ -131,12 +131,12 @@ export const getPlanMetadata = (() => {
 export function getDefaultMetadataFormData(): Record<string, unknown> {
   const formData: Record<string, unknown> = {}
   const properties = getAllProperties()
-  
+
   // Dynamically generate metadata fields from schema
-  Object.keys(properties).forEach(fieldName => {
+  Object.keys(properties).forEach((fieldName) => {
     formData[fieldName] = ''
   })
-  
+
   return formData
 }
 
@@ -146,7 +146,7 @@ export function getDefaultMetadataFormData(): Record<string, unknown> {
  */
 export function getDefaultFormData(): Record<string, unknown> {
   const formData: Record<string, unknown> = {}
-  
+
   // Core database fields with default values
   formData.name = ''
   formData.type_network = ''
@@ -159,11 +159,11 @@ export function getDefaultFormData(): Record<string, unknown> {
   formData.cms_plan_number = ''
   formData.cms_geo_segment = ''
   formData.counties = ''
-  
+
   // Add metadata fields
   const metadataData = getDefaultMetadataFormData()
   Object.assign(formData, metadataData)
-  
+
   return formData
 }
 
@@ -173,7 +173,7 @@ export function getDefaultFormData(): Record<string, unknown> {
  */
 export function populateFormFromPlan(plan: Plan): Record<string, unknown> {
   const formData: Record<string, unknown> = {}
-  
+
   // Core database fields (always present)
   formData.name = String(plan.name ?? '')
   formData.type_network = plan.type_network ?? ''
@@ -186,17 +186,17 @@ export function populateFormFromPlan(plan: Plan): Record<string, unknown> {
   formData.cms_plan_number = String(plan.cms_plan_number ?? '')
   formData.cms_geo_segment = String(plan.cms_geo_segment ?? '')
   formData.counties = Array.isArray(plan.counties) ? plan.counties.join(', ') : String(plan.counties ?? '')
-  
+
   // Metadata fields - dynamically populate based on what's in the metadata
   if (plan.metadata) {
     const metadata = plan.metadata as Record<string, unknown>
     const properties = getAllProperties()
-    
+
     // Get all possible metadata fields from the schema
     const metadataFields = Object.keys(properties)
-    
+
     // Populate each field if it exists in the metadata
-    metadataFields.forEach(field => {
+    metadataFields.forEach((field) => {
       if (metadata[field] !== undefined && metadata[field] !== null) {
         formData[field] = String(metadata[field])
       } else {
@@ -204,7 +204,7 @@ export function populateFormFromPlan(plan: Plan): Record<string, unknown> {
       }
     })
   }
-  
+
   return formData
 }
 
@@ -228,7 +228,7 @@ export function buildPlanDataFromForm(formData: Record<string, unknown>): {
 } {
   // Build metadata object from form fields
   const metadata = buildMetadata(formData)
-  
+
   // Build core database fields
   return {
     name: String(formData.name || ''),
@@ -260,7 +260,7 @@ export function buildMetadata(data: Record<string, unknown>): PlanMetadata {
   const properties = getAllProperties()
 
   // Dynamically process all schema properties
-  Object.keys(properties).forEach(fieldName => {
+  Object.keys(properties).forEach((fieldName) => {
     const value = data[fieldName]
     if (value !== null && value !== undefined && value !== '') {
       // Ensure value is assignable to PlanMetadata type
@@ -338,10 +338,9 @@ export const premiumCalculations = {
 
     return {
       min: extraHelpPremium ?? 0,
-      max: standardPremium
+      max: standardPremium,
     }
   },
-
 
   /**
    * Calculate the effective medical deductible based on Medicaid status
@@ -370,8 +369,7 @@ export const premiumCalculations = {
 
     return {
       min: medicaidDeductible ?? 0,
-      max: standardDeductible
+      max: standardDeductible,
     }
   },
-
 }

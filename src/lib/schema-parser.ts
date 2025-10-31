@@ -1,6 +1,6 @@
 /**
  * Schema Parser for Plans Metadata
- * 
+ *
  * This utility parses the JSON schema and extracts field definitions
  * for dynamic form generation. It serves as the bridge between the
  * schema definition and the UI components.
@@ -28,21 +28,21 @@ export interface FieldDefinition {
 function generateSectionKey(title: string): string {
   // Map specific titles to their legacy keys for backward compatibility
   const titleToKeyMap: Record<string, string> = {
-    "Plan Dates": "dates",
-    "Financials": "financials",
-    "Deductibles": "deductibles",
-    "Annual Limits": "annual_limits",
-    "Quarterly Benefits": "quarterly_benefits",
-    "Yearly Benefits": "yearly_benefits",
-    "Medical Copays": "medical_copays",
-    "Additional Benefits": "additional_benefits",
-    "Plan Information": "plan_information"
+    'Plan Dates': 'dates',
+    Financials: 'financials',
+    Deductibles: 'deductibles',
+    'Annual Limits': 'annual_limits',
+    'Quarterly Benefits': 'quarterly_benefits',
+    'Yearly Benefits': 'yearly_benefits',
+    'Medical Copays': 'medical_copays',
+    'Additional Benefits': 'additional_benefits',
+    'Plan Information': 'plan_information',
   }
-  
+
   if (titleToKeyMap[title]) {
     return titleToKeyMap[title]
   }
-  
+
   // Fallback: generate key from title
   return title
     .toLowerCase()
@@ -72,14 +72,14 @@ export function parseSchema(schema: Record<string, unknown>): ParsedSchema {
 
   // Extract sections with nested properties (preserve order)
   if (schema.sections && Array.isArray(schema.sections)) {
-    (schema.sections as Array<Record<string, unknown>>).forEach((section) => {
+    ;(schema.sections as Array<Record<string, unknown>>).forEach((section) => {
       const title = section.title as string
       const sectionKey = generateSectionKey(title)
-      
+
       sections.push({
         key: sectionKey,
         title,
-        description: section.description as string
+        description: section.description as string,
       })
 
       // Extract fields from section properties
@@ -93,7 +93,7 @@ export function parseSchema(schema: Record<string, unknown>): ParsedSchema {
           section: sectionKey,
           description: (property.description as string) || '',
           validation: extractValidation(property),
-          format: property.format as 'url' | 'email' | 'date' | undefined
+          format: property.format as 'url' | 'email' | 'date' | undefined,
         }
 
         fields.push(field)
@@ -113,7 +113,7 @@ export function parseSchema(schema: Record<string, unknown>): ParsedSchema {
   return {
     sections,
     fields,
-    fieldsBySection
+    fieldsBySection,
   }
 }
 
@@ -159,7 +159,7 @@ export function getSectionsInOrder(schema: ParsedSchema): SectionDefinition[] {
  * Get a specific field definition
  */
 export function getFieldDefinition(schema: ParsedSchema, fieldKey: string): FieldDefinition | undefined {
-  return schema.fields.find(field => field.key === fieldKey)
+  return schema.fields.find((field) => field.key === fieldKey)
 }
 
 /**
@@ -172,7 +172,7 @@ export function validateFieldValue(field: FieldDefinition, value: unknown): stri
 
   if (field.type === 'number' || field.type === 'integer') {
     const numValue = typeof value === 'string' ? parseFloat(value) : Number(value)
-    
+
     if (isNaN(numValue)) {
       return `${field.label} must be a valid number`
     }
@@ -215,14 +215,14 @@ export function getDefaultValue(field: FieldDefinition): unknown {
  */
 export function formatFieldValue(field: FieldDefinition, value: unknown): string {
   if (value === null || value === undefined) return ''
-  
+
   if (field.type === 'number' && typeof value === 'number') {
     return value.toString()
   }
-  
+
   if (field.type === 'date' && value instanceof Date) {
     return value.toISOString().split('T')[0]
   }
-  
+
   return String(value)
 }

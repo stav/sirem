@@ -17,11 +17,14 @@ const TextareaField = React.memo(function TextareaField({
   value,
   onChange,
   isReadOnly = false,
-  className = ''
+  className = '',
 }: TextareaFieldProps) {
-  const handleChange = React.useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    onChange(e.target.value)
-  }, [onChange])
+  const handleChange = React.useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      onChange(e.target.value)
+    },
+    [onChange]
+  )
 
   return (
     <Textarea

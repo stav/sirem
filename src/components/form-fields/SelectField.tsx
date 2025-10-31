@@ -17,18 +17,17 @@ const SelectField = React.memo(function SelectField({
   value,
   onChange,
   isReadOnly = false,
-  className = ''
+  className = '',
 }: SelectFieldProps) {
-  const handleValueChange = React.useCallback((newValue: string) => {
-    onChange(newValue)
-  }, [onChange])
+  const handleValueChange = React.useCallback(
+    (newValue: string) => {
+      onChange(newValue)
+    },
+    [onChange]
+  )
 
   return (
-    <Select
-      value={(value as string) || ''}
-      onValueChange={handleValueChange}
-      disabled={isReadOnly}
-    >
+    <Select value={(value as string) || ''} onValueChange={handleValueChange} disabled={isReadOnly}>
       <SelectTrigger className={`${isReadOnly ? 'bg-muted' : ''} ${className}`}>
         <SelectValue placeholder={`Select ${field.label}`} />
       </SelectTrigger>

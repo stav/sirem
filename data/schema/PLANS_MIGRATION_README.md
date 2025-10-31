@@ -58,6 +58,7 @@ The following fields will be moved from columns to the metadata JSONB field:
 Based on analysis of the current plans data (95 records):
 
 ### Fields with Significant Data
+
 - `notes`: 89 records
 - `premium_monthly`: 65 records
 - `giveback_monthly`: 64 records
@@ -71,6 +72,7 @@ Based on analysis of the current plans data (95 records):
 - `specialist_copay`: 46 records
 
 ### Fields with Moderate Data
+
 - `emergency_room_copay`: 31 records
 - `urgent_care_copay`: 30 records
 - `ambulance_copay`: 29 records
@@ -79,42 +81,49 @@ Based on analysis of the current plans data (95 records):
 - `pharmacy_benefit`: 18 records
 
 ### Fields with Limited Data
+
 - `effective_start`: 12 records
 - `effective_end`: 12 records
 
 ## Migration Steps
 
 ### Step 1: Run Data Migration
+
 ```sql
 -- Execute the migration script
 \i 14-migrate-plans-fields-to-metadata.sql
 ```
 
 This script:
+
 - Preserves existing metadata
 - Adds new fields to metadata only if they have non-null, non-empty values
 - Converts numeric and array values to appropriate JSONB types
 - Includes verification queries to ensure data integrity
 
 ### Step 2: Run Schema Update
+
 ```sql
 -- Execute the schema update script
 \i 15-update-plans-schema-keep-11-fields.sql
 ```
 
 This script:
+
 - Drops all columns except the 11 core fields
 - Updates timezone handling to use UTC (aligns with memory requirements)
 - Verifies the final schema structure
 - Confirms data integrity after column removal
 
 ### Step 3: Run Tests
+
 ```sql
 -- Execute the test script
 \i 16-test-plans-migration.sql
 ```
 
 This script:
+
 - Validates data migration completeness
 - Checks for data conflicts
 - Verifies core field integrity
@@ -123,23 +132,30 @@ This script:
 ## Important Notes
 
 ### Data Preservation
+
 - **All existing data is preserved** - nothing is lost during migration
 - Existing metadata is preserved and new fields are added
 - If a field already exists in metadata, it will be overwritten with the column value
 
 ### UTC Timezone Handling
+
 The migration includes timezone updates to align with the project requirement to use UTC for all datetime handling [[memory:5285941]]. This affects:
+
 - `created_at` and `updated_at` timestamps
 - The `update_updated_at_column()` trigger function should also be updated to use UTC
 
 ### Application Impact
+
 After migration, applications will need to:
+
 - Access migrated fields through the metadata JSONB field
 - Update queries that reference dropped columns
 - Modify forms and UI components that display these fields
 
 ### Rollback Considerations
+
 If rollback is needed:
+
 1. Restore from database backup taken before migration
 2. Or recreate columns and migrate data back from metadata (complex)
 
@@ -156,9 +172,10 @@ After running all migration scripts, verify:
 ## Example Usage After Migration
 
 ### Accessing Migrated Data
+
 ```sql
 -- Get premium information from metadata
-SELECT 
+SELECT
     name,
     carrier,
     plan_year,
@@ -168,7 +185,7 @@ FROM plans
 WHERE metadata ? 'premium_monthly';
 
 -- Get all benefit information
-SELECT 
+SELECT
     name,
     jsonb_pretty(metadata) as benefits
 FROM plans
@@ -176,9 +193,10 @@ WHERE metadata ? 'dental_benefit_yearly';
 ```
 
 ### Updating Metadata Fields
+
 ```sql
 -- Update premium in metadata
-UPDATE plans 
+UPDATE plans
 SET metadata = jsonb_set(metadata, '{premium_monthly}', '"150.00"')
 WHERE id = 'plan-uuid-here';
 ```
@@ -186,7 +204,7 @@ WHERE id = 'plan-uuid-here';
 ## Files Created
 
 1. `14-migrate-plans-fields-to-metadata.sql` - Data migration script
-2. `15-update-plans-schema-keep-11-fields.sql` - Schema update script  
+2. `15-update-plans-schema-keep-11-fields.sql` - Schema update script
 3. `16-test-plans-migration.sql` - Testing and validation script
 4. `PLANS_MIGRATION_README.md` - This documentation
 
@@ -202,6 +220,7 @@ The migration scripts have been created and the application code has been update
 4. ✅ **TypeScript types** - Will need updating after migration
 
 **Next Steps:**
+
 1. Run the migration scripts (`run-plans-migration.sql`)
 2. Update TypeScript types in `src/lib/supabase-types.ts` after migration
 3. Test the application to ensure everything works correctly

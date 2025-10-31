@@ -28,7 +28,13 @@ interface ContactBasicInfoProps {
   onContactUpdated?: () => void
 }
 
-export default function ContactBasicInfo({ contact, tags, tagsLoading, onTagsUpdated, onContactUpdated }: ContactBasicInfoProps) {
+export default function ContactBasicInfo({
+  contact,
+  tags,
+  tagsLoading,
+  onTagsUpdated,
+  onContactUpdated,
+}: ContactBasicInfoProps) {
   const [isEditingTags, setIsEditingTags] = useState(false)
 
   const handleTagsChange = useCallback(() => {
@@ -62,23 +68,14 @@ export default function ContactBasicInfo({ contact, tags, tagsLoading, onTagsUpd
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <Label className="text-muted-foreground text-sm font-medium">Tags</Label>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setIsEditingTags(!isEditingTags)}
-            className="h-7 text-xs"
-          >
+          <Button variant="ghost" size="sm" onClick={() => setIsEditingTags(!isEditingTags)} className="h-7 text-xs">
             <Edit2 className="mr-1 h-3 w-3" />
             {isEditingTags ? 'Done' : 'Edit'}
           </Button>
         </div>
 
         {isEditingTags ? (
-          <TagPicker
-            contactId={contact.id}
-            selectedTagIds={tags.map((t) => t.id)}
-            onTagsChange={handleTagsChange}
-          />
+          <TagPicker contactId={contact.id} selectedTagIds={tags.map((t) => t.id)} onTagsChange={handleTagsChange} />
         ) : (
           <>
             {tagsLoading ? (

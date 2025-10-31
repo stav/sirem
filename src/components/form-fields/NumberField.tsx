@@ -17,12 +17,15 @@ const NumberField = React.memo(function NumberField({
   value,
   onChange,
   isReadOnly = false,
-  className = ''
+  className = '',
 }: NumberFieldProps) {
-  const handleChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = e.target.value
-    onChange(newValue)
-  }, [onChange])
+  const handleChange = React.useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = e.target.value
+      onChange(newValue)
+    },
+    [onChange]
+  )
 
   return (
     <Input

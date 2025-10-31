@@ -20,17 +20,18 @@ interface TagWithCategory extends Tag {
 }
 
 export default function TagsPage() {
-  const { tags, categories, loading, createCategory, deleteCategory, updateCategory, deleteTag, fetchTags } = useTagsPage()
+  const { tags, categories, loading, createCategory, deleteCategory, updateCategory, deleteTag, fetchTags } =
+    useTagsPage()
   const { toast } = useToast()
-  
+
   // Categories state for real-time updates
-  
+
   // Force component to re-render when categories change
   const [refreshKey, setRefreshKey] = useState(0)
-  
+
   // Force refresh when categories change
   React.useEffect(() => {
-    setRefreshKey(prev => prev + 1)
+    setRefreshKey((prev) => prev + 1)
   }, [categories.length])
 
   const [showTagForm, setShowTagForm] = useState(false)
@@ -139,15 +140,15 @@ export default function TagsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="bg-background min-h-screen">
         <Navigation pageTitle="Tags" />
         <div className="p-6">
           <div className="mx-auto max-w-6xl">
             <div className="animate-pulse">
-              <div className="mb-8 h-8 w-1/4 rounded bg-muted"></div>
+              <div className="bg-muted mb-8 h-8 w-1/4 rounded"></div>
               <div className="space-y-4">
-                <div className="h-48 rounded bg-muted"></div>
-                <div className="h-48 rounded bg-muted"></div>
+                <div className="bg-muted h-48 rounded"></div>
+                <div className="bg-muted h-48 rounded"></div>
               </div>
             </div>
           </div>
@@ -157,7 +158,7 @@ export default function TagsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="bg-background min-h-screen">
       <Navigation pageTitle="Tags" />
 
       <div className="p-6">
@@ -165,9 +166,7 @@ export default function TagsPage() {
           <div className="mb-8 flex items-center justify-between">
             <div>
               <h1 className="text-3xl font-bold">Tag Management</h1>
-              <p className="mt-2 text-muted-foreground">
-                Organize your contacts with tags and categories
-              </p>
+              <p className="text-muted-foreground mt-2">Organize your contacts with tags and categories</p>
             </div>
             <div className="flex gap-2">
               <Button onClick={handleAddCategory} variant="outline">
@@ -185,13 +184,11 @@ export default function TagsPage() {
           <Card className="mb-6" key={refreshKey}>
             <CardHeader>
               <CardTitle>Tag Categories</CardTitle>
-              <CardDescription>
-                Categories help organize your tags into logical groups
-              </CardDescription>
+              <CardDescription>Categories help organize your tags into logical groups</CardDescription>
             </CardHeader>
             <CardContent>
               {categories.length === 0 ? (
-                <div className="py-8 text-center text-muted-foreground">
+                <div className="text-muted-foreground py-8 text-center">
                   <FolderOpen className="mx-auto mb-3 h-12 w-12 opacity-50" />
                   <p>No categories yet. Create one to get started.</p>
                 </div>
@@ -211,11 +208,7 @@ export default function TagsPage() {
                               <span className="font-semibold">{category.name}</span>
                             </div>
                             <div className="flex gap-1">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleEditCategory(category)}
-                              >
+                              <Button variant="ghost" size="sm" onClick={() => handleEditCategory(category)}>
                                 <Edit className="h-3 w-3" />
                               </Button>
                               <Button
@@ -227,7 +220,7 @@ export default function TagsPage() {
                               </Button>
                             </div>
                           </div>
-                          <div className="text-sm text-muted-foreground">
+                          <div className="text-muted-foreground text-sm">
                             {tagCount} {tagCount === 1 ? 'tag' : 'tags'}
                           </div>
                           {!category.is_active && (
@@ -249,11 +242,9 @@ export default function TagsPage() {
             {Object.keys(tagsByCategory).length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
-                  <TagIcon className="mx-auto mb-4 h-16 w-16 text-muted-foreground opacity-50" />
+                  <TagIcon className="text-muted-foreground mx-auto mb-4 h-16 w-16 opacity-50" />
                   <h3 className="mb-2 text-lg font-semibold">No tags yet</h3>
-                  <p className="mb-4 text-muted-foreground">
-                    Create your first tag to start organizing contacts
-                  </p>
+                  <p className="text-muted-foreground mb-4">Create your first tag to start organizing contacts</p>
                   <Button onClick={handleAddTag}>
                     <Plus className="mr-2 h-4 w-4" />
                     Create Tag
@@ -265,10 +256,7 @@ export default function TagsPage() {
                 <Card key={category.id}>
                   <CardHeader>
                     <div className="flex items-center gap-2">
-                      <div
-                        className="h-4 w-4 rounded-full"
-                        style={{ backgroundColor: category.color || '#A9A9A9' }}
-                      />
+                      <div className="h-4 w-4 rounded-full" style={{ backgroundColor: category.color || '#A9A9A9' }} />
                       <CardTitle>{categoryName}</CardTitle>
                     </div>
                     <CardDescription>{categoryTags.length} tags in this category</CardDescription>
@@ -288,11 +276,9 @@ export default function TagsPage() {
                           >
                             <TagIcon className="mr-1 h-3 w-3" />
                             {tag.label}
-                            {!tag.is_active && (
-                              <span className="ml-1 text-xs opacity-60">(inactive)</span>
-                            )}
+                            {!tag.is_active && <span className="ml-1 text-xs opacity-60">(inactive)</span>}
                           </Badge>
-                          <div className="absolute right-1 top-1/2 flex -translate-y-1/2 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                          <div className="absolute top-1/2 right-1 flex -translate-y-1/2 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
                             <Button
                               variant="ghost"
                               size="sm"
@@ -346,4 +332,3 @@ export default function TagsPage() {
     </div>
   )
 }
-

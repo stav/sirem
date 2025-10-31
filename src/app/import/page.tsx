@@ -77,24 +77,24 @@ export default function ImportPage() {
       // CSV preview for plans
       try {
         const text = await selectedFile.text()
-        const lines = text.split('\n').filter(line => line.trim())
+        const lines = text.split('\n').filter((line) => line.trim())
         const headers = lines[0].split(',')
-        const dataRows = lines.slice(1).filter(line => line.trim() && !line.startsWith(',,,'))
-        
+        const dataRows = lines.slice(1).filter((line) => line.trim() && !line.startsWith(',,,'))
+
         // Find column indices
-        const nameIdx = headers.findIndex(h => h.toLowerCase().includes('name'))
-        const carrierIdx = headers.findIndex(h => h.toLowerCase().includes('carrier'))
-        const typeIdx = headers.findIndex(h => h.toLowerCase().includes('type'))
-        const premiumIdx = headers.findIndex(h => h.toLowerCase().includes('premium'))
-        const descIdx = headers.findIndex(h => h.toLowerCase().includes('description'))
-        
-        const samplePlans = dataRows.slice(0, 5).map(line => {
+        const nameIdx = headers.findIndex((h) => h.toLowerCase().includes('name'))
+        const carrierIdx = headers.findIndex((h) => h.toLowerCase().includes('carrier'))
+        const typeIdx = headers.findIndex((h) => h.toLowerCase().includes('type'))
+        const premiumIdx = headers.findIndex((h) => h.toLowerCase().includes('premium'))
+        const descIdx = headers.findIndex((h) => h.toLowerCase().includes('description'))
+
+        const samplePlans = dataRows.slice(0, 5).map((line) => {
           const cols = line.split(',')
           // Extract year from description if present
           const desc = descIdx >= 0 ? cols[descIdx] : ''
           const yearMatch = desc?.match(/^(\d{4})\s/)
           const year = yearMatch ? yearMatch[1] : ''
-          
+
           return {
             name: nameIdx >= 0 ? cols[nameIdx] : '',
             carrier: carrierIdx >= 0 ? cols[carrierIdx] : '',
@@ -103,7 +103,7 @@ export default function ImportPage() {
             year: year,
           }
         })
-        
+
         setPreview({
           totalPlans: dataRows.length,
           samplePlans,

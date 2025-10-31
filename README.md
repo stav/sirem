@@ -15,6 +15,7 @@ A modern Medicare CRM system built with Next.js, TypeScript, and Supabase.
 ## 🛠️ Development Notes
 
 ### ESLint Configuration
+
 - Using legacy `.eslintrc.json` format instead of flat config (`eslint.config.mjs`)
 - Reason: Next.js 15.5.4 doesn't fully support flat config yet and shows warnings
 - TODO: Migrate to flat config when Next.js officially supports it without warnings

@@ -11,18 +11,21 @@ The Sirem CRM project includes automated scripts to synchronize local files with
 ### Individual Operations
 
 #### `npm run dump-types`
+
 - **Purpose**: Updates TypeScript types from Supabase
 - **Updates**: `src/lib/supabase-types.ts`
 - **When to use**: After database schema changes, before development
 - **Command**: `npx supabase gen types typescript --project-id <PROJECT_ID> > src/lib/supabase-types.ts`
 
 #### `npm run dump-schema`
+
 - **Purpose**: Updates the current database schema file
 - **Updates**: `data/schema/current-schema.sql`
 - **When to use**: After schema changes, for schema analysis
 - **Command**: `node scripts/dump-schema-local.mjs` (custom script using local PostgreSQL tools)
 
 #### `npm run dump-data`
+
 - **Purpose**: Creates a timestamped backup of all table data
 - **Updates**: `data/supabase-dump-YYYY-MM-DDTHH-MM-SS/`
 - **When to use**: For data backups, data analysis, migration planning
@@ -31,6 +34,7 @@ The Sirem CRM project includes automated scripts to synchronize local files with
 ### All-in-One Sync
 
 #### `npm run dump-all`
+
 - **Purpose**: Runs all three sync operations in sequence
 - **Updates**: Types, schema, and data backup
 - **When to use**: After major database changes, before important deployments
@@ -122,44 +126,49 @@ git diff data/schema/current-schema.sql
 ### Common Issues
 
 #### "unknown flag: --project-id"
+
 - **Cause**: Using wrong Supabase CLI version
 - **Solution**: Update Supabase CLI or use the correct flag syntax
 
 #### "Missing Supabase credentials"
+
 - **Cause**: Missing or incorrect environment variables
 - **Solution**: Check `.env.local` file for `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 
 #### "Permission denied" errors
+
 - **Cause**: Insufficient permissions on Supabase project
 - **Solution**: Ensure your account has the necessary permissions
 
 #### "FATAL: {:shutdown, :client_termination}" error
+
 - **Cause**: Connection to Supabase database is terminated during schema dump
-- **Error Example**: 
+- **Error Example**:
   ```
   pg_dump: error: connection to server at "aws-0-us-east-2.pooler.supabase.com" (3.139.14.59), port 5432 failed: FATAL: {:shutdown, :client_termination}
   error running container: exit 1
   ```
-- **Solutions**: 
+- **Solutions**:
   - Retry the command: `npm run dump-schema`
   - Try with debug flag: `npx supabase db dump --linked --file data/schema/current-schema.sql --debug`
   - Check Supabase service status
   - Use manual schema creation if needed (see below)
 
 #### "pg_dump: error: aborting because of server version mismatch" error
+
 - **Cause**: Supabase CLI uses Docker containers with outdated PostgreSQL versions
-- **Error Example**: 
+- **Error Example**:
   ```
   pg_dump: error: aborting because of server version mismatch
   pg_dump: detail: server version: 17.6; pg_dump version: 15.8
   error running container: exit 1
   ```
-- **Root Cause**: 
+- **Root Cause**:
   - The project recently upgraded its Supabase server to PostgreSQL 17.6
   - Supabase CLI recently changed to use Docker containers for database operations
   - The containerized `pg_dump` (version 15.8) is incompatible with PostgreSQL 17.6 servers
 - **Solution**: ✅ **RESOLVED** - The project now uses a custom script (`scripts/dump-schema-local.mjs`) that bypasses Docker and uses your local PostgreSQL installation
-- **How it works**: 
+- **How it works**:
   - Gets connection details from Supabase CLI's dry-run (which still works)
   - Uses your local `pg_dump` (version 17.6) instead of the containerized version
   - Applies the same filtering and transformations as the original Supabase CLI
@@ -199,6 +208,7 @@ The custom script (`scripts/dump-schema-local.mjs`) performs the following steps
 ### Technical Details
 
 The script:
+
 - Extracts connection details from `npx supabase db dump --linked --dry-run`
 - Uses `spawn()` to run `pg_dump` and `sed` processes
 - Applies the same schema exclusions and transformations
@@ -207,6 +217,7 @@ The script:
 ### Maintenance
 
 If you need to modify the schema dump behavior:
+
 - Edit `scripts/dump-schema-local.mjs`
 - The script includes all the same filtering logic as the original Supabase CLI
 - Test changes with `npm run dump-schema`
@@ -245,6 +256,7 @@ Include sync commands in your deployment pipeline:
 ### Custom Data Dumps
 
 Modify `scripts/supabase-dump.mjs` to:
+
 - Include/exclude specific tables
 - Change backup frequency
 - Add custom data transformations
@@ -252,6 +264,7 @@ Modify `scripts/supabase-dump.mjs` to:
 ### Schema Comparison
 
 Use the schema files to:
+
 - Compare different environments
 - Track schema evolution
 - Plan migrations
@@ -272,22 +285,22 @@ When the `npm run dump-schema` command fails due to connection issues, you can m
 
 ```sql
 -- Get current table definitions
-SELECT 
+SELECT
     schemaname,
     tablename,
     tableowner
-FROM pg_tables 
+FROM pg_tables
 WHERE schemaname = 'public'
 ORDER BY tablename;
 
 -- Get column information for each table
-SELECT 
+SELECT
     table_name,
     column_name,
     data_type,
     is_nullable,
     column_default
-FROM information_schema.columns 
+FROM information_schema.columns
 WHERE table_schema = 'public'
 ORDER BY table_name, ordinal_position;
 ```
@@ -299,6 +312,7 @@ ORDER BY table_name, ordinal_position;
 ### Alternative: Use Database Tools
 
 If you have access to database management tools:
+
 - **pgAdmin**: Connect directly and export schema
 - **DBeaver**: Use the schema export feature
 - **VS Code Extensions**: Use PostgreSQL extensions to connect and export

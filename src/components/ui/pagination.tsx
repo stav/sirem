@@ -56,11 +56,7 @@ export default function Pagination({
               className="cursor-pointer"
               title={`Currently sorts ${sortOrder === 'newest' ? 'newest to oldest' : 'oldest to newest'}, click to toggle.`}
             >
-              {sortOrder === 'newest' ? (
-                <ArrowUp className="h-4 w-4" />
-              ) : (
-                <ArrowDown className="h-4 w-4" />
-              )}
+              {sortOrder === 'newest' ? <ArrowUp className="h-4 w-4" /> : <ArrowDown className="h-4 w-4" />}
             </Button>
           )}
           <span className="text-muted-foreground text-sm">

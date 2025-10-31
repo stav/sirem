@@ -58,11 +58,15 @@ export const logger = {
   },
 
   contactCreated: (contactName: string, contactId?: string) => {
-    useLogger.getState().addMessage(`New contact created: ${contactName}`, 'success', 'contact_create', { contactName, contactId })
+    useLogger
+      .getState()
+      .addMessage(`New contact created: ${contactName}`, 'success', 'contact_create', { contactName, contactId })
   },
 
   contactDeleted: (contactName: string, contactId?: string) => {
-    useLogger.getState().addMessage(`Contact deleted: ${contactName}`, 'warning', 'contact_delete', { contactName, contactId })
+    useLogger
+      .getState()
+      .addMessage(`Contact deleted: ${contactName}`, 'warning', 'contact_delete', { contactName, contactId })
   },
 
   actionCreated: (actionTitle: string, contactId?: string) => {
@@ -92,11 +96,19 @@ export const logger = {
   },
 
   tagAdded: (contactName: string, tagName: string, contactId?: string) => {
-    useLogger.getState().addMessage(`Tag "${tagName}" added to ${contactName}`, 'success', 'tag_add', { contactName, tagName, contactId })
+    useLogger
+      .getState()
+      .addMessage(`Tag "${tagName}" added to ${contactName}`, 'success', 'tag_add', { contactName, tagName, contactId })
   },
 
   tagRemoved: (contactName: string, tagName: string, contactId?: string) => {
-    useLogger.getState().addMessage(`Tag "${tagName}" removed from ${contactName}`, 'info', 'tag_remove', { contactName, tagName, contactId })
+    useLogger
+      .getState()
+      .addMessage(`Tag "${tagName}" removed from ${contactName}`, 'info', 'tag_remove', {
+        contactName,
+        tagName,
+        contactId,
+      })
   },
 
   planDeleted: (planName: string, carrier?: string, year?: number, cmsId?: string, planId?: string) => {
@@ -104,75 +116,106 @@ export const logger = {
     if (carrier) details.carrier = carrier
     if (year) details.year = year
     if (cmsId) details.cmsId = cmsId
-    
+
     const message = `Plan deleted: ${planName}${carrier ? ` (${carrier})` : ''}${year ? ` ${year}` : ''}${cmsId ? ` [${cmsId}]` : ''}`
     useLogger.getState().addMessage(message, 'warning', 'plan_delete', details)
   },
 
-  plansDeleted: (plans: Array<{name: string, carrier?: string, year?: number, cmsId?: string, id?: string}>) => {
-    const planDetails = plans.map(p => ({
+  plansDeleted: (plans: Array<{ name: string; carrier?: string; year?: number; cmsId?: string; id?: string }>) => {
+    const planDetails = plans.map((p) => ({
       name: p.name,
       carrier: p.carrier,
       year: p.year,
       cmsId: p.cmsId,
-      id: p.id
+      id: p.id,
     }))
-    
-    const message = `Deleted ${plans.length} plans: ${plans.map(p => 
-      `${p.name}${p.carrier ? ` (${p.carrier})` : ''}${p.year ? ` ${p.year}` : ''}${p.cmsId ? ` [${p.cmsId}]` : ''}`
-    ).join(', ')}`
-    
-    useLogger.getState().addMessage(message, 'warning', 'plans_delete', { 
-      count: plans.length, 
-      plans: planDetails 
+
+    const message = `Deleted ${plans.length} plans: ${plans
+      .map(
+        (p) =>
+          `${p.name}${p.carrier ? ` (${p.carrier})` : ''}${p.year ? ` ${p.year}` : ''}${p.cmsId ? ` [${p.cmsId}]` : ''}`
+      )
+      .join(', ')}`
+
+    useLogger.getState().addMessage(message, 'warning', 'plans_delete', {
+      count: plans.length,
+      plans: planDetails,
     })
   },
 
-  planDeletionBlocked: (planName: string, enrollmentCount: number, activeEnrollments: number, contactNames: string[], planId?: string, contactDetails?: Array<{id: string, name: string}>) => {
+  planDeletionBlocked: (
+    planName: string,
+    enrollmentCount: number,
+    activeEnrollments: number,
+    contactNames: string[],
+    planId?: string,
+    contactDetails?: Array<{ id: string; name: string }>
+  ) => {
     const message = `Cannot delete plan "${planName}". It has ${enrollmentCount} enrollment(s) (${activeEnrollments} active). Contact(s): ${contactNames.join(', ')}. Please remove all enrollments first.`
-    useLogger.getState().addMessage(message, 'error', 'plan_delete_blocked', { 
-      planName, 
-      planId, 
-      enrollmentCount, 
-      activeEnrollments, 
+    useLogger.getState().addMessage(message, 'error', 'plan_delete_blocked', {
+      planName,
+      planId,
+      enrollmentCount,
+      activeEnrollments,
       contactNames,
-      contactDetails
+      contactDetails,
     })
   },
 
-  enrollmentCreated: (contactName: string, planName: string, carrier?: string, year?: number, contactId?: string, planId?: string) => {
+  enrollmentCreated: (
+    contactName: string,
+    planName: string,
+    carrier?: string,
+    year?: number,
+    contactId?: string,
+    planId?: string
+  ) => {
     const message = `Enrollment created: ${contactName} enrolled in ${planName}${carrier ? ` (${carrier})` : ''}${year ? ` ${year}` : ''}`
-    useLogger.getState().addMessage(message, 'success', 'enrollment_create', { 
-      contactName, 
-      planName, 
-      carrier, 
-      year, 
-      contactId, 
-      planId 
+    useLogger.getState().addMessage(message, 'success', 'enrollment_create', {
+      contactName,
+      planName,
+      carrier,
+      year,
+      contactId,
+      planId,
     })
   },
 
-  enrollmentUpdated: (contactName: string, planName: string, carrier?: string, year?: number, contactId?: string, planId?: string) => {
+  enrollmentUpdated: (
+    contactName: string,
+    planName: string,
+    carrier?: string,
+    year?: number,
+    contactId?: string,
+    planId?: string
+  ) => {
     const message = `Enrollment updated: ${contactName}'s enrollment in ${planName}${carrier ? ` (${carrier})` : ''}${year ? ` ${year}` : ''}`
-    useLogger.getState().addMessage(message, 'success', 'enrollment_update', { 
-      contactName, 
-      planName, 
-      carrier, 
-      year, 
-      contactId, 
-      planId 
+    useLogger.getState().addMessage(message, 'success', 'enrollment_update', {
+      contactName,
+      planName,
+      carrier,
+      year,
+      contactId,
+      planId,
     })
   },
 
-  enrollmentDeleted: (contactName: string, planName: string, carrier?: string, year?: number, contactId?: string, planId?: string) => {
+  enrollmentDeleted: (
+    contactName: string,
+    planName: string,
+    carrier?: string,
+    year?: number,
+    contactId?: string,
+    planId?: string
+  ) => {
     const message = `Enrollment deleted: ${contactName} removed from ${planName}${carrier ? ` (${carrier})` : ''}${year ? ` ${year}` : ''}`
-    useLogger.getState().addMessage(message, 'warning', 'enrollment_delete', { 
-      contactName, 
-      planName, 
-      carrier, 
-      year, 
-      contactId, 
-      planId 
+    useLogger.getState().addMessage(message, 'warning', 'enrollment_delete', {
+      contactName,
+      planName,
+      carrier,
+      year,
+      contactId,
+      planId,
     })
   },
 }

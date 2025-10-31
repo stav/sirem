@@ -18,12 +18,7 @@ interface ContactNotesModalProps {
   onContactUpdated?: () => void
 }
 
-export default function ContactNotesModal({
-  isOpen,
-  onClose,
-  contact,
-  onContactUpdated,
-}: ContactNotesModalProps) {
+export default function ContactNotesModal({ isOpen, onClose, contact, onContactUpdated }: ContactNotesModalProps) {
   const [notes, setNotes] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { updateContact } = useContacts()

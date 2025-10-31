@@ -8,9 +8,29 @@ import { populateFormFromPlan, buildPlanDataFromForm, getDefaultMetadataFormData
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
-import { TYPE_NETWORKS_LIST, TYPE_EXTENSIONS_LIST, TYPE_SNPS_LIST, TYPE_PROGRAMS_LIST, CARRIERS, type TypeNetwork, type TypeExtension, type TypeSnp, type TypeProgram, type Carrier } from '@/lib/plan-constants'
+import {
+  TYPE_NETWORKS_LIST,
+  TYPE_EXTENSIONS_LIST,
+  TYPE_SNPS_LIST,
+  TYPE_PROGRAMS_LIST,
+  CARRIERS,
+  type TypeNetwork,
+  type TypeExtension,
+  type TypeSnp,
+  type TypeProgram,
+  type Carrier,
+} from '@/lib/plan-constants'
 import { AgGridReact } from 'ag-grid-react'
-import { AllCommunityModule, ColDef, GridReadyEvent, ICellRendererParams, ModuleRegistry, Theme, themeQuartz, colorSchemeDark } from 'ag-grid-community'
+import {
+  AllCommunityModule,
+  ColDef,
+  GridReadyEvent,
+  ICellRendererParams,
+  ModuleRegistry,
+  Theme,
+  themeQuartz,
+  colorSchemeDark,
+} from 'ag-grid-community'
 import type { Database } from '@/lib/supabase'
 import { Pencil, Trash2, Scale, Copy, Plus, RefreshCw, Filter } from 'lucide-react'
 import ModalForm from '@/components/ui/modal-form'
@@ -19,18 +39,20 @@ import dynamic from 'next/dynamic'
 
 // Lazy load the DynamicPlanForm to improve initial render performance
 const DynamicPlanForm = dynamic(() => import('@/components/DynamicPlanForm'), {
-  loading: () => <div className="animate-pulse space-y-4">
-    <div className="h-4 bg-muted rounded w-1/4"></div>
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div key={i} className="space-y-2">
-          <div className="h-3 bg-muted rounded w-1/2"></div>
-          <div className="h-10 bg-muted rounded"></div>
-        </div>
-      ))}
+  loading: () => (
+    <div className="animate-pulse space-y-4">
+      <div className="bg-muted h-4 w-1/4 rounded"></div>
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="space-y-2">
+            <div className="bg-muted h-3 w-1/2 rounded"></div>
+            <div className="bg-muted h-10 rounded"></div>
+          </div>
+        ))}
+      </div>
     </div>
-  </div>,
-  ssr: false
+  ),
+  ssr: false,
 })
 import { useTheme } from '@/contexts/ThemeContext'
 import { useToast } from '@/hooks/use-toast'
@@ -52,24 +74,25 @@ export default function PlansPage() {
 
   // Create theme object for AG Grid v34+ Theming API (client-side only)
   const [agGridTheme, setAgGridTheme] = useState<Theme | undefined>(undefined)
-  
+
   const [isAdding, setIsAdding] = useState(false)
   const [selectedPlanIds, setSelectedPlanIds] = useState<string[]>([])
   const [showComparison, setShowComparison] = useState(false)
   const [activeFilters, setActiveFilters] = useState<Record<string, { filter?: unknown }>>({})
   const [showQuickFilters, setShowQuickFilters] = useState(true)
-  const [savedSelections, setSavedSelections] = useState<Array<{name: string, selection: string[], filters: Record<string, unknown>}>>([])
+  const [savedSelections, setSavedSelections] = useState<
+    Array<{ name: string; selection: string[]; filters: Record<string, unknown> }>
+  >([])
   const [showSaveDialog, setShowSaveDialog] = useState(false)
   const [saveSelectionName, setSaveSelectionName] = useState('')
   const [selectionPanelPosition, setSelectionPanelPosition] = useState({ x: 16, y: 16 })
   const [isDragging, setIsDragging] = useState(false)
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 })
   const [showSelectionPanel, setShowSelectionPanel] = useState(false)
-  
+
   useEffect(() => {
-    const isDark = theme === 'dark' || (theme === 'system' && 
-      window.matchMedia('(prefers-color-scheme: dark)').matches)
-    
+    const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+
     // Use modern AG Grid v34+ Theming API
     setAgGridTheme(isDark ? themeQuartz.withPart(colorSchemeDark) : themeQuartz)
   }, [theme])
@@ -146,7 +169,7 @@ export default function PlansPage() {
     // Core database fields with default values
     ...getDefaultCoreFields(),
     // Dynamic metadata fields
-    ...getDefaultMetadataFormData()
+    ...getDefaultMetadataFormData(),
   }))
 
   const gridRef = useRef<AgGridReact>(null)
@@ -157,7 +180,7 @@ export default function PlansPage() {
     // Core database fields with default values
     ...getDefaultCoreFields(),
     // Dynamic metadata fields
-    ...getDefaultMetadataFormData()
+    ...getDefaultMetadataFormData(),
   }))
 
   const sortedPlans = useMemo(() => {
@@ -217,7 +240,7 @@ export default function PlansPage() {
 
   const toggleCountyButton = (name: string) => {
     const key = name.toLowerCase()
-    setSelectedCountyButtons(prev => {
+    setSelectedCountyButtons((prev) => {
       const next = new Set(prev)
       if (next.has(key)) {
         next.delete(key)
@@ -230,30 +253,28 @@ export default function PlansPage() {
 
   const onSelectionChanged = () => {
     if (!gridRef.current || isRefreshingRef.current) return
-    
+
     const selectedNodes = gridRef.current.api.getSelectedNodes()
-    const selectedIds = selectedNodes.map(node => node.data?.id).filter(Boolean) as string[]
+    const selectedIds = selectedNodes.map((node) => node.data?.id).filter(Boolean) as string[]
     setSelectedPlanIds(selectedIds)
   }
 
   const onFilterChanged = () => {
     if (!gridRef.current) return
-    
+
     const filterModel = gridRef.current.api.getFilterModel()
     setActiveFilters(filterModel)
   }
 
   const applyQuickFilter = (field: string, value: string) => {
     if (!gridRef.current) return
-    
+
     const api = gridRef.current.api
-    
+
     // Check if this filter is already active
     const currentFilter = activeFilters[field]
-    const isActive = field === 'plan_year' 
-      ? currentFilter?.filter === parseInt(value)
-      : currentFilter?.filter === value
-    
+    const isActive = field === 'plan_year' ? currentFilter?.filter === parseInt(value) : currentFilter?.filter === value
+
     if (isActive) {
       // Remove this filter
       const newFilters = { ...activeFilters }
@@ -261,28 +282,29 @@ export default function PlansPage() {
       api.setFilterModel(newFilters)
     } else {
       // Set the filter value with appropriate filter type
-      const filterConfig = field === 'plan_year' 
-        ? {
-            type: 'equals',
-            filter: parseInt(value),
-            filterType: 'number'
-          }
-        : {
-            type: 'contains',
-            filter: value,
-            filterType: 'text'
-          }
-      
+      const filterConfig =
+        field === 'plan_year'
+          ? {
+              type: 'equals',
+              filter: parseInt(value),
+              filterType: 'number',
+            }
+          : {
+              type: 'contains',
+              filter: value,
+              filterType: 'text',
+            }
+
       api.setFilterModel({
         ...activeFilters,
-        [field]: filterConfig
+        [field]: filterConfig,
       })
     }
   }
 
   const clearAllFilters = () => {
     if (!gridRef.current) return
-    
+
     gridRef.current.api.setFilterModel({})
     setActiveFilters({})
   }
@@ -291,9 +313,9 @@ export default function PlansPage() {
   const saveCurrentSelection = () => {
     if (selectedPlanIds.length === 0 && Object.keys(activeFilters).length === 0) {
       toast({
-        title: "Nothing to save",
-        description: "Please select some plans or apply filters before saving.",
-        variant: "destructive"
+        title: 'Nothing to save',
+        description: 'Please select some plans or apply filters before saving.',
+        variant: 'destructive',
       })
       return
     }
@@ -301,21 +323,25 @@ export default function PlansPage() {
     const newSelection = {
       name: saveSelectionName.trim() || `Selection ${savedSelections.length + 1}`,
       selection: selectedPlanIds,
-      filters: activeFilters
+      filters: activeFilters,
     }
 
-    setSavedSelections(prev => [...prev, newSelection])
+    setSavedSelections((prev) => [...prev, newSelection])
     setSaveSelectionName('')
     setShowSaveDialog(false)
-    
+
     toast({
-      title: "Selection saved",
-      description: `Saved "${newSelection.name}" with ${selectedPlanIds.length} plans and ${Object.keys(activeFilters).length} filters.`
+      title: 'Selection saved',
+      description: `Saved "${newSelection.name}" with ${selectedPlanIds.length} plans and ${Object.keys(activeFilters).length} filters.`,
     })
   }
 
   // Restore a saved selection
-  const restoreSelection = (savedSelection: {name: string, selection: string[], filters: Record<string, unknown>}) => {
+  const restoreSelection = (savedSelection: {
+    name: string
+    selection: string[]
+    filters: Record<string, unknown>
+  }) => {
     if (!gridRef.current) return
 
     // Clear any existing restore timeout
@@ -332,9 +358,9 @@ export default function PlansPage() {
       if (gridRef.current) {
         // Clear current selection
         gridRef.current.api.deselectAll()
-        
+
         // Use getRowNode with the plan ID now that we have getRowId configured
-        savedSelection.selection.forEach(planId => {
+        savedSelection.selection.forEach((planId) => {
           const rowNode = gridRef.current?.api.getRowNode(planId)
           if (rowNode) {
             rowNode.setSelected(true)
@@ -345,17 +371,17 @@ export default function PlansPage() {
     }, 300) // Increased timeout to allow filters to apply
 
     toast({
-      title: "Selection restored",
-      description: `Restored "${savedSelection.name}" with ${savedSelection.selection.length} plans.`
+      title: 'Selection restored',
+      description: `Restored "${savedSelection.name}" with ${savedSelection.selection.length} plans.`,
     })
   }
 
   // Delete a saved selection
   const deleteSavedSelection = (index: number) => {
-    setSavedSelections(prev => prev.filter((_, i) => i !== index))
+    setSavedSelections((prev) => prev.filter((_, i) => i !== index))
     toast({
-      title: "Selection deleted",
-      description: "Saved selection has been removed."
+      title: 'Selection deleted',
+      description: 'Saved selection has been removed.',
     })
   }
 
@@ -365,25 +391,28 @@ export default function PlansPage() {
     setIsDragging(true)
     setDragStart({
       x: e.clientX - selectionPanelPosition.x,
-      y: e.clientY - selectionPanelPosition.y
+      y: e.clientY - selectionPanelPosition.y,
     })
   }
 
-  const handleMouseMove = React.useCallback((e: MouseEvent) => {
-    if (!isDragging) return
-    
-    const newX = e.clientX - dragStart.x
-    const newY = e.clientY - dragStart.y
-    
-    // Keep panel within viewport bounds
-    const maxX = window.innerWidth - 320 // Panel width is ~300px
-    const maxY = window.innerHeight - 200 // Panel height is ~200px
-    
-    setSelectionPanelPosition({
-      x: Math.max(0, Math.min(newX, maxX)),
-      y: Math.max(0, Math.min(newY, maxY))
-    })
-  }, [isDragging, dragStart])
+  const handleMouseMove = React.useCallback(
+    (e: MouseEvent) => {
+      if (!isDragging) return
+
+      const newX = e.clientX - dragStart.x
+      const newY = e.clientY - dragStart.y
+
+      // Keep panel within viewport bounds
+      const maxX = window.innerWidth - 320 // Panel width is ~300px
+      const maxY = window.innerHeight - 200 // Panel height is ~200px
+
+      setSelectionPanelPosition({
+        x: Math.max(0, Math.min(newX, maxX)),
+        y: Math.max(0, Math.min(newY, maxY)),
+      })
+    },
+    [isDragging, dragStart]
+  )
 
   const handleMouseUp = React.useCallback(() => {
     setIsDragging(false)
@@ -394,7 +423,7 @@ export default function PlansPage() {
     if (isDragging) {
       document.addEventListener('mousemove', handleMouseMove)
       document.addEventListener('mouseup', handleMouseUp)
-      
+
       return () => {
         document.removeEventListener('mousemove', handleMouseMove)
         document.removeEventListener('mouseup', handleMouseUp)
@@ -405,7 +434,7 @@ export default function PlansPage() {
   // Custom header component for Actions column
   const ActionsHeaderComponent = React.useCallback(() => {
     return (
-      <div className="flex items-center justify-between w-full">
+      <div className="flex w-full items-center justify-between">
         <span>Actions</span>
         <Button
           variant="ghost"
@@ -431,14 +460,14 @@ export default function PlansPage() {
     if (refreshTimeoutRef.current) {
       clearTimeout(refreshTimeoutRef.current)
     }
-    
+
     isRefreshingRef.current = true
     await fetchPlans()
-    
+
     // Wait for the grid to update with new data, then restore selection
     refreshTimeoutRef.current = setTimeout(() => {
       if (gridRef.current && selectedPlanIds.length > 0) {
-        selectedPlanIds.forEach(planId => {
+        selectedPlanIds.forEach((planId) => {
           const rowNode = gridRef.current?.api.getRowNode(planId)
           if (rowNode) {
             rowNode.setSelected(true)
@@ -483,15 +512,16 @@ export default function PlansPage() {
         valueGetter: (p) => {
           const plan = p.data
           if (!plan) return '—'
-          
+
           // Build the plan type string from normalized fields
           const parts = []
           if (plan.type_network) parts.push(plan.type_network)
           if (plan.type_extension) parts.push(plan.type_extension)
           if (plan.type_snp) parts.push(`${plan.type_snp}-SNP`)
           // Don't add type_program if it's already included in the SNP part
-          if (plan.type_program && plan.type_program !== 'MA' && plan.type_program !== 'SNP') parts.push(plan.type_program)
-          
+          if (plan.type_program && plan.type_program !== 'MA' && plan.type_program !== 'SNP')
+            parts.push(plan.type_program)
+
           return parts.length > 0 ? parts.join('-') : '—'
         },
         sortable: true,
@@ -519,7 +549,7 @@ export default function PlansPage() {
         sortable: true,
         filter: true,
         minWidth: 80,
-        valueFormatter: (p) => p.value ? `${p.value}-SNP` : '—',
+        valueFormatter: (p) => (p.value ? `${p.value}-SNP` : '—'),
       },
       {
         field: 'type_program',
@@ -558,7 +588,7 @@ export default function PlansPage() {
             const plan = p.data
             if (!plan) return
             setEditingId(plan.id)
-            
+
             // Dynamically populate form data from plan using the helper function
             const formData = populateFormFromPlan(plan)
             setEditForm(formData as typeof editForm)
@@ -572,21 +602,21 @@ export default function PlansPage() {
                 toast({
                   title: 'Failed to delete plan',
                   description: 'An unexpected error occurred while deleting the plan.',
-                  variant: 'destructive'
+                  variant: 'destructive',
                 })
               } else if (typeof result === 'object' && result.success === false) {
                 // Enrollment blocking case - the error is already logged to history
                 const { enrollments } = result
                 if (enrollments && enrollments.length > 0) {
                   const contactNames = enrollments
-                    .map(e => e.contacts ? `${e.contacts.first_name} ${e.contacts.last_name}` : 'Unknown')
+                    .map((e) => (e.contacts ? `${e.contacts.first_name} ${e.contacts.last_name}` : 'Unknown'))
                     .slice(0, 3)
                     .join(', ')
-                  
+
                   toast({
                     title: 'Cannot delete plan',
                     description: `This plan has ${enrollments.length} enrollment(s) with contact(s): ${contactNames}${enrollments.length > 3 ? '...' : ''}. Please remove all enrollments first.`,
-                    variant: 'destructive'
+                    variant: 'destructive',
                   })
                 }
               }
@@ -596,17 +626,17 @@ export default function PlansPage() {
           const handleCopy = () => {
             const plan = p.data
             if (!plan) return
-            
+
             // Dynamically populate form data from plan using the helper function
             const formData = populateFormFromPlan(plan)
-            
+
             // Increment the plan year for copying to next year
             if (formData.plan_year) {
               formData.plan_year = String(Number(formData.plan_year) + 1)
             } else {
               formData.plan_year = new Date().getUTCFullYear().toString()
             }
-            
+
             setForm(formData as typeof form)
             // Open the add plan form
             setIsAdding(true)
@@ -628,7 +658,7 @@ export default function PlansPage() {
         pinned: 'right',
       },
     ],
-        [deletePlan, toast, ActionsHeaderComponent]
+    [deletePlan, toast, ActionsHeaderComponent]
   )
 
   const defaultColDef = useMemo(
@@ -646,7 +676,7 @@ export default function PlansPage() {
 
   const handleCreate = async () => {
     if (!form.name) return
-    
+
     // Build complete plan data from form using the helper function
     const data = buildPlanDataFromForm(form)
 
@@ -657,7 +687,7 @@ export default function PlansPage() {
         // Core database fields with default values
         ...getDefaultCoreFields(),
         // Dynamic metadata fields
-        ...getDefaultMetadataFormData()
+        ...getDefaultMetadataFormData(),
       })
     }
   }
@@ -665,7 +695,7 @@ export default function PlansPage() {
   const handleUpdate = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!editingId) return
-    
+
     // Build complete plan data from form using the helper function
     const data = buildPlanDataFromForm(editForm)
     const ok = await updatePlan(editingId, data as PlanForm)
@@ -679,9 +709,8 @@ export default function PlansPage() {
     <div className="bg-background min-h-screen">
       <Navigation pageTitle="Plans" />
 
-      <div className="h-[calc(100vh-4rem)] flex flex-col">
-        <div className="flex-1 flex flex-col">
-
+      <div className="flex h-[calc(100vh-4rem)] flex-col">
+        <div className="flex flex-1 flex-col">
           {isAdding && (
             <div className="rounded border p-4">
               <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
@@ -820,96 +849,95 @@ export default function PlansPage() {
 
           {/* Quick Filter Buttons */}
           {showQuickFilters && (
-            <div className="border-b bg-muted/20 p-4">
+            <div className="bg-muted/20 border-b p-4">
               <div className="flex flex-wrap items-center gap-4">
-              
-              <div className="flex items-center gap-1">
-              {/* County text filter */}
-              <div className="flex items-center gap-2">
-                <Input
-                  id="county-filter"
-                  placeholder="County"
-                  className="h-8 w-[80px] text-xs"
-                  value={countyFilter}
-                  onChange={(e) => setCountyFilter(e.target.value)}
-                />
-              </div>
+                <div className="flex items-center gap-1">
+                  {/* County text filter */}
+                  <div className="flex items-center gap-2">
+                    <Input
+                      id="county-filter"
+                      placeholder="County"
+                      className="h-8 w-[80px] text-xs"
+                      value={countyFilter}
+                      onChange={(e) => setCountyFilter(e.target.value)}
+                    />
+                  </div>
 
-              {/* County quick buttons (OR logic with text box) */}
-              <div className="flex flex-wrap gap-1">
-                {["Butler", "Cuyahoga", "Lake", "Lorain"].map((c) => {
-                  const key = c.toLowerCase()
-                  const isActive = selectedCountyButtons.has(key)
-                  return (
+                  {/* County quick buttons (OR logic with text box) */}
+                  <div className="flex flex-wrap gap-1">
+                    {['Butler', 'Cuyahoga', 'Lake', 'Lorain'].map((c) => {
+                      const key = c.toLowerCase()
+                      const isActive = selectedCountyButtons.has(key)
+                      return (
+                        <Button
+                          key={c}
+                          variant={isActive ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => toggleCountyButton(c)}
+                          className="cursor-pointer text-xs"
+                        >
+                          {c}
+                        </Button>
+                      )
+                    })}
+                  </div>
+                </div>
+                {/* Carrier Filters */}
+                <div className="flex flex-wrap gap-1">
+                  {carrierOptions.map((carrier) => (
                     <Button
-                      key={c}
-                      variant={isActive ? "default" : "outline"}
+                      key={carrier}
+                      variant={activeFilters.carrier?.filter === carrier ? 'default' : 'outline'}
                       size="sm"
-                      onClick={() => toggleCountyButton(c)}
-                      className="text-xs cursor-pointer"
+                      onClick={() => applyQuickFilter('carrier', carrier)}
+                      className="cursor-pointer text-xs"
                     >
-                      {c}
+                      {carrier}
                     </Button>
-                  )
-                })}
-              </div>
-              </div>
-              {/* Carrier Filters */}
-              <div className="flex flex-wrap gap-1">
-                {carrierOptions.map((carrier) => (
-                  <Button
-                    key={carrier}
-                    variant={activeFilters.carrier?.filter === carrier ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => applyQuickFilter('carrier', carrier)}
-                    className="text-xs cursor-pointer"
-                  >
-                    {carrier}
-                  </Button>
-                ))}
-              </div>
+                  ))}
+                </div>
 
-              {/* Year Filters */}
-              <div className="flex flex-wrap gap-1">
-                {[2025, 2026].map((year) => (
-                  <Button
-                    key={year}
-                    variant={activeFilters.plan_year?.filter === year ? "default" : "outline"}
-                    size="sm"
-                    onClick={() => applyQuickFilter('plan_year', year.toString())}
-                    className="text-xs cursor-pointer"
-                  >
-                    {year}
-                  </Button>
-                ))}
-              </div>
+                {/* Year Filters */}
+                <div className="flex flex-wrap gap-1">
+                  {[2025, 2026].map((year) => (
+                    <Button
+                      key={year}
+                      variant={activeFilters.plan_year?.filter === year ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => applyQuickFilter('plan_year', year.toString())}
+                      className="cursor-pointer text-xs"
+                    >
+                      {year}
+                    </Button>
+                  ))}
+                </div>
 
-              {/* Clear All Filters */}
-              {(Object.keys(activeFilters).length > 0 || countyFilter || selectedCountyButtons.size > 0) && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    clearAllFilters()
-                    setCountyFilter('')
-                    setSelectedCountyButtons(new Set())
-                  }}
-                  className="text-xs text-muted-foreground hover:text-foreground cursor-pointer"
-                  title="Clear all filters"
-                >
-                  ✕
-                </Button>
-              )}
+                {/* Clear All Filters */}
+                {(Object.keys(activeFilters).length > 0 || countyFilter || selectedCountyButtons.size > 0) && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      clearAllFilters()
+                      setCountyFilter('')
+                      setSelectedCountyButtons(new Set())
+                    }}
+                    className="text-muted-foreground hover:text-foreground cursor-pointer text-xs"
+                    title="Clear all filters"
+                  >
+                    ✕
+                  </Button>
+                )}
+              </div>
             </div>
-          </div>
           )}
 
           {/* Plans list (AG Grid) */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex flex-1 flex-col">
             {!loading && sortedPlans.length === 0 && (
               <div className="text-muted-foreground p-3 text-sm">No plans found</div>
             )}
-            <div className="flex-1 w-full">
+            <div className="w-full flex-1">
               <AgGridReact
                 ref={gridRef}
                 theme={agGridTheme}
@@ -928,32 +956,32 @@ export default function PlansPage() {
                 onSelectionChanged={onSelectionChanged}
               />
             </div>
-            
+
             {/* Custom Footer */}
-            <div className="flex items-center px-4 py-2 border-t bg-muted/30 text-sm">
-              <div className="flex-1 flex items-center">
+            <div className="bg-muted/30 flex items-center border-t px-4 py-2 text-sm">
+              <div className="flex flex-1 items-center">
                 {loading && <div className="text-muted-foreground text-sm">Loading plans…</div>}
               </div>
               <div className="flex items-center gap-2">
                 {/* Save Selection Button */}
                 {(selectedPlanIds.length > 0 || Object.keys(activeFilters).length > 0) && (
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
+                  <Button
+                    size="sm"
+                    variant="outline"
                     onClick={() => setShowSaveDialog(true)}
                     title="Save current selection and filters"
                   >
                     💾 Save Selection
                   </Button>
                 )}
-                
+
                 {/* Saved Selections Toggle */}
                 {savedSelections.length > 0 && (
-                  <Button 
-                    size="sm" 
-                    variant="outline" 
+                  <Button
+                    size="sm"
+                    variant="outline"
                     onClick={() => setShowSelectionPanel(!showSelectionPanel)}
-                    title={showSelectionPanel ? "Hide saved selections" : "Show saved selections"}
+                    title={showSelectionPanel ? 'Hide saved selections' : 'Show saved selections'}
                   >
                     📁 Saved ({savedSelections.length})
                   </Button>
@@ -961,7 +989,7 @@ export default function PlansPage() {
 
                 {selectedPlanIds.length >= 2 && (
                   <Button size="sm" variant="outline" onClick={() => setShowComparison(true)}>
-                    <Scale className="h-4 w-4 mr-2" />
+                    <Scale className="mr-2 h-4 w-4" />
                     Compare ({selectedPlanIds.length})
                   </Button>
                 )}
@@ -979,30 +1007,31 @@ export default function PlansPage() {
                         toast({
                           title: 'Failed to delete plans',
                           description: 'An unexpected error occurred while deleting the plans.',
-                          variant: 'destructive'
+                          variant: 'destructive',
                         })
                       } else if (typeof result === 'object' && result.success === false) {
                         // Enrollment blocking case - the error is already logged to history
                         toast({
                           title: 'Cannot delete plans',
-                          description: 'Some plans cannot be deleted because they have existing enrollments. Please remove all enrollments first.',
-                          variant: 'destructive'
+                          description:
+                            'Some plans cannot be deleted because they have existing enrollments. Please remove all enrollments first.',
+                          variant: 'destructive',
                         })
                       }
                     }}
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <Trash2 className="mr-2 h-4 w-4" />
                     Delete ({selectedPlanIds.length})
                   </Button>
                 )}
                 {!isAdding && (
                   <>
                     <Button size="sm" onClick={() => setIsAdding(true)}>
-                      <Plus className="h-4 w-4 mr-2" />
+                      <Plus className="mr-2 h-4 w-4" />
                       Add Plan
                     </Button>
                     <Button size="sm" variant="outline" onClick={fetchPlans}>
-                      <RefreshCw className="h-4 w-4 mr-2" />
+                      <RefreshCw className="mr-2 h-4 w-4" />
                       Refresh
                     </Button>
                   </>
@@ -1028,11 +1057,9 @@ export default function PlansPage() {
             <div className="space-y-6">
               {/* Plan ID Display */}
               {editingId && (
-                <div className="bg-muted/50 rounded-lg p-4 border">
+                <div className="bg-muted/50 rounded-lg border p-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-muted-foreground">
-                      {editingId}
-                    </span>
+                    <span className="text-muted-foreground text-sm font-medium">{editingId}</span>
                   </div>
                 </div>
               )}
@@ -1166,7 +1193,9 @@ export default function PlansPage() {
 
               {/* Dynamic Metadata Form */}
               <div>
-                <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-4">Plan Benefits & Details (Metadata)</h3>
+                <h3 className="mb-4 text-sm font-medium text-gray-900 dark:text-gray-100">
+                  Plan Benefits & Details (Metadata)
+                </h3>
                 <DynamicPlanForm
                   formData={editForm}
                   onChange={(field, value) => setEditForm((f) => ({ ...f, [field]: value }))}
@@ -1181,19 +1210,19 @@ export default function PlansPage() {
         </div>
 
         {/* Plan Comparison Modal */}
-        <PlanComparisonModal 
+        <PlanComparisonModal
           key={`comparison-${selectedPlanIds.join('-')}`}
-          isOpen={showComparison} 
-          onClose={() => setShowComparison(false)} 
-          plans={selectedPlans} 
-          onRefresh={refreshPlansWithSelection} 
+          isOpen={showComparison}
+          onClose={() => setShowComparison(false)}
+          plans={selectedPlans}
+          onRefresh={refreshPlansWithSelection}
         />
 
         {/* Save Selection Dialog */}
         {showSaveDialog && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="bg-background border border-border rounded-lg shadow-xl w-96 max-w-[90vw] p-6">
-              <h3 className="text-lg font-semibold mb-4">Save Selection</h3>
+            <div className="bg-background border-border w-96 max-w-[90vw] rounded-lg border p-6 shadow-xl">
+              <h3 className="mb-4 text-lg font-semibold">Save Selection</h3>
               <div className="space-y-4">
                 <div>
                   <Label htmlFor="selection-name">Selection Name</Label>
@@ -1205,16 +1234,16 @@ export default function PlansPage() {
                     className="mt-1"
                   />
                 </div>
-                <div className="text-sm text-muted-foreground">
+                <div className="text-muted-foreground text-sm">
                   <p>This will save:</p>
-                  <ul className="list-disc list-inside mt-1 space-y-1">
+                  <ul className="mt-1 list-inside list-disc space-y-1">
                     <li>{selectedPlanIds.length} selected plans</li>
                     <li>{Object.keys(activeFilters).length} active filters</li>
                   </ul>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => {
                       setShowSaveDialog(false)
                       setSaveSelectionName('')
@@ -1222,9 +1251,7 @@ export default function PlansPage() {
                   >
                     Cancel
                   </Button>
-                  <Button onClick={saveCurrentSelection}>
-                    Save Selection
-                  </Button>
+                  <Button onClick={saveCurrentSelection}>Save Selection</Button>
                 </div>
               </div>
             </div>
@@ -1233,20 +1260,20 @@ export default function PlansPage() {
 
         {/* Saved Selections Management */}
         {savedSelections.length > 0 && showSelectionPanel && (
-          <div 
+          <div
             className="fixed z-40"
             style={{
               left: `${selectionPanelPosition.x}px`,
               top: `${selectionPanelPosition.y}px`,
-              cursor: isDragging ? 'grabbing' : 'grab'
+              cursor: isDragging ? 'grabbing' : 'grab',
             }}
           >
-            <div className="bg-background border border-border rounded-lg shadow-lg p-4 max-w-sm">
-              <div 
-                className="flex items-center justify-between mb-2 cursor-grab active:cursor-grabbing select-none"
+            <div className="bg-background border-border max-w-sm rounded-lg border p-4 shadow-lg">
+              <div
+                className="mb-2 flex cursor-grab items-center justify-between select-none active:cursor-grabbing"
                 onMouseDown={handleMouseDown}
               >
-                <h4 className="font-semibold text-sm">Saved Selections</h4>
+                <h4 className="text-sm font-semibold">Saved Selections</h4>
                 <div className="flex items-center gap-2">
                   <div className="text-muted-foreground text-xs">⋮⋮</div>
                   <Button
@@ -1260,16 +1287,16 @@ export default function PlansPage() {
                   </Button>
                 </div>
               </div>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
+              <div className="max-h-48 space-y-2 overflow-y-auto">
                 {savedSelections.map((selection, index) => (
                   <div key={index} className="flex items-center justify-between text-sm">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium truncate">{selection.name}</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="truncate font-medium">{selection.name}</div>
                       <div className="text-muted-foreground text-xs">
                         {selection.selection.length} plans, {Object.keys(selection.filters).length} filters
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 ml-2">
+                    <div className="ml-2 flex items-center gap-1">
                       <Button
                         size="sm"
                         variant="ghost"
@@ -1283,7 +1310,7 @@ export default function PlansPage() {
                         size="sm"
                         variant="ghost"
                         onClick={() => deleteSavedSelection(index)}
-                        className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                        className="text-destructive hover:text-destructive h-6 w-6 p-0"
                         title="Delete this selection"
                       >
                         🗑️

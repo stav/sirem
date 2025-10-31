@@ -15,7 +15,7 @@ function renderMessageWithLinks(message: LogMessage, onLinkClick: () => void) {
   const { message: text, details } = message
   const contactId = details?.contactId as string | undefined
   const contactName = details?.contactName as string | undefined
-  const contactDetails = details?.contactDetails as Array<{id: string, name: string}> | undefined
+  const contactDetails = details?.contactDetails as Array<{ id: string; name: string }> | undefined
 
   // Handle multiple contacts (for plan deletion messages)
   if (contactDetails && contactDetails.length > 0) {
@@ -31,13 +31,13 @@ function renderMessageWithLinks(message: LogMessage, onLinkClick: () => void) {
         if (nameIndex > lastIndex) {
           elements.push(result.slice(lastIndex, nameIndex))
         }
-        
+
         // Add the clickable contact name
         elements.push(
           <Link
             key={`contact-${contact.id}-${index}`}
             href={`/manage?contact=${contact.id}`}
-            className="text-primary hover:underline font-semibold"
+            className="text-primary font-semibold hover:underline"
             onClick={(e) => {
               e.stopPropagation()
               onLinkClick()
@@ -46,7 +46,7 @@ function renderMessageWithLinks(message: LogMessage, onLinkClick: () => void) {
             {contact.name}
           </Link>
         )
-        
+
         lastIndex = nameIndex + contact.name.length
       }
     })
@@ -73,7 +73,7 @@ function renderMessageWithLinks(message: LogMessage, onLinkClick: () => void) {
             {index < parts.length - 1 && (
               <Link
                 href={`/manage?contact=${contactId}`}
-                className="text-primary hover:underline font-semibold"
+                className="text-primary font-semibold hover:underline"
                 onClick={(e) => {
                   e.stopPropagation()
                   onLinkClick()
@@ -109,7 +109,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         title: latestMessage.message,
         description: latestMessage.action ? `Action: ${latestMessage.action}` : undefined,
         variant: latestMessage.type === 'error' ? 'destructive' : 'default',
-        contactDetails: latestMessage.details?.contactDetails as Array<{id: string, name: string}> | undefined,
+        contactDetails: latestMessage.details?.contactDetails as Array<{ id: string; name: string }> | undefined,
       })
     }
   }, [messages, toast, lastMessageId])

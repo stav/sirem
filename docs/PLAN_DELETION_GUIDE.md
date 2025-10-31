@@ -36,16 +36,18 @@ When a plan cannot be deleted due to existing enrollments, the system will:
 ### Example Error Messages
 
 **Single Plan Deletion:**
+
 ```
-Cannot delete plan "Humana HMO 2025". It has 2 enrollment(s) (1 active). 
-Contact(s): John Smith, Jane Doe. 
+Cannot delete plan "Humana HMO 2025". It has 2 enrollment(s) (1 active).
+Contact(s): John Smith, Jane Doe.
 Please remove all enrollments first or contact support.
 ```
 
 **Bulk Plan Deletion:**
+
 ```
-Cannot delete 2 plan(s): Humana HMO 2025, United PPO 2025. 
-These plans have 3 enrollment(s) (2 active). 
+Cannot delete 2 plan(s): Humana HMO 2025, United PPO 2025.
+These plans have 3 enrollment(s) (2 active).
 Please remove all enrollments first or contact support.
 ```
 
@@ -82,7 +84,7 @@ The system uses the following query to check for enrollments:
 
 ```sql
 SELECT id, enrollment_status, contacts:contact_id(first_name, last_name)
-FROM enrollments 
+FROM enrollments
 WHERE plan_id = $1
 ```
 

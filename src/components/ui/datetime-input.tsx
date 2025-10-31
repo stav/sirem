@@ -70,7 +70,7 @@ export default function DateTimeInput({
           onChange={handleInputChange}
           required={required}
           placeholder={placeholder}
-          className="pr-24 datetime-input [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100 [&::-webkit-datetime-edit]:text-foreground [&::-webkit-datetime-edit-fields-wrapper]:text-foreground [&::-webkit-datetime-edit-text]:text-foreground [&::-webkit-datetime-edit-month-field]:text-foreground [&::-webkit-datetime-edit-day-field]:text-foreground [&::-webkit-datetime-edit-year-field]:text-foreground [&::-webkit-datetime-edit-hour-field]:text-foreground [&::-webkit-datetime-edit-minute-field]:text-foreground [&::-webkit-datetime-edit-second-field]:text-foreground [&::-webkit-datetime-edit-millisecond-field]:text-foreground [&::-webkit-datetime-edit-ampm-field]:text-foreground"
+          className="datetime-input [&::-webkit-datetime-edit]:text-foreground [&::-webkit-datetime-edit-fields-wrapper]:text-foreground [&::-webkit-datetime-edit-text]:text-foreground [&::-webkit-datetime-edit-month-field]:text-foreground [&::-webkit-datetime-edit-day-field]:text-foreground [&::-webkit-datetime-edit-year-field]:text-foreground [&::-webkit-datetime-edit-hour-field]:text-foreground [&::-webkit-datetime-edit-minute-field]:text-foreground [&::-webkit-datetime-edit-second-field]:text-foreground [&::-webkit-datetime-edit-millisecond-field]:text-foreground [&::-webkit-datetime-edit-ampm-field]:text-foreground pr-24 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-100"
         />
         <div className="absolute top-1/2 right-1 flex -translate-y-1/2 items-center space-x-1">
           {value && (

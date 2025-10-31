@@ -4,7 +4,7 @@ interface ToastProps {
   title: string
   description?: string
   variant?: 'default' | 'destructive'
-  contactDetails?: Array<{id: string, name: string}>
+  contactDetails?: Array<{ id: string; name: string }>
 }
 
 interface ToastWithId extends ToastProps {
@@ -19,7 +19,7 @@ export const useToast = () => {
   useEffect(() => {
     const timeouts = timeoutsRef.current
     return () => {
-      timeouts.forEach(timeout => clearTimeout(timeout))
+      timeouts.forEach((timeout) => clearTimeout(timeout))
       timeouts.clear()
     }
   }, [])
@@ -33,7 +33,7 @@ export const useToast = () => {
       setToasts((prev) => prev.filter((t) => t.id !== newToast.id))
       timeoutsRef.current.delete(newToast.id)
     }, 4000)
-    
+
     timeoutsRef.current.set(newToast.id, timeoutId)
   }
 
@@ -44,7 +44,7 @@ export const useToast = () => {
       clearTimeout(timeout)
       timeoutsRef.current.delete(id)
     }
-    
+
     // Remove the toast immediately
     setToasts((prev) => prev.filter((t) => t.id !== id))
   }

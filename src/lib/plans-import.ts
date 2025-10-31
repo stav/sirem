@@ -14,15 +14,15 @@ const CSV_TO_METADATA_MAPPING = {
   // Monthly financials
   premium: 'premium_monthly',
   giveback: 'giveback_monthly',
-  
+
   // Quarterly benefits
   otc: 'otc_benefit_quarterly',
-  
+
   // Yearly benefits
   dental: 'dental_benefit_yearly',
   vision: 'vision_benefit_yearly',
   hearing: 'hearing_benefit_yearly',
-  
+
   // Medical copays
   pcp: 'primary_care_copay',
   spc: 'specialist_copay',
@@ -31,14 +31,14 @@ const CSV_TO_METADATA_MAPPING = {
   urgent: 'urgent_care_copay',
   hospPerDay: 'hospital_inpatient_per_day_copay',
   hospDays: 'hospital_inpatient_days',
-  
+
   // Annual limits
   moop: 'moop_annual',
-  
+
   // Additional information
   rxCostShare: 'pharmacy_benefit',
   description: 'notes',
-  
+
   // Extended benefits
   card: 'card_benefit',
   fitness: 'fitness_benefit',
@@ -199,14 +199,14 @@ export async function importPlansCsv(text: string): Promise<{
 
       // Build metadata object with all plan fields
       const metadata: Record<string, unknown> = {}
-      
+
       // Dynamically map CSV columns to metadata fields using configuration
       Object.entries(CSV_TO_METADATA_MAPPING).forEach(([csvColumn, metadataField]) => {
         const columnIndex = col[csvColumn as keyof typeof col]
-        
+
         if (columnIndex >= 0) {
           const value = r[columnIndex]
-          
+
           // Handle special cases
           if (csvColumn === 'hospDays' && days !== null) {
             metadata[metadataField] = days
@@ -227,9 +227,9 @@ export async function importPlansCsv(text: string): Promise<{
         }
       })
 
-          // Parse the legacy plan type into normalized structure
-          const planTypeStructure = parseLegacyPlanType(r[col.type])
-          
+      // Parse the legacy plan type into normalized structure
+      const planTypeStructure = parseLegacyPlanType(r[col.type])
+
       const record: PlanInsert = {
         name: r[col.name] || 'Unnamed Plan',
         type_network: planTypeStructure?.type_network || null,
@@ -237,15 +237,15 @@ export async function importPlansCsv(text: string): Promise<{
         type_snp: planTypeStructure?.type_snp || null,
         type_program: planTypeStructure?.type_program || null,
         carrier: mapCarrier(r[col.carrier]),
-            plan_year: planYear,
-            cms_contract_number: contract,
-            cms_plan_number: plan,
-            cms_geo_segment: '', // Default to empty string for CSV imports
-            counties: counties,
-            metadata: Object.keys(metadata).length > 0 ? metadata as Json : null,
-          }
+        plan_year: planYear,
+        cms_contract_number: contract,
+        cms_plan_number: plan,
+        cms_geo_segment: '', // Default to empty string for CSV imports
+        counties: counties,
+        metadata: Object.keys(metadata).length > 0 ? (metadata as Json) : null,
+      }
 
-          const key = `${record.cms_contract_number ?? ''}|${record.cms_plan_number ?? ''}|${record.cms_geo_segment ?? ''}|${record.plan_year ?? ''}`
+      const key = `${record.cms_contract_number ?? ''}|${record.cms_plan_number ?? ''}|${record.cms_geo_segment ?? ''}|${record.plan_year ?? ''}`
       dedup.set(key, record)
       imported++
     } catch {
@@ -258,21 +258,16 @@ export async function importPlansCsv(text: string): Promise<{
   if (batch.length > 0) {
     // Try inserting one record first to debug the issue
     console.log('Sample record:', JSON.stringify(batch[0], null, 2))
-    
+
     // Clear all existing plans for the year 2026 to avoid conflicts
-    const { error: deleteError } = await supabase
-      .from('plans')
-      .delete()
-      .eq('plan_year', 2026)
-    
+    const { error: deleteError } = await supabase.from('plans').delete().eq('plan_year', 2026)
+
     if (deleteError) {
       console.log('Delete warning (non-fatal):', deleteError)
     }
-    
+
     // Now insert the new plans
-    const { error } = await supabase
-      .from('plans')
-      .insert(batch)
+    const { error } = await supabase.from('plans').insert(batch)
     if (error) {
       console.error('Upsert error:', error)
       errors = batch.length

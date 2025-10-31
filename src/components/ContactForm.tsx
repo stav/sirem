@@ -611,9 +611,7 @@ export default function ContactForm({
           </div>
 
           {/* Plans Management Section */}
-          {editingContact && (
-            <ContactPlansManager contact={editingContact} onRefresh={onRefreshContact} />
-          )}
+          {editingContact && <ContactPlansManager contact={editingContact} onRefresh={onRefreshContact} />}
         </div>
       </ModalForm>
 

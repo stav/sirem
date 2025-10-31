@@ -46,7 +46,8 @@ async function findExistingPlan(planData) {
     .eq('carrier', 'MedMutual')
     .single()
 
-  if (error && error.code !== 'PGRST116') { // PGRST116 = no rows returned
+  if (error && error.code !== 'PGRST116') {
+    // PGRST116 = no rows returned
     console.error('Database query error:', error)
     return null
   }
@@ -59,7 +60,7 @@ async function findExistingPlan(planData) {
  */
 async function updatePlan(planId, planData) {
   console.log(`  🔄 Updating existing plan: ${planData.name} (${planData.cms_id})`)
-  
+
   const { error } = await supabase
     .from('plans')
     .update({
@@ -71,7 +72,7 @@ async function updatePlan(planId, planData) {
       cms_plan_number: planData.cms_plan_number,
       cms_geo_segment: planData.cms_geo_segment,
       counties: planData.counties,
-      metadata: planData.metadata
+      metadata: planData.metadata,
     })
     .eq('id', planId)
     .select()
@@ -90,7 +91,7 @@ async function updatePlan(planId, planData) {
  */
 async function createPlan(planData) {
   console.log(`  ➕ Creating new plan: ${planData.name} (${planData.cms_id})`)
-  
+
   const { error } = await supabase
     .from('plans')
     .insert({
@@ -102,7 +103,7 @@ async function createPlan(planData) {
       cms_plan_number: planData.cms_plan_number,
       cms_geo_segment: planData.cms_geo_segment,
       counties: planData.counties,
-      metadata: planData.metadata
+      metadata: planData.metadata,
     })
     .select()
 
@@ -120,10 +121,10 @@ async function createPlan(planData) {
  */
 async function processPlan(planData) {
   console.log(`\n🔍 Processing: ${planData.name} (${planData.cms_id})`)
-  
+
   // Find existing plan
   const existingPlan = await findExistingPlan(planData)
-  
+
   if (existingPlan) {
     // Update existing plan
     return await updatePlan(existingPlan.id, planData)
@@ -143,7 +144,7 @@ async function main() {
   console.log(`📄 Reading extracted plans from: ${JSON_FILE}`)
   const jsonContent = await fs.readFile(JSON_FILE, 'utf-8')
   const extractedPlans = JSON.parse(jsonContent)
-  
+
   console.log(`📊 Found ${extractedPlans.length} extracted plans\n`)
 
   let successCount = 0
@@ -169,7 +170,7 @@ async function main() {
   console.log(`  ✅ Successfully processed: ${successCount} plans`)
   console.log(`  ❌ Errors: ${errorCount} plans`)
   console.log(`  📄 Total plans: ${extractedPlans.length}`)
-  
+
   if (errorCount === 0) {
     console.log(`\n🎉 All plans processed successfully!`)
   } else {

@@ -274,7 +274,9 @@ export default function Home() {
     const totalActions = actions.length
     const completedActions = actions.filter((a) => a.completed_date).length
     const pendingActions = totalActions - completedActions
-    const overdueActions = actions.filter((a) => !a.completed_date && a.start_date && new Date(a.start_date) < new Date()).length
+    const overdueActions = actions.filter(
+      (a) => !a.completed_date && a.start_date && new Date(a.start_date) < new Date()
+    ).length
 
     // Get upcoming actions
     const upcomingActions = actions

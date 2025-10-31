@@ -26,6 +26,7 @@ CREATE TABLE public.contact_roles (
 ```
 
 **Key Features:**
+
 - **Flexible Role Data**: Uses JSONB to store role-specific data, allowing different fields for different role types
 - **Primary Role Support**: Each contact can have one primary role marked with `is_primary`
 - **Active Status**: Roles can be deactivated without deletion using `is_active`
@@ -66,6 +67,7 @@ export type RoleType =
 ### Role Configuration System
 
 Each role type has a configuration that defines:
+
 - Display label and icon
 - Color scheme for UI
 - Field definitions with types and validation
@@ -122,31 +124,37 @@ export interface ReferralPartnerData {
 The system supports six predefined role types, each with specific fields:
 
 #### 1. Medicare Client
+
 - **Icon**: Shield
 - **Color**: Blue
 - **Fields**: Gender, Medicare Beneficiary ID, Part A/B effective dates, height, weight, Medicaid status, subsidy level, marital status, tobacco usage
 
 #### 2. Referral Partner
+
 - **Icon**: User
 - **Color**: Green
 - **Fields**: Company, referral type, commission rate, notes
 
 #### 3. Presentation Partner
+
 - **Icon**: Presentation
 - **Color**: Indigo
 - **Fields**: Organization name, presentation type, contact person, topics, audience size, notes
 
 #### 4. Tire Shop
+
 - **Icon**: Wrench
 - **Color**: Orange
 - **Fields**: Shop name, location, services, contact person
 
 #### 5. Dentist
+
 - **Icon**: Stethoscope
 - **Color**: Purple
 - **Fields**: Practice name, specialty, Medicaid acceptance, notes
 
 #### 6. Other
+
 - **Icon**: User
 - **Color**: Gray
 - **Fields**: Role description, notes
@@ -171,6 +179,7 @@ interface ContactRoleManagerProps {
 ```
 
 **Features:**
+
 - Displays existing roles with edit/delete actions
 - Handles both existing and pending (new) roles
 - Supports primary role designation
@@ -193,6 +202,7 @@ interface RoleFormProps {
 ```
 
 **Features:**
+
 - Dynamic field rendering based on role configuration
 - Support for all field types (text, select, textarea, date, etc.)
 - Primary role toggle
@@ -210,6 +220,7 @@ interface ContactRolesDisplayProps {
 ```
 
 **Features:**
+
 - Specialized display for Medicare client data
 - Generic display for other role types
 - Primary role highlighting

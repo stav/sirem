@@ -148,7 +148,9 @@ export default function ContactCard({
                       <TooltipTrigger asChild>
                         <Badge variant="outline" className={`text-xs ${config.color.split(' ')[1]}`}>
                           <IconComponent className="mr-1 h-3 w-3" />
-                          <span className="hidden xl:inline">{orgName ? formatOrgNameForDisplay(orgName, 30) : config.label}</span>
+                          <span className="hidden xl:inline">
+                            {orgName ? formatOrgNameForDisplay(orgName, 30) : config.label}
+                          </span>
                         </Badge>
                       </TooltipTrigger>
                       <TooltipContent>
@@ -227,7 +229,7 @@ export default function ContactCard({
                     e.stopPropagation()
                     onFilterActions(contact)
                   }}
-                  className="hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/50 dark:hover:text-blue-400 h-8 w-8 cursor-pointer p-0"
+                  className="h-8 w-8 cursor-pointer p-0 hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-950/50 dark:hover:text-blue-400"
                   aria-label="Filter actions for this contact"
                 >
                   <List className="h-4 w-4" />

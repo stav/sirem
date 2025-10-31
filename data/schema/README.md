@@ -103,7 +103,7 @@ The project includes several npm scripts to keep local files synchronized with S
 ```bash
 # Individual operations
 npm run dump-types    # Update TypeScript types from Supabase
-npm run dump-schema   # Update current-schema.sql from Supabase  
+npm run dump-schema   # Update current-schema.sql from Supabase
 npm run dump-data     # Create timestamped data backup
 
 # All-in-one sync

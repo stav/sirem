@@ -85,15 +85,15 @@ export default function FilterHelper({ isOpen, onAddFilter }: FilterHelperProps)
 
   return (
     <div className="bg-muted/50 mt-2 rounded-md border p-3">
-      <div className="mb-3 text-sm font-medium text-muted-foreground">Quick Filters:</div>
+      <div className="text-muted-foreground mb-3 text-sm font-medium">Quick Filters:</div>
 
       {/* Status Filters */}
       <div className="mb-3">
-        <div className="mb-2 text-xs font-medium text-muted-foreground">Status:</div>
+        <div className="text-muted-foreground mb-2 text-xs font-medium">Status:</div>
         {loading ? (
-          <div className="text-sm text-muted-foreground">Loading statuses...</div>
+          <div className="text-muted-foreground text-sm">Loading statuses...</div>
         ) : statuses.length === 0 ? (
-          <div className="text-sm text-muted-foreground">No statuses found</div>
+          <div className="text-muted-foreground text-sm">No statuses found</div>
         ) : (
           <div className="flex flex-wrap gap-1">
             {statuses.map((status) => (
@@ -113,7 +113,7 @@ export default function FilterHelper({ isOpen, onAddFilter }: FilterHelperProps)
 
       {/* Role Filters */}
       <div className="mb-3">
-        <div className="mb-2 text-xs font-medium text-muted-foreground">Roles:</div>
+        <div className="text-muted-foreground mb-2 text-xs font-medium">Roles:</div>
         <div className="flex flex-wrap gap-1">
           {roleTypes.map((roleType) => (
             <Button
@@ -131,11 +131,11 @@ export default function FilterHelper({ isOpen, onAddFilter }: FilterHelperProps)
 
       {/* Tag Filters */}
       <div className="mb-3">
-        <div className="mb-2 text-xs font-medium text-muted-foreground">Tags:</div>
+        <div className="text-muted-foreground mb-2 text-xs font-medium">Tags:</div>
         {tagsLoading ? (
-          <div className="text-sm text-muted-foreground">Loading tags...</div>
+          <div className="text-muted-foreground text-sm">Loading tags...</div>
         ) : tags.length === 0 ? (
-          <div className="text-sm text-muted-foreground">No tags found</div>
+          <div className="text-muted-foreground text-sm">No tags found</div>
         ) : (
           <div className="flex flex-wrap gap-1">
             {tags.map((tag) => (
@@ -160,7 +160,7 @@ export default function FilterHelper({ isOpen, onAddFilter }: FilterHelperProps)
 
       {/* Custom Filters */}
       <div>
-        <div className="mb-2 text-xs font-medium text-muted-foreground">Custom:</div>
+        <div className="text-muted-foreground mb-2 text-xs font-medium">Custom:</div>
         <div className="flex flex-wrap gap-1">
           <Tooltip>
             <TooltipTrigger asChild>
@@ -176,9 +176,7 @@ export default function FilterHelper({ isOpen, onAddFilter }: FilterHelperProps)
             <TooltipContent side="right" className="max-w-xs">
               <div className="space-y-1">
                 <div className="font-semibold">Medicare Phone Filter</div>
-                <div className="text-xs">
-                  Shows contacts that meet ALL conditions:
-                </div>
+                <div className="text-xs">Shows contacts that meet ALL conditions:</div>
                 <ul className="list-inside list-disc space-y-0.5 text-xs">
                   <li>Has Medicare role (active)</li>
                   <li>Has phone number</li>

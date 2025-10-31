@@ -42,10 +42,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [theme, mounted])
 
   // Prevent hydration mismatch by providing a default context during SSR
-  const contextValue = useMemo(() => ({
-    theme,
-    setTheme,
-  }), [theme, setTheme])
+  const contextValue = useMemo(
+    () => ({
+      theme,
+      setTheme,
+    }),
+    [theme, setTheme]
+  )
 
   return <ThemeContext.Provider value={contextValue}>{children}</ThemeContext.Provider>
 }

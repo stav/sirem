@@ -5,13 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
 import { useTags } from '@/hooks/useTags'
 import { useToast } from '@/hooks/use-toast'
@@ -85,9 +79,7 @@ export default function TagForm({ isOpen, onClose, editingTag, categories, onTag
         return
       }
 
-      const success = editingTag
-        ? await updateTag(editingTag.id, formData)
-        : await createTag(formData)
+      const success = editingTag ? await updateTag(editingTag.id, formData) : await createTag(formData)
 
       if (success) {
         toast({
@@ -145,10 +137,7 @@ export default function TagForm({ isOpen, onClose, editingTag, categories, onTag
                 {categories.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
                     <div className="flex items-center gap-2">
-                      <div
-                        className="h-3 w-3 rounded-full"
-                        style={{ backgroundColor: category.color || '#A9A9A9' }}
-                      />
+                      <div className="h-3 w-3 rounded-full" style={{ backgroundColor: category.color || '#A9A9A9' }} />
                       {category.name}
                     </div>
                   </SelectItem>
@@ -191,4 +180,3 @@ export default function TagForm({ isOpen, onClose, editingTag, categories, onTag
     </Dialog>
   )
 }
-

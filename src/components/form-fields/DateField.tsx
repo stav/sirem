@@ -17,11 +17,14 @@ const DateField = React.memo(function DateField({
   value,
   onChange,
   isReadOnly = false,
-  className = ''
+  className = '',
 }: DateFieldProps) {
-  const handleChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e.target.value)
-  }, [onChange])
+  const handleChange = React.useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      onChange(e.target.value)
+    },
+    [onChange]
+  )
 
   return (
     <Input

@@ -17,11 +17,14 @@ const TextField = React.memo(function TextField({
   value,
   onChange,
   isReadOnly = false,
-  className = ''
+  className = '',
 }: TextFieldProps) {
-  const handleChange = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    onChange(e.target.value)
-  }, [onChange])
+  const handleChange = React.useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      onChange(e.target.value)
+    },
+    [onChange]
+  )
 
   return (
     <Input

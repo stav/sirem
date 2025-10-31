@@ -131,24 +131,16 @@ const ActionCard = React.memo(function ActionCard({
 
   return (
     <Card
-      className={`border-l-4 ${statusIndicator.className} transition-all
-      ${statusIndicator.isCompleted ? 'bg-muted hover:bg-muted/50 dark:bg-muted dark:hover:bg-muted/50' : 'hover:bg-muted/20 dark:hover:bg-muted/10'}
-      ${statusIndicator.isCompleted ? 'hover:border-l-4 hover:border-t hover:border-r hover:border-b hover:border-gray-500 dark:hover:border-gray-400' : ''}
-      ${!statusIndicator.isCompleted && statusIndicator.className.includes('red') ? 'hover:border-l-4 hover:border-t hover:border-r hover:border-b hover:border-red-500' : ''}
-      ${!statusIndicator.isCompleted && statusIndicator.className.includes('blue') ? 'hover:border-l-4 hover:border-t hover:border-r hover:border-b hover:border-blue-500' : ''}
-    `}
+      className={`border-l-4 ${statusIndicator.className} transition-all ${statusIndicator.isCompleted ? 'bg-muted hover:bg-muted/50 dark:bg-muted dark:hover:bg-muted/50' : 'hover:bg-muted/20 dark:hover:bg-muted/10'} ${statusIndicator.isCompleted ? 'hover:border-t hover:border-r hover:border-b hover:border-l-4 hover:border-gray-500 dark:hover:border-gray-400' : ''} ${!statusIndicator.isCompleted && statusIndicator.className.includes('red') ? 'hover:border-t hover:border-r hover:border-b hover:border-l-4 hover:border-red-500' : ''} ${!statusIndicator.isCompleted && statusIndicator.className.includes('blue') ? 'hover:border-t hover:border-r hover:border-b hover:border-l-4 hover:border-blue-500' : ''} `}
     >
       <CardContent className="p-4">
         {/* Top Row: Contact (left), Badges (right) */}
         <div className="mb-2 flex items-start justify-between">
           {/* Contact (top left) */}
-          <div className="flex items-center space-x-2 text-xs text-muted-foreground">
+          <div className="text-muted-foreground flex items-center space-x-2 text-xs">
             <User className="h-3 w-3" />
             {onSelectContact ? (
-              <Link 
-                href={`/manage?contact=${action.contact_id}`}
-                className="cursor-pointer hover:underline"
-              >
+              <Link href={`/manage?contact=${action.contact_id}`} className="cursor-pointer hover:underline">
                 {contactName}
               </Link>
             ) : (

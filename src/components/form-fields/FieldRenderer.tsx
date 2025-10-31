@@ -21,31 +21,19 @@ const FieldRenderer = React.memo(function FieldRenderer({
   value,
   onChange,
   isReadOnly = false,
-  className = ''
+  className = '',
 }: FieldRendererProps) {
   const renderField = () => {
     switch (field.type) {
       case 'number':
       case 'integer':
         return (
-          <NumberField
-            field={field}
-            value={value}
-            onChange={onChange}
-            isReadOnly={isReadOnly}
-            className={className}
-          />
+          <NumberField field={field} value={value} onChange={onChange} isReadOnly={isReadOnly} className={className} />
         )
 
       case 'date':
         return (
-          <DateField
-            field={field}
-            value={value}
-            onChange={onChange}
-            isReadOnly={isReadOnly}
-            className={className}
-          />
+          <DateField field={field} value={value} onChange={onChange} isReadOnly={isReadOnly} className={className} />
         )
 
       case 'string':
@@ -77,24 +65,12 @@ const FieldRenderer = React.memo(function FieldRenderer({
 
         // Regular text input
         return (
-          <TextField
-            field={field}
-            value={value}
-            onChange={onChange}
-            isReadOnly={isReadOnly}
-            className={className}
-          />
+          <TextField field={field} value={value} onChange={onChange} isReadOnly={isReadOnly} className={className} />
         )
 
       default:
         return (
-          <TextField
-            field={field}
-            value={value}
-            onChange={onChange}
-            isReadOnly={isReadOnly}
-            className={className}
-          />
+          <TextField field={field} value={value} onChange={onChange} isReadOnly={isReadOnly} className={className} />
         )
     }
   }
@@ -116,11 +92,10 @@ function isLongTextField(field: FieldDefinition): boolean {
     'pharmacy_benefit',
     'rx_cost_share',
     'fitness_benefit',
-    'service_area'
+    'service_area',
   ]
-  
-  return longTextFields.some(keyword => 
-    field.key.toLowerCase().includes(keyword) || 
-    field.label.toLowerCase().includes(keyword)
+
+  return longTextFields.some(
+    (keyword) => field.key.toLowerCase().includes(keyword) || field.label.toLowerCase().includes(keyword)
   )
 }

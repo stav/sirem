@@ -4,14 +4,7 @@ import React, { useState, useEffect, memo } from 'react'
 import { X, Plus, Tag as TagIcon } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { useTags } from '@/hooks/useTags'
 import type { Database } from '@/lib/supabase-types'
@@ -46,9 +39,8 @@ function TagPicker({ contactId, selectedTagIds, onTagsChange, className }: TagPi
 
   // Don't render if no contactId provided
   if (!contactId) {
-    return <div className="text-sm text-muted-foreground">No contact selected</div>
+    return <div className="text-muted-foreground text-sm">No contact selected</div>
   }
-
 
   const handleSelectTag = async (tag: TagWithCategory) => {
     const isAlreadySelected = selectedTagIds.includes(tag.id)
@@ -98,7 +90,7 @@ function TagPicker({ contactId, selectedTagIds, onTagsChange, className }: TagPi
   )
 
   if (loading) {
-    return <div className="text-sm text-muted-foreground">Loading tags...</div>
+    return <div className="text-muted-foreground text-sm">Loading tags...</div>
   }
 
   return (
@@ -118,11 +110,7 @@ function TagPicker({ contactId, selectedTagIds, onTagsChange, className }: TagPi
           >
             <TagIcon className="mr-1 h-3 w-3" />
             {tag.label}
-            <button
-              type="button"
-              onClick={() => handleRemoveTag(tag.id)}
-              className="ml-1 rounded-sm hover:bg-black/10"
-            >
+            <button type="button" onClick={() => handleRemoveTag(tag.id)} className="ml-1 rounded-sm hover:bg-black/10">
               <X className="h-3 w-3" />
             </button>
           </Badge>
@@ -137,7 +125,7 @@ function TagPicker({ contactId, selectedTagIds, onTagsChange, className }: TagPi
             Add Tags
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[300px] p-0 z-[70]" align="start">
+        <PopoverContent className="z-[70] w-[300px] p-0" align="start">
           <Command>
             <CommandInput placeholder="Search tags..." />
             <CommandList>
@@ -185,4 +173,3 @@ function TagPicker({ contactId, selectedTagIds, onTagsChange, className }: TagPi
 }
 
 export default memo(TagPicker)
-

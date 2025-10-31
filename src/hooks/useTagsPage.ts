@@ -53,10 +53,7 @@ export function useTagsPage() {
 
   const fetchCategories = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('tag_categories')
-        .select('*')
-        .order('name', { ascending: true })
+      const { data, error } = await supabase.from('tag_categories').select('*').order('name', { ascending: true })
 
       if (error) {
         console.error('Error fetching tag categories:', error)
@@ -123,10 +120,7 @@ export function useTagsPage() {
 
   const deleteTag = async (tagId: string) => {
     try {
-      const { error } = await supabase
-        .from('tags')
-        .delete()
-        .eq('id', tagId)
+      const { error } = await supabase.from('tags').delete().eq('id', tagId)
 
       if (error) {
         console.error('Error deleting tag:', error)
@@ -143,10 +137,7 @@ export function useTagsPage() {
 
   const deleteCategory = async (categoryId: string) => {
     try {
-      const { error } = await supabase
-        .from('tag_categories')
-        .delete()
-        .eq('id', categoryId)
+      const { error } = await supabase.from('tag_categories').delete().eq('id', categoryId)
 
       if (error) {
         console.error('Error deleting category:', error)

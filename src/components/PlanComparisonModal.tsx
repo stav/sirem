@@ -73,7 +73,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
 
   // Helper to toggle row highlighting
   const toggleRowHighlight = (rowId: string) => {
-    setHighlightedRows(prev => {
+    setHighlightedRows((prev) => {
       const newSet = new Set(prev)
       if (newSet.has(rowId)) {
         newSet.delete(rowId)
@@ -91,7 +91,6 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
     const hasCents = value % 1 !== 0
     return hasCents ? `$${value.toFixed(2)}` : `$${value.toFixed(0)}`
   }
-
 
   // Helper to format text values
   const formatText = (value: string | null | undefined): string => {
@@ -111,36 +110,40 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
 
   // Get schema-ordered metadata sections with fields that exist in the plans
   const getSchemaOrderedMetadataSections = () => {
-    const sectionsWithFields: Array<{section: {key: string, title: string, description: string}, fields: string[]}> = []
-    
+    const sectionsWithFields: Array<{
+      section: { key: string; title: string; description: string }
+      fields: string[]
+    }> = []
+
     // Go through schema sections in order
-    parsedSchema.sections.forEach(section => {
+    parsedSchema.sections.forEach((section) => {
       const sectionFields = parsedSchema.fieldsBySection[section.key] || []
-      
+
       // Filter to only include fields that exist in at least one plan's metadata
-      const existingFields = sectionFields.filter(field => {
-        return plans.some(plan => 
-          plan.metadata && 
-          typeof plan.metadata === 'object' && 
-          field.key in (plan.metadata as Record<string, unknown>)
+      const existingFields = sectionFields.filter((field) => {
+        return plans.some(
+          (plan) =>
+            plan.metadata &&
+            typeof plan.metadata === 'object' &&
+            field.key in (plan.metadata as Record<string, unknown>)
         )
       })
-      
+
       // Include sections that have existing fields OR show all fields for debugging
       if (existingFields.length > 0) {
         sectionsWithFields.push({
           section,
-          fields: existingFields.map(field => field.key)
+          fields: existingFields.map((field) => field.key),
         })
       } else {
         // Show section even if no fields exist (for debugging/development)
         sectionsWithFields.push({
           section,
-          fields: sectionFields.map(field => field.key)
+          fields: sectionFields.map((field) => field.key),
         })
       }
     })
-    
+
     return sectionsWithFields
   }
 
@@ -157,24 +160,24 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
     // Always treat these known long text fields as long text
     const knownLongTextFields = [
       'pharmacy_benefit',
-      'service_area', 
+      'service_area',
       'fitness_benefit',
       'rx_cost_share',
       'medicaid_eligibility',
       'transitioned_from',
       'summary',
-      'pdf_text_sample'
+      'pdf_text_sample',
     ]
-    
+
     if (knownLongTextFields.includes(key)) {
       return true
     }
-    
+
     // Also treat any text field longer than 100 characters as long text
     if (typeof value === 'string' && value.length > 100) {
       return true
     }
-    
+
     return false
   }
 
@@ -183,7 +186,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
     if (value == null) return null
     if (typeof value === 'number') return value
     if (value === 'n/a' || value === 'N/A' || value === '') return null
-    
+
     // Try to parse numeric values from strings
     const cleaned = String(value).replace(/[$,%]/g, '').trim()
     const parsed = parseFloat(cleaned)
@@ -193,15 +196,25 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
   // Check if a metadata field should be treated as numeric
   const isNumericField = (key: string, values: (string | number | null)[]): boolean => {
     // Check if key suggests it's numeric
-    const numericKeywords = ['copay', 'coinsurance', 'deductible', 'benefit', 'premium', 
-                            'cost', 'max', 'limit', 'allowance', 'moop']
+    const numericKeywords = [
+      'copay',
+      'coinsurance',
+      'deductible',
+      'benefit',
+      'premium',
+      'cost',
+      'max',
+      'limit',
+      'allowance',
+      'moop',
+    ]
     const lowerKey = key.toLowerCase()
-    const hasNumericKeyword = numericKeywords.some(keyword => lowerKey.includes(keyword))
-    
+    const hasNumericKeyword = numericKeywords.some((keyword) => lowerKey.includes(keyword))
+
     // Check if values are mostly numeric
-    const numericValues = values.map(v => parseMetadataNumber(v)).filter(v => v !== null)
+    const numericValues = values.map((v) => parseMetadataNumber(v)).filter((v) => v !== null)
     const hasNumericValues = numericValues.length > 0
-    
+
     return hasNumericKeyword && hasNumericValues
   }
 
@@ -209,12 +222,12 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
   const isLowerBetter = (key: string): boolean => {
     const lowerBetterKeywords = ['copay', 'coinsurance', 'deductible', 'premium', 'cost']
     const higherBetterKeywords = ['benefit', 'allowance', 'max', 'limit', 'giveback']
-    
+
     const lowerKey = key.toLowerCase()
-    
-    if (higherBetterKeywords.some(kw => lowerKey.includes(kw))) return false
-    if (lowerBetterKeywords.some(kw => lowerKey.includes(kw))) return true
-    
+
+    if (higherBetterKeywords.some((kw) => lowerKey.includes(kw))) return false
+    if (lowerBetterKeywords.some((kw) => lowerKey.includes(kw))) return true
+
     // Default to lower is better for safety
     return true
   }
@@ -224,7 +237,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
     return key
       .replace(/_/g, ' ')
       .split(' ')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ')
   }
 
@@ -232,14 +245,15 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
   const calculateAnnualCost = (plan: Plan): number => {
     const premium = (Number(getPlanMetadata.premium_monthly(plan)) || 0) * 12
     const giveback = (Number(getPlanMetadata.giveback_monthly(plan)) || 0) * 12
-    
+
     const primaryCareCosts = (Number(getPlanMetadata.primary_care_copay(plan)) || 0) * usageInputs.primaryCareVisits
     const specialistCosts = (Number(getPlanMetadata.specialist_copay(plan)) || 0) * usageInputs.specialistVisits
     const erCosts = (Number(getPlanMetadata.emergency_room_copay(plan)) || 0) * usageInputs.emergencyRoomVisits
     const urgentCareCosts = (Number(getPlanMetadata.urgent_care_copay(plan)) || 0) * usageInputs.urgentCareVisits
     // Hospital cost = daily copay * days covered per stay * number of stays
     const daysPerStay = Number(getPlanMetadata.hospital_inpatient_days(plan)) || 0
-    const hospitalCosts = (Number(getPlanMetadata.hospital_inpatient_per_day_copay(plan)) || 0) * daysPerStay * usageInputs.hospitalStays
+    const hospitalCosts =
+      (Number(getPlanMetadata.hospital_inpatient_per_day_copay(plan)) || 0) * daysPerStay * usageInputs.hospitalStays
     const ambulanceCosts = (Number(getPlanMetadata.ambulance_copay(plan)) || 0) * usageInputs.ambulanceUses
 
     const totalCopays = primaryCareCosts + specialistCosts + erCosts + urgentCareCosts + hospitalCosts + ambulanceCosts
@@ -250,18 +264,18 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
   // Compare two values and return indicator (compares against source plan or average)
   const getComparisonIndicator = (current: number | null, others: (number | null)[], lowerIsBetter: boolean = true) => {
     if (current == null) return null
-    
+
     // If we have a source plan, compare against it
     if (sourcePlanId) {
-      const sourcePlan = plans.find(p => p.id === sourcePlanId)
+      const sourcePlan = plans.find((p) => p.id === sourcePlanId)
       const sourceValue = sourcePlan ? others[plans.indexOf(sourcePlan)] : null
       if (sourceValue != null) {
         return compareAgainstSource(current, sourceValue, lowerIsBetter)
       }
     }
-    
+
     // Fall back to average comparison when no source plan is selected
-    const validOthers = others.filter(v => v != null) as number[]
+    const validOthers = others.filter((v) => v != null) as number[]
     if (validOthers.length === 0) return null
 
     const currentValue = current
@@ -274,21 +288,37 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
 
     const isHigher = currentValue > avgOthers
     const isBetter = lowerIsBetter ? currentValue < avgOthers : currentValue > avgOthers
-    
+
     // For inbound (benefits): higher = green up, lower = red down
     // For outbound (expenses): lower = green down, higher = red up
     if (isBetter && isHigher) {
       // Higher and it's good (benefits)
-      return <span title="Better than average"><TrendingUp className="h-4 w-4 text-green-600 inline ml-1" /></span>
+      return (
+        <span title="Better than average">
+          <TrendingUp className="ml-1 inline h-4 w-4 text-green-600" />
+        </span>
+      )
     } else if (isBetter && !isHigher) {
       // Lower and it's good (expenses)
-      return <span title="Better than average"><TrendingDown className="h-4 w-4 text-green-600 inline ml-1" /></span>
+      return (
+        <span title="Better than average">
+          <TrendingDown className="ml-1 inline h-4 w-4 text-green-600" />
+        </span>
+      )
     } else if (!isBetter && isHigher) {
       // Higher and it's bad (expenses)
-      return <span title="Worse than average"><TrendingUp className="h-4 w-4 text-red-600 inline ml-1" /></span>
+      return (
+        <span title="Worse than average">
+          <TrendingUp className="ml-1 inline h-4 w-4 text-red-600" />
+        </span>
+      )
     } else {
       // Lower and it's bad (benefits)
-      return <span title="Worse than average"><TrendingDown className="h-4 w-4 text-red-600 inline ml-1" /></span>
+      return (
+        <span title="Worse than average">
+          <TrendingDown className="ml-1 inline h-4 w-4 text-red-600" />
+        </span>
+      )
     }
   }
 
@@ -306,32 +336,48 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
 
     const isHigher = currentValue > source
     const isBetter = lowerIsBetter ? currentValue < source : currentValue > source
-    
+
     // For inbound (benefits): higher = green up, lower = red down
     // For outbound (expenses): lower = green down, higher = red up
     if (isBetter && isHigher) {
       // Higher and it's good (benefits)
-      return <span title="Better than source plan"><TrendingUp className="h-4 w-4 text-green-600 inline ml-1" /></span>
+      return (
+        <span title="Better than source plan">
+          <TrendingUp className="ml-1 inline h-4 w-4 text-green-600" />
+        </span>
+      )
     } else if (isBetter && !isHigher) {
       // Lower and it's good (expenses)
-      return <span title="Better than source plan"><TrendingDown className="h-4 w-4 text-green-600 inline ml-1" /></span>
+      return (
+        <span title="Better than source plan">
+          <TrendingDown className="ml-1 inline h-4 w-4 text-green-600" />
+        </span>
+      )
     } else if (!isBetter && isHigher) {
       // Higher and it's bad (expenses)
-      return <span title="Worse than source plan"><TrendingUp className="h-4 w-4 text-red-600 inline ml-1" /></span>
+      return (
+        <span title="Worse than source plan">
+          <TrendingUp className="ml-1 inline h-4 w-4 text-red-600" />
+        </span>
+      )
     } else {
       // Lower and it's bad (benefits)
-      return <span title="Worse than source plan"><TrendingDown className="h-4 w-4 text-red-600 inline ml-1" /></span>
+      return (
+        <span title="Worse than source plan">
+          <TrendingDown className="ml-1 inline h-4 w-4 text-red-600" />
+        </span>
+      )
     }
   }
 
   // Comparison field component
-  const ComparisonField = ({ 
-    label, 
-    values, 
+  const ComparisonField = ({
+    label,
+    values,
     lowerIsBetter = true,
     formatter = formatCurrency,
-    rowId
-  }: { 
+    rowId,
+  }: {
     label: string
     values: (number | null)[]
     lowerIsBetter?: boolean
@@ -339,22 +385,28 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
     rowId: string
   }) => {
     const isHighlighted = highlightedRows.has(rowId)
-    
+
     return (
-      <tr 
-        className={`border-b border-border hover:bg-blue-500/20 transition-colors cursor-pointer ${isHighlighted ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
+      <tr
+        className={`border-border cursor-pointer border-b transition-colors hover:bg-blue-500/20 ${isHighlighted ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
         onClick={() => toggleRowHighlight(rowId)}
         title="Click to highlight/unhighlight this row"
       >
-        <td className="py-2 px-3 font-medium text-sm bg-muted sticky left-0 z-10 min-w-48">{label}</td>
+        <td className="bg-muted sticky left-0 z-10 min-w-48 px-3 py-2 text-sm font-medium">{label}</td>
         {values.map((value, idx) => {
           const hasDiscrep = false // No discrepancy checking needed with new schema
           const isSourcePlan = plans[idx].id === sourcePlanId
           return (
-            <td 
-              key={idx} 
-              className={`py-2 px-3 text-center text-sm max-w-48 ${hasDiscrep ? 'bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-500' : ''} ${isSourcePlan ? 'bg-blue-100/50 dark:bg-blue-900/30 border-l-4 border-l-blue-500' : ''}`}
-              title={hasDiscrep ? `⚠️ Discrepancy: Metadata value differs from main field` : isSourcePlan ? 'Current Plan (Source)' : undefined}
+            <td
+              key={idx}
+              className={`max-w-48 px-3 py-2 text-center text-sm ${hasDiscrep ? 'border-2 border-yellow-500 bg-yellow-100 dark:bg-yellow-900/30' : ''} ${isSourcePlan ? 'border-l-4 border-l-blue-500 bg-blue-100/50 dark:bg-blue-900/30' : ''}`}
+              title={
+                hasDiscrep
+                  ? `⚠️ Discrepancy: Metadata value differs from main field`
+                  : isSourcePlan
+                    ? 'Current Plan (Source)'
+                    : undefined
+              }
             >
               {formatter(value)}
               {!isSourcePlan && getComparisonIndicator(value, values, lowerIsBetter)}
@@ -386,21 +438,16 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90" onClick={onClose}>
       <div
-        className={`bg-background border border-border rounded-lg shadow-xl w-[95vw] ${getMaxWidthClass(plans.length)} max-h-[90vh] overflow-hidden flex flex-col`}
+        className={`bg-background border-border w-[95vw] rounded-lg border shadow-xl ${getMaxWidthClass(plans.length)} flex max-h-[90vh] flex-col overflow-hidden`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
+        <div className="border-border flex items-center justify-between border-b p-4">
           <h2 className="text-xl font-semibold">Compare Plans ({plans.length})</h2>
           <div className="flex items-center gap-2">
             {onRefresh && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={onRefresh}
-                title="Refresh plans data"
-              >
-                <RefreshCw className="h-4 w-4 mr-2" />
+              <Button size="sm" variant="outline" onClick={onRefresh} title="Refresh plans data">
+                <RefreshCw className="mr-2 h-4 w-4" />
                 Refresh
               </Button>
             )}
@@ -409,7 +456,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
               variant={showCalculator ? 'default' : 'outline'}
               onClick={() => setShowCalculator(!showCalculator)}
             >
-              <Calculator className="h-4 w-4 mr-2" />
+              <Calculator className="mr-2 h-4 w-4" />
               Cost Calculator
             </Button>
             <Button size="icon" variant="ghost" onClick={onClose}>
@@ -420,9 +467,9 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
 
         {/* Cost Calculator Panel */}
         {showCalculator && (
-          <div className="p-4 bg-muted/30 border-b border-border">
-            <h3 className="text-sm font-semibold mb-3">Estimate Annual Usage</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="bg-muted/30 border-border border-b p-4">
+            <h3 className="mb-3 text-sm font-semibold">Estimate Annual Usage</h3>
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-6">
               <div>
                 <Label className="text-xs">Primary Care Visits</Label>
                 <Input
@@ -491,14 +538,14 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
         <div className="flex-1 overflow-auto p-4">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="border-b-2 border-border">
-                <th className="py-3 px-3 text-left font-semibold text-sm bg-muted sticky top-0 left-0 z-10 min-w-48"></th>
+              <tr className="border-border border-b-2">
+                <th className="bg-muted sticky top-0 left-0 z-10 min-w-48 px-3 py-3 text-left text-sm font-semibold"></th>
                 {plans.map((plan, idx) => {
                   const isSourcePlan = plan.id === sourcePlanId
                   return (
-                    <th 
-                      key={idx} 
-                      className={`py-3 px-3 text-center font-semibold text-sm bg-muted sticky top-0 max-w-48 ${isSourcePlan ? 'border-l-4 border-l-blue-500' : ''} cursor-pointer hover:bg-muted/80 transition-colors`}
+                    <th
+                      key={idx}
+                      className={`bg-muted sticky top-0 max-w-48 px-3 py-3 text-center text-sm font-semibold ${isSourcePlan ? 'border-l-4 border-l-blue-500' : ''} hover:bg-muted/80 cursor-pointer transition-colors`}
                       onClick={() => setSourcePlanId(isSourcePlan ? null : plan.id)}
                       title={isSourcePlan ? 'Source Plan (click to deselect)' : 'Click to set as source plan'}
                     >
@@ -506,24 +553,24 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                         <div className="font-bold">{plan.name}</div>
                         {isSourcePlan && <Star className="h-4 w-4 text-blue-500" />}
                       </div>
-                      <div className="text-xs font-normal text-muted-foreground">
-                        {plan.carrier} • {(() => {
+                      <div className="text-muted-foreground text-xs font-normal">
+                        {plan.carrier} •{' '}
+                        {(() => {
                           // Build the plan type string from normalized fields
                           const parts = []
                           if (plan.type_network) parts.push(plan.type_network)
                           if (plan.type_extension) parts.push(plan.type_extension)
                           if (plan.type_snp) parts.push(`${plan.type_snp}-SNP`)
                           // Don't add type_program if it's already included in the SNP part
-                          if (plan.type_program && plan.type_program !== 'MA' && plan.type_program !== 'SNP') parts.push(plan.type_program)
+                          if (plan.type_program && plan.type_program !== 'MA' && plan.type_program !== 'SNP')
+                            parts.push(plan.type_program)
                           return parts.length > 0 ? parts.join('-') : '—'
                         })()}
                       </div>
                       {plan.plan_year && (
-                        <div className="text-xs font-normal text-muted-foreground">{plan.plan_year}</div>
+                        <div className="text-muted-foreground text-xs font-normal">{plan.plan_year}</div>
                       )}
-                      {isSourcePlan && (
-                        <div className="text-xs font-semibold text-blue-500 mt-1">Source Plan</div>
-                      )}
+                      {isSourcePlan && <div className="mt-1 text-xs font-semibold text-blue-500">Source Plan</div>}
                     </th>
                   )
                 })}
@@ -531,61 +578,75 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
             </thead>
             <tbody>
               {/* Basic Information */}
-              <tr 
-                className={`border-b border-border hover:bg-blue-500/20 transition-colors cursor-pointer ${highlightedRows.has('cms-id-full') ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
+              <tr
+                className={`border-border cursor-pointer border-b transition-colors hover:bg-blue-500/20 ${highlightedRows.has('cms-id-full') ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
                 onClick={() => toggleRowHighlight('cms-id-full')}
                 title="Click to highlight/unhighlight this row"
               >
-                <td className="py-2 px-3 font-medium text-sm bg-muted sticky left-0 z-10 min-w-48">CMS ID (Full)</td>
+                <td className="bg-muted sticky left-0 z-10 min-w-48 px-3 py-2 text-sm font-medium">CMS ID (Full)</td>
                 {plans.map((plan, idx) => {
                   const isSourcePlan = plan.id === sourcePlanId
                   return (
-                    <td key={idx} className={`py-2 px-3 text-center text-sm max-w-48 ${isSourcePlan ? 'bg-blue-100/50 dark:bg-blue-900/30 border-l-4 border-l-blue-500' : ''}`}>
+                    <td
+                      key={idx}
+                      className={`max-w-48 px-3 py-2 text-center text-sm ${isSourcePlan ? 'border-l-4 border-l-blue-500 bg-blue-100/50 dark:bg-blue-900/30' : ''}`}
+                    >
                       {calculateCmsId(plan) || '—'}
                     </td>
                   )
                 })}
               </tr>
-              <tr 
-                className={`border-b border-border hover:bg-blue-500/20 transition-colors cursor-pointer ${highlightedRows.has('cms-contract-number') ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
+              <tr
+                className={`border-border cursor-pointer border-b transition-colors hover:bg-blue-500/20 ${highlightedRows.has('cms-contract-number') ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
                 onClick={() => toggleRowHighlight('cms-contract-number')}
                 title="Click to highlight/unhighlight this row"
               >
-                <td className="py-2 px-3 font-medium text-sm bg-muted sticky left-0 z-10 min-w-48">CMS Contract Number</td>
+                <td className="bg-muted sticky left-0 z-10 min-w-48 px-3 py-2 text-sm font-medium">
+                  CMS Contract Number
+                </td>
                 {plans.map((plan, idx) => {
                   const isSourcePlan = plan.id === sourcePlanId
                   return (
-                    <td key={idx} className={`py-2 px-3 text-center text-sm max-w-48 ${isSourcePlan ? 'bg-blue-100/50 dark:bg-blue-900/30 border-l-4 border-l-blue-500' : ''}`}>
+                    <td
+                      key={idx}
+                      className={`max-w-48 px-3 py-2 text-center text-sm ${isSourcePlan ? 'border-l-4 border-l-blue-500 bg-blue-100/50 dark:bg-blue-900/30' : ''}`}
+                    >
                       {formatText(plan.cms_contract_number)}
                     </td>
                   )
                 })}
               </tr>
-              <tr 
-                className={`border-b border-border hover:bg-blue-500/20 transition-colors cursor-pointer ${highlightedRows.has('cms-plan-number') ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
+              <tr
+                className={`border-border cursor-pointer border-b transition-colors hover:bg-blue-500/20 ${highlightedRows.has('cms-plan-number') ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
                 onClick={() => toggleRowHighlight('cms-plan-number')}
                 title="Click to highlight/unhighlight this row"
               >
-                <td className="py-2 px-3 font-medium text-sm bg-muted sticky left-0 z-10 min-w-48">CMS Plan Number</td>
+                <td className="bg-muted sticky left-0 z-10 min-w-48 px-3 py-2 text-sm font-medium">CMS Plan Number</td>
                 {plans.map((plan, idx) => {
                   const isSourcePlan = plan.id === sourcePlanId
                   return (
-                    <td key={idx} className={`py-2 px-3 text-center text-sm max-w-48 ${isSourcePlan ? 'bg-blue-100/50 dark:bg-blue-900/30 border-l-4 border-l-blue-500' : ''}`}>
+                    <td
+                      key={idx}
+                      className={`max-w-48 px-3 py-2 text-center text-sm ${isSourcePlan ? 'border-l-4 border-l-blue-500 bg-blue-100/50 dark:bg-blue-900/30' : ''}`}
+                    >
                       {formatText(plan.cms_plan_number)}
                     </td>
                   )
                 })}
               </tr>
-              <tr 
-                className={`border-b border-border hover:bg-blue-500/20 transition-colors cursor-pointer ${highlightedRows.has('cms-geo-segment') ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
+              <tr
+                className={`border-border cursor-pointer border-b transition-colors hover:bg-blue-500/20 ${highlightedRows.has('cms-geo-segment') ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
                 onClick={() => toggleRowHighlight('cms-geo-segment')}
                 title="Click to highlight/unhighlight this row"
               >
-                <td className="py-2 px-3 font-medium text-sm bg-muted sticky left-0 z-10 min-w-48">CMS Geo Segment</td>
+                <td className="bg-muted sticky left-0 z-10 min-w-48 px-3 py-2 text-sm font-medium">CMS Geo Segment</td>
                 {plans.map((plan, idx) => {
                   const isSourcePlan = plan.id === sourcePlanId
                   return (
-                    <td key={idx} className={`py-2 px-3 text-center text-sm max-w-48 ${isSourcePlan ? 'bg-blue-100/50 dark:bg-blue-900/30 border-l-4 border-l-blue-500' : ''}`}>
+                    <td
+                      key={idx}
+                      className={`max-w-48 px-3 py-2 text-center text-sm ${isSourcePlan ? 'border-l-4 border-l-blue-500 bg-blue-100/50 dark:bg-blue-900/30' : ''}`}
+                    >
                       {formatText(plan.cms_geo_segment)}
                     </td>
                   )
@@ -593,25 +654,25 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
               </tr>
 
               {/* Schema-Ordered Metadata Sections */}
-              {getSchemaOrderedMetadataSections().map(({section, fields}) => (
+              {getSchemaOrderedMetadataSections().map(({ section, fields }) => (
                 <React.Fragment key={section.key}>
                   <tr className="bg-muted/50">
-                    <th className="py-2 px-3 font-semibold text-sm text-right bg-muted sticky left-0 z-10 min-w-48">
+                    <th className="bg-muted sticky left-0 z-10 min-w-48 px-3 py-2 text-right text-sm font-semibold">
                       {section.title}
                     </th>
                     <td colSpan={plans.length}></td>
                   </tr>
-                  {fields.map(key => {
-                    const values = plans.map(p => getMetadata(p, key))
+                  {fields.map((key) => {
+                    const values = plans.map((p) => getMetadata(p, key))
                     const isNumeric = isNumericField(key, values)
-                    
+
                     if (isNumeric) {
                       // Render as numeric comparison field
                       return (
                         <ComparisonField
                           key={key}
                           label={formatLabel(key)}
-                          values={plans.map(p => parseMetadataNumber(getMetadata(p, key)))}
+                          values={plans.map((p) => parseMetadataNumber(getMetadata(p, key)))}
                           lowerIsBetter={isLowerBetter(key)}
                           formatter={(v) => {
                             if (v == null) return '—'
@@ -630,13 +691,13 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                     } else {
                       // Render as text field
                       return (
-                        <tr 
-                          key={key} 
-                          className={`border-b border-border hover:bg-blue-500/20 transition-colors cursor-pointer ${highlightedRows.has(getRowId(key, section.key)) ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
+                        <tr
+                          key={key}
+                          className={`border-border cursor-pointer border-b transition-colors hover:bg-blue-500/20 ${highlightedRows.has(getRowId(key, section.key)) ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
                           onClick={() => toggleRowHighlight(getRowId(key, section.key))}
                           title="Click to highlight/unhighlight this row"
                         >
-                          <td className="py-2 px-3 font-medium text-sm bg-muted sticky left-0 z-10 min-w-48">
+                          <td className="bg-muted sticky left-0 z-10 min-w-48 px-3 py-2 text-sm font-medium">
                             {formatLabel(key)}
                           </td>
                           {plans.map((plan, idx) => {
@@ -645,27 +706,27 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                             const value = getMetadata(plan, key)
                             const displayValue = formatMetadataValue(value)
                             const isLongText = isLongTextField(key, value)
-                            
+
                             if (isLongText && typeof value === 'string' && value.length > 0) {
                               // Render long text fields with truncation and tooltip like counties/notes
                               return (
-                                <td 
-                                  key={idx} 
-                                  className={`py-2 px-3 text-center text-xs max-w-48 overflow-hidden ${hasDiscrep ? 'bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-500' : ''} ${isSourcePlan ? 'bg-blue-100/50 dark:bg-blue-900/30 border-l-4 border-l-blue-500' : ''}`}
+                                <td
+                                  key={idx}
+                                  className={`max-w-48 overflow-hidden px-3 py-2 text-center text-xs ${hasDiscrep ? 'border-2 border-yellow-500 bg-yellow-100 dark:bg-yellow-900/30' : ''} ${isSourcePlan ? 'border-l-4 border-l-blue-500 bg-blue-100/50 dark:bg-blue-900/30' : ''}`}
                                   title={hasDiscrep ? `⚠️ Discrepancy: Metadata value differs from main field` : value}
                                 >
-                                  <div className="line-clamp-3">
-                                    {displayValue}
-                                  </div>
+                                  <div className="line-clamp-3">{displayValue}</div>
                                 </td>
                               )
                             } else {
                               // Render regular text fields
                               return (
-                                <td 
-                                  key={idx} 
-                                  className={`py-2 px-3 text-center text-xs max-w-48 ${hasDiscrep ? 'bg-yellow-100 dark:bg-yellow-900/30 border-2 border-yellow-500' : ''} ${isSourcePlan ? 'bg-blue-100/50 dark:bg-blue-900/30 border-l-4 border-l-blue-500' : ''}`}
-                                  title={hasDiscrep ? `⚠️ Discrepancy: Metadata value differs from main field` : undefined}
+                                <td
+                                  key={idx}
+                                  className={`max-w-48 px-3 py-2 text-center text-xs ${hasDiscrep ? 'border-2 border-yellow-500 bg-yellow-100 dark:bg-yellow-900/30' : ''} ${isSourcePlan ? 'border-l-4 border-l-blue-500 bg-blue-100/50 dark:bg-blue-900/30' : ''}`}
+                                  title={
+                                    hasDiscrep ? `⚠️ Discrepancy: Metadata value differs from main field` : undefined
+                                  }
                                 >
                                   {displayValue}
                                 </td>
@@ -679,27 +740,30 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                 </React.Fragment>
               ))}
 
-
-
               {/* Estimated Annual Cost */}
               {showCalculator && (
                 <>
                   <tr className="bg-muted/50">
-                    <th className="py-2 px-3 font-semibold text-sm text-right bg-muted sticky left-0 z-10 min-w-48">
+                    <th className="bg-muted sticky left-0 z-10 min-w-48 px-3 py-2 text-right text-sm font-semibold">
                       Estimated Annual Cost
                     </th>
                     <td colSpan={plans.length}></td>
                   </tr>
-                  <tr 
-                    className={`border-b-2 border-border bg-blue-50 dark:bg-blue-950/30 cursor-pointer ${highlightedRows.has('annual-cost') ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
+                  <tr
+                    className={`border-border cursor-pointer border-b-2 bg-blue-50 dark:bg-blue-950/30 ${highlightedRows.has('annual-cost') ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
                     onClick={() => toggleRowHighlight('annual-cost')}
                     title="Click to highlight/unhighlight this row"
                   >
-                    <td className="py-3 px-3 font-bold text-sm bg-muted sticky left-0 z-10 min-w-48">Total Estimated Annual Cost</td>
+                    <td className="bg-muted sticky left-0 z-10 min-w-48 px-3 py-3 text-sm font-bold">
+                      Total Estimated Annual Cost
+                    </td>
                     {annualCosts.map((cost, idx) => {
                       const isSourcePlan = plans[idx].id === sourcePlanId
                       return (
-                        <td key={idx} className={`py-3 px-3 text-center font-bold text-sm ${cost === lowestCost ? 'text-green-600' : ''} ${isSourcePlan ? 'bg-blue-100/50 dark:bg-blue-900/30 border-l-4 border-l-blue-500' : ''}`}>
+                        <td
+                          key={idx}
+                          className={`px-3 py-3 text-center text-sm font-bold ${cost === lowestCost ? 'text-green-600' : ''} ${isSourcePlan ? 'border-l-4 border-l-blue-500 bg-blue-100/50 dark:bg-blue-900/30' : ''}`}
+                        >
                           {formatCurrency(cost)}
                           {cost === lowestCost && ' ★'}
                         </td>
@@ -710,16 +774,19 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
               )}
 
               {/* Additional Database Fields */}
-              <tr 
-                className={`border-b border-border hover:bg-blue-500/20 transition-colors cursor-pointer ${highlightedRows.has('counties') ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
+              <tr
+                className={`border-border cursor-pointer border-b transition-colors hover:bg-blue-500/20 ${highlightedRows.has('counties') ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
                 onClick={() => toggleRowHighlight('counties')}
                 title="Click to highlight/unhighlight this row"
               >
-                <td className="py-2 px-3 font-medium text-sm bg-muted sticky left-0 z-10 min-w-48">Counties</td>
+                <td className="bg-muted sticky left-0 z-10 min-w-48 px-3 py-2 text-sm font-medium">Counties</td>
                 {plans.map((plan, idx) => {
                   const isSourcePlan = plan.id === sourcePlanId
                   return (
-                    <td key={idx} className={`py-2 px-3 text-center text-xs max-w-48 overflow-hidden ${isSourcePlan ? 'bg-blue-100/50 dark:bg-blue-900/30 border-l-4 border-l-blue-500' : ''}`}>
+                    <td
+                      key={idx}
+                      className={`max-w-48 overflow-hidden px-3 py-2 text-center text-xs ${isSourcePlan ? 'border-l-4 border-l-blue-500 bg-blue-100/50 dark:bg-blue-900/30' : ''}`}
+                    >
                       <div className="line-clamp-3" title={plan.counties?.join(', ')}>
                         {plan.counties?.join(', ') || '—'}
                       </div>
@@ -732,8 +799,8 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
         </div>
 
         {/* Legend */}
-        <div className="p-4 border-t border-border bg-muted/30">
-          <div className="flex items-center gap-6 text-xs text-muted-foreground">
+        <div className="border-border bg-muted/30 border-t p-4">
+          <div className="text-muted-foreground flex items-center gap-6 text-xs">
             <div className="flex items-center gap-1">
               <TrendingUp className="h-4 w-4 text-green-600" />
               <span>Better than {sourcePlanId ? 'source plan' : 'average'}</span>
@@ -743,7 +810,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
               <span>Worse than {sourcePlanId ? 'source plan' : 'average'}</span>
             </div>
             <div className="flex items-center gap-1">
-              <span className="inline-block w-4 h-4 bg-yellow-100 dark:bg-yellow-900/30 border border-yellow-500 rounded"></span>
+              <span className="inline-block h-4 w-4 rounded border border-yellow-500 bg-yellow-100 dark:bg-yellow-900/30"></span>
               <span>⚠️ Discrepancy with main field</span>
             </div>
             {sourcePlanId && (
@@ -753,20 +820,13 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
               </div>
             )}
             <div className="flex items-center gap-1">
-              <span className="inline-block w-4 h-4 bg-yellow-50 dark:bg-yellow-900/30 border border-yellow-400 rounded"></span>
+              <span className="inline-block h-4 w-4 rounded border border-yellow-400 bg-yellow-50 dark:bg-yellow-900/30"></span>
               <span>Click row to highlight (multiple rows)</span>
             </div>
-            {showCalculator && (
-              <div className="ml-auto font-semibold">
-                ★ = Lowest estimated annual cost
-              </div>
-            )}
+            {showCalculator && <div className="ml-auto font-semibold">★ = Lowest estimated annual cost</div>}
           </div>
         </div>
       </div>
     </div>
   )
 }
-
-
-

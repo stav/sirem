@@ -67,7 +67,7 @@ export default function ContactViewModal({
 
   const fetchTags = useCallback(async () => {
     if (!contact) return
-    
+
     setTagsLoading(true)
     try {
       const { data, error } = await supabase
@@ -174,10 +174,10 @@ export default function ContactViewModal({
       allowBackdropClose={true}
     >
       <div className="space-y-4">
-        <ContactBasicInfo 
-          contact={contact} 
-          tags={tags} 
-          tagsLoading={tagsLoading} 
+        <ContactBasicInfo
+          contact={contact}
+          tags={tags}
+          tagsLoading={tagsLoading}
           onTagsUpdated={fetchTags}
           onContactUpdated={onContactUpdated}
         />
