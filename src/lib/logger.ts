@@ -102,13 +102,11 @@ export const logger = {
   },
 
   tagRemoved: (contactName: string, tagName: string, contactId?: string) => {
-    useLogger
-      .getState()
-      .addMessage(`Tag "${tagName}" removed from ${contactName}`, 'info', 'tag_remove', {
-        contactName,
-        tagName,
-        contactId,
-      })
+    useLogger.getState().addMessage(`Tag "${tagName}" removed from ${contactName}`, 'info', 'tag_remove', {
+      contactName,
+      tagName,
+      contactId,
+    })
   },
 
   planDeleted: (planName: string, carrier?: string, year?: number, cmsId?: string, planId?: string) => {

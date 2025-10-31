@@ -24,7 +24,6 @@ export default function Navigation({ pageTitle }: NavigationProps) {
           <div className="flex h-16 justify-between">
             <div className="flex items-center space-x-6">
               <h1 className="text-foreground text-xl font-semibold">Sirem CRM</h1>
-              <span className="text-muted-foreground hidden text-lg font-medium md:block">{pageTitle}</span>
             </div>
             <div className="flex items-center space-x-4">
               {pages.map((page) => {
