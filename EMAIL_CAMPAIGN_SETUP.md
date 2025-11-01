@@ -30,12 +30,21 @@ RESEND_FROM_EMAIL=noreply@yourdomain.com
 RESEND_REPLY_TO_EMAIL=support@yourdomain.com
 ```
 
-### 3. Run Database Migration
-Execute this SQL in your Supabase SQL editor:
-```sql
--- File: supabase/migrations/20250120000002_add_email_campaigns.sql
--- (The migration file is already created)
-```
+### 3. Configure Domain (Required for Production)
+Resend's production API requires a verified domain:
+1. Go to [resend.com/domains](https://resend.com/domains)
+2. Add and verify your domain
+3. Update your `.env.local` to use your verified domain:
+   ```bash
+   RESEND_FROM_EMAIL=noreply@yourdomain.com
+   ```
+
+**Note:** Without a verified domain, Resend only allows sending test emails to your own verified email address (configured in your Resend account).
+
+### 4. Run Database Migration
+Execute these SQL migrations in your Supabase SQL editor:
+- `data/schema/21-add-email-campaigns.sql`
+- `data/schema/22-add-campaign-recipient-enabled.sql`
 
 ## 🎯 How to Use
 
@@ -59,11 +68,10 @@ Use these placeholders in your email content:
 - `{{fullName}}` - Full name
 - `{{email}}` - Contact's email address
 
-## 🔧 Current Limitations (Without API Key)
-- Email sending is disabled (shows configuration error)
-- Campaigns can be created and managed
-- All UI functionality works
-- Database tracking works
+## 🔧 Current Limitations
+**Without a verified domain**, Resend only allows sending emails to your own verified email address. To send to any recipient:
+1. You must verify a domain in Resend
+2. Use that domain in your `RESEND_FROM_EMAIL` configuration
 
 ## 🎉 Next Steps
 1. **Set up Resend API key** (5 minutes)
