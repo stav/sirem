@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Users, BarChart3, Upload, ClipboardList, Tags } from 'lucide-react'
+import { Users, BarChart3, Upload, ClipboardList, Tags, Mail } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
 
 // Define available pages with their routes and icons
@@ -11,6 +11,7 @@ const pages = [
   { title: 'Manage', path: '/manage', icon: Users },
   { title: 'Plans', path: '/plans', icon: ClipboardList },
   { title: 'Tags', path: '/tags', icon: Tags },
+  { title: 'Campaigns', path: '/campaigns', icon: Mail },
   { title: 'Import', path: '/import', icon: Upload },
 ]
 
