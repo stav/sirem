@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
     const fromEmail = from || (configuredFrom.includes('medstar.agency') ? 'onboarding@resend.dev' : configuredFrom)
 
     // For testing with Resend's test domain, redirect all emails to the verified address
-    const testRecipients = to.map(email => 
+    const testRecipients = to.map((email: string) => 
       email === 'medstar.agency@gmail.com' ? email : 'medstar.agency@gmail.com'
     )
 

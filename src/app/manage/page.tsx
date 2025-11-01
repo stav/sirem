@@ -10,12 +10,16 @@ import ActionViewModal from '@/components/ActionViewModal'
 import ContactViewModal from '@/components/ContactViewModal'
 import ContactForm from '@/components/ContactForm'
 import ContactNotesModal from '@/components/ContactNotesModal'
+import CampaignFromFilter from '@/components/CampaignFromFilter'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { useContacts } from '@/hooks/useContacts'
 import { useActions } from '@/hooks/useActions'
+import { useContactFilter } from '@/contexts/ContactFilterContext'
 import type { Database } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 import { logger } from '@/lib/logger'
 import { RoleData, RoleType } from '@/types/roles'
+import { Mail } from 'lucide-react'
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
   addresses?: Database['public']['Tables']['addresses']['Row'][]
@@ -81,6 +85,7 @@ function ManagePageContent() {
   const [showActionViewModal, setShowActionViewModal] = useState(false)
   const [showContactViewModal, setShowContactViewModal] = useState(false)
   const [showContactNotesModal, setShowContactNotesModal] = useState(false)
+  const [showCampaignModal, setShowCampaignModal] = useState(false)
   const [viewingAction, setViewingAction] = useState<Action | null>(null)
   const [viewingContact, setViewingContact] = useState<Contact | null>(null)
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
@@ -92,13 +97,24 @@ function ManagePageContent() {
   const [refreshTimestamp, setRefreshTimestamp] = useState<number>(Date.now())
   const [roleRefreshTrigger, setRoleRefreshTrigger] = useState<number>(0)
   const [pendingRoles, setPendingRoles] = useState<PendingRole[]>([])
-  const [filteredContacts, setFilteredContacts] = useState<Contact[]>([])
   const [filteredContactForActions, setFilteredContactForActions] = useState<Contact | null>(null)
   const [isQuickFilterHelperOpen, setIsQuickFilterHelperOpen] = useState(false)
   const [isExportListModalOpen, setIsExportListModalOpen] = useState(false)
-  const handleFilteredContactsChange = useCallback((contacts: Contact[]) => {
-    setFilteredContacts(contacts)
-  }, [])
+  const { filteredContacts, setFilteredContacts } = useContactFilter()
+
+  const handleFilteredContactsChange = useCallback(
+    (contacts: Contact[]) => {
+      setFilteredContacts(contacts)
+    },
+    [setFilteredContacts]
+  )
+
+  // Initialize filtered contacts when data loads
+  useEffect(() => {
+    if (contacts.length > 0 && filteredContacts.length === 0) {
+      setFilteredContacts(contacts)
+    }
+  }, [contacts, filteredContacts.length, setFilteredContacts])
 
   const isAnyModalOpen =
     showContactForm ||
@@ -106,6 +122,7 @@ function ManagePageContent() {
     showActionViewModal ||
     showContactViewModal ||
     showContactNotesModal ||
+    showCampaignModal ||
     isExportListModalOpen
 
   useEffect(() => {
@@ -351,9 +368,7 @@ function ManagePageContent() {
 
   // Action handlers
   const handleAddAction = () => {
-    // Allow adding action if we have selectedContact OR filteredContactForActions
-    const contactToUse = selectedContact || filteredContactForActions
-    if (!contactToUse) return
+    if (!selectedContact) return
     setEditingAction(null)
     setActionForm({
       title: '',
@@ -402,6 +417,14 @@ function ManagePageContent() {
     setShowContactNotesModal(true)
   }
 
+  const handleFilterActions = (contact: Contact) => {
+    setFilteredContactForActions(contact)
+  }
+
+  const handleClearActionFilter = () => {
+    setFilteredContactForActions(null)
+  }
+
   const handleActionSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -422,14 +445,14 @@ function ManagePageContent() {
         closeActionForm()
       }
     } else {
-      // Create new action - needs a contact
+      // Create new action - needs selected contact or filtered selection
       const contactToUse = selectedContact || filteredContactForActions
       if (!contactToUse) return
 
       const success = await createAction(contactToUse.id, actionForm)
 
       if (success) {
-        const contactName = contactToUse ? `${contactToUse.first_name} ${contactToUse.last_name}` : 'Unknown Contact'
+        const contactName = `${contactToUse.first_name} ${contactToUse.last_name}`
         toast({
           title: 'Action created',
           description: `"${actionForm.title}" for ${contactName} was successfully created.`,
@@ -481,11 +504,7 @@ function ManagePageContent() {
         title: 'Action completed',
         description: `"${action.title}" for ${contactName} was marked as complete using the created date.`,
       })
-      logger.info(
-        `Action completed with created date: ${action.title} for ${contactName}`,
-        'action_complete_created',
-        action.contact_id
-      )
+      logger.info(`Action completed with created date: ${action.title} for ${contactName}`, 'action_complete_created', action.contact_id)
     }
   }
 
@@ -534,11 +553,6 @@ function ManagePageContent() {
     setViewingContact(null)
   }
 
-  const closeContactNotesModal = () => {
-    setShowContactNotesModal(false)
-    setEditingContactForNotes(null)
-  }
-
   const handleBackToAll = () => {
     setSingleContactView(false)
     setSelectedContact(null)
@@ -547,14 +561,6 @@ function ManagePageContent() {
     url.searchParams.delete('contact')
     url.searchParams.delete('action')
     window.history.replaceState({}, '', url.toString())
-  }
-
-  const handleFilterActions = (contact: Contact) => {
-    setFilteredContactForActions(contact)
-  }
-
-  const handleClearActionFilter = () => {
-    setFilteredContactForActions(null)
   }
 
   const loading = contactsLoading || actionsLoading
@@ -567,13 +573,9 @@ function ManagePageContent() {
           <div className="mx-auto max-w-7xl">
             <div className="animate-pulse">
               <div className="bg-muted mb-8 h-8 w-1/4 rounded"></div>
-              <div className="flex h-[calc(100vh-8rem)] flex-col gap-8 lg:flex-row">
-                <div className="min-w-0 flex-1 lg:flex-1">
-                  <div className="bg-muted h-full rounded"></div>
-                </div>
-                <div className="min-w-0 flex-1 lg:flex-1">
-                  <div className="bg-muted h-full rounded"></div>
-                </div>
+              <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+                <div className="bg-muted h-96 rounded"></div>
+                <div className="bg-muted h-96 rounded"></div>
               </div>
             </div>
           </div>
@@ -588,64 +590,62 @@ function ManagePageContent() {
 
       <div className="p-6">
         <div className="mx-auto max-w-7xl">
-          <div className="flex h-[calc(100vh-8rem)] flex-col gap-8 lg:flex-row">
-            {/* Contacts Section - Left Column */}
-            <div className="min-w-0 flex-1 lg:flex-1">
-              <div className="flex h-full flex-col">
-                <ContactList
-                  contacts={contacts}
-                  selectedContact={selectedContact}
-                  singleContactView={singleContactView}
-                  onAddContact={handleAddContact}
-                  onSelectContact={(contact) => {
-                    router.push(`/manage?contact=${contact.id}`)
-                  }}
-                  onEditContact={handleEditContact}
-                  onDeleteContact={handleDeleteContact}
-                  onViewContact={handleViewContact}
-                  onEditNotes={handleEditNotes}
-                  onFilterActions={handleFilterActions}
-                  onBackToAll={handleBackToAll}
-                  refreshTimestamp={refreshTimestamp}
-                  onFilteredContactsChange={handleFilteredContactsChange}
-                  onRefresh={fetchContacts}
-                  actions={actions}
-                  showFilterHelper={isQuickFilterHelperOpen}
-                  onShowFilterHelperChange={setIsQuickFilterHelperOpen}
-                  onExportListModalChange={setIsExportListModalOpen}
-                />
-              </div>
-            </div>
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+            {/* Contacts Section */}
+            <ContactList
+              contacts={contacts}
+              selectedContact={selectedContact}
+              singleContactView={singleContactView}
+              onAddContact={handleAddContact}
+              onSelectContact={(contact) => {
+                // Only log if selecting a different contact
+                if (!selectedContact || selectedContact.id !== contact.id) {
+                  const contactName = `${contact.first_name} ${contact.last_name}`
+                  logger.contactSelected(contactName, contact.id)
+                }
+                router.push(`/manage?contact=${contact.id}`)
+              }}
+              onEditContact={handleEditContact}
+              onDeleteContact={handleDeleteContact}
+              onViewContact={handleViewContact}
+              onEditNotes={handleEditNotes}
+              onFilterActions={handleFilterActions}
+              onBackToAll={handleBackToAll}
+              refreshTimestamp={refreshTimestamp}
+              onFilteredContactsChange={handleFilteredContactsChange}
+              onRefresh={fetchContacts}
+              actions={actions}
+              showFilterHelper={isQuickFilterHelperOpen}
+              onShowFilterHelperChange={setIsQuickFilterHelperOpen}
+              onExportListModalChange={setIsExportListModalOpen}
+              onCreateCampaign={() => setShowCampaignModal(true)}
+            />
 
-            {/* Actions Section - Right Column */}
-            <div className="min-w-0 flex-1 lg:flex-1">
-              <div className="flex h-full flex-col">
-                <ActionList
-                  actions={actions}
-                  contacts={contacts}
-                  selectedContact={selectedContact}
-                  filteredContacts={filteredContacts}
-                  filteredContactForActions={filteredContactForActions}
-                  onClearActionFilter={handleClearActionFilter}
-                  onAddAction={handleAddAction}
-                  onToggleComplete={handleToggleActionComplete}
-                  onCompleteWithCreatedDate={handleCompleteActionWithCreatedDate}
-                  onEditAction={handleEditAction}
-                  onViewAction={handleViewAction}
-                  onDeleteAction={handleDeleteAction}
-                  showCompletedActions={showCompletedActions}
-                  onToggleShowCompleted={() => setShowCompletedActions((v) => !v)}
-                  onSelectContact={(contactId) => {
-                    const contact = contacts.find((c) => c.id === contactId)
-                    if (contact && (!selectedContact || selectedContact.id !== contact.id)) {
-                      const contactName = `${contact.first_name} ${contact.last_name}`
-                      logger.contactSelected(contactName, contact.id)
-                    }
-                    router.push(`/manage?contact=${contactId}`)
-                  }}
-                />
-              </div>
-            </div>
+            {/* Actions Section */}
+            <ActionList
+              actions={actions}
+              contacts={contacts}
+              selectedContact={selectedContact}
+              filteredContacts={filteredContacts}
+              filteredContactForActions={filteredContactForActions}
+              onClearActionFilter={handleClearActionFilter}
+              onAddAction={handleAddAction}
+              onToggleComplete={handleToggleActionComplete}
+              onCompleteWithCreatedDate={handleCompleteActionWithCreatedDate}
+              onEditAction={handleEditAction}
+              onViewAction={handleViewAction}
+              onDeleteAction={handleDeleteAction}
+              showCompletedActions={showCompletedActions}
+              onToggleShowCompleted={() => setShowCompletedActions((v) => !v)}
+              onSelectContact={(contactId) => {
+                const contact = contacts.find((c) => c.id === contactId)
+                if (contact && (!selectedContact || selectedContact.id !== contact.id)) {
+                  const contactName = `${contact.first_name} ${contact.last_name}`
+                  logger.contactSelected(contactName, contact.id)
+                }
+                router.push(`/manage?contact=${contactId}`)
+              }}
+            />
           </div>
 
           {/* Contact Form Modal */}
@@ -703,10 +703,29 @@ function ManagePageContent() {
             onContactUpdated={fetchContacts}
           />
 
+          {/* Campaign Modal */}
+          <Dialog open={showCampaignModal} onOpenChange={setShowCampaignModal}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Mail className="h-5 w-5" />
+                  Create Email Campaign
+                </DialogTitle>
+              </DialogHeader>
+              <CampaignFromFilter
+                filteredContacts={filteredContacts}
+                onClose={() => setShowCampaignModal(false)}
+              />
+            </DialogContent>
+          </Dialog>
+
           {/* Contact Notes Modal */}
           <ContactNotesModal
             isOpen={showContactNotesModal}
-            onClose={closeContactNotesModal}
+            onClose={() => {
+              setShowContactNotesModal(false)
+              setEditingContactForNotes(null)
+            }}
             contact={editingContactForNotes}
             onContactUpdated={fetchContacts}
           />
@@ -726,13 +745,9 @@ export default function ManagePage() {
             <div className="mx-auto max-w-7xl">
               <div className="animate-pulse">
                 <div className="bg-muted mb-8 h-8 w-1/4 rounded"></div>
-                <div className="flex h-[calc(100vh-8rem)] flex-col gap-8 lg:flex-row">
-                  <div className="min-w-0 flex-1 lg:flex-1">
-                    <div className="bg-muted h-full rounded"></div>
-                  </div>
-                  <div className="min-w-0 flex-1 lg:flex-1">
-                    <div className="bg-muted h-full rounded"></div>
-                  </div>
+                <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
+                  <div className="bg-muted h-96 rounded"></div>
+                  <div className="bg-muted h-96 rounded"></div>
                 </div>
               </div>
             </div>
