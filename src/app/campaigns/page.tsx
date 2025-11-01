@@ -432,11 +432,19 @@ function CampaignAnalytics({ campaign }: { campaign: Campaign }) {
                         {recipient.first_name} {recipient.last_name}
                       </div>
                       <div className="text-sm text-muted-foreground">{recipient.email_address}</div>
+                      {recipient.error_message && (
+                        <div className="text-xs text-red-600 mt-1">{recipient.error_message}</div>
+                      )}
+                      {recipient.resend_message_id && (
+                        <div className="text-xs text-muted-foreground mt-1">ID: {recipient.resend_message_id}</div>
+                      )}
                     </div>
                   </div>
                   <Badge variant={
                     recipient.enabled === false ? 'destructive' :
-                    recipient.status === 'sent' ? 'default' : 'secondary'
+                    recipient.status === 'sent' ? 'default' : 
+                    recipient.status === 'failed' ? 'destructive' :
+                    'secondary'
                   }>
                     {recipient.enabled === false ? 'disabled' : recipient.status}
                   </Badge>

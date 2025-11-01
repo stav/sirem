@@ -213,8 +213,34 @@ export function useCampaigns() {
         })
         .eq('id', campaignId)
 
-      // Update recipient statuses - mark all sent recipients as sent regardless of previous status
-      if (result.success > 0) {
+      // Update recipient statuses individually with API response data
+      if (result.results && result.results.length > 0) {
+        const updates = result.results.map(emailResult => {
+          const recipient = enabledRecipients.find(r => r.email_address === emailResult.email)
+          if (!recipient) return null
+
+          const updateData: Record<string, unknown> = {
+            status: emailResult.success ? 'sent' : 'failed',
+            sent_at: new Date().toISOString()
+          }
+
+          if (emailResult.messageId) {
+            updateData.resend_message_id = emailResult.messageId
+          }
+
+          if (emailResult.error) {
+            updateData.error_message = emailResult.error
+          }
+
+          return supabase
+            .from('campaign_recipients')
+            .update(updateData)
+            .eq('id', recipient.id)
+        }).filter(Boolean)
+
+        await Promise.all(updates)
+      } else if (result.success > 0) {
+        // Fallback: update all enabled recipients as sent if no individual results
         const enabledRecipientIds = enabledRecipients.map(r => r.id)
         await supabase
           .from('campaign_recipients')

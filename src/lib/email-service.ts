@@ -69,6 +69,13 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
   }
 }
 
+export interface EmailResult {
+  email: string
+  success: boolean
+  messageId?: string
+  error?: string
+}
+
 /**
  * Send bulk emails with rate limiting and personalization
  */
@@ -78,10 +85,11 @@ export async function sendBulkEmails(
   from: string,
   batchSize: number = 10,
   delayMs: number = 1000
-): Promise<{ success: number; failed: number; errors: string[] }> {
+): Promise<{ success: number; failed: number; errors: string[]; results: EmailResult[] }> {
   let successCount = 0
   let failedCount = 0
   const errors: string[] = []
+  const results: EmailResult[] = []
 
   // Process recipients individually for personalization
   for (let i = 0; i < recipients.length; i += batchSize) {
@@ -112,6 +120,14 @@ export async function sendBulkEmails(
         textContent: personalizedTextContent
       })
 
+      const emailResult: EmailResult = {
+        email: recipient.email,
+        success: result.success,
+        messageId: result.messageId,
+        error: result.error
+      }
+      results.push(emailResult)
+
       if (result.success) {
         successCount += 1
       } else {
@@ -126,7 +142,7 @@ export async function sendBulkEmails(
     }
   }
 
-  return { success: successCount, failed: failedCount, errors }
+  return { success: successCount, failed: failedCount, errors, results }
 }
 
 /**
