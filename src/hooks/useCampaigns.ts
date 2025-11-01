@@ -232,7 +232,7 @@ export function useCampaigns() {
           .in('id', enabledRecipientIds)
       }
 
-      // Check if any emails were successfully sent
+      // Update campaign status based on results
       if (result.success === 0 && result.failed > 0) {
         // All emails failed
         await supabase
@@ -240,10 +240,16 @@ export function useCampaigns() {
           .update({ status: 'cancelled' })
           .eq('id', campaignId)
         
-        throw new Error(`Failed to send all emails. ${result.errors.join('; ')}`)
+        await fetchCampaigns()
+        return { 
+          success: false, 
+          error: `All emails failed to send. ${result.errors.join('; ')}`,
+          sent: result.success,
+          failed: result.failed
+        }
       }
 
-      // Update campaign status
+      // Some or all emails succeeded
       await supabase
         .from('campaigns')
         .update({ 
