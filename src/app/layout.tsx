@@ -5,6 +5,7 @@ import { ToastProvider } from '@/components/ToastProvider'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { ThemeProvider } from '@/contexts/ThemeContext'
 import { PlanCacheProvider } from '@/contexts/PlanCacheContext'
+import { ContactFilterProvider } from '@/contexts/ContactFilterContext'
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -34,9 +35,11 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         <ThemeProvider>
           <PlanCacheProvider>
-            <TooltipProvider>
-              <ToastProvider>{children}</ToastProvider>
-            </TooltipProvider>
+            <ContactFilterProvider>
+              <TooltipProvider>
+                <ToastProvider>{children}</ToastProvider>
+              </TooltipProvider>
+            </ContactFilterProvider>
           </PlanCacheProvider>
         </ThemeProvider>
       </body>

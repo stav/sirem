@@ -70,7 +70,7 @@ interface ContactCardProps {
   onEdit: (contact: Contact) => void
   onDelete: (contactId: string) => void
   onView: (contact: Contact) => void
-  onEditNotes: (contact: Contact) => void
+  onEditNotes?: (contact: Contact) => void
   onFilterActions?: (contact: Contact) => void
   refreshTimestamp?: number
 }
@@ -185,23 +185,25 @@ export default function ContactCard({
             </TooltipTrigger>
             <TooltipContent>View contact</TooltipContent>
           </Tooltip>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onEditNotes(contact)
-                }}
-                className="h-8 w-8 cursor-pointer p-0 hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-950/50 dark:hover:text-green-400"
-                aria-label="Edit notes"
-              >
-                <FileText className="h-4 w-4" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>Edit notes</TooltipContent>
-          </Tooltip>
+          {onEditNotes && (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onEditNotes(contact)
+                  }}
+                  className="h-8 w-8 cursor-pointer p-0 hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-950/50 dark:hover:text-green-400"
+                  aria-label="Edit notes"
+                >
+                  <FileText className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>Edit notes</TooltipContent>
+            </Tooltip>
+          )}
           <Tooltip>
             <TooltipTrigger asChild>
               <Button
