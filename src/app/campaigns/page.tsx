@@ -4,9 +4,10 @@ import { useState, useEffect } from 'react'
 import Navigation from '@/components/Navigation'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Plus, Mail, BarChart3 } from 'lucide-react'
+import { Plus, Mail, BarChart3, CheckCircle2 } from 'lucide-react'
 import { useCampaigns, Campaign } from '@/hooks/useCampaigns'
 import { useContactFilter } from '@/contexts/ContactFilterContext'
 import CampaignList from '@/components/CampaignList'
@@ -279,9 +280,12 @@ export default function CampaignsPage() {
 function CampaignAnalytics({ campaign }: { campaign: Campaign }) {
   const [recipients, setRecipients] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const { toast } = useToast()
 
-  useEffect(() => {
-    async function fetchRecipients() {
+  const fetchRecipients = async () => {
+    setLoading(true)
+    try {
       const { supabase } = await import('@/lib/supabase')
       const { data, error } = await supabase
         .from('campaign_recipients')
@@ -292,11 +296,42 @@ function CampaignAnalytics({ campaign }: { campaign: Campaign }) {
       if (!error && data) {
         setRecipients(data)
       }
+    } finally {
       setLoading(false)
     }
-    
+  }
+
+  useEffect(() => {
     fetchRecipients()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaign.id])
+
+  const handleToggleEnabled = async (recipientId: string, enabled: boolean) => {
+    setSaving(true)
+    try {
+      const { supabase } = await import('@/lib/supabase')
+      const { error } = await supabase
+        .from('campaign_recipients')
+        .update({ enabled })
+        .eq('id', recipientId)
+
+      if (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to update recipient',
+          variant: 'destructive'
+        })
+      } else {
+        // Update local state
+        setRecipients(prev => prev.map(r => r.id === recipientId ? { ...r, enabled } : r))
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const enabledCount = recipients.filter(r => r.enabled !== false).length
+  const canEdit = campaign.status === 'draft' || campaign.status === 'scheduled'
 
   return (
     <div className="space-y-6">
@@ -312,6 +347,10 @@ function CampaignAnalytics({ campaign }: { campaign: Campaign }) {
               <div className="text-2xl font-bold">{campaign.total_recipients}</div>
             </div>
             <div>
+              <div className="text-sm text-muted-foreground">Enabled</div>
+              <div className="text-2xl font-bold">{enabledCount}</div>
+            </div>
+            <div>
               <div className="text-sm text-muted-foreground">Sent</div>
               <div className="text-2xl font-bold">{campaign.sent_count}</div>
             </div>
@@ -319,17 +358,20 @@ function CampaignAnalytics({ campaign }: { campaign: Campaign }) {
               <div className="text-sm text-muted-foreground">Delivered</div>
               <div className="text-2xl font-bold">{campaign.delivered_count}</div>
             </div>
-            <div>
-              <div className="text-sm text-muted-foreground">Opened</div>
-              <div className="text-2xl font-bold">{campaign.opened_count}</div>
-            </div>
           </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Recipients ({recipients.length})</CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle>Recipients ({recipients.length})</CardTitle>
+            {canEdit && (
+              <div className="text-sm text-muted-foreground">
+                {enabledCount} enabled
+              </div>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {loading ? (
@@ -339,12 +381,21 @@ function CampaignAnalytics({ campaign }: { campaign: Campaign }) {
           ) : (
             <div className="space-y-2">
               {recipients.map((recipient) => (
-                <div key={recipient.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <div className="font-medium">
-                      {recipient.first_name} {recipient.last_name}
+                <div key={recipient.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-muted/50">
+                  <div className="flex items-center gap-3 flex-1">
+                    {canEdit && (
+                      <Checkbox
+                        checked={recipient.enabled !== false}
+                        onCheckedChange={(checked) => handleToggleEnabled(recipient.id, checked as boolean)}
+                        disabled={saving}
+                      />
+                    )}
+                    <div className={canEdit && recipient.enabled === false ? 'opacity-50' : ''}>
+                      <div className="font-medium">
+                        {recipient.first_name} {recipient.last_name}
+                      </div>
+                      <div className="text-sm text-muted-foreground">{recipient.email_address}</div>
                     </div>
-                    <div className="text-sm text-muted-foreground">{recipient.email_address}</div>
                   </div>
                   <Badge variant={recipient.status === 'sent' ? 'default' : 'secondary'}>
                     {recipient.status}

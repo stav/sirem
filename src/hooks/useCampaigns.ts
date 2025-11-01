@@ -152,7 +152,7 @@ export function useCampaigns() {
         throw new Error('Campaign not found')
       }
 
-      // Get recipients
+      // Get recipients - only those that are enabled
       const { data: recipients, error: recipientsError } = await supabase
         .from('campaign_recipients')
         .select('*')
@@ -163,9 +163,12 @@ export function useCampaigns() {
         throw new Error('Failed to fetch recipients')
       }
 
+      // Filter to only enabled recipients
+      const enabledRecipients = recipients.filter(r => r.enabled !== false)
+
       // Prepare email data
       const emailConfig = getDefaultEmailConfig()
-      const emailRecipients = recipients.map(r => ({
+      const emailRecipients = enabledRecipients.map(r => ({
         email: r.email_address,
         firstName: r.first_name,
         lastName: r.last_name
@@ -194,8 +197,9 @@ export function useCampaigns() {
         })
         .eq('id', campaignId)
 
-      // Update recipient statuses
+      // Update recipient statuses - only for enabled recipients that were sent
       if (result.success > 0) {
+        const enabledRecipientIds = enabledRecipients.map(r => r.id)
         await supabase
           .from('campaign_recipients')
           .update({ 
@@ -204,6 +208,7 @@ export function useCampaigns() {
           })
           .eq('campaign_id', campaignId)
           .eq('status', 'pending')
+          .in('id', enabledRecipientIds)
       }
 
       await fetchCampaigns()
