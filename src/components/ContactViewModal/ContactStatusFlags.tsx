@@ -51,7 +51,6 @@ export default function ContactStatusFlags({ contact }: ContactStatusFlagsProps)
   const statusDisplay = getStatusBadge(contact.status)
   const medicaidDisplay = getBooleanDisplay(contact.has_medicaid)
   const tobaccoDisplay = getBooleanDisplay(contact.is_tobacco_user)
-  const inactiveDisplay = getBooleanDisplay(contact.inactive)
   const communicationDisplay = getCommunicationDisplay(contact.primary_communication)
   const recordTypeDisplay = getRecordTypeDisplay(contact.contact_record_type)
 
@@ -118,17 +117,6 @@ export default function ContactStatusFlags({ contact }: ContactStatusFlagsProps)
           <Badge className={communicationDisplay.className}>
             <CommunicationIcon className="mr-1 h-3 w-3" />
             {communicationDisplay.text}
-          </Badge>
-        </div>
-      </div>
-
-      {/* Active Status */}
-      <div>
-        <Label className="text-muted-foreground text-sm font-medium">Active Status</Label>
-        <div className="mt-1">
-          <Badge className={inactiveDisplay.className}>
-            {contact.inactive ? <XCircle className="mr-1 h-3 w-3" /> : <CheckCircle className="mr-1 h-3 w-3" />}
-            {inactiveDisplay.text}
           </Badge>
         </div>
       </div>

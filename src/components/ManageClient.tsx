@@ -10,6 +10,9 @@ import ActionViewModal from '@/components/ActionViewModal'
 import ContactViewModal from '@/components/ContactViewModal'
 import ContactForm from '@/components/ContactForm'
 import ContactNotesModal from '@/components/ContactNotesModal'
+import CampaignFromFilter from '@/components/CampaignFromFilter'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { Mail } from 'lucide-react'
 import { useContacts, PendingRole } from '@/hooks/useContacts'
 import { useActions } from '@/hooks/useActions'
 import { useToast } from '@/hooks/use-toast'
@@ -107,6 +110,7 @@ export default function ManageClient({ initialContacts, initialActions }: Manage
   const [filteredContactForActions, setFilteredContactForActions] = useState<Contact | null>(null)
   const [isQuickFilterHelperOpen, setIsQuickFilterHelperOpen] = useState(false)
   const [isExportListModalOpen, setIsExportListModalOpen] = useState(false)
+  const [showCampaignModal, setShowCampaignModal] = useState(false)
   const handleFilteredContactsChange = useCallback((contacts: Contact[]) => {
     setFilteredContacts(contacts)
   }, [])
@@ -118,8 +122,9 @@ export default function ManageClient({ initialContacts, initialActions }: Manage
       showActionViewModal ||
       showContactViewModal ||
       showContactNotesModal ||
-      isExportListModalOpen,
-    [showContactForm, showActionForm, showActionViewModal, showContactViewModal, showContactNotesModal, isExportListModalOpen]
+      isExportListModalOpen ||
+      showCampaignModal,
+    [showContactForm, showActionForm, showActionViewModal, showContactViewModal, showContactNotesModal, isExportListModalOpen, showCampaignModal]
   )
 
   useEffect(() => {
@@ -128,7 +133,7 @@ export default function ManageClient({ initialContacts, initialActions }: Manage
       if (selectedContact) return
       if (isAnyModalOpen) return
       if (event.ctrlKey || event.metaKey || event.altKey) return
-      if (event.key.toLowerCase() !== 'f') return
+      if (!event.key || event.key.toLowerCase() !== 'f') return
       if (event.repeat) return
 
       const target = event.target as HTMLElement | null
@@ -657,6 +662,7 @@ export default function ManageClient({ initialContacts, initialActions }: Manage
                   showFilterHelper={isQuickFilterHelperOpen}
                   onShowFilterHelperChange={setIsQuickFilterHelperOpen}
                   onExportListModalChange={setIsExportListModalOpen}
+                  onCreateCampaign={() => setShowCampaignModal(true)}
                 />
               </div>
             </div>
@@ -744,6 +750,22 @@ export default function ManageClient({ initialContacts, initialActions }: Manage
             updateContact={updateContact} // Pass the updateContact function from the hook
             onContactUpdated={() => fetchContacts(true)} // Pass true to indicate refresh, not initial load
           />
+
+          {/* Campaign Modal */}
+          <Dialog open={showCampaignModal} onOpenChange={setShowCampaignModal}>
+            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Mail className="h-5 w-5" />
+                  Create Email Campaign
+                </DialogTitle>
+              </DialogHeader>
+              <CampaignFromFilter
+                filteredContacts={filteredContacts}
+                onClose={() => setShowCampaignModal(false)}
+              />
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
     </div>
