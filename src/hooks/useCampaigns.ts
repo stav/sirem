@@ -192,28 +192,8 @@ export function useCampaigns() {
         1000 // delay between batches
       )
 
-      // Check if any emails were successfully sent
-      if (result.success === 0 && result.failed > 0) {
-        // All emails failed
-        await supabase
-          .from('campaigns')
-          .update({ status: 'cancelled' })
-          .eq('id', campaignId)
-        
-        throw new Error(`Failed to send all emails. ${result.errors.join('; ')}`)
-      }
-
-      // Update campaign status
-      await supabase
-        .from('campaigns')
-        .update({ 
-          status: 'sent',
-          sent_at: new Date().toISOString(),
-          sent_count: result.success
-        })
-        .eq('id', campaignId)
-
-      // Update recipient statuses individually with API response data
+      // Update recipient statuses individually with API response data FIRST
+      // This ensures we capture all results even if all emails fail
       if (result.results && result.results.length > 0) {
         const updates = result.results.map(emailResult => {
           const recipient = enabledRecipients.find(r => r.email_address === emailResult.email)
@@ -251,6 +231,27 @@ export function useCampaigns() {
           .eq('campaign_id', campaignId)
           .in('id', enabledRecipientIds)
       }
+
+      // Check if any emails were successfully sent
+      if (result.success === 0 && result.failed > 0) {
+        // All emails failed
+        await supabase
+          .from('campaigns')
+          .update({ status: 'cancelled' })
+          .eq('id', campaignId)
+        
+        throw new Error(`Failed to send all emails. ${result.errors.join('; ')}`)
+      }
+
+      // Update campaign status
+      await supabase
+        .from('campaigns')
+        .update({ 
+          status: 'sent',
+          sent_at: new Date().toISOString(),
+          sent_count: result.success
+        })
+        .eq('id', campaignId)
 
       await fetchCampaigns()
       return { success: true, sent: result.success, failed: result.failed }
