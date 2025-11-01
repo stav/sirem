@@ -56,16 +56,17 @@ export default function CampaignList({
   const [campaignToDelete, setCampaignToDelete] = useState<string | null>(null)
 
   const getStatusBadge = (status: Campaign['status']) => {
-    const statusConfig = {
-      draft: { variant: 'secondary' as const, icon: Edit, label: 'Draft' },
-      scheduled: { variant: 'outline' as const, icon: Clock, label: 'Scheduled' },
-      sending: { variant: 'default' as const, icon: Send, label: 'Sending' },
-      sent: { variant: 'default' as const, icon: CheckCircle, label: 'Sent' },
-      paused: { variant: 'secondary' as const, icon: Pause, label: 'Paused' },
-      cancelled: { variant: 'destructive' as const, icon: XCircle, label: 'Cancelled' }
+    const statusConfig: Record<string, { variant: 'secondary' | 'outline' | 'default' | 'destructive', icon: React.ComponentType<{ className?: string }>, label: string }> = {
+      draft: { variant: 'secondary', icon: Edit, label: 'Draft' },
+      scheduled: { variant: 'outline', icon: Clock, label: 'Scheduled' },
+      sending: { variant: 'default', icon: Send, label: 'Sending' },
+      sent: { variant: 'default', icon: CheckCircle, label: 'Sent' },
+      paused: { variant: 'secondary', icon: Pause, label: 'Paused' },
+      cancelled: { variant: 'destructive', icon: XCircle, label: 'Cancelled' }
     }
 
-    const config = statusConfig[status]
+    const statusStr = status || 'unknown'
+    const config = statusConfig[statusStr] || { variant: 'secondary' as const, icon: Edit, label: statusStr }
     const Icon = config.icon
 
     return (
@@ -104,16 +105,23 @@ export default function CampaignList({
   const getDeliveryStats = (campaign: Campaign) => {
     const { total_recipients, sent_count, delivered_count, opened_count, clicked_count, bounce_count } = campaign
     
+    const total = total_recipients ?? 0
+    const sent = sent_count ?? 0
+    const delivered = delivered_count ?? 0
+    const opened = opened_count ?? 0
+    const clicked = clicked_count ?? 0
+    const bounced = bounce_count ?? 0
+    
     return {
-      total: total_recipients,
-      sent: sent_count,
-      delivered: delivered_count,
-      opened: opened_count,
-      clicked: clicked_count,
-      bounced: bounce_count,
-      deliveryRate: total_recipients > 0 ? Math.round((delivered_count / total_recipients) * 100) : 0,
-      openRate: delivered_count > 0 ? Math.round((opened_count / delivered_count) * 100) : 0,
-      clickRate: delivered_count > 0 ? Math.round((clicked_count / delivered_count) * 100) : 0
+      total,
+      sent,
+      delivered,
+      opened,
+      clicked,
+      bounced,
+      deliveryRate: total > 0 ? Math.round((delivered / total) * 100) : 0,
+      openRate: delivered > 0 ? Math.round((opened / delivered) * 100) : 0,
+      clickRate: delivered > 0 ? Math.round((clicked / delivered) * 100) : 0
     }
   }
 

@@ -27,8 +27,8 @@ interface CampaignFormProps {
     name: string
     subject: string
     content: string
-    html_content?: string
-    scheduled_at?: string
+    html_content?: string | null
+    scheduled_at?: string | null
   }
 }
 

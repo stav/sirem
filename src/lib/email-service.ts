@@ -2,8 +2,8 @@
 
 export interface EmailRecipient {
   email: string
-  firstName?: string
-  lastName?: string
+  firstName?: string | null
+  lastName?: string | null
 }
 
 export interface EmailTemplate {
@@ -135,8 +135,8 @@ export async function sendBulkEmails(
 export function createPersonalizedTemplate(
   template: string,
   contact: {
-    firstName?: string
-    lastName?: string
+    firstName?: string | null
+    lastName?: string | null
     email?: string
   }
 ): string {
@@ -172,9 +172,9 @@ export function isValidEmail(email: string): boolean {
  * Extract email addresses from contact data
  */
 export function extractEmailAddresses(contacts: Array<{
-  email?: string
-  first_name?: string
-  last_name?: string
+  email?: string | null
+  first_name?: string | null
+  last_name?: string | null
   emails?: Array<{
     email_address?: string
     inactive?: boolean

@@ -32,19 +32,11 @@ export default function CampaignFromFilter({
 
   // Extract email addresses from filtered contacts
   const emailRecipients = filteredContacts
-    .filter(contact => {
-      // Check main email field
-      if (contact.email) return true
-      // Check emails from related emails table
-      if (contact.emails && contact.emails.length > 0) {
-        return contact.emails.some((email) => !email.inactive)
-      }
-      return false
-    })
+    .filter(contact => contact.email) // Only include contacts with email
     .map(contact => ({
-      email: contact.email || contact.emails?.find((e) => !e.inactive)?.email_address,
-      firstName: contact.first_name,
-      lastName: contact.last_name,
+      email: contact.email!,
+      firstName: contact.first_name || undefined,
+      lastName: contact.last_name || undefined,
       contact
     }))
 

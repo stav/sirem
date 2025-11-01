@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { sendBulkEmails, extractEmailAddresses, getDefaultEmailConfig } from '@/lib/email-service'
 import type { Database } from '@/lib/supabase'
+import type { Json } from '@/lib/supabase-types'
 
 type Contact = Database['public']['Tables']['contacts']['Row']
 
@@ -12,18 +13,18 @@ export interface Campaign {
   name: string
   subject: string
   content: string
-  html_content?: string
-  status: 'draft' | 'scheduled' | 'sending' | 'sent' | 'paused' | 'cancelled'
-  created_by?: string
-  scheduled_at?: string
-  sent_at?: string
-  total_recipients: number
-  sent_count: number
-  delivered_count: number
-  opened_count: number
-  clicked_count: number
-  bounce_count: number
-  metadata?: Record<string, unknown>
+  html_content?: string | null
+  status: string | null
+  created_by?: string | null
+  scheduled_at?: string | null
+  sent_at?: string | null
+  total_recipients: number | null
+  sent_count: number | null
+  delivered_count: number | null
+  opened_count: number | null
+  clicked_count: number | null
+  bounce_count: number | null
+  metadata?: Json
 }
 
 export interface CampaignRecipient {
@@ -33,17 +34,18 @@ export interface CampaignRecipient {
   campaign_id: string
   contact_id: string
   email_address: string
-  first_name?: string
-  last_name?: string
-  status: 'pending' | 'sent' | 'delivered' | 'opened' | 'clicked' | 'bounced' | 'failed'
-  sent_at?: string
-  delivered_at?: string
-  opened_at?: string
-  clicked_at?: string
-  bounced_at?: string
-  error_message?: string
-  resend_message_id?: string
-  metadata?: Record<string, unknown>
+  enabled: boolean | null
+  first_name: string | null
+  last_name: string | null
+  status: string | null
+  sent_at: string | null
+  delivered_at: string | null
+  opened_at: string | null
+  clicked_at: string | null
+  bounced_at: string | null
+  error_message: string | null
+  resend_message_id: string | null
+  metadata: Json | null
 }
 
 export interface CampaignForm {
@@ -110,11 +112,7 @@ export function useCampaigns() {
       // Create campaign recipients
       const recipientData = recipients.map(recipient => ({
         campaign_id: campaign.id,
-        contact_id: contacts.find(c => {
-          if (c.email === recipient.email) return true
-          const emailMatch = c.emails?.some((e) => e.email_address === recipient.email)
-          return emailMatch
-        })?.id || '',
+        contact_id: contacts.find(c => c.email === recipient.email)?.id || '',
         email_address: recipient.email,
         first_name: recipient.firstName,
         last_name: recipient.lastName,
@@ -186,7 +184,7 @@ export function useCampaigns() {
         emailRecipients,
         {
           subject: campaign.subject,
-          htmlContent: campaign.html_content || campaign.content,
+          htmlContent: campaign.html_content ?? campaign.content,
           textContent: campaign.content
         },
         emailConfig.from,

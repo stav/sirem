@@ -13,6 +13,9 @@ import { useContactFilter } from '@/contexts/ContactFilterContext'
 import CampaignList from '@/components/CampaignList'
 import CampaignForm from '@/components/CampaignForm'
 import { useToast } from '@/hooks/use-toast'
+import type { Database } from '@/lib/supabase'
+
+type CampaignRecipientRow = Database['public']['Tables']['campaign_recipients']['Row']
 
 export default function CampaignsPage() {
   const [activeTab, setActiveTab] = useState('list')
@@ -49,7 +52,6 @@ export default function CampaignsPage() {
           title: "Campaign Created",
           description: "Your email campaign has been created successfully.",
         })
-        setShowCreateForm(false)
         setActiveTab('list')
       } else {
         toast({
@@ -161,7 +163,6 @@ export default function CampaignsPage() {
   }
 
   const handleCancelForm = () => {
-    setShowCreateForm(false)
     setEditingCampaign(null)
     setActiveTab('list')
   }
@@ -180,7 +181,6 @@ export default function CampaignsPage() {
             </div>
             <Button 
               onClick={() => {
-                setShowCreateForm(true)
                 setActiveTab('create')
               }}
               className="flex items-center gap-2"
@@ -277,14 +277,7 @@ export default function CampaignsPage() {
 
 // Campaign analytics component with recipients list
 function CampaignAnalytics({ campaign }: { campaign: Campaign }) {
-  const [recipients, setRecipients] = useState<Array<{
-    id: string
-    email_address: string
-    first_name: string
-    last_name: string
-    status: string
-    enabled?: boolean
-  }>>([])
+  const [recipients, setRecipients] = useState<CampaignRecipientRow[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const { toast } = useToast()
