@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react'
-import { Plus, ArrowLeft, ChevronDown, ChevronUp, X, List, Filter, RefreshCw } from 'lucide-react'
+import { Plus, ArrowLeft, ChevronDown, ChevronUp, X, List, Filter, RefreshCw, Mail } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import ContactCard from './ContactCard'
 import FilterHelper from './FilterHelper'
 import { getT65Days, formatLocalDate, calculateAge, getDaysPast65 } from '@/lib/contact-utils'
@@ -48,6 +48,7 @@ interface ContactListProps {
   showFilterHelper?: boolean
   onShowFilterHelperChange?: (isOpen: boolean) => void
   onExportListModalChange?: (isOpen: boolean) => void
+  onCreateCampaign?: () => void
 }
 
 export default function ContactList({
@@ -69,6 +70,7 @@ export default function ContactList({
   showFilterHelper: showFilterHelperProp,
   onShowFilterHelperChange,
   onExportListModalChange,
+  onCreateCampaign,
 }: ContactListProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [filter, setFilter] = useState('')
@@ -173,31 +175,20 @@ export default function ContactList({
         // Custom filtering: x:filter_name
         const customFilterQuery = activeTerm.substring(2).toLowerCase()
         if (customFilterQuery === 'medicare_phone') {
-          // Medicare Phone filter: must have Medicare role, have phone, NOT have AEP-2026_Ready tag, NOT have recent actions, NOT have "Cannot-Help" tag, NOT have status "Brandon", NOT have status "Not-eligible", and NOT have status "already-enrolled"
           // Check for Medicare role
           const hasMedicareRole =
             contact.contact_roles?.some(
               (role) => role.role_type?.toLowerCase().includes('medicare') && role.is_active !== false
             ) || false
-
-          // Check if phone field has a value
           const hasPhone = !!contact.phone && contact.phone.trim() !== ''
-
-          // Check if contact does NOT have the "Ready" tag in the "AEP 2026" category
           const contactTags = contact.contact_tags || []
           const hasAEP2026ReadyTag = contactTags.some(
             (ct) => ct.tags.label.toLowerCase() === 'ready' && ct.tags.tag_categories?.name === 'AEP 2026'
           )
-
-          // Check if contact does NOT have the "Cannot-Help" tag in the "Other" category
           const hasCannotHelpTag = contactTags.some(
             (ct) => ct.tags.label.toLowerCase() === 'cannot-help' && ct.tags.tag_categories?.name === 'Other'
           )
-
-          // Check if contact does NOT have status "Brandon"
           const hasBrandonStatus = contact.status?.toLowerCase() === 'brandon'
-
-          // Check if contact does NOT have status "Not-eligible"
           const hasNotEligibleStatus = contact.status?.toLowerCase() === 'not-eligible'
 
           // Check if contact does NOT have status "already-enrolled"
@@ -428,7 +419,7 @@ export default function ContactList({
         postalCode,
         contact.phone || '',
         contact.email || '',
-      ].map((field) => `"${String(field).replace(/"/g, '""')}"`) // Escape quotes in CSV
+      ].map((field) => `"${String(field).replace(/"/g, '""')}"`)
 
       return row.join(',')
     })
@@ -534,60 +525,82 @@ export default function ContactList({
               <div className="flex space-x-2">
                 {contacts.length > 0 && (
                   <>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          onClick={() => setShowFilterHelper((prev) => !prev)}
-                          size="sm"
-                          variant={filterHelperOpen ? 'default' : 'outline'}
-                          className="cursor-pointer"
-                        >
-                          <Filter className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Filter helper</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    {onRefresh && (
+                    <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <Button onClick={onRefresh} size="sm" variant="outline" className="cursor-pointer">
-                            <RefreshCw className="h-4 w-4" />
+                          <Button
+                            onClick={() => setShowFilterHelper((prev) => !prev)}
+                            size="sm"
+                            variant={filterHelperOpen ? 'default' : 'outline'}
+                            className="cursor-pointer"
+                          >
+                            <Filter className="h-4 w-4" />
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          <p>Refresh contact list</p>
+                          <p>Filter helper</p>
                         </TooltipContent>
                       </Tooltip>
+                    </TooltipProvider>
+                    {onRefresh && (
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button onClick={onRefresh} size="sm" variant="outline" className="cursor-pointer">
+                              <RefreshCw className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Refresh contact list</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     )}
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          onClick={() => setShowExportListModal(true)}
-                          size="sm"
-                          variant="outline"
-                          className="cursor-pointer"
-                        >
-                          <List className="h-4 w-4" />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Copy contact list for printing</p>
-                      </TooltipContent>
-                    </Tooltip>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={() => setShowExportListModal(true)}
+                            size="sm"
+                            variant="outline"
+                            className="cursor-pointer"
+                          >
+                            <List className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Copy contact list for printing</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </>
                 )}
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button onClick={onAddContact} size="sm" className="cursor-pointer">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" align="end" sideOffset={5}>
-                    <p>Add Contact</p>
-                  </TooltipContent>
-                </Tooltip>
+                {onCreateCampaign && filteredContacts.length > 0 && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button onClick={onCreateCampaign} size="sm" variant="outline" className="cursor-pointer">
+                          <Mail className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="bottom" align="end" sideOffset={5}>
+                        <p>Create Email Campaign</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button onClick={onAddContact} size="sm" className="cursor-pointer">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" align="end" sideOffset={5}>
+                      <p>Add Contact</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             )}
           </div>
@@ -600,16 +613,18 @@ export default function ContactList({
             {contacts.length === 0 ? (
               <div className="py-8 text-center">
                 <p className="text-muted-foreground">No contacts yet</p>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button onClick={onAddContact} className="mt-2 cursor-pointer">
-                      <Plus className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Add your first contact</p>
-                  </TooltipContent>
-                </Tooltip>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button onClick={onAddContact} className="mt-2 cursor-pointer">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Add your first contact</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             ) : (
               <div className="space-y-3">
@@ -645,8 +660,8 @@ export default function ContactList({
             }
           }}
         >
-          <div className="bg-card text-card-foreground border-border flex max-h-[90vh] w-full max-w-2xl flex-col rounded-lg border shadow-lg">
-            <div className="border-border flex items-center justify-between border-b p-4">
+          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-lg bg-card text-card-foreground shadow-lg border border-border">
+            <div className="flex items-center justify-between border-b border-border p-4">
               <h2 className="text-lg font-semibold">Contact List for Printing</h2>
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
@@ -672,7 +687,7 @@ export default function ContactList({
               </div>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
-              <div className="text-muted-foreground mb-4 text-sm">
+              <div className="mb-4 text-sm text-muted-foreground">
                 Copy the{' '}
                 {selectedFormat === 'csv'
                   ? 'CSV data'
@@ -684,10 +699,10 @@ export default function ContactList({
               <textarea
                 readOnly
                 value={formatContactsForPrint()}
-                className="border-input bg-background text-foreground focus:ring-ring h-64 w-full resize-none rounded-md border p-3 font-mono text-sm focus:ring-2 focus:outline-none"
+                className="h-64 w-full resize-none rounded-md border border-input bg-background p-3 font-mono text-sm text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
                 onClick={(e) => (e.target as HTMLTextAreaElement).select()}
               />
-              <div className="text-muted-foreground mt-4 flex items-center justify-between text-sm">
+              <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
                 <span>{filteredContacts.length} contacts listed</span>
                 <Button
                   size="sm"

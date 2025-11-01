@@ -216,4 +216,14 @@ export const logger = {
       planId,
     })
   },
+
+  campaignSent: (campaignName: string, sentCount: number, failedCount: number, campaignId?: string) => {
+    const message = `Campaign sent: "${campaignName}" - ${sentCount} email${sentCount !== 1 ? 's' : ''} sent${failedCount > 0 ? `, ${failedCount} failed` : ''}`
+    useLogger.getState().addMessage(message, 'success', 'campaign_send', {
+      campaignName,
+      campaignId,
+      sentCount,
+      failedCount,
+    })
+  },
 }
