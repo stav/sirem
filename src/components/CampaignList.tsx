@@ -93,6 +93,10 @@ export default function CampaignList({
     return campaign.status === 'draft' || campaign.status === 'scheduled'
   }
 
+  const canResend = (campaign: Campaign) => {
+    return campaign.status === 'sent'
+  }
+
   const handleDeleteClick = (campaignId: string) => {
     setCampaignToDelete(campaignId)
     setDeleteDialogOpen(true)
@@ -193,6 +197,12 @@ export default function CampaignList({
                           <DropdownMenuItem onClick={() => onSendCampaign(campaign.id)}>
                             <Send className="mr-2 h-4 w-4" />
                             Send Now
+                          </DropdownMenuItem>
+                        )}
+                        {canResend(campaign) && (
+                          <DropdownMenuItem onClick={() => onSendCampaign(campaign.id)}>
+                            <Send className="mr-2 h-4 w-4" />
+                            Resend
                           </DropdownMenuItem>
                         )}
                         <DropdownMenuItem 

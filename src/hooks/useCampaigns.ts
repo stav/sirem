@@ -153,12 +153,12 @@ export function useCampaigns() {
         throw new Error('Campaign not found')
       }
 
-      // Get recipients - only those that are enabled
+      // Get recipients - include both pending and sent (for resend capability)
       const { data: recipients, error: recipientsError } = await supabase
         .from('campaign_recipients')
         .select('*')
         .eq('campaign_id', campaignId)
-        .eq('status', 'pending')
+        .in('status', ['pending', 'sent'])
 
       if (recipientsError || !recipients) {
         throw new Error('Failed to fetch recipients')
@@ -209,7 +209,7 @@ export function useCampaigns() {
         })
         .eq('id', campaignId)
 
-      // Update recipient statuses - only for enabled recipients that were sent
+      // Update recipient statuses - mark all sent recipients as sent regardless of previous status
       if (result.success > 0) {
         const enabledRecipientIds = enabledRecipients.map(r => r.id)
         await supabase
@@ -219,7 +219,6 @@ export function useCampaigns() {
             sent_at: new Date().toISOString()
           })
           .eq('campaign_id', campaignId)
-          .eq('status', 'pending')
           .in('id', enabledRecipientIds)
       }
 
