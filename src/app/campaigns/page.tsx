@@ -435,8 +435,11 @@ function CampaignAnalytics({ campaign }: { campaign: Campaign }) {
                       <div className="text-sm text-muted-foreground">{recipient.email_address}</div>
                     </div>
                   </div>
-                  <Badge variant={recipient.status === 'sent' ? 'default' : 'secondary'}>
-                    {recipient.status}
+                  <Badge variant={
+                    recipient.enabled === false ? 'destructive' :
+                    recipient.status === 'sent' ? 'default' : 'secondary'
+                  }>
+                    {recipient.enabled === false ? 'disabled' : recipient.status}
                   </Badge>
                 </div>
               ))}
