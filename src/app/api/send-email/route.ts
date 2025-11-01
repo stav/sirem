@@ -37,8 +37,9 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Resend API error:', error)
+      const errorMessage = error.message || JSON.stringify(error)
       return NextResponse.json(
-        { success: false, error: error.message },
+        { success: false, error: errorMessage },
         { status: 500 }
       )
     }
