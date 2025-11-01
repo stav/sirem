@@ -30,8 +30,7 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  Pause,
-  Play
+  Pause
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { Campaign } from '@/hooks/useCampaigns'
@@ -75,18 +74,6 @@ export default function CampaignList({
         {config.label}
       </Badge>
     )
-  }
-
-  const getStatusColor = (status: Campaign['status']) => {
-    const colors = {
-      draft: 'text-gray-600',
-      scheduled: 'text-blue-600',
-      sending: 'text-yellow-600',
-      sent: 'text-green-600',
-      paused: 'text-orange-600',
-      cancelled: 'text-red-600'
-    }
-    return colors[status]
   }
 
   const canSend = (campaign: Campaign) => {

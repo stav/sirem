@@ -1,17 +1,20 @@
 'use client'
 
 import { createContext, useContext, useState, ReactNode } from 'react'
+import type { Database } from '@/lib/supabase'
+
+type Contact = Database['public']['Tables']['contacts']['Row']
 
 interface ContactFilterContextType {
-  filteredContacts: any[]
-  setFilteredContacts: (contacts: any[]) => void
+  filteredContacts: Contact[]
+  setFilteredContacts: (contacts: Contact[]) => void
   clearFilteredContacts: () => void
 }
 
 const ContactFilterContext = createContext<ContactFilterContextType | undefined>(undefined)
 
 export function ContactFilterProvider({ children }: { children: ReactNode }) {
-  const [filteredContacts, setFilteredContacts] = useState<any[]>([])
+  const [filteredContacts, setFilteredContacts] = useState<Contact[]>([])
 
   const clearFilteredContacts = () => {
     setFilteredContacts([])

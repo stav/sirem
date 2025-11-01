@@ -1,6 +1,9 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { sendBulkEmails, extractEmailAddresses, createPersonalizedTemplate, getDefaultEmailConfig } from '@/lib/email-service'
+import { sendBulkEmails, extractEmailAddresses, getDefaultEmailConfig } from '@/lib/email-service'
+import type { Database } from '@/lib/supabase'
+
+type Contact = Database['public']['Tables']['contacts']['Row']
 
 export interface Campaign {
   id: string
@@ -20,7 +23,7 @@ export interface Campaign {
   opened_count: number
   clicked_count: number
   bounce_count: number
-  metadata?: any
+  metadata?: Record<string, unknown>
 }
 
 export interface CampaignRecipient {
@@ -40,7 +43,7 @@ export interface CampaignRecipient {
   bounced_at?: string
   error_message?: string
   resend_message_id?: string
-  metadata?: any
+  metadata?: Record<string, unknown>
 }
 
 export interface CampaignForm {
@@ -75,7 +78,7 @@ export function useCampaigns() {
     }
   }
 
-  const createCampaign = async (campaignData: CampaignForm, contacts: any[]) => {
+  const createCampaign = async (campaignData: CampaignForm, contacts: Contact[]) => {
     try {
       // Extract email addresses from contacts
       const recipients = extractEmailAddresses(contacts)
@@ -107,8 +110,11 @@ export function useCampaigns() {
       // Create campaign recipients
       const recipientData = recipients.map(recipient => ({
         campaign_id: campaign.id,
-        contact_id: contacts.find(c => c.email === recipient.email || 
-          c.emails?.some((e: any) => e.email_address === recipient.email))?.id || '',
+        contact_id: contacts.find(c => {
+          if (c.email === recipient.email) return true
+          const emailMatch = c.emails?.some((e) => e.email_address === recipient.email)
+          return emailMatch
+        })?.id || '',
         email_address: recipient.email,
         first_name: recipient.firstName,
         last_name: recipient.lastName,
@@ -317,9 +323,9 @@ export function useCampaignRecipients(campaignId: string) {
     }
   }
 
-  const updateRecipientStatus = async (recipientId: string, status: CampaignRecipient['status'], metadata?: any) => {
+  const updateRecipientStatus = async (recipientId: string, status: CampaignRecipient['status'], metadata?: Record<string, unknown>) => {
     try {
-      const updateData: any = { status }
+      const updateData: Record<string, unknown> = { status }
       
       if (status === 'sent') {
         updateData.sent_at = new Date().toISOString()
@@ -359,6 +365,7 @@ export function useCampaignRecipients(campaignId: string) {
     if (campaignId) {
       fetchRecipients()
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaignId])
 
   return {

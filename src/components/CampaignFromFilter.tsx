@@ -2,14 +2,15 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import { Mail, Users, Filter, ArrowRight } from 'lucide-react'
 import { useCampaigns } from '@/hooks/useCampaigns'
 import { useToast } from '@/hooks/use-toast'
+import type { Database } from '@/lib/supabase'
+
+type Contact = Database['public']['Tables']['contacts']['Row']
 
 interface CampaignFromFilterProps {
-  filteredContacts: any[]
+  filteredContacts: Contact[]
   onClose: () => void
 }
 
@@ -36,12 +37,12 @@ export default function CampaignFromFilter({
       if (contact.email) return true
       // Check emails from related emails table
       if (contact.emails && contact.emails.length > 0) {
-        return contact.emails.some((email: any) => !email.inactive)
+        return contact.emails.some((email) => !email.inactive)
       }
       return false
     })
     .map(contact => ({
-      email: contact.email || contact.emails?.find((e: any) => !e.inactive)?.email_address,
+      email: contact.email || contact.emails?.find((e) => !e.inactive)?.email_address,
       firstName: contact.first_name,
       lastName: contact.last_name,
       contact

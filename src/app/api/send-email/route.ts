@@ -48,7 +48,7 @@ export async function POST(request: NextRequest) {
       success: true,
       messageId: data?.id
     })
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { success: false, error: 'Failed to send email' },
       { status: 500 }

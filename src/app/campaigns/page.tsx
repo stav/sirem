@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Plus, Mail, BarChart3, CheckCircle2 } from 'lucide-react'
+import { Plus, Mail, BarChart3 } from 'lucide-react'
 import { useCampaigns, Campaign } from '@/hooks/useCampaigns'
 import { useContactFilter } from '@/contexts/ContactFilterContext'
 import CampaignList from '@/components/CampaignList'
@@ -16,7 +16,6 @@ import { useToast } from '@/hooks/use-toast'
 
 export default function CampaignsPage() {
   const [activeTab, setActiveTab] = useState('list')
-  const [showCreateForm, setShowCreateForm] = useState(false)
   const [editingCampaign, setEditingCampaign] = useState<Campaign | null>(null)
   const [viewingCampaign, setViewingCampaign] = useState<Campaign | null>(null)
   
@@ -31,7 +30,7 @@ export default function CampaignsPage() {
     updateCampaign
   } = useCampaigns()
 
-  const handleCreateCampaign = async (campaignData: any) => {
+  const handleCreateCampaign = async (campaignData: { name: string; subject: string; content: string; html_content?: string; scheduled_at?: string }) => {
     try {
       // Use filtered contacts from the context
       if (filteredContacts.length === 0) {
@@ -131,7 +130,7 @@ export default function CampaignsPage() {
     setActiveTab('analytics')
   }
 
-  const handleUpdateCampaign = async (campaignData: any) => {
+  const handleUpdateCampaign = async (campaignData: { name: string; subject: string; content: string; html_content?: string; scheduled_at?: string }) => {
     if (!editingCampaign) return
 
     try {
@@ -278,7 +277,14 @@ export default function CampaignsPage() {
 
 // Campaign analytics component with recipients list
 function CampaignAnalytics({ campaign }: { campaign: Campaign }) {
-  const [recipients, setRecipients] = useState<any[]>([])
+  const [recipients, setRecipients] = useState<Array<{
+    id: string
+    email_address: string
+    first_name: string
+    last_name: string
+    status: string
+    enabled?: boolean
+  }>>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const { toast } = useToast()
