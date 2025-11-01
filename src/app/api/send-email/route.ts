@@ -15,27 +15,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Use the configured from email if not provided
-    // For testing, use Resend's test domain if medstar.agency is not verified
     const configuredFrom = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
-    const fromEmail = from || (configuredFrom.includes('medstar.agency') ? 'onboarding@resend.dev' : configuredFrom)
-
-    // For testing with Resend's test domain, redirect all emails to the verified address
-    const testRecipients = to.map((email: string) => 
-      email === 'medstar.agency@gmail.com' ? email : 'medstar.agency@gmail.com'
-    )
+    const fromEmail = from || configuredFrom
 
     console.log('Sending email:', {
       from: fromEmail,
-      to: testRecipients,
+      to,
       subject,
       hasHtml: !!html,
       hasText: !!text,
-      originalRecipients: to
+      recipientsCount: to.length
     })
 
     const { data, error } = await resend.emails.send({
       from: fromEmail,
-      to: testRecipients,
+      to,
       subject,
       html,
       text,

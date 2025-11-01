@@ -1,8 +1,4 @@
-import { Resend } from 'resend'
-
-// Initialize Resend with API key from environment variables
-// Use a fallback key to prevent errors during development
-const resend = new Resend(process.env.RESEND_API_KEY || 're_fallback_key_for_development')
+// Resend is used in the API route, not directly in this service
 
 export interface EmailRecipient {
   email: string
@@ -74,7 +70,7 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
 }
 
 /**
- * Send bulk emails with rate limiting to avoid hitting API limits
+ * Send bulk emails with rate limiting and personalization
  */
 export async function sendBulkEmails(
   recipients: EmailRecipient[],
@@ -87,24 +83,41 @@ export async function sendBulkEmails(
   let failedCount = 0
   const errors: string[] = []
 
-  // Process recipients in batches
+  // Process recipients individually for personalization
   for (let i = 0; i < recipients.length; i += batchSize) {
     const batch = recipients.slice(i, i + batchSize)
     
-    // Send batch
-    const result = await sendEmail({
-      to: batch,
-      from: from || getDefaultEmailConfig().from,
-      subject: template.subject,
-      htmlContent: template.htmlContent,
-      textContent: template.textContent
-    })
+    // Send each email individually with personalization
+    for (const recipient of batch) {
+      // Personalize the content for this recipient
+      const personalizedHtmlContent = createPersonalizedTemplate(
+        template.htmlContent,
+        recipient
+      )
+      const personalizedTextContent = createPersonalizedTemplate(
+        template.textContent || template.htmlContent,
+        recipient
+      )
+      const personalizedSubject = createPersonalizedTemplate(
+        template.subject,
+        recipient
+      )
+      
+      // Send single personalized email
+      const result = await sendEmail({
+        to: [recipient],
+        from: from || getDefaultEmailConfig().from,
+        subject: personalizedSubject,
+        htmlContent: personalizedHtmlContent,
+        textContent: personalizedTextContent
+      })
 
-    if (result.success) {
-      successCount += batch.length
-    } else {
-      failedCount += batch.length
-      errors.push(`Batch ${Math.floor(i / batchSize) + 1}: ${result.error}`)
+      if (result.success) {
+        successCount += 1
+      } else {
+        failedCount += 1
+        errors.push(`${recipient.email}: ${result.error}`)
+      }
     }
 
     // Add delay between batches to respect rate limits
@@ -125,7 +138,6 @@ export function createPersonalizedTemplate(
     firstName?: string
     lastName?: string
     email?: string
-    [key: string]: any
   }
 ): string {
   let personalizedTemplate = template
@@ -159,7 +171,15 @@ export function isValidEmail(email: string): boolean {
 /**
  * Extract email addresses from contact data
  */
-export function extractEmailAddresses(contacts: any[]): EmailRecipient[] {
+export function extractEmailAddresses(contacts: Array<{
+  email?: string
+  first_name?: string
+  last_name?: string
+  emails?: Array<{
+    email_address?: string
+    inactive?: boolean
+  }>
+}>): EmailRecipient[] {
   const recipients: EmailRecipient[] = []
   const seenEmails = new Set<string>()
 
@@ -176,7 +196,7 @@ export function extractEmailAddresses(contacts: any[]): EmailRecipient[] {
 
     // Check emails from related emails table
     if (contact.emails && Array.isArray(contact.emails)) {
-      contact.emails.forEach((emailRecord: any) => {
+      contact.emails.forEach((emailRecord) => {
         if (emailRecord.email_address && 
             isValidEmail(emailRecord.email_address) && 
             !emailRecord.inactive &&
