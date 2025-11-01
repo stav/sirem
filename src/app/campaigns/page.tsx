@@ -330,7 +330,36 @@ function CampaignAnalytics({ campaign }: { campaign: Campaign }) {
     }
   }
 
+  const handleToggleAll = async (enabled: boolean) => {
+    setSaving(true)
+    try {
+      const { supabase } = await import('@/lib/supabase')
+      const { error } = await supabase
+        .from('campaign_recipients')
+        .update({ enabled })
+        .eq('campaign_id', campaign.id)
+
+      if (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to update recipients',
+          variant: 'destructive'
+        })
+      } else {
+        // Update local state
+        setRecipients(prev => prev.map(r => ({ ...r, enabled })))
+        toast({
+          title: 'Success',
+          description: `${enabled ? 'Enabled' : 'Disabled'} all recipients`
+        })
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const enabledCount = recipients.filter(r => r.enabled !== false).length
+  const allEnabled = recipients.length > 0 && enabledCount === recipients.length
   const canEdit = campaign.status === 'draft' || campaign.status === 'scheduled'
 
   return (
@@ -365,7 +394,16 @@ function CampaignAnalytics({ campaign }: { campaign: Campaign }) {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
-            <CardTitle>Recipients ({recipients.length})</CardTitle>
+            <div className="flex items-center gap-3">
+              {canEdit && recipients.length > 0 && (
+                <Checkbox
+                  checked={allEnabled}
+                  onCheckedChange={handleToggleAll}
+                  disabled={saving}
+                />
+              )}
+              <CardTitle>Recipients ({recipients.length})</CardTitle>
+            </div>
             {canEdit && (
               <div className="text-sm text-muted-foreground">
                 {enabledCount} enabled
