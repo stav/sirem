@@ -1,8 +1,9 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Navigation from '@/components/Navigation'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Plus, Mail, BarChart3 } from 'lucide-react'
@@ -274,23 +275,86 @@ export default function CampaignsPage() {
   )
 }
 
-// Placeholder component for campaign analytics
+// Campaign analytics component with recipients list
 function CampaignAnalytics({ campaign }: { campaign: Campaign }) {
+  const [recipients, setRecipients] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    async function fetchRecipients() {
+      const { supabase } = await import('@/lib/supabase')
+      const { data, error } = await supabase
+        .from('campaign_recipients')
+        .select('*')
+        .eq('campaign_id', campaign.id)
+        .order('created_at', { ascending: false })
+
+      if (!error && data) {
+        setRecipients(data)
+      }
+      setLoading(false)
+    }
+    
+    fetchRecipients()
+  }, [campaign.id])
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Campaign Analytics</CardTitle>
-        <CardDescription>{campaign.name}</CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="text-center py-12">
-          <BarChart3 className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Analytics Coming Soon</h3>
-          <p className="text-gray-500">
-            Detailed campaign analytics and recipient tracking will be available soon.
-          </p>
-        </div>
-      </CardContent>
-    </Card>
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle>Campaign Statistics</CardTitle>
+          <CardDescription>{campaign.name}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <div className="text-sm text-muted-foreground">Total Recipients</div>
+              <div className="text-2xl font-bold">{campaign.total_recipients}</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">Sent</div>
+              <div className="text-2xl font-bold">{campaign.sent_count}</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">Delivered</div>
+              <div className="text-2xl font-bold">{campaign.delivered_count}</div>
+            </div>
+            <div>
+              <div className="text-sm text-muted-foreground">Opened</div>
+              <div className="text-2xl font-bold">{campaign.opened_count}</div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Recipients ({recipients.length})</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="text-center py-8">Loading recipients...</div>
+          ) : recipients.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">No recipients found</div>
+          ) : (
+            <div className="space-y-2">
+              {recipients.map((recipient) => (
+                <div key={recipient.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div>
+                    <div className="font-medium">
+                      {recipient.first_name} {recipient.last_name}
+                    </div>
+                    <div className="text-sm text-muted-foreground">{recipient.email_address}</div>
+                  </div>
+                  <Badge variant={recipient.status === 'sent' ? 'default' : 'secondary'}>
+                    {recipient.status}
+                  </Badge>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   )
 }
