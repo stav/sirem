@@ -111,7 +111,8 @@ export function useCampaigns() {
           c.emails?.some((e: any) => e.email_address === recipient.email))?.id || '',
         email_address: recipient.email,
         first_name: recipient.firstName,
-        last_name: recipient.lastName
+        last_name: recipient.lastName,
+        enabled: true  // All new recipients are enabled by default
       }))
 
       const { error: recipientsError } = await supabase
