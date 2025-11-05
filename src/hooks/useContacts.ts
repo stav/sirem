@@ -3,6 +3,7 @@ import { supabase } from '@/lib/supabase'
 import { logger } from '@/lib/logger'
 import type { Database } from '@/lib/supabase'
 import { RoleData, RoleType } from '@/types/roles'
+import { fetchAllRecords } from '@/lib/database'
 import type { Json } from '@/lib/supabase-types'
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
@@ -45,10 +46,9 @@ export function useContacts() {
 
   const fetchContacts = async () => {
     try {
-      const { data, error } = await supabase
-        .from('contacts')
-        .select(
-          `
+      const data = await fetchAllRecords<Contact>(
+        'contacts',
+        `
           *,
           addresses (
             id,
@@ -87,16 +87,12 @@ export function useContacts() {
             created_at,
             updated_at
           )
-        `
-        )
-        .order('created_at', { ascending: false })
+        `,
+        'created_at',
+        false
+      )
 
-      if (error) {
-        console.error('Error fetching contacts:', error)
-        return
-      }
-
-      setContacts(data || [])
+      setContacts(data)
     } catch (error) {
       console.error('Error fetching contacts:', error)
     } finally {

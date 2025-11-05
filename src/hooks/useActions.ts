@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase'
 import { getDisplayDate, getEffectiveStatus } from '@/lib/action-utils'
+import { fetchAllRecords } from '@/lib/database'
 
 // Helper function to get local time as UTC (treating local time as if it's UTC)
 function getLocalTimeAsUTC(): string {
@@ -32,35 +33,12 @@ export function useActions() {
   const fetchActions = async () => {
     try {
       // Fetch all actions by making multiple requests to overcome the 1000 row limit
-      let allActions: Action[] = []
-      let offset = 0
-      const limit = 1000
-      let hasMore = true
-
-      while (hasMore) {
-        const { data, error } = await supabase
-          .from('actions')
-          .select('*')
-          .order('created_at', { ascending: false })
-          .range(offset, offset + limit - 1)
-
-        if (error) {
-          console.error('Error fetching actions:', error)
-          break
-        }
-
-        if (data && data.length > 0) {
-          allActions = [...allActions, ...data]
-          offset += limit
-
-          // If we got less than the limit, we've reached the end
-          if (data.length < limit) {
-            hasMore = false
-          }
-        } else {
-          hasMore = false
-        }
-      }
+      const allActions = await fetchAllRecords<Action>(
+        'actions',
+        '*',
+        'created_at',
+        false
+      )
 
       setActions(allActions)
     } catch (error) {

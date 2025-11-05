@@ -8,6 +8,7 @@ import Navigation from '@/components/Navigation'
 import { Input } from '@/components/ui/input'
 import type { Database } from '@/lib/supabase'
 import { logger } from '@/lib/logger'
+import { fetchAllRecords } from '@/lib/database'
 
 // Register AG Grid modules
 ModuleRegistry.registerModules([AllCommunityModule])
@@ -197,10 +198,9 @@ export default function SheetsPage() {
 
   async function fetchContacts() {
     try {
-      const { data, error } = await supabase
-        .from('contacts')
-        .select(
-          `
+      const data = await fetchAllRecords<Contact>(
+        'contacts',
+        `
           *,
           address:addresses(
             address1,
@@ -209,16 +209,12 @@ export default function SheetsPage() {
             state_code,
             postal_code
           )
-        `
-        )
-        .order('created_at', { ascending: false })
+        `,
+        'created_at',
+        false
+      )
 
-      if (error) {
-        console.error('Error fetching contacts:', error)
-        return
-      }
-
-      setContacts(data || [])
+      setContacts(data)
     } catch (error) {
       console.error('Error fetching contacts:', error)
     } finally {

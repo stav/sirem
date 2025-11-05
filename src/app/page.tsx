@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useMemo } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { supabase } from '@/lib/supabase'
 import { Users, Bell, Plus, ArrowRight, Phone, Mail, MapPin } from 'lucide-react'
 import type { Database } from '@/lib/supabase'
 import Navigation from '@/components/Navigation'
@@ -11,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { getStatusBadge, formatLocalDate } from '@/lib/contact-utils'
 import { formatDateTime } from '@/lib/utils'
+import { fetchAllRecords } from '@/lib/database'
 
 // Optimized type for dashboard contacts
 type DashboardContact = Pick<
@@ -286,12 +286,12 @@ export default function Home() {
 
   async function fetchData() {
     try {
-      const [contactsResponse, actionsResponse] = await Promise.all([
+      // Fetch contacts and actions in parallel (both will be paginated)
+      const [allContacts] = await Promise.all([
         // Optimized contacts query - only fetch essential fields for dashboard
-        supabase
-          .from('contacts')
-          .select(
-            `
+        fetchAllRecords<DashboardContact>(
+          'contacts',
+          `
             id,
             first_name,
             last_name,
@@ -306,28 +306,29 @@ export default function Home() {
               city,
               address_type
             )
-          `
-          )
-          .order('created_at', { ascending: false }),
-        supabase
-          .from('actions')
-          .select(
-            `
+          `,
+          'created_at',
+          false
+        ),
+      ])
+
+      // Fetch all actions with pagination to overcome 1000 row limit
+      const allActions = await fetchAllRecords<Action>(
+        'actions',
+        `
           *,
           contact:contacts (
             id,
             first_name,
             last_name
           )
-        `
-          )
-          .order('start_date', { ascending: true }),
-      ])
+        `,
+        'start_date',
+        true
+      )
 
-      if (contactsResponse.data) setContacts(contactsResponse.data)
-      if (actionsResponse.data) {
-        setActions(actionsResponse.data)
-      }
+      setContacts(allContacts)
+      setActions(allActions)
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
