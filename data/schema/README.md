@@ -2,6 +2,21 @@
 
 This directory contains all database schema definitions and migrations for the Sirem CRM system.
 
+## Important Schema Files
+
+**The two key schema files you need to know:**
+
+1. **Database Schema**: `current-schema.sql`
+   - The complete, auto-generated database schema from Supabase
+   - Updated via: `npm run dump-schema`
+   - Contains the live schema with all extensions, constraints, and policies
+   - This is the **source of truth** for the database structure
+
+2. **Plans Metadata Schema**: `plans-metadata-schema.ts`
+   - TypeScript schema defining the structure and validation rules for the `plans.metadata` JSONB field
+   - Used for dynamic form generation and validation
+   - Defines all plan benefits and additional metadata fields
+
 ## Schema Files
 
 ### Core Schema

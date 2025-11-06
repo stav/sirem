@@ -128,6 +128,11 @@ Imports only activity data for existing contacts:
 
 ### Database Schema
 
+**Schema Files:**
+
+- **Database Schema**: `data/schema/current-schema.sql` - The complete, auto-generated database schema from Supabase (updated via `npm run dump-schema`)
+- **Plans Metadata Schema**: `data/schema/plans-metadata-schema.ts` - TypeScript schema defining the structure and validation rules for the `plans.metadata` JSONB field
+
 The system uses the following main tables:
 
 - `contacts` - Main contact information
@@ -135,8 +140,9 @@ The system uses the following main tables:
 - `addresses`, `phones`, `emails` - Contact details
 - `tags`, `tag_categories` - Organization system
 - `lead_statuses` - Status tracking
+- `plans` - Medicare plan catalog with metadata field
 
-See `data/schema/` for complete schema definitions.
+See `data/schema/` for complete schema definitions and migration history.
 
 ### Date/Time Handling
 
