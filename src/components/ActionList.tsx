@@ -422,7 +422,7 @@ export default function ActionList({
                     onEdit={onEditAction}
                     onView={onViewAction}
                     onDelete={onDeleteAction}
-                    onSelectContact={!selectedContact ? onSelectContact : undefined}
+                    onSelectContact={onSelectContact}
                   />
                 )
               })}
