@@ -33,6 +33,7 @@ export interface FieldDefinition {
   tags?: string[] // Optional grouping tags
   variants?: Record<string, FieldVariant> // Eligibility-specific variants
   characteristics?: FieldCharacteristics
+  baseKey?: string // Present for variant fields; points to the base field key
   validation?: {
     minimum?: number
     maximum?: number
@@ -131,6 +132,12 @@ export function parseSchema(schema: Record<string, unknown>): ParsedSchema {
         // Also add variant fields to the fields list (for form rendering)
         if (field.variants) {
           Object.values(field.variants).forEach((variant) => {
+            const combinedCharacteristics = variant.characteristics
+              ? {
+                  ...(field.characteristics || {}),
+                  ...variant.characteristics,
+                }
+              : field.characteristics
             const variantField: FieldDefinition = {
               key: variant.key,
               type: field.type, // Inherit type from base field
@@ -138,9 +145,10 @@ export function parseSchema(schema: Record<string, unknown>): ParsedSchema {
               section: sectionKey,
               description: variant.description || field.description,
               tags: Array.isArray(variant.tags) ? [...variant.tags] : undefined,
-              characteristics: variant.characteristics || field.characteristics,
+              characteristics: combinedCharacteristics,
               validation: field.validation,
               format: field.format,
+              baseKey: field.key,
             }
             fields.push(variantField)
             fieldsBySection[sectionKey].push(variantField)

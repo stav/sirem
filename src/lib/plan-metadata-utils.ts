@@ -1,5 +1,6 @@
 import { Database } from './supabase-types'
 import { plansMetadataSchema } from '@/schema/plans-metadata-schema'
+import { resolvePlanValue } from './plan-field-resolution'
 
 // Base plan type from database
 export type Plan = Database['public']['Tables']['plans']['Row']
@@ -411,6 +412,16 @@ export function extractMetadataForForm(plan: Plan): Record<string, unknown> {
   return formData
 }
 
+function parseNumber(value: unknown): number | null {
+  if (value === null || value === undefined) return null
+  if (typeof value === 'number' && !Number.isNaN(value)) return value
+  if (typeof value === 'string' && value.trim().length > 0) {
+    const parsed = Number(value)
+    return Number.isNaN(parsed) ? null : parsed
+  }
+  return null
+}
+
 // Premium calculation utilities for LIS scenarios
 export const premiumCalculations = {
   /**
@@ -420,13 +431,9 @@ export const premiumCalculations = {
    * @returns The effective monthly premium amount
    */
   getEffectivePremium: (plan: Plan, hasExtraHelp: boolean = false): number | null => {
-    if (hasExtraHelp) {
-      // If they have Extra Help, use the reduced premium (typically $0)
-      return Number(getPlanMetadata.premium_monthly_with_extra_help(plan)) || 0
-    } else {
-      // Standard premium - use the regular monthly premium
-      return Number(getPlanMetadata.premium_monthly(plan)) || 0
-    }
+    const context = hasExtraHelp ? { eligibility: 'lis' } : undefined
+    const resolved = resolvePlanValue(plan, 'premium_monthly', context)
+    return parseNumber(resolved.value) ?? 0
   },
 
   /**
@@ -435,12 +442,12 @@ export const premiumCalculations = {
    * @returns Object with min and max premium values
    */
   getPremiumRange: (plan: Plan): { min: number | null; max: number | null } => {
-    const standardPremium = Number(getPlanMetadata.premium_monthly(plan)) || 0
-    const extraHelpPremium = Number(getPlanMetadata.premium_monthly_with_extra_help(plan)) || 0
+    const standard = parseNumber(resolvePlanValue(plan, 'premium_monthly').value)
+    const lis = parseNumber(resolvePlanValue(plan, 'premium_monthly', { eligibility: 'lis' }).value)
 
     return {
-      min: extraHelpPremium ?? 0,
-      max: standardPremium,
+      min: lis ?? standard ?? null,
+      max: standard,
     }
   },
 
@@ -451,13 +458,9 @@ export const premiumCalculations = {
    * @returns The effective medical deductible amount
    */
   getEffectiveMedicalDeductible: (plan: Plan, hasMedicaidCostSharing: boolean = false): number | null => {
-    if (hasMedicaidCostSharing) {
-      // If they have Medicaid cost-sharing, use the reduced deductible (typically $0)
-      return Number(getPlanMetadata.medical_deductible_with_medicaid(plan)) || 0
-    } else {
-      // Standard deductible - use the regular medical deductible
-      return Number(getPlanMetadata.medical_deductible(plan)) || 0
-    }
+    const context = hasMedicaidCostSharing ? { eligibility: 'medicaid' } : undefined
+    const resolved = resolvePlanValue(plan, 'medical_deductible', context)
+    return parseNumber(resolved.value) ?? 0
   },
 
   /**
@@ -466,12 +469,12 @@ export const premiumCalculations = {
    * @returns Object with min and max deductible values
    */
   getMedicalDeductibleRange: (plan: Plan): { min: number | null; max: number | null } => {
-    const standardDeductible = Number(getPlanMetadata.medical_deductible(plan)) || 0
-    const medicaidDeductible = Number(getPlanMetadata.medical_deductible_with_medicaid(plan)) || 0
+    const standard = parseNumber(resolvePlanValue(plan, 'medical_deductible').value)
+    const medicaid = parseNumber(resolvePlanValue(plan, 'medical_deductible', { eligibility: 'medicaid' }).value)
 
     return {
-      min: medicaidDeductible ?? 0,
-      max: standardDeductible,
+      min: medicaid ?? standard ?? null,
+      max: standard,
     }
   },
 }
