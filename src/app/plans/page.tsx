@@ -698,6 +698,20 @@ export default function PlansPage() {
 
     // Build complete plan data from form using the helper function
     const data = buildPlanDataFromForm(editForm)
+    
+    // Log pretty-printed metadata JSON with sorted keys
+    if (data.metadata && typeof data.metadata === 'object' && !Array.isArray(data.metadata)) {
+      const metadataRecord = data.metadata as Record<string, unknown>
+      const sortedMetadata = Object.keys(metadataRecord)
+        .sort()
+        .reduce((acc, key) => {
+          acc[key] = metadataRecord[key]
+          return acc
+        }, {} as Record<string, unknown>)
+      const fieldCount = Object.keys(sortedMetadata).length
+      console.log(`Plan metadata (saving) - ${fieldCount} fields:`, JSON.stringify(sortedMetadata, null, 2))
+    }
+    
     const ok = await updatePlan(editingId, data as PlanForm)
     if (ok) {
       setIsEditing(false)
