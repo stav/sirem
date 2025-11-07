@@ -5,6 +5,8 @@ import { parseSchema, ParsedSchema, SectionDefinition, FieldDefinition } from '@
 import { Label } from '@/components/ui/label'
 import FieldRenderer from '@/components/form-fields/FieldRenderer'
 import { plansMetadataSchema } from '@/schema/plans-metadata-schema'
+import { Plan, getLegacyFields } from '@/lib/plan-metadata-utils'
+import { Input } from '@/components/ui/input'
 
 interface DynamicPlanFormProps {
   formData: Record<string, unknown>
@@ -13,6 +15,7 @@ interface DynamicPlanFormProps {
   sections?: string[] // Optional: filter specific sections
   fields?: string[] // Optional: filter specific fields
   className?: string
+  plan?: Plan
 }
 
 export default function DynamicPlanForm({
@@ -22,6 +25,7 @@ export default function DynamicPlanForm({
   sections,
   fields,
   className = '',
+  plan,
 }: DynamicPlanFormProps) {
   // Parse the schema
   const schema: ParsedSchema = parseSchema(plansMetadataSchema)
@@ -57,7 +61,8 @@ export default function DynamicPlanForm({
 
   const renderField = React.useCallback(
     (field: FieldDefinition) => {
-      const value = formData[field.key] || ''
+      const rawValue = formData[field.key]
+      const value = rawValue ?? ''
       const isReadOnly = mode === 'compare'
 
       return (
@@ -103,7 +108,49 @@ export default function DynamicPlanForm({
     [filteredFieldsBySection, renderField]
   )
 
-  return <div className={`space-y-6 ${className}`}>{filteredSections.map(renderSection)}</div>
+  const legacyFields = React.useMemo(() => {
+    if (!plan || mode !== 'edit') return {}
+    return getLegacyFields(plan)
+  }, [plan, mode])
+
+  const renderLegacyFields = React.useCallback(() => {
+    if (Object.keys(legacyFields).length === 0) return null
+
+    return (
+      <div className="space-y-4">
+        <div className="border-t border-b pt-2 pb-2">
+          <h3 className="text-foreground text-sm font-semibold">Legacy / Custom Fields</h3>
+          <p className="text-muted-foreground mt-1 text-xs">
+            Fields in metadata that don&apos;t match the current schema. These may be from older versions or custom additions.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {Object.entries(legacyFields).map(([key, value]) => (
+            <div key={key} className="space-y-1">
+              <Label className="text-xs">{key}</Label>
+              {mode === 'compare' ? (
+                <div className="text-sm">{String(value ?? '')}</div>
+              ) : (
+                <Input
+                  value={String(formData[key] ?? value ?? '')}
+                  onChange={(e) => onChange(key, e.target.value)}
+                  placeholder={key}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }, [legacyFields, formData, mode, onChange])
+
+  return (
+    <div className={`space-y-6 ${className}`}>
+      {filteredSections.map(renderSection)}
+      {renderLegacyFields()}
+    </div>
+  )
 }
 
 /**

@@ -9,6 +9,24 @@ export type PlanUpdate = Database['public']['Tables']['plans']['Update']
 /**
  * Property type from schema sections
  */
+type FieldCharacteristics = {
+  concept?: string
+  type?: string
+  frequency?: string
+  eligibility?: string
+  unit?: string
+  modifier?: string
+  direction?: 'credit' | 'debit'
+}
+
+type FieldVariant = {
+  key: string
+  label: string
+  description?: string
+  tags?: string[]
+  characteristics?: FieldCharacteristics
+}
+
 type SchemaProperty = {
   key: string
   type: string
@@ -18,6 +36,9 @@ type SchemaProperty = {
   enum?: readonly string[]
   minimum?: number
   maximum?: number
+  tags?: string[]
+  characteristics?: FieldCharacteristics
+  variants?: Record<string, FieldVariant>
 }
 
 /**
@@ -50,6 +71,46 @@ export function getAllProperties(): Record<string, SchemaProperty> {
   }
 
   return properties
+}
+
+/**
+ * Get all field keys expected by the schema (base fields + variants)
+ */
+export function getAllExpectedFieldKeys(): Set<string> {
+  const keys = new Set<string>()
+  const properties = getAllProperties()
+
+  Object.values(properties).forEach((prop) => {
+    keys.add(prop.key)
+    if (prop.variants) {
+      Object.values(prop.variants).forEach((variant) => {
+        keys.add(variant.key)
+      })
+    }
+  })
+
+  return keys
+}
+
+/**
+ * Identify metadata fields that are not defined in the schema (legacy/custom fields)
+ */
+export function getLegacyFields(plan: Plan): Record<string, unknown> {
+  if (!plan.metadata || typeof plan.metadata !== 'object') {
+    return {}
+  }
+
+  const metadata = plan.metadata as Record<string, unknown>
+  const expectedKeys = getAllExpectedFieldKeys()
+  const legacyFields: Record<string, unknown> = {}
+
+  Object.keys(metadata).forEach((key) => {
+    if (!expectedKeys.has(key)) {
+      legacyFields[key] = metadata[key]
+    }
+  })
+
+  return legacyFields
 }
 
 /**
@@ -118,6 +179,19 @@ export const getPlanMetadata = (() => {
     } else {
       getters[fieldName] = (plan: Plan) => getMetadataString(plan, fieldName)
     }
+
+    // Generate getters for variant fields (inherit base type)
+    if (fieldSchema.variants) {
+      Object.values(fieldSchema.variants).forEach((variant) => {
+        if (fieldType === 'string' && fieldSchema.format === 'date') {
+          getters[variant.key] = (plan: Plan) => getMetadataDate(plan, variant.key)
+        } else if (fieldType === 'number') {
+          getters[variant.key] = (plan: Plan) => getMetadataNumber(plan, variant.key)
+        } else {
+          getters[variant.key] = (plan: Plan) => getMetadataString(plan, variant.key)
+        }
+      })
+    }
   })
 
   return getters
@@ -130,10 +204,9 @@ export const getPlanMetadata = (() => {
  */
 export function getDefaultMetadataFormData(): Record<string, unknown> {
   const formData: Record<string, unknown> = {}
-  const properties = getAllProperties()
+  const metadataFields = Array.from(getAllExpectedFieldKeys())
 
-  // Dynamically generate metadata fields from schema
-  Object.keys(properties).forEach((fieldName) => {
+  metadataFields.forEach((fieldName) => {
     formData[fieldName] = ''
   })
 
@@ -190,17 +263,21 @@ export function populateFormFromPlan(plan: Plan): Record<string, unknown> {
   // Metadata fields - dynamically populate based on what's in the metadata
   if (plan.metadata) {
     const metadata = plan.metadata as Record<string, unknown>
-    const properties = getAllProperties()
+    const expectedKeys = getAllExpectedFieldKeys()
 
-    // Get all possible metadata fields from the schema
-    const metadataFields = Object.keys(properties)
-
-    // Populate each field if it exists in the metadata
-    metadataFields.forEach((field) => {
+    // Populate expected metadata fields (base + variants)
+    expectedKeys.forEach((field) => {
       if (metadata[field] !== undefined && metadata[field] !== null) {
         formData[field] = String(metadata[field])
       } else {
         formData[field] = ''
+      }
+    })
+
+    // Include legacy/custom fields
+    Object.keys(metadata).forEach((key) => {
+      if (!expectedKeys.has(key)) {
+        formData[key] = metadata[key]
       }
     })
   }

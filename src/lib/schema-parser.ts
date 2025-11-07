@@ -6,12 +6,33 @@
  * schema definition and the UI components.
  */
 
+export interface FieldCharacteristics {
+  concept?: string
+  type?: string
+  frequency?: string
+  eligibility?: string
+  unit?: string
+  modifier?: string
+  direction?: 'credit' | 'debit'
+}
+
+export interface FieldVariant {
+  key: string
+  label: string
+  description?: string
+  tags?: string[]
+  characteristics?: FieldCharacteristics
+}
+
 export interface FieldDefinition {
   key: string
   type: 'string' | 'number' | 'integer' | 'date'
   label: string
   section: string
   description: string
+  tags?: string[] // Optional grouping tags
+  variants?: Record<string, FieldVariant> // Eligibility-specific variants
+  characteristics?: FieldCharacteristics
   validation?: {
     minimum?: number
     maximum?: number
@@ -92,6 +113,9 @@ export function parseSchema(schema: Record<string, unknown>): ParsedSchema {
           label: (property.label as string) || key,
           section: sectionKey,
           description: (property.description as string) || '',
+          tags: Array.isArray(property.tags) ? [...(property.tags as string[])] : undefined,
+          variants: property.variants as Record<string, FieldVariant> | undefined,
+          characteristics: property.characteristics as FieldCharacteristics | undefined,
           validation: extractValidation(property),
           format: property.format as 'url' | 'email' | 'date' | undefined,
         }
@@ -103,6 +127,25 @@ export function parseSchema(schema: Record<string, unknown>): ParsedSchema {
           fieldsBySection[sectionKey] = []
         }
         fieldsBySection[sectionKey].push(field)
+
+        // Also add variant fields to the fields list (for form rendering)
+        if (field.variants) {
+          Object.values(field.variants).forEach((variant) => {
+            const variantField: FieldDefinition = {
+              key: variant.key,
+              type: field.type, // Inherit type from base field
+              label: variant.label,
+              section: sectionKey,
+              description: variant.description || field.description,
+              tags: Array.isArray(variant.tags) ? [...variant.tags] : undefined,
+              characteristics: variant.characteristics || field.characteristics,
+              validation: field.validation,
+              format: field.format,
+            }
+            fields.push(variantField)
+            fieldsBySection[sectionKey].push(variantField)
+          })
+        }
       })
     })
   }

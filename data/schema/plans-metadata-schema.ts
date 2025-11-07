@@ -18,6 +18,12 @@
  * - The unique identifier in FieldDefinition objects
  *
  * Without the key, we cannot map schema definitions to actual database storage.
+ *
+ * 🧭 CHARACTERISTICS + TAGS:
+ * Each property can optionally describe its dimensional characteristics (concept, frequency,
+ * eligibility, direction, etc.). Eligibility-specific values are represented through variants.
+ * Tags are optional and only used for grouping/presentation purposes (e.g., 'financial',
+ * 'cost-sharing'); they do not control eligibility.
  */
 
 export const plansMetadataSchema = {
@@ -59,13 +65,23 @@ export const plansMetadataSchema = {
           minimum: 0,
           label: 'Premium (monthly)',
           description: 'Monthly premium amount in dollars',
-        },
-        {
-          key: 'premium_monthly_with_extra_help',
-          type: 'number',
-          minimum: 0,
-          label: 'Premium (monthly, with Extra Help)',
-          description: 'Monthly premium for LIS/Extra Help recipients (typically $0)',
+          characteristics: {
+            concept: 'premium',
+            frequency: 'monthly',
+            eligibility: 'medicare',
+            direction: 'debit',
+          },
+          tags: ['financial', 'cost-sharing'],
+          variants: {
+            lis: {
+              key: 'premium_monthly_with_extra_help',
+              label: 'Premium (monthly, with Extra Help)',
+              description: 'Monthly premium for LIS/Extra Help recipients (typically $0)',
+              characteristics: {
+                eligibility: 'lis',
+              },
+            },
+          },
         },
         {
           key: 'giveback_monthly',
@@ -73,6 +89,13 @@ export const plansMetadataSchema = {
           minimum: 0,
           label: 'Giveback (monthly)',
           description: 'Monthly giveback/rebate amount in dollars',
+          characteristics: {
+            concept: 'giveback',
+            frequency: 'monthly',
+            eligibility: 'medicare',
+            direction: 'credit',
+          },
+          tags: ['financial'],
         },
         {
           key: 'moop_annual',
@@ -80,6 +103,13 @@ export const plansMetadataSchema = {
           minimum: 0,
           label: 'MOOP (annual)',
           description: 'Maximum Out-of-Pocket annual limit in dollars',
+          characteristics: {
+            concept: 'moop',
+            frequency: 'annual',
+            eligibility: 'medicare',
+            direction: 'debit',
+          },
+          tags: ['financial', 'cost-sharing'],
         },
       ],
     },
@@ -93,13 +123,24 @@ export const plansMetadataSchema = {
           minimum: 0,
           label: 'Medical Deductible',
           description: 'Standard medical deductible amount in dollars',
-        },
-        {
-          key: 'medical_deductible_with_medicaid',
-          type: 'number',
-          minimum: 0,
-          label: 'Medical Deductible (with Medicaid)',
-          description: 'Medical deductible for Medicaid cost-sharing recipients (typically $0)',
+          characteristics: {
+            concept: 'deductible',
+            type: 'medical',
+            eligibility: 'medicare',
+            direction: 'debit',
+          },
+          tags: ['cost-sharing'],
+          variants: {
+            medicaid: {
+              key: 'medical_deductible_with_medicaid',
+              label: 'Medical Deductible (with Medicaid)',
+              description: 'Medical deductible for Medicaid cost-sharing recipients (typically $0)',
+              characteristics: {
+                eligibility: 'medicaid',
+                modifier: 'with_assistance',
+              },
+            },
+          },
         },
         {
           key: 'rx_deductible_tier345',
@@ -107,6 +148,14 @@ export const plansMetadataSchema = {
           minimum: 0,
           label: 'RX Deductible (Tiers 3-5)',
           description: 'Prescription drug deductible for tiers 3, 4, and 5 in dollars',
+          characteristics: {
+            concept: 'deductible',
+            type: 'prescription',
+            eligibility: 'medicare',
+            direction: 'debit',
+            modifier: 'tier345',
+          },
+          tags: ['cost-sharing'],
         },
       ],
     },
@@ -120,6 +169,14 @@ export const plansMetadataSchema = {
           minimum: 0,
           label: 'OTC Benefit (quarterly)',
           description: 'Quarterly OTC (Over-the-Counter) benefit amount in dollars',
+          characteristics: {
+            concept: 'benefit',
+            type: 'otc',
+            frequency: 'quarterly',
+            eligibility: 'medicare',
+            direction: 'credit',
+          },
+          tags: ['benefit'],
         },
         {
           key: 'card_benefit',
@@ -127,6 +184,14 @@ export const plansMetadataSchema = {
           minimum: 0,
           label: 'Card Benefit',
           description: 'Prepaid debit card benefit amount in dollars',
+          characteristics: {
+            concept: 'benefit',
+            type: 'card',
+            frequency: 'monthly',
+            eligibility: 'medicare',
+            direction: 'credit',
+          },
+          tags: ['benefit'],
         },
         {
           key: 'dental_benefit_yearly',
@@ -134,6 +199,14 @@ export const plansMetadataSchema = {
           minimum: 0,
           label: 'Dental (yearly)',
           description: 'Annual dental benefit amount in dollars',
+          characteristics: {
+            concept: 'benefit',
+            type: 'dental',
+            frequency: 'yearly',
+            eligibility: 'medicare',
+            direction: 'credit',
+          },
+          tags: ['benefit'],
         },
         {
           key: 'vision_benefit_yearly',
@@ -141,6 +214,14 @@ export const plansMetadataSchema = {
           minimum: 0,
           label: 'Vision (yearly)',
           description: 'Annual vision benefit amount in dollars',
+          characteristics: {
+            concept: 'benefit',
+            type: 'vision',
+            frequency: 'yearly',
+            eligibility: 'medicare',
+            direction: 'credit',
+          },
+          tags: ['benefit'],
         },
         {
           key: 'hearing_benefit_yearly',
@@ -148,6 +229,14 @@ export const plansMetadataSchema = {
           minimum: 0,
           label: 'Hearing (yearly)',
           description: 'Annual hearing benefit amount in dollars',
+          characteristics: {
+            concept: 'benefit',
+            type: 'hearing',
+            frequency: 'yearly',
+            eligibility: 'medicare',
+            direction: 'credit',
+          },
+          tags: ['benefit'],
         },
       ],
     },
@@ -161,6 +250,13 @@ export const plansMetadataSchema = {
           minimum: 0,
           label: 'PCP Copay',
           description: 'Primary care physician copay amount in dollars',
+          characteristics: {
+            concept: 'copay',
+            type: 'primary_care',
+            eligibility: 'medicare',
+            direction: 'debit',
+          },
+          tags: ['cost-sharing'],
         },
         {
           key: 'specialist_copay',
@@ -168,6 +264,13 @@ export const plansMetadataSchema = {
           minimum: 0,
           label: 'Specialist Copay',
           description: 'Specialist physician copay amount in dollars',
+          characteristics: {
+            concept: 'copay',
+            type: 'specialist',
+            eligibility: 'medicare',
+            direction: 'debit',
+          },
+          tags: ['cost-sharing'],
         },
       ],
     },
@@ -181,6 +284,36 @@ export const plansMetadataSchema = {
           minimum: 0,
           label: 'Hospital Copay (daily)',
           description: 'Daily hospital inpatient copay amount in dollars',
+          characteristics: {
+            concept: 'copay',
+            type: 'hospital_inpatient',
+            eligibility: 'medicare',
+            direction: 'debit',
+            unit: 'per_day',
+          },
+          tags: ['cost-sharing'],
+          variants: {
+            medicaid_with: {
+              key: 'hospital_inpatient_with_assistance_per_stay_copay',
+              label: 'Hospital Copay (with assistance, per stay)',
+              description: 'Hospital inpatient per stay copay amount with assistance in dollars',
+              characteristics: {
+                eligibility: 'medicaid',
+                unit: 'per_stay',
+                modifier: 'with_assistance',
+              },
+            },
+            medicaid_without: {
+              key: 'hospital_inpatient_without_assistance_per_stay_copay',
+              label: 'Hospital Copay (without assistance, per stay)',
+              description: 'Hospital inpatient per stay copay amount without assistance in dollars',
+              characteristics: {
+                eligibility: 'medicaid',
+                unit: 'per_stay',
+                modifier: 'without_assistance',
+              },
+            },
+          },
         },
         {
           key: 'hospital_inpatient_days',
@@ -188,20 +321,12 @@ export const plansMetadataSchema = {
           minimum: 0,
           label: 'Hospital Days',
           description: 'Number of covered hospital inpatient days',
-        },
-        {
-          key: 'hospital_inpatient_with_assistance_per_stay_copay',
-          type: 'number',
-          minimum: 0,
-          label: 'Hospital Copay (with assistance, per stay)',
-          description: 'Hospital inpatient per stay copay amount with assistance in dollars',
-        },
-        {
-          key: 'hospital_inpatient_without_assistance_per_stay_copay',
-          type: 'number',
-          minimum: 0,
-          label: 'Hospital Copay (without assistance, per stay)',
-          description: 'Hospital inpatient per stay copay amount without assistance in dollars',
+          characteristics: {
+            concept: 'coverage_limit',
+            type: 'hospital_inpatient',
+            eligibility: 'medicare',
+          },
+          tags: ['cost-sharing'],
         },
         {
           key: 'skilled_nursing_per_day_copay',
@@ -209,13 +334,26 @@ export const plansMetadataSchema = {
           minimum: 0,
           label: 'Skilled Nursing (per day)',
           description: 'Skilled nursing per day copay amount in dollars',
-        },
-        {
-          key: 'skilled_nursing_with_assistance_per_stay_copay',
-          type: 'number',
-          minimum: 0,
-          label: 'Skilled Nursing (with assistance, per stay)',
-          description: 'Skilled nursing per stay copay amount with assistance in dollars',
+          characteristics: {
+            concept: 'copay',
+            type: 'skilled_nursing',
+            eligibility: 'medicare',
+            direction: 'debit',
+            unit: 'per_day',
+          },
+          tags: ['cost-sharing'],
+          variants: {
+            medicaid: {
+              key: 'skilled_nursing_with_assistance_per_stay_copay',
+              label: 'Skilled Nursing (with assistance, per stay)',
+              description: 'Skilled nursing per stay copay amount with assistance in dollars',
+              characteristics: {
+                eligibility: 'medicaid',
+                unit: 'per_stay',
+                modifier: 'with_assistance',
+              },
+            },
+          },
         },
       ],
     },
@@ -229,13 +367,24 @@ export const plansMetadataSchema = {
           minimum: 0,
           label: 'Ambulance Copay',
           description: 'Ambulance service copay amount in dollars',
-        },
-        {
-          key: 'ambulance_with_assistance_copay',
-          type: 'number',
-          minimum: 0,
-          label: 'Ambulance Copay (with assistance)',
-          description: 'Ambulance service copay amount with assistance in dollars',
+          characteristics: {
+            concept: 'copay',
+            type: 'ambulance',
+            eligibility: 'medicare',
+            direction: 'debit',
+          },
+          tags: ['cost-sharing'],
+          variants: {
+            medicaid: {
+              key: 'ambulance_with_assistance_copay',
+              label: 'Ambulance Copay (with assistance)',
+              description: 'Ambulance service copay amount with assistance in dollars',
+              characteristics: {
+                eligibility: 'medicaid',
+                modifier: 'with_assistance',
+              },
+            },
+          },
         },
         {
           key: 'emergency_room_copay',
@@ -243,13 +392,24 @@ export const plansMetadataSchema = {
           minimum: 0,
           label: 'ER Copay',
           description: 'Emergency room visit copay amount in dollars',
-        },
-        {
-          key: 'emergency_with_assistance_copay',
-          type: 'number',
-          minimum: 0,
-          label: 'ER Copay (with assistance)',
-          description: 'Emergency room visit copay amount with assistance in dollars',
+          characteristics: {
+            concept: 'copay',
+            type: 'emergency_room',
+            eligibility: 'medicare',
+            direction: 'debit',
+          },
+          tags: ['cost-sharing'],
+          variants: {
+            medicaid: {
+              key: 'emergency_with_assistance_copay',
+              label: 'ER Copay (with assistance)',
+              description: 'Emergency room visit copay amount with assistance in dollars',
+              characteristics: {
+                eligibility: 'medicaid',
+                modifier: 'with_assistance',
+              },
+            },
+          },
         },
         {
           key: 'urgent_care_copay',
@@ -257,6 +417,13 @@ export const plansMetadataSchema = {
           minimum: 0,
           label: 'Urgent Care Copay',
           description: 'Urgent care visit copay amount in dollars',
+          characteristics: {
+            concept: 'copay',
+            type: 'urgent_care',
+            eligibility: 'medicare',
+            direction: 'debit',
+          },
+          tags: ['cost-sharing'],
         },
       ],
     },
@@ -269,6 +436,13 @@ export const plansMetadataSchema = {
           type: 'string',
           label: 'Fitness Benefit',
           description: 'Fitness/gym membership benefit description',
+          characteristics: {
+            concept: 'benefit',
+            type: 'fitness',
+            eligibility: 'medicare',
+            direction: 'credit',
+          },
+          tags: ['benefit'],
         },
         {
           key: 'transportation_benefit',
@@ -276,6 +450,13 @@ export const plansMetadataSchema = {
           minimum: 0,
           label: 'Transportation Benefit',
           description: 'Transportation/rides benefit amount in dollars',
+          characteristics: {
+            concept: 'benefit',
+            type: 'transportation',
+            eligibility: 'medicare',
+            direction: 'credit',
+          },
+          tags: ['benefit'],
         },
       ],
     },
