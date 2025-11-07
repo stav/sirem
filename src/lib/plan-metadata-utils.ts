@@ -1,14 +1,47 @@
 import { Database } from './supabase-types'
 import { plansMetadataSchema } from '@/schema/plans-metadata-schema'
+import { resolvePlanValue, type EligibilityContext, type ResolutionResult } from './plan-field-resolution'
 
 // Base plan type from database
 export type Plan = Database['public']['Tables']['plans']['Row']
 export type PlanInsert = Database['public']['Tables']['plans']['Insert']
 export type PlanUpdate = Database['public']['Tables']['plans']['Update']
 
+const CORE_FORM_FIELDS = [
+  'name',
+  'type_network',
+  'type_extension',
+  'type_snp',
+  'type_program',
+  'carrier',
+  'plan_year',
+  'cms_contract_number',
+  'cms_plan_number',
+  'cms_geo_segment',
+  'counties',
+] as const
+
 /**
  * Property type from schema sections
  */
+type FieldCharacteristics = {
+  concept?: string
+  type?: string
+  frequency?: string
+  eligibility?: string | string[]
+  unit?: string
+  modifier?: string
+  direction?: 'credit' | 'debit'
+}
+
+type FieldVariant = {
+  key: string
+  label: string
+  description?: string
+  tags?: string[]
+  characteristics?: FieldCharacteristics
+}
+
 type SchemaProperty = {
   key: string
   type: string
@@ -18,6 +51,9 @@ type SchemaProperty = {
   enum?: readonly string[]
   minimum?: number
   maximum?: number
+  tags?: string[]
+  characteristics?: FieldCharacteristics
+  variants?: FieldVariant[]
 }
 
 /**
@@ -53,6 +89,46 @@ export function getAllProperties(): Record<string, SchemaProperty> {
 }
 
 /**
+ * Get all field keys expected by the schema (base fields + variants)
+ */
+export function getAllExpectedFieldKeys(): Set<string> {
+  const keys = new Set<string>()
+  const properties = getAllProperties()
+
+  Object.values(properties).forEach((prop) => {
+    keys.add(prop.key)
+    if (prop.variants) {
+      prop.variants.forEach((variant) => {
+        keys.add(variant.key)
+      })
+    }
+  })
+
+  return keys
+}
+
+/**
+ * Identify metadata fields that are not defined in the schema (legacy/custom fields)
+ */
+export function getLegacyFields(plan: Plan): Record<string, unknown> {
+  if (!plan.metadata || typeof plan.metadata !== 'object') {
+    return {}
+  }
+
+  const metadata = plan.metadata as Record<string, unknown>
+  const expectedKeys = getAllExpectedFieldKeys()
+  const legacyFields: Record<string, unknown> = {}
+
+  Object.keys(metadata).forEach((key) => {
+    if (!expectedKeys.has(key)) {
+      legacyFields[key] = metadata[key]
+    }
+  })
+
+  return legacyFields
+}
+
+/**
  * PlanMetadata interface - dynamically generated from schema
  *
  * This interface is automatically generated from the JSON Schema properties.
@@ -71,15 +147,32 @@ export interface PlanWithMetadata extends Omit<Plan, 'metadata'> {
   metadata: PlanMetadata | null
 }
 
-// Helper functions for safe metadata access
-export function getMetadataValue(plan: Plan, key: string): unknown {
-  if (!plan.metadata || typeof plan.metadata !== 'object') return null
-  const metadata = plan.metadata as Record<string, unknown>
-  return metadata[key] ?? null
+export type ResolverInput = EligibilityContext | string | string[] | undefined
+
+function normalizeResolverInput(context?: ResolverInput): EligibilityContext | undefined {
+  if (!context) return undefined
+  if (typeof context === 'string' || Array.isArray(context)) {
+    return { eligibility: context }
+  }
+  if (typeof context === 'object') {
+    return context
+  }
+  return undefined
 }
 
-export function getMetadataNumber(plan: Plan, key: string): number | null {
-  const value = getMetadataValue(plan, key)
+// Helper functions for safe metadata access using resolver
+export function getMetadataResolution(plan: Plan, key: string, context?: ResolverInput): ResolutionResult {
+  const normalizedContext = normalizeResolverInput(context)
+  return resolvePlanValue(plan, key, normalizedContext)
+}
+
+export function getMetadataValue(plan: Plan, key: string, context?: ResolverInput): unknown {
+  const result = getMetadataResolution(plan, key, context)
+  return result.value ?? null
+}
+
+export function getMetadataNumber(plan: Plan, key: string, context?: ResolverInput): number | null {
+  const value = getMetadataValue(plan, key, context)
   if (typeof value === 'number') return value
   if (typeof value === 'string') {
     const parsed = parseFloat(value)
@@ -88,13 +181,13 @@ export function getMetadataNumber(plan: Plan, key: string): number | null {
   return null
 }
 
-export function getMetadataString(plan: Plan, key: string): string | null {
-  const value = getMetadataValue(plan, key)
+export function getMetadataString(plan: Plan, key: string, context?: ResolverInput): string | null {
+  const value = getMetadataValue(plan, key, context)
   return typeof value === 'string' ? value : null
 }
 
-export function getMetadataDate(plan: Plan, key: string): string | null {
-  const value = getMetadataValue(plan, key)
+export function getMetadataDate(plan: Plan, key: string, context?: ResolverInput): string | null {
+  const value = getMetadataValue(plan, key, context)
   return typeof value === 'string' ? value : null
 }
 
@@ -103,7 +196,7 @@ export function getMetadataDate(plan: Plan, key: string): string | null {
  * This eliminates hardcoded field definitions by using the schema as the source of truth
  */
 export const getPlanMetadata = (() => {
-  const getters: Record<string, (plan: Plan) => unknown> = {}
+  const getters: Record<string, (plan: Plan, context?: ResolverInput) => unknown> = {}
   const properties = getAllProperties()
 
   // Generate getters for all schema properties
@@ -112,16 +205,32 @@ export const getPlanMetadata = (() => {
 
     // Choose appropriate getter based on field type
     if (fieldType === 'string' && 'format' in fieldSchema && fieldSchema.format === 'date') {
-      getters[fieldName] = (plan: Plan) => getMetadataDate(plan, fieldName)
+      getters[fieldName] = (plan: Plan, context?: ResolverInput) => getMetadataDate(plan, fieldName, context)
     } else if (fieldType === 'number') {
-      getters[fieldName] = (plan: Plan) => getMetadataNumber(plan, fieldName)
+      getters[fieldName] = (plan: Plan, context?: ResolverInput) => getMetadataNumber(plan, fieldName, context)
     } else {
-      getters[fieldName] = (plan: Plan) => getMetadataString(plan, fieldName)
+      getters[fieldName] = (plan: Plan, context?: ResolverInput) => getMetadataString(plan, fieldName, context)
+    }
+
+    // Generate getters for variant fields (inherit base type)
+    if (fieldSchema.variants) {
+      fieldSchema.variants.forEach((variant) => {
+        if (fieldType === 'string' && fieldSchema.format === 'date') {
+          getters[variant.key] = (plan: Plan, context?: ResolverInput) =>
+            getMetadataDate(plan, variant.key, context)
+        } else if (fieldType === 'number') {
+          getters[variant.key] = (plan: Plan, context?: ResolverInput) =>
+            getMetadataNumber(plan, variant.key, context)
+        } else {
+          getters[variant.key] = (plan: Plan, context?: ResolverInput) =>
+            getMetadataString(plan, variant.key, context)
+        }
+      })
     }
   })
 
   return getters
-})() as Record<string, (plan: Plan) => number | string | null>
+})() as Record<string, (plan: Plan, context?: ResolverInput) => number | string | null>
 
 /**
  * Get default/empty metadata form data - dynamically generated from schema
@@ -130,10 +239,9 @@ export const getPlanMetadata = (() => {
  */
 export function getDefaultMetadataFormData(): Record<string, unknown> {
   const formData: Record<string, unknown> = {}
-  const properties = getAllProperties()
+  const metadataFields = Array.from(getAllExpectedFieldKeys())
 
-  // Dynamically generate metadata fields from schema
-  Object.keys(properties).forEach((fieldName) => {
+  metadataFields.forEach((fieldName) => {
     formData[fieldName] = ''
   })
 
@@ -187,20 +295,25 @@ export function populateFormFromPlan(plan: Plan): Record<string, unknown> {
   formData.cms_geo_segment = String(plan.cms_geo_segment ?? '')
   formData.counties = Array.isArray(plan.counties) ? plan.counties.join(', ') : String(plan.counties ?? '')
 
-  // Metadata fields - dynamically populate based on what's in the metadata
+  // Initialize metadata fields to empty values
+  const metadataFields = Array.from(getAllExpectedFieldKeys())
+  metadataFields.forEach((field) => {
+    formData[field] = ''
+  })
+
   if (plan.metadata) {
     const metadata = plan.metadata as Record<string, unknown>
-    const properties = getAllProperties()
+    const metadataFieldSet = new Set(metadataFields)
 
-    // Get all possible metadata fields from the schema
-    const metadataFields = Object.keys(properties)
-
-    // Populate each field if it exists in the metadata
     metadataFields.forEach((field) => {
       if (metadata[field] !== undefined && metadata[field] !== null) {
         formData[field] = String(metadata[field])
-      } else {
-        formData[field] = ''
+      }
+    })
+
+    Object.keys(metadata).forEach((key) => {
+      if (!metadataFieldSet.has(key)) {
+        formData[key] = metadata[key]
       }
     })
   }
@@ -208,70 +321,80 @@ export function populateFormFromPlan(plan: Plan): Record<string, unknown> {
   return formData
 }
 
-/**
- * Build complete plan data object from form data
- * This function builds both core database fields and metadata
- */
-export function buildPlanDataFromForm(formData: Record<string, unknown>): {
-  name: string
-  type_network: string | null
-  type_extension: string | null
-  type_snp: string | null
-  type_program: string | null
-  carrier: string | null
-  plan_year: number | null
-  cms_contract_number: string | null
-  cms_plan_number: string | null
-  cms_geo_segment: string | null
-  counties: string[] | null
-  metadata: PlanMetadata | null
-} {
-  // Build metadata object from form fields
+function parseCommaSeparatedValues(value: unknown): string[] | null {
+  if (typeof value !== 'string') return null
+  const parts = value
+    .split(',')
+    .map((v) => v.trim())
+    .filter((v) => v.length > 0)
+  return parts.length > 0 ? parts : null
+}
+
+export function buildPlanDataFromForm(formData: Record<string, unknown>): PlanInsert {
   const metadata = buildMetadata(formData)
 
   // Build core database fields
   return {
     name: String(formData.name || ''),
+    carrier: (formData.carrier as string) || null,
+    plan_year: parseInt(String(formData.plan_year || new Date().getUTCFullYear()), 10),
     type_network: (formData.type_network as string) || null,
     type_extension: (formData.type_extension as string) || null,
     type_snp: (formData.type_snp as string) || null,
     type_program: (formData.type_program as string) || null,
-    carrier: (formData.carrier as string) || null,
-    plan_year: formData.plan_year ? Number(formData.plan_year) : null,
     cms_contract_number: (formData.cms_contract_number as string) || null,
     cms_plan_number: (formData.cms_plan_number as string) || null,
     cms_geo_segment: (formData.cms_geo_segment as string) || null,
-    counties: formData.counties
-      ? String(formData.counties)
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean)
-      : null,
-    metadata: Object.keys(metadata).length > 0 ? metadata : null,
+    counties: typeof formData.counties === 'string' ? parseCommaSeparatedValues(formData.counties) : null,
+    metadata,
   }
 }
 
-/**
- * Build metadata object from form data - dynamically generated from schema
- * This function eliminates hardcoded field mappings by using the schema as the source of truth
- */
 export function buildMetadata(data: Record<string, unknown>): PlanMetadata {
   const metadata: PlanMetadata = {}
   const properties = getAllProperties()
+  const expectedKeys = getAllExpectedFieldKeys()
 
-  // Dynamically process all schema properties
-  Object.keys(properties).forEach((fieldName) => {
-    const value = data[fieldName]
-    if (value !== null && value !== undefined && value !== '') {
-      // Ensure value is assignable to PlanMetadata type
-      if (typeof value === 'string' || typeof value === 'number') {
-        metadata[fieldName] = value
-      } else if (typeof value === 'object') {
-        // Skip objects - they shouldn't be in metadata based on schema
-        return
+  // Process base schema properties
+  Object.keys(properties).forEach((key) => {
+    const value = data[key]
+    if (value !== undefined && value !== null && value !== '') {
+      if (typeof value === 'number') {
+        metadata[key] = value
+      } else if (typeof value === 'string' && value.trim() !== '') {
+        metadata[key] = value
       } else {
-        // Convert other types to string
-        metadata[fieldName] = String(value)
+        metadata[key] = JSON.stringify(value)
+      }
+    }
+  })
+
+  // Process variant fields (those in expectedKeys but not base properties)
+  expectedKeys.forEach((key) => {
+    if (properties[key]) return
+
+    const value = data[key]
+    if (value !== null && value !== undefined && value !== '') {
+      if (typeof value === 'string' || typeof value === 'number') {
+        metadata[key] = value
+      } else {
+        metadata[key] = JSON.stringify(value)
+      }
+    }
+  })
+
+  const coreFieldSet = new Set<string>(CORE_FORM_FIELDS)
+
+  // Include any remaining custom/legacy fields that were present in the form data
+  Object.keys(data).forEach((key) => {
+    if (properties[key] || expectedKeys.has(key) || coreFieldSet.has(key)) return
+
+    const value = data[key]
+    if (value !== null && value !== undefined && value !== '') {
+      if (typeof value === 'string' || typeof value === 'number') {
+        metadata[key] = value
+      } else {
+        metadata[key] = JSON.stringify(value)
       }
     }
   })
@@ -309,6 +432,28 @@ export function extractMetadataForForm(plan: Plan): Record<string, unknown> {
   return formData
 }
 
+export function getResolvedMetadata(
+  plan: Plan,
+  keys: string[],
+  context?: ResolverInput
+): Record<string, ResolutionResult> {
+  const normalizedContext = normalizeResolverInput(context)
+  return keys.reduce<Record<string, ResolutionResult>>((acc, key) => {
+    acc[key] = resolvePlanValue(plan, key, normalizedContext)
+    return acc
+  }, {})
+}
+
+function parseNumber(value: unknown): number | null {
+  if (value === null || value === undefined) return null
+  if (typeof value === 'number' && !Number.isNaN(value)) return value
+  if (typeof value === 'string' && value.trim().length > 0) {
+    const parsed = Number(value)
+    return Number.isNaN(parsed) ? null : parsed
+  }
+  return null
+}
+
 // Premium calculation utilities for LIS scenarios
 export const premiumCalculations = {
   /**
@@ -318,13 +463,9 @@ export const premiumCalculations = {
    * @returns The effective monthly premium amount
    */
   getEffectivePremium: (plan: Plan, hasExtraHelp: boolean = false): number | null => {
-    if (hasExtraHelp) {
-      // If they have Extra Help, use the reduced premium (typically $0)
-      return Number(getPlanMetadata.premium_monthly_with_extra_help(plan)) || 0
-    } else {
-      // Standard premium - use the regular monthly premium
-      return Number(getPlanMetadata.premium_monthly(plan)) || 0
-    }
+    const context = hasExtraHelp ? { eligibility: 'lis' } : undefined
+    const resolved = resolvePlanValue(plan, 'premium_monthly', context)
+    return parseNumber(resolved.value) ?? 0
   },
 
   /**
@@ -333,12 +474,12 @@ export const premiumCalculations = {
    * @returns Object with min and max premium values
    */
   getPremiumRange: (plan: Plan): { min: number | null; max: number | null } => {
-    const standardPremium = Number(getPlanMetadata.premium_monthly(plan)) || 0
-    const extraHelpPremium = Number(getPlanMetadata.premium_monthly_with_extra_help(plan)) || 0
+    const standard = parseNumber(resolvePlanValue(plan, 'premium_monthly').value)
+    const lis = parseNumber(resolvePlanValue(plan, 'premium_monthly', { eligibility: 'lis' }).value)
 
     return {
-      min: extraHelpPremium ?? 0,
-      max: standardPremium,
+      min: lis ?? standard ?? null,
+      max: standard,
     }
   },
 
@@ -349,13 +490,9 @@ export const premiumCalculations = {
    * @returns The effective medical deductible amount
    */
   getEffectiveMedicalDeductible: (plan: Plan, hasMedicaidCostSharing: boolean = false): number | null => {
-    if (hasMedicaidCostSharing) {
-      // If they have Medicaid cost-sharing, use the reduced deductible (typically $0)
-      return Number(getPlanMetadata.medical_deductible_with_medicaid(plan)) || 0
-    } else {
-      // Standard deductible - use the regular medical deductible
-      return Number(getPlanMetadata.medical_deductible(plan)) || 0
-    }
+    const context = hasMedicaidCostSharing ? { eligibility: 'medicaid' } : undefined
+    const resolved = resolvePlanValue(plan, 'medical_deductible', context)
+    return parseNumber(resolved.value) ?? 0
   },
 
   /**
@@ -364,12 +501,12 @@ export const premiumCalculations = {
    * @returns Object with min and max deductible values
    */
   getMedicalDeductibleRange: (plan: Plan): { min: number | null; max: number | null } => {
-    const standardDeductible = Number(getPlanMetadata.medical_deductible(plan)) || 0
-    const medicaidDeductible = Number(getPlanMetadata.medical_deductible_with_medicaid(plan)) || 0
+    const standard = parseNumber(resolvePlanValue(plan, 'medical_deductible').value)
+    const medicaid = parseNumber(resolvePlanValue(plan, 'medical_deductible', { eligibility: 'medicaid' }).value)
 
     return {
-      min: medicaidDeductible ?? 0,
-      max: standardDeductible,
+      min: medicaid ?? standard ?? null,
+      max: standard,
     }
   },
 }

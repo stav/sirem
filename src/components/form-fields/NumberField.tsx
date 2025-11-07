@@ -33,7 +33,7 @@ const NumberField = React.memo(function NumberField({
       step={field.type === 'number' ? '0.01' : '1'}
       min={field.validation?.minimum}
       max={field.validation?.maximum}
-      value={(value as string) || ''}
+      value={value === null || value === undefined ? '' : String(value)}
       onChange={handleChange}
       readOnly={isReadOnly}
       className={`${isReadOnly ? 'bg-muted' : ''} ${className}`}

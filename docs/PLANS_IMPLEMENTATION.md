@@ -70,6 +70,14 @@ The `metadata` JSONB field stores all plan benefits and additional information. 
 - `@/schema/plans-metadata-schema.ts` (TypeScript Schema)
 - `src/lib/plan-metadata-utils.ts` (TypeScript interface)
 
+**Field Builder Enumerations:**
+
+- `planMetadataCharacteristicOptions.fieldTypes` → UI-safe list of primitive field types (`string`, `number`).
+- `planMetadataCharacteristicOptions.frequency` → Allowed cadence tokens (`daily`, `monthly`, `quarterly`, `yearly`, `per_stay`).
+- `planMetadataCharacteristicOptions.units` → Monetary unit tokens exposed in the UI (`$`, `%`).
+- `planMetadataCharacteristicOptions.eligibility` → Eligibility tokens including LIS and Medicaid levels (`qdwi`, `qi`, `slmb`, `slmb+`, `qmb`, `qmb+`, `fbde`).
+- `planMetadataCharacteristicOptions.medicaidLevels` → Convenience subset for Medicaid-specific selections.
+
 **🔄 DYNAMIC SCHEMA: New fields may be added, changed, or removed at any time as business requirements evolve.**
 
 **Dates:**
@@ -95,7 +103,7 @@ The `metadata` JSONB field stores all plan benefits and additional information. 
 - `primary_care_copay` (numeric): Primary care physician copay
 - `specialist_copay` (numeric): Specialist copay
 - `hospital_inpatient_per_day_copay` (numeric): Daily hospital inpatient copay
-- `hospital_inpatient_days` (integer): Number of covered hospital days
+- `hospital_inpatient_days` (numeric): Number of covered hospital days
 - `moop_annual` (numeric): Maximum Out-of-Pocket annual limit
 - `ambulance_copay` (numeric): Ambulance service copay
 - `emergency_room_copay` (numeric): Emergency room copay
@@ -671,7 +679,7 @@ The `metadata` JSONB field provides flexibility for storing additional plan info
 - The lookup key for property indexing in `getAllProperties()`
 - The unique identifier in `FieldDefinition` objects
 
-Since properties are stored in an array (not an object), the `key` must be explicit - it cannot be inferred from object keys like in flat schemas. This key maps directly to how values are stored and retrieved in the `plan.metadata` JSONB field.
+Since properties are stored in an array (not an object), the `key` must be explicit - it cannot be inferred from object keys like in flat schemas. This key maps directly to the JSONB property name, while application code should access values through the resolver helpers in `plan-metadata-utils.ts` instead of reading `plan.metadata` directly.
 
 1. **Extended Benefits**: Benefits that vary by carrier or year (card, fitness, transportation)
 2. **Prescription Drug Details**: Complex RX coverage that needs more than the pharmacy_benefit field
@@ -681,16 +689,21 @@ Since properties are stored in an array (not an object), the `key` must be expli
 ### Accessing Metadata in Code
 
 ```typescript
-// TypeScript helper to safely access metadata
-function getMetadata(plan: Plan, key: string): string | number | null {
-  if (!plan.metadata || typeof plan.metadata !== 'object') return null
-  const metadata = plan.metadata as Record<string, any>
-  return metadata[key] ?? null
-}
+import {
+  getMetadataValue,
+  getMetadataNumber,
+  getMetadataResolution,
+} from '@/lib/plan-metadata-utils'
 
-// Example usage
-const cardBenefit = getMetadata(plan, 'card_benefit')
-const medicaidRequired = getMetadata(plan, 'medicaid_eligibility')
+// Resolve values directly (automatic variant + fallback handling)
+const cardBenefit = getMetadataValue(plan, 'card_benefit')
+const lisPremium = getMetadataNumber(plan, 'premium_monthly', 'lis')
+
+// Inspect where a value came from (variant vs. base)
+const premiumResolution = getMetadataResolution(plan, 'premium_monthly', 'lis')
+if (premiumResolution.source === 'variant') {
+  console.log(`Using ${premiumResolution.definition?.key} for LIS context`)
+}
 ```
 
 ### Adding Metadata During Import

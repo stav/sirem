@@ -1,24 +1,713 @@
 /**
  * Plans Metadata Schema
  *
- * This file exports the schema data for the plans metadata fields.
- * It serves as a TypeScript module that can be imported by components.
+ * This module defines the schema data for plan metadata fields.
+ * It provides helper factories that ensure characteristics are declared
+ * using the same enumerations the forthcoming field builder UI will expose.
  *
- * Schema Structure:
- * - Hierarchical sections array containing ordered property arrays
- * - Each section has: title, description, and properties array
- * - Each property in the properties array must have a "key" field
- *
- * 🔑 KEY PROPERTY REQUIREMENT:
- * The "key" property is essential because properties are stored in arrays (not objects).
- * The key serves as:
- * - The database property name in plan.metadata JSONB (e.g., metadata.premium_monthly)
- * - The field identifier for form data binding
- * - The lookup key for property indexing in getAllProperties()
- * - The unique identifier in FieldDefinition objects
- *
- * Without the key, we cannot map schema definitions to actual database storage.
+ * Key updates:
+ * - Variants are stored as ordered arrays so the UI can render them reliably.
+ * - Characteristics explicitly support eligibility tokens (including Medicaid levels),
+ *   frequency options, and monetary units ($ / %).
+ * - Builder options are exported for reuse in tooling/UX layers.
  */
+
+const FIELD_TYPES = ['string', 'number'] as const
+const UNIT_OPTIONS = ['$', '%'] as const
+const FREQUENCY_OPTIONS = ['daily', 'monthly', 'quarterly', 'yearly', 'per_stay'] as const
+const BASE_ELIGIBILITY_OPTIONS = ['medicare', 'lis', 'medicaid'] as const
+const MEDICAID_LEVEL_OPTIONS = ['qdwi', 'qi', 'slmb', 'slmb+', 'qmb', 'qmb+', 'fbde'] as const
+const ELIGIBILITY_OPTIONS = [...BASE_ELIGIBILITY_OPTIONS, ...MEDICAID_LEVEL_OPTIONS] as const
+
+type FieldType = (typeof FIELD_TYPES)[number]
+type UnitOption = (typeof UNIT_OPTIONS)[number]
+type FrequencyOption = (typeof FREQUENCY_OPTIONS)[number]
+type EligibilityOption = (typeof ELIGIBILITY_OPTIONS)[number]
+type FieldDirection = 'credit' | 'debit'
+
+interface CharacteristicInput {
+  concept?: string
+  type?: string
+  frequency?: FrequencyOption
+  eligibility?: EligibilityOption | readonly EligibilityOption[]
+  unit?: UnitOption
+  modifier?: string
+  direction?: FieldDirection
+}
+
+interface VariantInput {
+  key: string
+  label: string
+  description?: string
+  tags?: readonly string[]
+  characteristics?: CharacteristicInput
+}
+
+interface FieldInput {
+  key: string
+  type: FieldType
+  label: string
+  description: string
+  tags?: readonly string[]
+  characteristics?: CharacteristicInput
+  variants?: readonly VariantInput[]
+  validation?: {
+    minimum?: number
+    maximum?: number
+    enum?: readonly string[]
+    required?: boolean
+  }
+  format?: 'date'
+}
+
+function assertEligibilityToken(token: EligibilityOption): string {
+  if (ELIGIBILITY_OPTIONS.includes(token)) {
+    return token
+  }
+  throw new Error(`Unsupported eligibility token: ${token}`)
+}
+
+function normalizeEligibilityInput(
+  eligibility: CharacteristicInput['eligibility']
+): string | string[] | undefined {
+  if (!eligibility) return undefined
+
+  if (Array.isArray(eligibility)) {
+    if (eligibility.length === 0) return undefined
+    return eligibility.map((token) => assertEligibilityToken(token as EligibilityOption))
+  }
+
+  return assertEligibilityToken(eligibility as EligibilityOption)
+}
+
+function buildCharacteristics(input?: CharacteristicInput): Record<string, unknown> | undefined {
+  if (!input) return undefined
+
+  const characteristics: Record<string, unknown> = {}
+
+  if (input.concept) characteristics.concept = input.concept
+  if (input.type) characteristics.type = input.type
+  if (input.modifier) characteristics.modifier = input.modifier
+  if (input.direction) characteristics.direction = input.direction
+
+  if (input.frequency) {
+    if (!FREQUENCY_OPTIONS.includes(input.frequency)) {
+      throw new Error(`Unsupported frequency token: ${input.frequency}`)
+    }
+    characteristics.frequency = input.frequency
+  }
+
+  if (input.unit) {
+    if (!UNIT_OPTIONS.includes(input.unit)) {
+      throw new Error(`Unsupported unit token: ${input.unit}`)
+    }
+    characteristics.unit = input.unit
+  }
+
+  const eligibility = normalizeEligibilityInput(input.eligibility)
+  if (eligibility) {
+    characteristics.eligibility = eligibility
+  }
+
+  return Object.keys(characteristics).length > 0 ? characteristics : undefined
+}
+
+function defineVariant(input: VariantInput): Record<string, unknown> {
+  const variant: Record<string, unknown> = {
+    key: input.key,
+    label: input.label,
+  }
+
+  if (input.description) {
+    variant.description = input.description
+  }
+
+  if (input.tags && input.tags.length > 0) {
+    variant.tags = [...input.tags]
+  }
+
+  const characteristics = buildCharacteristics(input.characteristics)
+  if (characteristics) {
+    variant.characteristics = characteristics
+  }
+
+  return variant
+}
+
+function defineField(input: FieldInput): Record<string, unknown> {
+  const field: Record<string, unknown> = {
+    key: input.key,
+    type: input.type,
+    label: input.label,
+    description: input.description,
+  }
+
+  if (input.format) {
+    field.format = input.format
+  }
+
+  if (input.tags && input.tags.length > 0) {
+    field.tags = [...input.tags]
+  }
+
+  const characteristics = buildCharacteristics(input.characteristics)
+  if (characteristics) {
+    field.characteristics = characteristics
+  }
+
+  if (input.variants && input.variants.length > 0) {
+    field.variants = input.variants.map((variant) => defineVariant(variant))
+  }
+
+  if (input.validation) {
+    if (input.validation.minimum !== undefined) {
+      field.minimum = input.validation.minimum
+    }
+    if (input.validation.maximum !== undefined) {
+      field.maximum = input.validation.maximum
+    }
+    if (input.validation.enum && input.validation.enum.length > 0) {
+      field.enum = [...input.validation.enum]
+    }
+    if (input.validation.required !== undefined) {
+      field.required = input.validation.required
+    }
+  }
+
+  return field
+}
+
+function defineSection(title: string, description: string, properties: readonly FieldInput[]) {
+  return {
+    title,
+    description,
+    properties: properties.map((property) => defineField(property)),
+  }
+}
+
+export const planMetadataCharacteristicOptions = {
+  fieldTypes: FIELD_TYPES,
+  units: UNIT_OPTIONS,
+  frequency: FREQUENCY_OPTIONS,
+  eligibility: ELIGIBILITY_OPTIONS,
+  medicaidLevels: MEDICAID_LEVEL_OPTIONS,
+} as const
+
+const planMetadataSections = [
+  defineSection('Plan Dates', 'Plan effective dates and periods', [
+    {
+      key: 'effective_start',
+      type: 'string',
+      label: 'Effective Start Date',
+      description: 'Plan effective start date in YYYY-MM-DD format',
+      format: 'date',
+    },
+    {
+      key: 'effective_end',
+      type: 'string',
+      label: 'Effective End Date',
+      description: 'Plan effective end date in YYYY-MM-DD format',
+      format: 'date',
+    },
+  ]),
+  defineSection('Financials', 'Monthly premiums, givebacks, and maximum out-of-pocket limits', [
+    {
+      key: 'premium_monthly',
+      type: 'number',
+      label: 'Premium (monthly)',
+      description: 'Monthly premium amount in dollars',
+      characteristics: {
+        concept: 'premium',
+        frequency: 'monthly',
+        eligibility: 'medicare',
+        direction: 'debit',
+        unit: '%',
+      },
+      tags: ['financial', 'cost-sharing'],
+      validation: {
+        minimum: 0,
+      },
+      variants: [
+        {
+          key: 'premium_monthly_with_extra_help',
+          label: 'Premium (monthly, with Extra Help)',
+          description: 'Monthly premium for LIS/Extra Help recipients (typically $0)',
+          characteristics: {
+            eligibility: 'lis',
+            frequency: 'monthly',
+            unit: '$',
+          },
+        },
+        {
+          key: 'premium_monthly_medicaid_qmb',
+          label: 'Premium (monthly, Medicaid QMB)',
+          description: 'Monthly premium for Medicaid QMB recipients',
+          characteristics: {
+            eligibility: ['medicaid', 'qmb'],
+            frequency: 'monthly',
+            unit: '$',
+          },
+        },
+      ],
+    },
+    {
+      key: 'giveback_monthly',
+      type: 'number',
+      label: 'Giveback (monthly)',
+      description: 'Monthly giveback/rebate amount in dollars',
+      characteristics: {
+        concept: 'giveback',
+        frequency: 'monthly',
+        eligibility: 'medicare',
+        direction: 'credit',
+        unit: '$',
+      },
+      tags: ['financial'],
+      validation: {
+        minimum: 0,
+      },
+    },
+    {
+      key: 'moop_annual',
+      type: 'number',
+      label: 'MOOP (annual)',
+      description: 'Maximum Out-of-Pocket annual limit in dollars',
+      characteristics: {
+        concept: 'moop',
+        frequency: 'yearly',
+        eligibility: 'medicare',
+        direction: 'debit',
+        unit: '$',
+      },
+      tags: ['financial', 'cost-sharing'],
+      validation: {
+        minimum: 0,
+      },
+    },
+  ]),
+  defineSection('Deductibles', 'Medical and prescription drug deductibles', [
+    {
+      key: 'medical_deductible',
+      type: 'number',
+      label: 'Medical Deductible',
+      description: 'Standard medical deductible amount in dollars',
+      characteristics: {
+        concept: 'deductible',
+        type: 'medical',
+        frequency: 'yearly',
+        eligibility: 'medicare',
+        direction: 'debit',
+        unit: '$',
+      },
+      tags: ['cost-sharing'],
+      validation: {
+        minimum: 0,
+      },
+      variants: [
+        {
+          key: 'medical_deductible_with_medicaid',
+          label: 'Medical Deductible (with Medicaid)',
+          description: 'Medical deductible for Medicaid cost-sharing recipients (typically $0)',
+          characteristics: {
+            eligibility: ['medicaid', 'qmb'],
+            modifier: 'with_assistance',
+            frequency: 'yearly',
+            unit: '$',
+          },
+        },
+      ],
+    },
+    {
+      key: 'rx_deductible_tier345',
+      type: 'number',
+      label: 'RX Deductible (Tiers 3-5)',
+      description: 'Prescription drug deductible for tiers 3, 4, and 5 in dollars',
+      characteristics: {
+        concept: 'deductible',
+        type: 'prescription',
+        eligibility: 'medicare',
+        direction: 'debit',
+        modifier: 'tier345',
+        unit: '$',
+      },
+      tags: ['cost-sharing'],
+      validation: {
+        minimum: 0,
+      },
+    },
+  ]),
+  defineSection('Benefits', 'Benefits and allowances', [
+    {
+      key: 'otc_benefit_quarterly',
+      type: 'number',
+      label: 'OTC Benefit (quarterly)',
+      description: 'Quarterly OTC (Over-the-Counter) benefit amount in dollars',
+      characteristics: {
+        concept: 'benefit',
+        type: 'otc',
+        frequency: 'quarterly',
+        eligibility: 'medicare',
+        direction: 'credit',
+        unit: '$',
+      },
+      tags: ['benefit'],
+      validation: {
+        minimum: 0,
+      },
+    },
+    {
+      key: 'card_benefit',
+      type: 'number',
+      label: 'Card Benefit',
+      description: 'Prepaid debit card benefit amount in dollars',
+      characteristics: {
+        concept: 'benefit',
+        type: 'card',
+        frequency: 'monthly',
+        eligibility: 'medicare',
+        direction: 'credit',
+        unit: '$',
+      },
+      tags: ['benefit'],
+      validation: {
+        minimum: 0,
+      },
+    },
+    {
+      key: 'dental_benefit_yearly',
+      type: 'number',
+      label: 'Dental (yearly)',
+      description: 'Annual dental benefit amount in dollars',
+      characteristics: {
+        concept: 'benefit',
+        type: 'dental',
+        frequency: 'yearly',
+        eligibility: 'medicare',
+        direction: 'credit',
+        unit: '$',
+      },
+      tags: ['benefit'],
+      validation: {
+        minimum: 0,
+      },
+    },
+    {
+      key: 'vision_benefit_yearly',
+      type: 'number',
+      label: 'Vision (yearly)',
+      description: 'Annual vision benefit amount in dollars',
+      characteristics: {
+        concept: 'benefit',
+        type: 'vision',
+        frequency: 'yearly',
+        eligibility: 'medicare',
+        direction: 'credit',
+        unit: '$',
+      },
+      tags: ['benefit'],
+      validation: {
+        minimum: 0,
+      },
+    },
+    {
+      key: 'hearing_benefit_yearly',
+      type: 'number',
+      label: 'Hearing (yearly)',
+      description: 'Annual hearing benefit amount in dollars',
+      characteristics: {
+        concept: 'benefit',
+        type: 'hearing',
+        frequency: 'yearly',
+        eligibility: 'medicare',
+        direction: 'credit',
+        unit: '$',
+      },
+      tags: ['benefit'],
+      validation: {
+        minimum: 0,
+      },
+    },
+  ]),
+  defineSection('Doctor Copays', 'Copays for doctor visits and attendance', [
+    {
+      key: 'primary_care_copay',
+      type: 'number',
+      label: 'PCP Copay',
+      description: 'Primary care physician copay amount in dollars',
+      characteristics: {
+        concept: 'copay',
+        type: 'primary_care',
+        eligibility: 'medicare',
+        direction: 'debit',
+        unit: '$',
+      },
+      tags: ['cost-sharing'],
+      validation: {
+        minimum: 0,
+      },
+    },
+    {
+      key: 'specialist_copay',
+      type: 'number',
+      label: 'Specialist Copay',
+      description: 'Specialist physician copay amount in dollars',
+      characteristics: {
+        concept: 'copay',
+        type: 'specialist',
+        eligibility: 'medicare',
+        direction: 'debit',
+        unit: '$',
+      },
+      tags: ['cost-sharing'],
+      validation: {
+        minimum: 0,
+      },
+    },
+  ]),
+  defineSection('Hospital Copays', 'Copays for hospital stays and visits', [
+    {
+      key: 'hospital_inpatient_per_day_copay',
+      type: 'number',
+      label: 'Hospital Copay (daily)',
+      description: 'Daily hospital inpatient copay amount in dollars',
+      characteristics: {
+        concept: 'copay',
+        type: 'hospital_inpatient',
+        eligibility: 'medicare',
+        direction: 'debit',
+        frequency: 'daily',
+        unit: '$',
+      },
+      tags: ['cost-sharing'],
+      validation: {
+        minimum: 0,
+      },
+      variants: [
+        {
+          key: 'hospital_inpatient_with_assistance_per_stay_copay',
+          label: 'Hospital Copay (with assistance, per stay)',
+          description: 'Hospital inpatient per stay copay amount with assistance in dollars',
+          characteristics: {
+            eligibility: ['medicaid', 'qmb+'],
+            unit: '$',
+            frequency: 'per_stay',
+            modifier: 'with_assistance',
+          },
+        },
+        {
+          key: 'hospital_inpatient_without_assistance_per_stay_copay',
+          label: 'Hospital Copay (without assistance, per stay)',
+          description: 'Hospital inpatient per stay copay amount without assistance in dollars',
+          characteristics: {
+            eligibility: ['medicaid', 'qi'],
+            unit: '$',
+            frequency: 'per_stay',
+            modifier: 'without_assistance',
+          },
+        },
+      ],
+    },
+    {
+      key: 'hospital_inpatient_days',
+      type: 'number',
+      label: 'Hospital Days',
+      description: 'Number of covered hospital inpatient days',
+      characteristics: {
+        concept: 'coverage_limit',
+        type: 'hospital_inpatient',
+        eligibility: 'medicare',
+      },
+      tags: ['cost-sharing'],
+      validation: {
+        minimum: 0,
+      },
+    },
+    {
+      key: 'skilled_nursing_per_day_copay',
+      type: 'number',
+      label: 'Skilled Nursing (per day)',
+      description: 'Skilled nursing per day copay amount in dollars',
+      characteristics: {
+        concept: 'copay',
+        type: 'skilled_nursing',
+        eligibility: 'medicare',
+        direction: 'debit',
+        frequency: 'daily',
+        unit: '$',
+      },
+      tags: ['cost-sharing'],
+      validation: {
+        minimum: 0,
+      },
+      variants: [
+        {
+          key: 'skilled_nursing_with_assistance_per_stay_copay',
+          label: 'Skilled Nursing (with assistance, per stay)',
+          description: 'Skilled nursing per stay copay amount with assistance in dollars',
+          characteristics: {
+            eligibility: ['medicaid', 'slmb+'],
+            unit: '$',
+            frequency: 'per_stay',
+            modifier: 'with_assistance',
+          },
+        },
+      ],
+    },
+  ]),
+  defineSection('Emergency Copays', 'Copays for emergency services', [
+    {
+      key: 'ambulance_copay',
+      type: 'number',
+      label: 'Ambulance Copay',
+      description: 'Ambulance service copay amount in dollars',
+      characteristics: {
+        concept: 'copay',
+        type: 'ambulance',
+        eligibility: 'medicare',
+        direction: 'debit',
+        unit: '$',
+      },
+      tags: ['cost-sharing'],
+      validation: {
+        minimum: 0,
+      },
+      variants: [
+        {
+          key: 'ambulance_with_assistance_copay',
+          label: 'Ambulance Copay (with assistance)',
+          description: 'Ambulance service copay amount with assistance in dollars',
+          characteristics: {
+            eligibility: ['medicaid', 'qdwi'],
+            modifier: 'with_assistance',
+            unit: '$',
+          },
+        },
+      ],
+    },
+    {
+      key: 'emergency_room_copay',
+      type: 'number',
+      label: 'ER Copay',
+      description: 'Emergency room visit copay amount in dollars',
+      characteristics: {
+        concept: 'copay',
+        type: 'emergency_room',
+        eligibility: 'medicare',
+        direction: 'debit',
+        unit: '$',
+      },
+      tags: ['cost-sharing'],
+      validation: {
+        minimum: 0,
+      },
+      variants: [
+        {
+          key: 'emergency_with_assistance_copay',
+          label: 'ER Copay (with assistance)',
+          description: 'Emergency room visit copay amount with assistance in dollars',
+          characteristics: {
+            eligibility: ['medicaid', 'fbde'],
+            modifier: 'with_assistance',
+            unit: '$',
+          },
+        },
+      ],
+    },
+    {
+      key: 'urgent_care_copay',
+      type: 'number',
+      label: 'Urgent Care Copay',
+      description: 'Urgent care visit copay amount in dollars',
+      characteristics: {
+        concept: 'copay',
+        type: 'urgent_care',
+        eligibility: 'medicare',
+        direction: 'debit',
+        unit: '$',
+      },
+      tags: ['cost-sharing'],
+      validation: {
+        minimum: 0,
+      },
+    },
+  ]),
+  defineSection('Additional Benefits', 'Card, fitness, and transportation benefits', [
+    {
+      key: 'fitness_benefit',
+      type: 'string',
+      label: 'Fitness Benefit',
+      description: 'Fitness/gym membership benefit description',
+      characteristics: {
+        concept: 'benefit',
+        type: 'fitness',
+        eligibility: 'medicare',
+        direction: 'credit',
+      },
+      tags: ['benefit'],
+    },
+    {
+      key: 'transportation_benefit',
+      type: 'number',
+      label: 'Transportation Benefit',
+      description: 'Transportation/rides benefit amount in dollars',
+      characteristics: {
+        concept: 'benefit',
+        type: 'transportation',
+        eligibility: 'medicare',
+        direction: 'credit',
+        unit: '$',
+      },
+      tags: ['benefit'],
+      validation: {
+        minimum: 0,
+      },
+    },
+  ]),
+  defineSection('Plan Information', 'General plan details and descriptions', [
+    {
+      key: 'rx_cost_share',
+      type: 'string',
+      label: 'RX Cost Share',
+      description: "Prescription drug cost sharing details (e.g., '20% after deductible')",
+    },
+    {
+      key: 'pharmacy_benefit',
+      type: 'string',
+      label: 'Pharmacy Benefit',
+      description: 'Pharmacy benefit description',
+    },
+    {
+      key: 'service_area',
+      type: 'string',
+      label: 'Service Area',
+      description: "Service area description (e.g., 'Statewide', 'Multi-state')",
+    },
+    {
+      key: 'summary',
+      type: 'string',
+      label: 'Summary',
+      description: 'Plan summary or overview',
+    },
+    {
+      key: 'notes',
+      type: 'string',
+      label: 'Notes',
+      description: 'General plan notes and additional information',
+    },
+    {
+      key: 'medicaid_eligibility',
+      type: 'string',
+      label: 'Medicaid Eligibility',
+      description: 'Medicaid eligibility requirements',
+    },
+    {
+      key: 'transitioned_from',
+      type: 'string',
+      label: 'Transitioned From',
+      description: 'Information about plan transitions or predecessor plans',
+    },
+  ]),
+]
 
 export const plansMetadataSchema = {
   $schema: 'http://json-schema.org/draft-07/schema#',
@@ -28,307 +717,7 @@ export const plansMetadataSchema = {
     "Schema definition for the metadata JSONB field in the plans table. ⚠️ IMPORTANT: This is the single source of truth for metadata field definitions. The schema uses a hierarchical structure with sections containing ordered property arrays. Runtime extraction in src/lib/plan-metadata-utils.ts uses getAllProperties() to automatically extract all properties from all sections, ensuring automatic synchronization. 🔄 DYNAMIC: New fields may be added, changed, or removed at any time as business requirements evolve - simply add them to the appropriate section's properties array.",
   type: 'object',
   additionalProperties: true,
-  sections: [
-    {
-      title: 'Plan Dates',
-      description: 'Plan effective dates and periods',
-      properties: [
-        {
-          key: 'effective_start',
-          type: 'string',
-          format: 'date',
-          label: 'Effective Start Date',
-          description: 'Plan effective start date in YYYY-MM-DD format',
-        },
-        {
-          key: 'effective_end',
-          type: 'string',
-          format: 'date',
-          label: 'Effective End Date',
-          description: 'Plan effective end date in YYYY-MM-DD format',
-        },
-      ],
-    },
-    {
-      title: 'Financials',
-      description: 'Monthly premiums, givebacks, and maximum out-of-pocket limits',
-      properties: [
-        {
-          key: 'premium_monthly',
-          type: 'number',
-          minimum: 0,
-          label: 'Premium (monthly)',
-          description: 'Monthly premium amount in dollars',
-        },
-        {
-          key: 'premium_monthly_with_extra_help',
-          type: 'number',
-          minimum: 0,
-          label: 'Premium (monthly, with Extra Help)',
-          description: 'Monthly premium for LIS/Extra Help recipients (typically $0)',
-        },
-        {
-          key: 'giveback_monthly',
-          type: 'number',
-          minimum: 0,
-          label: 'Giveback (monthly)',
-          description: 'Monthly giveback/rebate amount in dollars',
-        },
-        {
-          key: 'moop_annual',
-          type: 'number',
-          minimum: 0,
-          label: 'MOOP (annual)',
-          description: 'Maximum Out-of-Pocket annual limit in dollars',
-        },
-      ],
-    },
-    {
-      title: 'Deductibles',
-      description: 'Medical and prescription drug deductibles',
-      properties: [
-        {
-          key: 'medical_deductible',
-          type: 'number',
-          minimum: 0,
-          label: 'Medical Deductible',
-          description: 'Standard medical deductible amount in dollars',
-        },
-        {
-          key: 'medical_deductible_with_medicaid',
-          type: 'number',
-          minimum: 0,
-          label: 'Medical Deductible (with Medicaid)',
-          description: 'Medical deductible for Medicaid cost-sharing recipients (typically $0)',
-        },
-        {
-          key: 'rx_deductible_tier345',
-          type: 'number',
-          minimum: 0,
-          label: 'RX Deductible (Tiers 3-5)',
-          description: 'Prescription drug deductible for tiers 3, 4, and 5 in dollars',
-        },
-      ],
-    },
-    {
-      title: 'Benefits',
-      description: 'Benefits and allowances',
-      properties: [
-        {
-          key: 'otc_benefit_quarterly',
-          type: 'number',
-          minimum: 0,
-          label: 'OTC Benefit (quarterly)',
-          description: 'Quarterly OTC (Over-the-Counter) benefit amount in dollars',
-        },
-        {
-          key: 'card_benefit',
-          type: 'number',
-          minimum: 0,
-          label: 'Card Benefit',
-          description: 'Prepaid debit card benefit amount in dollars',
-        },
-        {
-          key: 'dental_benefit_yearly',
-          type: 'number',
-          minimum: 0,
-          label: 'Dental (yearly)',
-          description: 'Annual dental benefit amount in dollars',
-        },
-        {
-          key: 'vision_benefit_yearly',
-          type: 'number',
-          minimum: 0,
-          label: 'Vision (yearly)',
-          description: 'Annual vision benefit amount in dollars',
-        },
-        {
-          key: 'hearing_benefit_yearly',
-          type: 'number',
-          minimum: 0,
-          label: 'Hearing (yearly)',
-          description: 'Annual hearing benefit amount in dollars',
-        },
-      ],
-    },
-    {
-      title: 'Doctor Copays',
-      description: 'Copays for doctor visits and attendance',
-      properties: [
-        {
-          key: 'primary_care_copay',
-          type: 'number',
-          minimum: 0,
-          label: 'PCP Copay',
-          description: 'Primary care physician copay amount in dollars',
-        },
-        {
-          key: 'specialist_copay',
-          type: 'number',
-          minimum: 0,
-          label: 'Specialist Copay',
-          description: 'Specialist physician copay amount in dollars',
-        },
-      ],
-    },
-    {
-      title: 'Hospital Copays',
-      description: 'Copays for hospital stays and visits',
-      properties: [
-        {
-          key: 'hospital_inpatient_per_day_copay',
-          type: 'number',
-          minimum: 0,
-          label: 'Hospital Copay (daily)',
-          description: 'Daily hospital inpatient copay amount in dollars',
-        },
-        {
-          key: 'hospital_inpatient_days',
-          type: 'integer',
-          minimum: 0,
-          label: 'Hospital Days',
-          description: 'Number of covered hospital inpatient days',
-        },
-        {
-          key: 'hospital_inpatient_with_assistance_per_stay_copay',
-          type: 'number',
-          minimum: 0,
-          label: 'Hospital Copay (with assistance, per stay)',
-          description: 'Hospital inpatient per stay copay amount with assistance in dollars',
-        },
-        {
-          key: 'hospital_inpatient_without_assistance_per_stay_copay',
-          type: 'number',
-          minimum: 0,
-          label: 'Hospital Copay (without assistance, per stay)',
-          description: 'Hospital inpatient per stay copay amount without assistance in dollars',
-        },
-        {
-          key: 'skilled_nursing_per_day_copay',
-          type: 'number',
-          minimum: 0,
-          label: 'Skilled Nursing (per day)',
-          description: 'Skilled nursing per day copay amount in dollars',
-        },
-        {
-          key: 'skilled_nursing_with_assistance_per_stay_copay',
-          type: 'number',
-          minimum: 0,
-          label: 'Skilled Nursing (with assistance, per stay)',
-          description: 'Skilled nursing per stay copay amount with assistance in dollars',
-        },
-      ],
-    },
-    {
-      title: 'Emergency Copays',
-      description: 'Copays for emergency services',
-      properties: [
-        {
-          key: 'ambulance_copay',
-          type: 'number',
-          minimum: 0,
-          label: 'Ambulance Copay',
-          description: 'Ambulance service copay amount in dollars',
-        },
-        {
-          key: 'ambulance_with_assistance_copay',
-          type: 'number',
-          minimum: 0,
-          label: 'Ambulance Copay (with assistance)',
-          description: 'Ambulance service copay amount with assistance in dollars',
-        },
-        {
-          key: 'emergency_room_copay',
-          type: 'number',
-          minimum: 0,
-          label: 'ER Copay',
-          description: 'Emergency room visit copay amount in dollars',
-        },
-        {
-          key: 'emergency_with_assistance_copay',
-          type: 'number',
-          minimum: 0,
-          label: 'ER Copay (with assistance)',
-          description: 'Emergency room visit copay amount with assistance in dollars',
-        },
-        {
-          key: 'urgent_care_copay',
-          type: 'number',
-          minimum: 0,
-          label: 'Urgent Care Copay',
-          description: 'Urgent care visit copay amount in dollars',
-        },
-      ],
-    },
-    {
-      title: 'Additional Benefits',
-      description: 'Card, fitness, and transportation benefits',
-      properties: [
-        {
-          key: 'fitness_benefit',
-          type: 'string',
-          label: 'Fitness Benefit',
-          description: 'Fitness/gym membership benefit description',
-        },
-        {
-          key: 'transportation_benefit',
-          type: 'number',
-          minimum: 0,
-          label: 'Transportation Benefit',
-          description: 'Transportation/rides benefit amount in dollars',
-        },
-      ],
-    },
-    {
-      title: 'Plan Information',
-      description: 'General plan details and descriptions',
-      properties: [
-        {
-          key: 'rx_cost_share',
-          type: 'string',
-          label: 'RX Cost Share',
-          description: "Prescription drug cost sharing details (e.g., '20% after deductible')",
-        },
-        {
-          key: 'pharmacy_benefit',
-          type: 'string',
-          label: 'Pharmacy Benefit',
-          description: 'Pharmacy benefit description',
-        },
-        {
-          key: 'service_area',
-          type: 'string',
-          label: 'Service Area',
-          description: "Service area description (e.g., 'Statewide', 'Multi-state')",
-        },
-        {
-          key: 'summary',
-          type: 'string',
-          label: 'Summary',
-          description: 'Plan summary or overview',
-        },
-        {
-          key: 'notes',
-          type: 'string',
-          label: 'Notes',
-          description: 'General plan notes and additional information',
-        },
-        {
-          key: 'medicaid_eligibility',
-          type: 'string',
-          enum: ['Required', 'Not Required', 'Optional'],
-          label: 'Medicaid Eligibility',
-          description: 'Medicaid eligibility requirements',
-        },
-        {
-          key: 'transitioned_from',
-          type: 'string',
-          label: 'Transitioned From',
-          description: 'Information about plan transitions or predecessor plans',
-        },
-      ],
-    },
-  ],
+  sections: planMetadataSections,
   examples: [
     {
       premium_monthly: 45.5,
@@ -354,3 +743,5 @@ export const plansMetadataSchema = {
     },
   ],
 } as const
+
+

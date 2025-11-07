@@ -176,6 +176,10 @@ export default function PlansPage() {
 
   const [isEditing, setIsEditing] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const editingPlan = useMemo(() => {
+    if (!editingId) return undefined
+    return plans.find((plan) => plan.id === editingId)
+  }, [editingId, plans])
   const [editForm, setEditForm] = useState<FormData>(() => ({
     // Core database fields with default values
     ...getDefaultCoreFields(),
@@ -1215,6 +1219,7 @@ export default function PlansPage() {
                   onChange={(field, value) => setEditForm((f) => ({ ...f, [field]: value }))}
                   mode="edit"
                   className="space-y-4"
+                  plan={editingPlan}
                 />
               </div>
             </div>

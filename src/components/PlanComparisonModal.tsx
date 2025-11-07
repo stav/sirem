@@ -7,9 +7,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { Database } from '@/lib/supabase'
 import { calculateCmsId } from '@/lib/plan-utils'
-import { getPlanMetadata } from '@/lib/plan-metadata-utils'
 import { plansMetadataSchema } from '@/schema/plans-metadata-schema'
-import { parseSchema } from '@/lib/schema-parser'
+import { parseSchema, type FieldDefinition } from '@/lib/schema-parser'
+import { Badge } from '@/components/ui/badge'
+import { getResolvedMetadata } from '@/lib/plan-metadata-utils'
+import type { ResolutionResult } from '@/lib/plan-field-resolution'
+
+const MISSING_RESOLUTION: ResolutionResult = { source: 'missing', key: null, value: undefined }
 
 type Plan = Database['public']['Tables']['plans']['Row']
 
@@ -42,10 +46,60 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
   const [showCalculator, setShowCalculator] = useState(false)
   const [sourcePlanId, setSourcePlanId] = useState<string | null>(null)
   const [highlightedRows, setHighlightedRows] = useState<Set<string>>(new Set())
+  const [eligibilityFilters, setEligibilityFilters] = useState<string[]>([])
 
   // Parse schema and get ordered sections and fields
-  // Parse schema on every render to ensure it's always up-to-date
-  const parsedSchema = parseSchema(plansMetadataSchema)
+  const parsedSchema = React.useMemo(() => parseSchema(plansMetadataSchema), [])
+  const fieldDefinitionMap = React.useMemo(() => {
+    const map = new Map<string, FieldDefinition>()
+    parsedSchema.fields.forEach((field) => {
+      map.set(field.key, field)
+    })
+    return map
+  }, [parsedSchema])
+  const eligibilityContext = React.useMemo(
+    () => (eligibilityFilters.length ? { eligibility: eligibilityFilters } : undefined),
+    [eligibilityFilters]
+  )
+  const allFieldKeys = React.useMemo(() => {
+    const keys = new Set<string>()
+    parsedSchema.fields.forEach((field) => {
+      keys.add(field.key)
+    })
+    return Array.from(keys)
+  }, [parsedSchema.fields])
+  const resolvedMetadataByPlan = React.useMemo(() => {
+    const map = new Map<string, Record<string, ResolutionResult>>()
+    plans.forEach((plan) => {
+      map.set(plan.id, getResolvedMetadata(plan, allFieldKeys, eligibilityContext))
+    })
+    return map
+  }, [plans, allFieldKeys, eligibilityContext])
+  const getPlanResolution = React.useCallback(
+    (planId: string, key: string): ResolutionResult => {
+      const resolved = resolvedMetadataByPlan.get(planId)
+      if (resolved && resolved[key]) {
+        return resolved[key]
+      }
+      return MISSING_RESOLUTION
+    },
+    [resolvedMetadataByPlan]
+  )
+  const eligibilityOptions = React.useMemo(
+    () => [
+      { label: 'Medicaid', value: 'medicaid' },
+      { label: 'LIS / Extra Help', value: 'lis' },
+    ],
+    []
+  )
+  const toggleEligibility = (value: string) => {
+    setEligibilityFilters((prev) => {
+      if (prev.includes(value)) {
+        return prev.filter((item) => item !== value)
+      }
+      return [...prev, value]
+    })
+  }
 
   // Handle Escape key to close modal
   useEffect(() => {
@@ -65,6 +119,35 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
   }, [isOpen, onClose])
 
   if (!isOpen) return null
+
+  const getSourceBadge = (result: ResolutionResult | undefined, requestedDefinition?: FieldDefinition) => {
+    if (!result || result.source === 'missing') return null
+
+    if (result.source === 'variant') {
+      const eligibility = result.definition?.characteristics?.eligibility
+      const label = Array.isArray(eligibility)
+        ? eligibility.join(' / ').toUpperCase()
+        : typeof eligibility === 'string'
+          ? eligibility.toUpperCase()
+          : 'VARIANT'
+
+      return (
+        <Badge className="border-blue-200 bg-blue-100 text-blue-900 dark:border-blue-800/70 dark:bg-blue-900/40 dark:text-blue-100">
+          {label}
+        </Badge>
+      )
+    }
+
+    if (requestedDefinition?.baseKey) {
+      return (
+        <Badge variant="outline" className="border-border/60 text-muted-foreground">
+          Base fallback
+        </Badge>
+      )
+    }
+
+    return null
+  }
 
   // Helper to generate unique row IDs for highlighting
   const getRowId = (label: string, section?: string): string => {
@@ -97,15 +180,13 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
     return value || '—'
   }
 
-  // Helper to get metadata field
-  const getMetadata = (plan: Plan, key: string): string | number | null => {
-    if (!plan.metadata || typeof plan.metadata !== 'object') return null
-    const metadata = plan.metadata as Record<string, unknown>
-    const value = metadata[key]
-    if (typeof value === 'string' || typeof value === 'number') {
-      return value
+  const extractPrimitiveValue = (value: unknown): string | number | null => {
+    if (value === null || value === undefined) return null
+    if (typeof value === 'number' || typeof value === 'string') return value
+    if (Array.isArray(value)) {
+      return value.join(', ')
     }
-    return null
+    return String(value)
   }
 
   // Get schema-ordered metadata sections with fields that exist in the plans
@@ -121,12 +202,12 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
 
       // Filter to only include fields that exist in at least one plan's metadata
       const existingFields = sectionFields.filter((field) => {
-        return plans.some(
-          (plan) =>
-            plan.metadata &&
-            typeof plan.metadata === 'object' &&
-            field.key in (plan.metadata as Record<string, unknown>)
-        )
+        return plans.some((plan) => {
+          const resolution = getPlanResolution(plan.id, field.key)
+          const primitive = extractPrimitiveValue(resolution.value)
+          if (primitive === null || primitive === '') return false
+          return resolution.source !== 'missing'
+        })
       })
 
       // Include sections that have existing fields OR show all fields for debugging
@@ -182,19 +263,20 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
   }
 
   // Parse metadata value to number (for comparison)
-  const parseMetadataNumber = (value: string | number | null): number | null => {
+  const parseMetadataNumber = (value: unknown): number | null => {
     if (value == null) return null
     if (typeof value === 'number') return value
+    if (typeof value !== 'string') return null
     if (value === 'n/a' || value === 'N/A' || value === '') return null
 
     // Try to parse numeric values from strings
-    const cleaned = String(value).replace(/[$,%]/g, '').trim()
+    const cleaned = value.replace(/[$,%]/g, '').trim()
     const parsed = parseFloat(cleaned)
     return isNaN(parsed) ? null : parsed
   }
 
   // Check if a metadata field should be treated as numeric
-  const isNumericField = (key: string, values: (string | number | null)[]): boolean => {
+  const isNumericField = (key: string, values: unknown[]): boolean => {
     // Check if key suggests it's numeric
     const numericKeywords = [
       'copay',
@@ -243,20 +325,23 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
 
   // Calculate estimated annual costs
   const calculateAnnualCost = (plan: Plan): number => {
-    const premium = (Number(getPlanMetadata.premium_monthly(plan)) || 0) * 12
-    const giveback = (Number(getPlanMetadata.giveback_monthly(plan)) || 0) * 12
+    const resolveNumericValue = (fieldKey: string): number =>
+      parseMetadataNumber(getPlanResolution(plan.id, fieldKey).value) ?? 0
 
-    const primaryCareCosts = (Number(getPlanMetadata.primary_care_copay(plan)) || 0) * usageInputs.primaryCareVisits
-    const specialistCosts = (Number(getPlanMetadata.specialist_copay(plan)) || 0) * usageInputs.specialistVisits
-    const erCosts = (Number(getPlanMetadata.emergency_room_copay(plan)) || 0) * usageInputs.emergencyRoomVisits
-    const urgentCareCosts = (Number(getPlanMetadata.urgent_care_copay(plan)) || 0) * usageInputs.urgentCareVisits
-    // Hospital cost = daily copay * days covered per stay * number of stays
-    const daysPerStay = Number(getPlanMetadata.hospital_inpatient_days(plan)) || 0
-    const hospitalCosts =
-      (Number(getPlanMetadata.hospital_inpatient_per_day_copay(plan)) || 0) * daysPerStay * usageInputs.hospitalStays
-    const ambulanceCosts = (Number(getPlanMetadata.ambulance_copay(plan)) || 0) * usageInputs.ambulanceUses
+    const premium = resolveNumericValue('premium_monthly') * 12
+    const giveback = resolveNumericValue('giveback_monthly') * 12
 
-    const totalCopays = primaryCareCosts + specialistCosts + erCosts + urgentCareCosts + hospitalCosts + ambulanceCosts
+    const primaryCareCosts = resolveNumericValue('primary_care_copay') * usageInputs.primaryCareVisits
+    const specialistCosts = resolveNumericValue('specialist_copay') * usageInputs.specialistVisits
+    const erCosts = resolveNumericValue('emergency_room_copay') * usageInputs.emergencyRoomVisits
+    const urgentCareCosts = resolveNumericValue('urgent_care_copay') * usageInputs.urgentCareVisits
+    const daysPerStay = resolveNumericValue('hospital_inpatient_days')
+    const hospitalDailyCopay = resolveNumericValue('hospital_inpatient_per_day_copay')
+    const hospitalCosts = hospitalDailyCopay * daysPerStay * usageInputs.hospitalStays
+    const ambulanceCosts = resolveNumericValue('ambulance_copay') * usageInputs.ambulanceUses
+
+    const totalCopays =
+      primaryCareCosts + specialistCosts + erCosts + urgentCareCosts + hospitalCosts + ambulanceCosts
 
     return premium - giveback + totalCopays
   }
@@ -374,15 +459,19 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
   const ComparisonField = ({
     label,
     values,
+    results,
     lowerIsBetter = true,
     formatter = formatCurrency,
     rowId,
+    requestedDefinition,
   }: {
     label: string
     values: (number | null)[]
+    results: ResolutionResult[]
     lowerIsBetter?: boolean
     formatter?: (v: number | null) => string
     rowId: string
+    requestedDefinition?: FieldDefinition
   }) => {
     const isHighlighted = highlightedRows.has(rowId)
 
@@ -396,6 +485,8 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
         {values.map((value, idx) => {
           const hasDiscrep = false // No discrepancy checking needed with new schema
           const isSourcePlan = plans[idx].id === sourcePlanId
+          const result = results[idx]
+          const badge = getSourceBadge(result, requestedDefinition)
           return (
             <td
               key={idx}
@@ -408,8 +499,13 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                     : undefined
               }
             >
-              {formatter(value)}
-              {!isSourcePlan && getComparisonIndicator(value, values, lowerIsBetter)}
+              <div className="flex flex-col items-center gap-1">
+                <div className="flex items-center gap-1">
+                  <span>{formatter(value)}</span>
+                  {!isSourcePlan && getComparisonIndicator(value, values, lowerIsBetter)}
+                </div>
+                {badge}
+              </div>
             </td>
           )
         })}
@@ -442,8 +538,33 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="border-border flex items-center justify-between border-b p-4">
-          <h2 className="text-xl font-semibold">Compare Plans ({plans.length})</h2>
+        <div className="border-border flex flex-wrap items-start justify-between gap-3 border-b p-4">
+          <div className="flex flex-col gap-2">
+            <h2 className="text-xl font-semibold">Compare Plans ({plans.length})</h2>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-muted-foreground text-xs uppercase tracking-wide">Eligibility</span>
+              {eligibilityOptions.map(({ label, value }) => {
+                const isActive = eligibilityFilters.includes(value)
+                return (
+                  <Button
+                    key={value}
+                    size="sm"
+                    variant={isActive ? 'default' : 'outline'}
+                    onClick={() => toggleEligibility(value)}
+                    className="h-7 text-xs uppercase tracking-wide"
+                    aria-pressed={isActive}
+                  >
+                    {label}
+                  </Button>
+                )
+              })}
+              {eligibilityFilters.length === 0 && (
+                <Badge variant="outline" className="border-dashed border-border/60 text-muted-foreground">
+                  Medicare baseline
+                </Badge>
+              )}
+            </div>
+          </div>
           <div className="flex items-center gap-2">
             {onRefresh && (
               <Button size="sm" variant="outline" onClick={onRefresh} title="Refresh plans data">
@@ -663,79 +784,93 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                     <td colSpan={plans.length}></td>
                   </tr>
                   {fields.map((key) => {
-                    const values = plans.map((p) => getMetadata(p, key))
-                    const isNumeric = isNumericField(key, values)
+                    const requestedDefinition = fieldDefinitionMap.get(key)
+                    const results = plans.map((plan) => getPlanResolution(plan.id, key))
+                    const primitiveValues = results.map((result) => extractPrimitiveValue(result.value))
+                    const isNumeric = isNumericField(key, primitiveValues)
 
                     if (isNumeric) {
-                      // Render as numeric comparison field
+                      const numericValues = results.map((result) => parseMetadataNumber(result.value))
                       return (
                         <ComparisonField
                           key={key}
                           label={formatLabel(key)}
-                          values={plans.map((p) => parseMetadataNumber(getMetadata(p, key)))}
+                          values={numericValues}
+                          results={results}
                           lowerIsBetter={isLowerBetter(key)}
                           formatter={(v) => {
                             if (v == null) return '—'
-                            // Format based on key type
-                            if (key.toLowerCase().includes('coinsurance') || key.toLowerCase().includes('%')) {
+                            const lowerKey = key.toLowerCase()
+                            if (lowerKey.includes('coinsurance') || lowerKey.includes('%')) {
                               return `${v}%`
                             }
-                            if (key.toLowerCase().includes('transportation_benefit')) {
+                            if (lowerKey.includes('transportation_benefit')) {
                               return `${v} rides`
                             }
                             return formatCurrency(v)
                           }}
                           rowId={getRowId(key, section.key)}
+                          requestedDefinition={requestedDefinition}
                         />
                       )
-                    } else {
-                      // Render as text field
-                      return (
-                        <tr
-                          key={key}
-                          className={`border-border cursor-pointer border-b transition-colors hover:bg-blue-500/20 ${highlightedRows.has(getRowId(key, section.key)) ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
-                          onClick={() => toggleRowHighlight(getRowId(key, section.key))}
-                          title="Click to highlight/unhighlight this row"
-                        >
-                          <td className="bg-muted sticky left-0 z-10 min-w-48 px-3 py-2 text-sm font-medium">
-                            {formatLabel(key)}
-                          </td>
-                          {plans.map((plan, idx) => {
-                            const hasDiscrep = false // No discrepancy checking needed with new schema
-                            const isSourcePlan = plan.id === sourcePlanId
-                            const value = getMetadata(plan, key)
-                            const displayValue = formatMetadataValue(value)
-                            const isLongText = isLongTextField(key, value)
-
-                            if (isLongText && typeof value === 'string' && value.length > 0) {
-                              // Render long text fields with truncation and tooltip like counties/notes
-                              return (
-                                <td
-                                  key={idx}
-                                  className={`max-w-48 overflow-hidden px-3 py-2 text-center text-xs ${hasDiscrep ? 'border-2 border-yellow-500 bg-yellow-100 dark:bg-yellow-900/30' : ''} ${isSourcePlan ? 'border-l-4 border-l-blue-500 bg-blue-100/50 dark:bg-blue-900/30' : ''}`}
-                                  title={hasDiscrep ? `⚠️ Discrepancy: Metadata value differs from main field` : value}
-                                >
-                                  <div className="line-clamp-3">{displayValue}</div>
-                                </td>
-                              )
-                            } else {
-                              // Render regular text fields
-                              return (
-                                <td
-                                  key={idx}
-                                  className={`max-w-48 px-3 py-2 text-center text-xs ${hasDiscrep ? 'border-2 border-yellow-500 bg-yellow-100 dark:bg-yellow-900/30' : ''} ${isSourcePlan ? 'border-l-4 border-l-blue-500 bg-blue-100/50 dark:bg-blue-900/30' : ''}`}
-                                  title={
-                                    hasDiscrep ? `⚠️ Discrepancy: Metadata value differs from main field` : undefined
-                                  }
-                                >
-                                  {displayValue}
-                                </td>
-                              )
-                            }
-                          })}
-                        </tr>
-                      )
                     }
+
+                    return (
+                      <tr
+                        key={key}
+                        className={`border-border cursor-pointer border-b transition-colors hover:bg-blue-500/20 ${highlightedRows.has(getRowId(key, section.key)) ? 'bg-yellow-50 dark:bg-yellow-900/30' : ''}`}
+                        onClick={() => toggleRowHighlight(getRowId(key, section.key))}
+                        title="Click to highlight/unhighlight this row"
+                      >
+                        <td className="bg-muted sticky left-0 z-10 min-w-48 px-3 py-2 text-sm font-medium">
+                          {formatLabel(key)}
+                        </td>
+                        {plans.map((plan, idx) => {
+                          const hasDiscrep = false // No discrepancy checking needed with new schema
+                          const isSourcePlan = plan.id === sourcePlanId
+                          const result = results[idx]
+                          const rawValue = primitiveValues[idx]
+                          const displayValue = formatMetadataValue(rawValue)
+                          const isLongText = isLongTextField(key, rawValue)
+                          const badge = getSourceBadge(result, requestedDefinition)
+
+                          const titleValue =
+                            typeof rawValue === 'string'
+                              ? rawValue
+                              : typeof rawValue === 'number'
+                                ? String(rawValue)
+                                : undefined
+
+                          if (isLongText && typeof rawValue === 'string' && rawValue.length > 0) {
+                            return (
+                              <td
+                                key={idx}
+                                className={`max-w-48 overflow-hidden px-3 py-2 text-center text-xs ${hasDiscrep ? 'border-2 border-yellow-500 bg-yellow-100 dark:bg-yellow-900/30' : ''} ${isSourcePlan ? 'border-l-4 border-l-blue-500 bg-blue-100/50 dark:bg-blue-900/30' : ''}`}
+                                title={hasDiscrep ? `⚠️ Discrepancy: Metadata value differs from main field` : titleValue}
+                              >
+                                <div className="flex flex-col items-center gap-1">
+                                  <div className="line-clamp-3">{displayValue}</div>
+                                  {badge}
+                                </div>
+                              </td>
+                            )
+                          }
+
+                          return (
+                            <td
+                              key={idx}
+                              className={`max-w-48 px-3 py-2 text-center text-xs ${hasDiscrep ? 'border-2 border-yellow-500 bg-yellow-100 dark:bg-yellow-900/30' : ''} ${isSourcePlan ? 'border-l-4 border-l-blue-500 bg-blue-100/50 dark:bg-blue-900/30' : ''}`}
+                              title={hasDiscrep ? `⚠️ Discrepancy: Metadata value differs from main field` : titleValue}
+                            >
+                              <div className="flex flex-col items-center gap-1">
+                                <span>{displayValue}</span>
+                                {badge}
+                              </div>
+                            </td>
+                          )
+                        })}
+                      </tr>
+                    )
                   })}
                 </React.Fragment>
               ))}

@@ -6,12 +6,34 @@
  * schema definition and the UI components.
  */
 
+export interface FieldCharacteristics {
+  concept?: string
+  type?: string
+  frequency?: string
+  eligibility?: string | string[]
+  unit?: string
+  modifier?: string
+  direction?: 'credit' | 'debit'
+}
+
+export interface FieldVariant {
+  key: string
+  label: string
+  description?: string
+  tags?: string[]
+  characteristics?: FieldCharacteristics
+}
+
 export interface FieldDefinition {
   key: string
   type: 'string' | 'number' | 'integer' | 'date'
   label: string
   section: string
   description: string
+  tags?: string[] // Optional grouping tags
+  variants?: FieldVariant[] // Eligibility-specific variants
+  characteristics?: FieldCharacteristics
+  baseKey?: string // Present for variant fields; points to the base field key
   validation?: {
     minimum?: number
     maximum?: number
@@ -92,6 +114,9 @@ export function parseSchema(schema: Record<string, unknown>): ParsedSchema {
           label: (property.label as string) || key,
           section: sectionKey,
           description: (property.description as string) || '',
+          tags: Array.isArray(property.tags) ? [...(property.tags as string[])] : undefined,
+          variants: normalizeVariants(property.variants),
+          characteristics: property.characteristics as FieldCharacteristics | undefined,
           validation: extractValidation(property),
           format: property.format as 'url' | 'email' | 'date' | undefined,
         }
@@ -103,6 +128,32 @@ export function parseSchema(schema: Record<string, unknown>): ParsedSchema {
           fieldsBySection[sectionKey] = []
         }
         fieldsBySection[sectionKey].push(field)
+
+        // Also add variant fields to the fields list (for form rendering)
+        if (field.variants && field.variants.length > 0) {
+          field.variants.forEach((variant) => {
+            const combinedCharacteristics = variant.characteristics
+              ? {
+                  ...(field.characteristics || {}),
+                  ...variant.characteristics,
+                }
+              : field.characteristics
+            const variantField: FieldDefinition = {
+              key: variant.key,
+              type: field.type, // Inherit type from base field
+              label: variant.label,
+              section: sectionKey,
+              description: variant.description || field.description,
+              tags: Array.isArray(variant.tags) ? [...variant.tags] : undefined,
+              characteristics: combinedCharacteristics,
+              validation: field.validation,
+              format: field.format,
+              baseKey: field.key,
+            }
+            fields.push(variantField)
+            fieldsBySection[sectionKey].push(variantField)
+          })
+        }
       })
     })
   }
@@ -115,6 +166,22 @@ export function parseSchema(schema: Record<string, unknown>): ParsedSchema {
     fields,
     fieldsBySection,
   }
+}
+
+function normalizeVariants(
+  variants: unknown
+): FieldVariant[] | undefined {
+  if (!variants) return undefined
+
+  if (Array.isArray(variants)) {
+    return variants as FieldVariant[]
+  }
+
+  if (typeof variants === 'object') {
+    return Object.values(variants as Record<string, FieldVariant>)
+  }
+
+  return undefined
 }
 
 /**
