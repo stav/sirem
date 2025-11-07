@@ -6,6 +6,20 @@ export type Plan = Database['public']['Tables']['plans']['Row']
 export type PlanInsert = Database['public']['Tables']['plans']['Insert']
 export type PlanUpdate = Database['public']['Tables']['plans']['Update']
 
+const CORE_FORM_FIELDS = [
+  'name',
+  'type_network',
+  'type_extension',
+  'type_snp',
+  'type_program',
+  'carrier',
+  'plan_year',
+  'cms_contract_number',
+  'cms_plan_number',
+  'cms_geo_segment',
+  'counties',
+] as const
+
 /**
  * Property type from schema sections
  */
@@ -260,23 +274,24 @@ export function populateFormFromPlan(plan: Plan): Record<string, unknown> {
   formData.cms_geo_segment = String(plan.cms_geo_segment ?? '')
   formData.counties = Array.isArray(plan.counties) ? plan.counties.join(', ') : String(plan.counties ?? '')
 
-  // Metadata fields - dynamically populate based on what's in the metadata
+  // Initialize metadata fields to empty values
+  const metadataFields = Array.from(getAllExpectedFieldKeys())
+  metadataFields.forEach((field) => {
+    formData[field] = ''
+  })
+
   if (plan.metadata) {
     const metadata = plan.metadata as Record<string, unknown>
-    const expectedKeys = getAllExpectedFieldKeys()
+    const metadataFieldSet = new Set(metadataFields)
 
-    // Populate expected metadata fields (base + variants)
-    expectedKeys.forEach((field) => {
+    metadataFields.forEach((field) => {
       if (metadata[field] !== undefined && metadata[field] !== null) {
         formData[field] = String(metadata[field])
-      } else {
-        formData[field] = ''
       }
     })
 
-    // Include legacy/custom fields
     Object.keys(metadata).forEach((key) => {
-      if (!expectedKeys.has(key)) {
+      if (!metadataFieldSet.has(key)) {
         formData[key] = metadata[key]
       }
     })
@@ -285,70 +300,80 @@ export function populateFormFromPlan(plan: Plan): Record<string, unknown> {
   return formData
 }
 
-/**
- * Build complete plan data object from form data
- * This function builds both core database fields and metadata
- */
-export function buildPlanDataFromForm(formData: Record<string, unknown>): {
-  name: string
-  type_network: string | null
-  type_extension: string | null
-  type_snp: string | null
-  type_program: string | null
-  carrier: string | null
-  plan_year: number | null
-  cms_contract_number: string | null
-  cms_plan_number: string | null
-  cms_geo_segment: string | null
-  counties: string[] | null
-  metadata: PlanMetadata | null
-} {
-  // Build metadata object from form fields
+function parseCommaSeparatedValues(value: unknown): string[] | null {
+  if (typeof value !== 'string') return null
+  const parts = value
+    .split(',')
+    .map((v) => v.trim())
+    .filter((v) => v.length > 0)
+  return parts.length > 0 ? parts : null
+}
+
+export function buildPlanDataFromForm(formData: Record<string, unknown>): PlanInsert {
   const metadata = buildMetadata(formData)
 
   // Build core database fields
   return {
     name: String(formData.name || ''),
+    carrier: (formData.carrier as string) || null,
+    plan_year: parseInt(String(formData.plan_year || new Date().getUTCFullYear()), 10),
     type_network: (formData.type_network as string) || null,
     type_extension: (formData.type_extension as string) || null,
     type_snp: (formData.type_snp as string) || null,
     type_program: (formData.type_program as string) || null,
-    carrier: (formData.carrier as string) || null,
-    plan_year: formData.plan_year ? Number(formData.plan_year) : null,
     cms_contract_number: (formData.cms_contract_number as string) || null,
     cms_plan_number: (formData.cms_plan_number as string) || null,
     cms_geo_segment: (formData.cms_geo_segment as string) || null,
-    counties: formData.counties
-      ? String(formData.counties)
-          .split(',')
-          .map((s) => s.trim())
-          .filter(Boolean)
-      : null,
-    metadata: Object.keys(metadata).length > 0 ? metadata : null,
+    counties: typeof formData.counties === 'string' ? parseCommaSeparatedValues(formData.counties) : null,
+    metadata,
   }
 }
 
-/**
- * Build metadata object from form data - dynamically generated from schema
- * This function eliminates hardcoded field mappings by using the schema as the source of truth
- */
 export function buildMetadata(data: Record<string, unknown>): PlanMetadata {
   const metadata: PlanMetadata = {}
   const properties = getAllProperties()
+  const expectedKeys = getAllExpectedFieldKeys()
 
-  // Dynamically process all schema properties
-  Object.keys(properties).forEach((fieldName) => {
-    const value = data[fieldName]
-    if (value !== null && value !== undefined && value !== '') {
-      // Ensure value is assignable to PlanMetadata type
-      if (typeof value === 'string' || typeof value === 'number') {
-        metadata[fieldName] = value
-      } else if (typeof value === 'object') {
-        // Skip objects - they shouldn't be in metadata based on schema
-        return
+  // Process base schema properties
+  Object.keys(properties).forEach((key) => {
+    const value = data[key]
+    if (value !== undefined && value !== null && value !== '') {
+      if (typeof value === 'number') {
+        metadata[key] = value
+      } else if (typeof value === 'string' && value.trim() !== '') {
+        metadata[key] = value
       } else {
-        // Convert other types to string
-        metadata[fieldName] = String(value)
+        metadata[key] = JSON.stringify(value)
+      }
+    }
+  })
+
+  // Process variant fields (those in expectedKeys but not base properties)
+  expectedKeys.forEach((key) => {
+    if (properties[key]) return
+
+    const value = data[key]
+    if (value !== null && value !== undefined && value !== '') {
+      if (typeof value === 'string' || typeof value === 'number') {
+        metadata[key] = value
+      } else {
+        metadata[key] = JSON.stringify(value)
+      }
+    }
+  })
+
+  const coreFieldSet = new Set<string>(CORE_FORM_FIELDS)
+
+  // Include any remaining custom/legacy fields that were present in the form data
+  Object.keys(data).forEach((key) => {
+    if (properties[key] || expectedKeys.has(key) || coreFieldSet.has(key)) return
+
+    const value = data[key]
+    if (value !== null && value !== undefined && value !== '') {
+      if (typeof value === 'string' || typeof value === 'number') {
+        metadata[key] = value
+      } else {
+        metadata[key] = JSON.stringify(value)
       }
     }
   })
