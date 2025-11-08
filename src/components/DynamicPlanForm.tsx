@@ -78,11 +78,57 @@ export default function DynamicPlanForm({
     [formData, mode, handleFieldChange]
   )
 
+  const renderVariantField = React.useCallback(
+    (variant: FieldDefinition) => {
+      const eligibility = variant.characteristics?.eligibility
+      return (
+        <div key={variant.key} className="space-y-1 rounded-md border border-dashed border-muted-foreground/30 p-3">
+          <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
+            <span>{variant.label}</span>
+            {eligibility ? <span className="rounded bg-muted px-2 py-0.5 uppercase tracking-wide">{eligibility}</span> : null}
+          </div>
+          {renderField(variant)}
+          {variant.description && <p className="text-muted-foreground text-xs">{variant.description}</p>}
+        </div>
+      )
+    },
+    [renderField]
+  )
+
+  const renderFieldGroup = React.useCallback(
+    (baseField: FieldDefinition, sectionFields: FieldDefinition[]) => {
+      const variantFields = sectionFields.filter((field) => field.baseKey === baseField.key)
+
+      return (
+        <div key={baseField.key} className="space-y-2">
+          <div className="space-y-1">
+            <Label className="text-xs font-semibold">{baseField.label}</Label>
+            {renderField(baseField)}
+            {baseField.description && <p className="text-muted-foreground text-xs">{baseField.description}</p>}
+          </div>
+
+          {variantFields.length > 0 && (
+            <div className="ml-1 space-y-2 border-l border-border pl-4">
+              <p className="text-muted-foreground text-[11px] font-medium uppercase tracking-wide">Variants</p>
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                {variantFields.map((variant) => renderVariantField(variant))}
+              </div>
+            </div>
+          )}
+        </div>
+      )
+    },
+    [renderField, renderVariantField]
+  )
+
   const renderSection = React.useCallback(
     (section: SectionDefinition) => {
       const sectionFields = filteredFieldsBySection[section.key] || []
 
       if (sectionFields.length === 0) return null
+
+      const baseFields = sectionFields.filter((field) => !field.baseKey)
+      const orphanVariants = sectionFields.filter((field) => field.baseKey && !sectionFields.some((f) => f.key === field.baseKey))
 
       return (
         <div key={section.key} className="space-y-4">
@@ -92,20 +138,22 @@ export default function DynamicPlanForm({
             {section.description && <p className="text-muted-foreground mt-1 text-xs">{section.description}</p>}
           </div>
 
-          {/* Section Fields */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {sectionFields.map((field) => (
-              <div key={field.key} className="space-y-1">
-                <Label className="text-xs">{field.label}</Label>
-                {renderField(field)}
-                {field.description && <p className="text-muted-foreground text-xs">{field.description}</p>}
+          <div className="space-y-4">
+            {baseFields.map((baseField) => renderFieldGroup(baseField, sectionFields))}
+
+            {orphanVariants.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-muted-foreground text-xs font-medium">Unlinked Variants</p>
+                <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
+                  {orphanVariants.map((variant) => renderVariantField(variant))}
+                </div>
               </div>
-            ))}
+            )}
           </div>
         </div>
       )
     },
-    [filteredFieldsBySection, renderField]
+    [filteredFieldsBySection, renderFieldGroup, renderVariantField]
   )
 
   const legacyFields = React.useMemo(() => {
