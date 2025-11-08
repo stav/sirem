@@ -10,13 +10,12 @@ import { calculateCmsId } from '@/lib/plan-utils'
 import { plansMetadataSchema } from '@/schema/plans-metadata-schema'
 import { parseSchema, type FieldDefinition } from '@/lib/schema-parser'
 import { Badge } from '@/components/ui/badge'
-import { resolvePlanValue, type ResolutionResult, type ResolutionSource } from '@/lib/plan-field-resolution'
+import { getResolvedMetadata } from '@/lib/plan-metadata-utils'
+import type { ResolutionResult } from '@/lib/plan-field-resolution'
+
+const MISSING_RESOLUTION: ResolutionResult = { source: 'missing', key: null, value: undefined }
 
 type Plan = Database['public']['Tables']['plans']['Row']
-
-type RequestedResolution = ResolutionResult & {
-  requestedDefinition?: FieldDefinition
-}
 
 interface PlanComparisonModalProps {
   isOpen: boolean
@@ -62,15 +61,29 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
     () => (eligibilityFilters.length ? { eligibility: eligibilityFilters } : undefined),
     [eligibilityFilters]
   )
-  const resolveMetadataForPlan = React.useCallback(
-    (plan: Plan, key: string): RequestedResolution => {
-      const result = resolvePlanValue(plan, key, eligibilityContext)
-      return {
-        ...result,
-        requestedDefinition: fieldDefinitionMap.get(key) ?? result.definition,
+  const allFieldKeys = React.useMemo(() => {
+    const keys = new Set<string>()
+    parsedSchema.fields.forEach((field) => {
+      keys.add(field.key)
+    })
+    return Array.from(keys)
+  }, [parsedSchema.fields])
+  const resolvedMetadataByPlan = React.useMemo(() => {
+    const map = new Map<string, Record<string, ResolutionResult>>()
+    plans.forEach((plan) => {
+      map.set(plan.id, getResolvedMetadata(plan, allFieldKeys, eligibilityContext))
+    })
+    return map
+  }, [plans, allFieldKeys, eligibilityContext])
+  const getPlanResolution = React.useCallback(
+    (planId: string, key: string): ResolutionResult => {
+      const resolved = resolvedMetadataByPlan.get(planId)
+      if (resolved && resolved[key]) {
+        return resolved[key]
       }
+      return MISSING_RESOLUTION
     },
-    [eligibilityContext, fieldDefinitionMap]
+    [resolvedMetadataByPlan]
   )
   const eligibilityOptions = React.useMemo(
     () => [
@@ -107,12 +120,20 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
 
   if (!isOpen) return null
 
-  const getSourceBadge = (source?: ResolutionSource, requestedDefinition?: FieldDefinition) => {
-    if (!source || source === 'missing') return null
-    if (source === 'variant') {
+  const getSourceBadge = (result: ResolutionResult | undefined, requestedDefinition?: FieldDefinition) => {
+    if (!result || result.source === 'missing') return null
+
+    if (result.source === 'variant') {
+      const eligibility = result.definition?.characteristics?.eligibility
+      const label = Array.isArray(eligibility)
+        ? eligibility.join(' / ').toUpperCase()
+        : typeof eligibility === 'string'
+          ? eligibility.toUpperCase()
+          : 'VARIANT'
+
       return (
         <Badge className="border-blue-200 bg-blue-100 text-blue-900 dark:border-blue-800/70 dark:bg-blue-900/40 dark:text-blue-100">
-          Variant
+          {label}
         </Badge>
       )
     }
@@ -182,8 +203,10 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
       // Filter to only include fields that exist in at least one plan's metadata
       const existingFields = sectionFields.filter((field) => {
         return plans.some((plan) => {
-          const result = resolveMetadataForPlan(plan, field.key)
-          return result.source !== 'missing' && extractPrimitiveValue(result.value) !== null
+          const resolution = getPlanResolution(plan.id, field.key)
+          const primitive = extractPrimitiveValue(resolution.value)
+          if (primitive === null || primitive === '') return false
+          return resolution.source !== 'missing'
         })
       })
 
@@ -303,7 +326,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
   // Calculate estimated annual costs
   const calculateAnnualCost = (plan: Plan): number => {
     const resolveNumericValue = (fieldKey: string): number =>
-      parseMetadataNumber(resolveMetadataForPlan(plan, fieldKey).value) ?? 0
+      parseMetadataNumber(getPlanResolution(plan.id, fieldKey).value) ?? 0
 
     const premium = resolveNumericValue('premium_monthly') * 12
     const giveback = resolveNumericValue('giveback_monthly') * 12
@@ -436,19 +459,19 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
   const ComparisonField = ({
     label,
     values,
+    results,
     lowerIsBetter = true,
     formatter = formatCurrency,
     rowId,
-    sources,
-    requestedDefinitions,
+    requestedDefinition,
   }: {
     label: string
     values: (number | null)[]
+    results: ResolutionResult[]
     lowerIsBetter?: boolean
     formatter?: (v: number | null) => string
     rowId: string
-    sources?: ResolutionSource[]
-    requestedDefinitions?: (FieldDefinition | undefined)[]
+    requestedDefinition?: FieldDefinition
   }) => {
     const isHighlighted = highlightedRows.has(rowId)
 
@@ -462,9 +485,8 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
         {values.map((value, idx) => {
           const hasDiscrep = false // No discrepancy checking needed with new schema
           const isSourcePlan = plans[idx].id === sourcePlanId
-          const source = sources?.[idx]
-          const requestedDefinition = requestedDefinitions?.[idx]
-          const badge = getSourceBadge(source, requestedDefinition)
+          const result = results[idx]
+          const badge = getSourceBadge(result, requestedDefinition)
           return (
             <td
               key={idx}
@@ -762,7 +784,8 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                     <td colSpan={plans.length}></td>
                   </tr>
                   {fields.map((key) => {
-                    const results = plans.map((plan) => resolveMetadataForPlan(plan, key))
+                    const requestedDefinition = fieldDefinitionMap.get(key)
+                    const results = plans.map((plan) => getPlanResolution(plan.id, key))
                     const primitiveValues = results.map((result) => extractPrimitiveValue(result.value))
                     const isNumeric = isNumericField(key, primitiveValues)
 
@@ -773,6 +796,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                           key={key}
                           label={formatLabel(key)}
                           values={numericValues}
+                          results={results}
                           lowerIsBetter={isLowerBetter(key)}
                           formatter={(v) => {
                             if (v == null) return '—'
@@ -786,8 +810,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                             return formatCurrency(v)
                           }}
                           rowId={getRowId(key, section.key)}
-                          sources={results.map((result) => result.source)}
-                          requestedDefinitions={results.map((result) => result.requestedDefinition)}
+                          requestedDefinition={requestedDefinition}
                         />
                       )
                     }
@@ -809,7 +832,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                           const rawValue = primitiveValues[idx]
                           const displayValue = formatMetadataValue(rawValue)
                           const isLongText = isLongTextField(key, rawValue)
-                          const badge = getSourceBadge(result.source, result.requestedDefinition)
+                          const badge = getSourceBadge(result, requestedDefinition)
 
                           const titleValue =
                             typeof rawValue === 'string'
