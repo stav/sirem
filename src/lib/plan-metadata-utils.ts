@@ -1,6 +1,6 @@
 import { Database } from './supabase-types'
 import { plansMetadataSchema } from '@/schema/plans-metadata-schema'
-import { resolvePlanValue } from './plan-field-resolution'
+import { resolvePlanValue, type EligibilityContext, type ResolutionResult } from './plan-field-resolution'
 
 // Base plan type from database
 export type Plan = Database['public']['Tables']['plans']['Row']
@@ -147,15 +147,28 @@ export interface PlanWithMetadata extends Omit<Plan, 'metadata'> {
   metadata: PlanMetadata | null
 }
 
-// Helper functions for safe metadata access
-export function getMetadataValue(plan: Plan, key: string): unknown {
-  if (!plan.metadata || typeof plan.metadata !== 'object') return null
-  const metadata = plan.metadata as Record<string, unknown>
-  return metadata[key] ?? null
+export type ResolverInput = EligibilityContext | string | string[] | undefined
+
+function normalizeResolverInput(context?: ResolverInput): EligibilityContext | undefined {
+  if (!context) return undefined
+  if (typeof context === 'string' || Array.isArray(context)) {
+    return { eligibility: context }
+  }
+  if (typeof context === 'object') {
+    return context
+  }
+  return undefined
 }
 
-export function getMetadataNumber(plan: Plan, key: string): number | null {
-  const value = getMetadataValue(plan, key)
+// Helper functions for safe metadata access using resolver
+export function getMetadataValue(plan: Plan, key: string, context?: ResolverInput): unknown {
+  const normalizedContext = normalizeResolverInput(context)
+  const result = resolvePlanValue(plan, key, normalizedContext)
+  return result.value ?? null
+}
+
+export function getMetadataNumber(plan: Plan, key: string, context?: ResolverInput): number | null {
+  const value = getMetadataValue(plan, key, context)
   if (typeof value === 'number') return value
   if (typeof value === 'string') {
     const parsed = parseFloat(value)
@@ -164,13 +177,13 @@ export function getMetadataNumber(plan: Plan, key: string): number | null {
   return null
 }
 
-export function getMetadataString(plan: Plan, key: string): string | null {
-  const value = getMetadataValue(plan, key)
+export function getMetadataString(plan: Plan, key: string, context?: ResolverInput): string | null {
+  const value = getMetadataValue(plan, key, context)
   return typeof value === 'string' ? value : null
 }
 
-export function getMetadataDate(plan: Plan, key: string): string | null {
-  const value = getMetadataValue(plan, key)
+export function getMetadataDate(plan: Plan, key: string, context?: ResolverInput): string | null {
+  const value = getMetadataValue(plan, key, context)
   return typeof value === 'string' ? value : null
 }
 
@@ -179,7 +192,7 @@ export function getMetadataDate(plan: Plan, key: string): string | null {
  * This eliminates hardcoded field definitions by using the schema as the source of truth
  */
 export const getPlanMetadata = (() => {
-  const getters: Record<string, (plan: Plan) => unknown> = {}
+  const getters: Record<string, (plan: Plan, context?: ResolverInput) => unknown> = {}
   const properties = getAllProperties()
 
   // Generate getters for all schema properties
@@ -188,29 +201,32 @@ export const getPlanMetadata = (() => {
 
     // Choose appropriate getter based on field type
     if (fieldType === 'string' && 'format' in fieldSchema && fieldSchema.format === 'date') {
-      getters[fieldName] = (plan: Plan) => getMetadataDate(plan, fieldName)
+      getters[fieldName] = (plan: Plan, context?: ResolverInput) => getMetadataDate(plan, fieldName, context)
     } else if (fieldType === 'number') {
-      getters[fieldName] = (plan: Plan) => getMetadataNumber(plan, fieldName)
+      getters[fieldName] = (plan: Plan, context?: ResolverInput) => getMetadataNumber(plan, fieldName, context)
     } else {
-      getters[fieldName] = (plan: Plan) => getMetadataString(plan, fieldName)
+      getters[fieldName] = (plan: Plan, context?: ResolverInput) => getMetadataString(plan, fieldName, context)
     }
 
     // Generate getters for variant fields (inherit base type)
     if (fieldSchema.variants) {
       Object.values(fieldSchema.variants).forEach((variant) => {
         if (fieldType === 'string' && fieldSchema.format === 'date') {
-          getters[variant.key] = (plan: Plan) => getMetadataDate(plan, variant.key)
+          getters[variant.key] = (plan: Plan, context?: ResolverInput) =>
+            getMetadataDate(plan, variant.key, context)
         } else if (fieldType === 'number') {
-          getters[variant.key] = (plan: Plan) => getMetadataNumber(plan, variant.key)
+          getters[variant.key] = (plan: Plan, context?: ResolverInput) =>
+            getMetadataNumber(plan, variant.key, context)
         } else {
-          getters[variant.key] = (plan: Plan) => getMetadataString(plan, variant.key)
+          getters[variant.key] = (plan: Plan, context?: ResolverInput) =>
+            getMetadataString(plan, variant.key, context)
         }
       })
     }
   })
 
   return getters
-})() as Record<string, (plan: Plan) => number | string | null>
+})() as Record<string, (plan: Plan, context?: ResolverInput) => number | string | null>
 
 /**
  * Get default/empty metadata form data - dynamically generated from schema
@@ -410,6 +426,18 @@ export function extractMetadataForForm(plan: Plan): Record<string, unknown> {
   }
 
   return formData
+}
+
+export function getResolvedMetadata(
+  plan: Plan,
+  keys: string[],
+  context?: ResolverInput
+): Record<string, ResolutionResult> {
+  const normalizedContext = normalizeResolverInput(context)
+  return keys.reduce<Record<string, ResolutionResult>>((acc, key) => {
+    acc[key] = resolvePlanValue(plan, key, normalizedContext)
+    return acc
+  }, {})
 }
 
 function parseNumber(value: unknown): number | null {

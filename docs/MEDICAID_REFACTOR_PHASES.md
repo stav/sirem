@@ -49,6 +49,7 @@
 
 - **Consumers Updated**
   - Premium/deductible calculations (`plan-metadata-utils.ts`) now call the resolver instead of hard-coded variant checks.
+  - Resolver-aware metadata helpers (`getMetadataValue`/`getPlanMetadata`/`getResolvedMetadata`) route every lookup through the resolver so exports/reporting can share the same eligibility logic.
   - Unit tests (`src/lib/__tests__`) cover resolver behavior and schema integrity.
 
 ## Phase 3 Goals
