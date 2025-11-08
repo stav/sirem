@@ -104,35 +104,46 @@ export default function ContactList({
       const trimmedTerm = term.trim()
       if (!trimmedTerm) return true
 
+      const isNegated = trimmedTerm.startsWith('!')
+      const activeTerm = isNegated ? trimmedTerm.slice(1).trim() : trimmedTerm
+
+      if (!activeTerm) {
+        // Empty term after negation, treat as no-op
+        return true
+      }
+
       // Check filter type and apply appropriate logic
-      if (trimmedTerm.startsWith('t:')) {
+      if (activeTerm.startsWith('t:')) {
         // Tag filtering: t:tagname
-        const tagQuery = trimmedTerm.substring(2).toLowerCase()
+        const tagQuery = activeTerm.substring(2).toLowerCase()
         if (tagQuery) {
           const contactTags = contact.contact_tags?.map((ct) => ct.tags.label.toLowerCase()) || []
-          return contactTags.some((tag) => tag.includes(tagQuery))
+          const result = contactTags.some((tag) => tag.includes(tagQuery))
+          return isNegated ? !result : result
         }
         return true
-      } else if (trimmedTerm.startsWith('s:')) {
+      } else if (activeTerm.startsWith('s:')) {
         // Status filtering: s:statusname
-        const statusQuery = trimmedTerm.substring(2).toLowerCase()
+        const statusQuery = activeTerm.substring(2).toLowerCase()
         if (statusQuery) {
-          return contact.status?.toLowerCase().includes(statusQuery) || false
+          const statusMatches = contact.status?.toLowerCase().includes(statusQuery) || false
+          return isNegated ? !statusMatches : statusMatches
         }
         return true
-      } else if (trimmedTerm.startsWith('r:')) {
+      } else if (activeTerm.startsWith('r:')) {
         // Role filtering: r:role_type
-        const roleQuery = trimmedTerm.substring(2).toLowerCase()
+        const roleQuery = activeTerm.substring(2).toLowerCase()
         if (roleQuery) {
           const contactRoles = contact.contact_roles || []
-          return contactRoles.some(
+          const result = contactRoles.some(
             (role) => role.role_type?.toLowerCase().includes(roleQuery) && role.is_active !== false
           )
+          return isNegated ? !result : result
         }
         return true
-      } else if (trimmedTerm.startsWith('x:')) {
+      } else if (activeTerm.startsWith('x:')) {
         // Custom filtering: x:filter_name
-        const customFilterQuery = trimmedTerm.substring(2).toLowerCase()
+        const customFilterQuery = activeTerm.substring(2).toLowerCase()
         if (customFilterQuery === 'medicare_phone') {
           // Medicare Phone filter: must have Medicare role, have phone, NOT have AEP-2026_Ready tag, NOT have recent actions, NOT have "Cannot-Help" tag, and NOT have status "Brandon"
           // Check for Medicare role
@@ -171,7 +182,7 @@ export default function ContactList({
           })
 
           // All conditions must be true: has Medicare role AND has phone AND does NOT have AEP-2026_Ready tag AND does NOT have recent action AND does NOT have Cannot-Help tag AND does NOT have Brandon status AND does NOT have Not-eligible status
-          return (
+          const result =
             hasMedicareRole &&
             hasPhone &&
             !hasAEP2026ReadyTag &&
@@ -179,25 +190,27 @@ export default function ContactList({
             !hasCannotHelpTag &&
             !hasBrandonStatus &&
             !hasNotEligibleStatus
-          )
+          return isNegated ? !result : result
         } else if (customFilterQuery === 'email') {
           const emailValue = contact.email
-          return typeof emailValue === 'string' && emailValue.trim() !== ''
+          const result = typeof emailValue === 'string' && emailValue.trim() !== ''
+          return isNegated ? !result : result
         }
         return true
       } else {
-        const numericValue = parseInt(trimmedTerm, 10)
-        if (!isNaN(numericValue) && numericValue > 0 && numericValue.toString() === trimmedTerm) {
+        const numericValue = parseInt(activeTerm, 10)
+        if (!isNaN(numericValue) && numericValue > 0 && numericValue.toString() === activeTerm) {
           // T65 days filtering: numeric values (both before and after 65th birthday)
           const t65Days = getT65Days(contact.birthdate)
-          return t65Days !== null && Math.abs(t65Days) <= numericValue
+          const result = t65Days !== null && Math.abs(t65Days) <= numericValue
+          return isNegated ? !result : result
         } else {
           // Name filtering: alphabetic terms
-          const lowerTerm = trimmedTerm.toLowerCase()
-          return (
+          const lowerTerm = activeTerm.toLowerCase()
+          const result =
             contact.first_name?.toLowerCase().includes(lowerTerm) ||
             contact.last_name?.toLowerCase().includes(lowerTerm)
-          )
+          return isNegated ? !result : result
         }
       }
     }
