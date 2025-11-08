@@ -180,6 +180,9 @@ export default function ContactList({
             !hasBrandonStatus &&
             !hasNotEligibleStatus
           )
+        } else if (customFilterQuery === 'email') {
+          const emailValue = contact.email
+          return typeof emailValue === 'string' && emailValue.trim() !== ''
         }
         return true
       } else {

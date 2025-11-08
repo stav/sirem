@@ -167,13 +167,31 @@ export default function FilterHelper({ isOpen, onAddFilter }: FilterHelperProps)
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => handleCustomFilterClick('email')}
+                className="cursor-pointer text-xs"
+              >
+                Email
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top" align="start" className="max-w-xs">
+              <div className="space-y-1">
+                <div className="font-semibold">Email Filter</div>
+                <div className="text-xs">Shows contacts that have an Email address</div>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => handleCustomFilterClick('medicare_phone')}
                 className="cursor-pointer text-xs"
               >
                 Medicare Phone
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="right" className="max-w-xs">
+            <TooltipContent side="top" align="start" className="max-w-xs">
               <div className="space-y-1">
                 <div className="font-semibold">Medicare Phone Filter</div>
                 <div className="text-xs">Shows contacts that meet ALL conditions:</div>
