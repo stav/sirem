@@ -94,9 +94,45 @@ function ManagePageContent() {
   const [pendingRoles, setPendingRoles] = useState<PendingRole[]>([])
   const [filteredContacts, setFilteredContacts] = useState<Contact[]>([])
   const [filteredContactForActions, setFilteredContactForActions] = useState<Contact | null>(null)
+  const [isQuickFilterHelperOpen, setIsQuickFilterHelperOpen] = useState(false)
+  const [isExportListModalOpen, setIsExportListModalOpen] = useState(false)
   const handleFilteredContactsChange = useCallback((contacts: Contact[]) => {
     setFilteredContacts(contacts)
   }, [])
+
+  const isAnyModalOpen =
+    showContactForm ||
+    showActionForm ||
+    showActionViewModal ||
+    showContactViewModal ||
+    showContactNotesModal ||
+    isExportListModalOpen
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented) return
+      if (selectedContact) return
+      if (isAnyModalOpen) return
+      if (event.ctrlKey || event.metaKey || event.altKey) return
+      if (event.key.toLowerCase() !== 'f') return
+      if (event.repeat) return
+
+      const target = event.target as HTMLElement | null
+      const tagName = target?.tagName
+      const isTypingTarget =
+        target &&
+        (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT' || target.isContentEditable)
+      if (isTypingTarget) return
+
+      event.preventDefault()
+      setIsQuickFilterHelperOpen((prev) => !prev)
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [selectedContact, isAnyModalOpen])
 
   // Update selectedContact when contacts list changes
   useEffect(() => {
@@ -574,6 +610,9 @@ function ManagePageContent() {
                   onFilteredContactsChange={handleFilteredContactsChange}
                   onRefresh={fetchContacts}
                   actions={actions}
+                  showFilterHelper={isQuickFilterHelperOpen}
+                  onShowFilterHelperChange={setIsQuickFilterHelperOpen}
+                  onExportListModalChange={setIsExportListModalOpen}
                 />
               </div>
             </div>

@@ -43,6 +43,9 @@ interface ContactListProps {
   onFilteredContactsChange?: (filteredContacts: Contact[]) => void
   onRefresh?: () => void
   actions?: Action[]
+  showFilterHelper?: boolean
+  onShowFilterHelperChange?: (isOpen: boolean) => void
+  onExportListModalChange?: (isOpen: boolean) => void
 }
 
 export default function ContactList({
@@ -61,12 +64,35 @@ export default function ContactList({
   onFilteredContactsChange,
   onRefresh,
   actions = [],
+  showFilterHelper: showFilterHelperProp,
+  onShowFilterHelperChange,
+  onExportListModalChange,
 }: ContactListProps) {
   const [isCollapsed, setIsCollapsed] = useState(false)
   const [filter, setFilter] = useState('')
-  const [showListModal, setShowListModal] = useState(false)
-  const [showFilterHelper, setShowFilterHelper] = useState(false)
+  const [showExportListModal, setShowExportListModal] = useState(false)
+  const [internalShowFilterHelper, setInternalShowFilterHelper] = useState(false)
+  const isFilterHelperControlled = typeof showFilterHelperProp === 'boolean'
+  const filterHelperOpen = isFilterHelperControlled ? (showFilterHelperProp as boolean) : internalShowFilterHelper
+  const setShowFilterHelper = (value: boolean | ((prev: boolean) => boolean)) => {
+    if (isFilterHelperControlled) {
+      const prev = (showFilterHelperProp as boolean) ?? false
+      const next = typeof value === 'function' ? value(prev) : value
+      onShowFilterHelperChange?.(next)
+      return
+    }
+
+    setInternalShowFilterHelper((prev) => {
+      const next = typeof value === 'function' ? value(prev) : value
+      onShowFilterHelperChange?.(next)
+      return next
+    })
+  }
   const [isCSVFormat, setIsCSVFormat] = useState(false)
+
+  useEffect(() => {
+    onExportListModalChange?.(showExportListModal)
+  }, [showExportListModal, onExportListModalChange])
 
   // Load collapsed state from localStorage on component mount
   useEffect(() => {
@@ -468,9 +494,9 @@ export default function ContactList({
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          onClick={() => setShowFilterHelper(!showFilterHelper)}
+                          onClick={() => setShowFilterHelper((prev) => !prev)}
                           size="sm"
-                          variant={showFilterHelper ? 'default' : 'outline'}
+                          variant={filterHelperOpen ? 'default' : 'outline'}
                           className="cursor-pointer"
                         >
                           <Filter className="h-4 w-4" />
@@ -495,7 +521,7 @@ export default function ContactList({
                     <Tooltip>
                       <TooltipTrigger asChild>
                         <Button
-                          onClick={() => setShowListModal(true)}
+                          onClick={() => setShowExportListModal(true)}
                           size="sm"
                           variant="outline"
                           className="cursor-pointer"
@@ -522,8 +548,8 @@ export default function ContactList({
               </div>
             )}
           </div>
-          {!singleContactView && showFilterHelper && (
-            <FilterHelper isOpen={showFilterHelper} onAddFilter={handleAddFilter} />
+          {!singleContactView && filterHelperOpen && (
+            <FilterHelper isOpen={filterHelperOpen} onAddFilter={handleAddFilter} />
           )}
         </CardHeader>
         {!isCollapsed && (
@@ -566,13 +592,13 @@ export default function ContactList({
       </Card>
 
       {/* Contact List Modal for Printing */}
-      {showListModal && (
+      {showExportListModal && (
         <div
           className="fixed inset-0 flex items-center justify-center bg-black/50 p-4"
           style={{ zIndex: 50 }}
           onClick={(e) => {
             if (e.target === e.currentTarget) {
-              setShowListModal(false)
+              setShowExportListModal(false)
             }
           }}
         >
@@ -591,7 +617,12 @@ export default function ContactList({
                     <option value="csv">CSV</option>
                   </select>
                 </div>
-                <Button variant="ghost" size="sm" className="cursor-pointer" onClick={() => setShowListModal(false)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="cursor-pointer"
+                  onClick={() => setShowExportListModal(false)}
+                >
                   <X className="h-4 w-4" />
                 </Button>
               </div>

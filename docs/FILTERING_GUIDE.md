@@ -212,6 +212,11 @@ Finds contacts that are both urgent AND referral partners
 
 The Filter Helper provides quick access to common filter values:
 
+### Quick Toggle
+
+- Press the `f` key anywhere on the Manage page (when no contact is selected and no modal is open) to open or close the Filter Helper.
+- The toggle button in the Contacts header still works and stays in sync with the keyboard shortcut.
+
 ### Status Filters
 
 - Dynamically loads all unique statuses from the database
@@ -234,7 +239,24 @@ The Filter Helper provides quick access to common filter values:
 - Pre-configured complex filters for common use cases
 - Click any custom filter button to add the complete filter to the text box
 - Currently includes:
-  - **Medicare Phone**: Find Medicare contacts ready for phone outreach (excludes those who are ready, cannot be helped, assigned to Brandon, not eligible, or recently contacted)
+  - **Medicare Phone**: Find Medicare contacts ready for phone outreach
+  - **Email Present**: Find contacts that have a non-empty email address
+
+## Advanced Filter Techniques
+
+### Not Operator
+
+- **Format**: `![filter_term]`
+- **Description**: Negates any individual filter term. The term following the `!` is evaluated normally and then inverted.
+- **Examples**:
+  - `!s:inactive` – all contacts whose status does not include "inactive"
+  - `!t:do_not_call r:medicare_client` – Medicare clients that do not have the "do_not_call" tag
+
+### Email Filter
+
+- **Format**: `x:email`
+- **Description**: Matches contacts with a value in the email field.
+- **Use Case**: Combine with other filters to find contacts who have an email address. For example: `x:email s:active`.
 
 ## Best Practices
 
