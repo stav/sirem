@@ -27,6 +27,8 @@ type Contact = Database['public']['Tables']['contacts']['Row'] & {
 
 type Action = Database['public']['Tables']['actions']['Row']
 
+type ContactExportFormat = 'text' | 'csv' | 'sms'
+
 interface ContactListProps {
   contacts: Contact[]
   selectedContact: Contact | null
@@ -88,7 +90,7 @@ export default function ContactList({
       return next
     })
   }
-  const [isCSVFormat, setIsCSVFormat] = useState(false)
+  const [selectedFormat, setSelectedFormat] = useState<ContactExportFormat>('text')
 
   useEffect(() => {
     onExportListModalChange?.(showExportListModal)
@@ -282,8 +284,11 @@ export default function ContactList({
 
   // Format contacts for printing/copying
   const formatContactsForPrint = () => {
-    if (isCSVFormat) {
+    if (selectedFormat === 'csv') {
       return formatContactsAsCSV()
+    }
+    if (selectedFormat === 'sms') {
+      return formatContactsAsTextMessages()
     }
 
     return filteredContacts
@@ -383,6 +388,17 @@ export default function ContactList({
     })
 
     return [headers, ...rows].join('\n')
+  }
+
+  const formatContactsAsTextMessages = () => {
+    return filteredContacts
+      .map((contact) => {
+        const firstName = contact.first_name?.trim() || 'there'
+        const phone = contact.phone?.trim()
+        const phonePrefix = phone ? `${phone} ` : ''
+        return `${phonePrefix}Hi ${firstName}, this is Steve Almeroth — we met at the Elyria Giant Eagle earlier this year. I’m putting together a short, occasional Medicare newsletter with helpful updates and tips. If you’d like to receive it, just reply with your email address and I’ll add you to the list! Reply STOP to opt out.`
+      })
+      .join('\n\n')
   }
 
   return (
@@ -620,12 +636,13 @@ export default function ContactList({
                 <div className="flex items-center space-x-2">
                   <label className="text-sm font-medium">Format:</label>
                   <select
-                    value={isCSVFormat ? 'csv' : 'text'}
-                    onChange={(e) => setIsCSVFormat(e.target.value === 'csv')}
+                    value={selectedFormat}
+                    onChange={(e) => setSelectedFormat(e.target.value as ContactExportFormat)}
                     className="border-input bg-background text-foreground focus:ring-ring rounded border px-2 py-1 text-sm focus:ring-2 focus:outline-none"
                   >
                     <option value="text">Formatted Text</option>
                     <option value="csv">CSV</option>
+                    <option value="sms">Text Message</option>
                   </select>
                 </div>
                 <Button
@@ -640,8 +657,13 @@ export default function ContactList({
             </div>
             <div className="flex-1 overflow-y-auto p-4">
               <div className="text-muted-foreground mb-4 text-sm">
-                Copy the {isCSVFormat ? 'CSV data' : 'formatted text'} below and paste it into your document for
-                printing:
+                Copy the{' '}
+                {selectedFormat === 'csv'
+                  ? 'CSV data'
+                  : selectedFormat === 'sms'
+                  ? 'text message template'
+                  : 'formatted text'}{' '}
+                below and paste it into your document for printing:
               </div>
               <textarea
                 readOnly

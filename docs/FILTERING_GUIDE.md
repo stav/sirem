@@ -240,7 +240,8 @@ The Filter Helper provides quick access to common filter values:
 - Click any custom filter button to add the complete filter to the text box
 - Currently includes:
   - **Medicare Phone**: Find Medicare contacts ready for phone outreach
-  - **Email Present**: Find contacts that have a non-empty email address
+  - **Email**: Find contacts that have a non-empty email address
+  - **News Text**: Find Medicare clients ready for the newsletter text outreach
 
 ## Advanced Filter Techniques
 
@@ -257,6 +258,16 @@ The Filter Helper provides quick access to common filter values:
 - **Format**: `x:email`
 - **Description**: Matches contacts with a value in the email field.
 - **Use Case**: Combine with other filters to find contacts who have an email address. For example: `x:email s:active`.
+
+### News Text Filter
+
+- **Format**: `x:news_text`
+- **Description**: Matches contacts who:
+  - Have an active `medicare_client` role
+  - Have a value in the phone field
+  - Do **not** have a value in the email field
+  - Do **not** have status "Brandon"
+- **Use Case**: Ideal for preparing SMS outreach to Medicare clients who need to supply an email address for the newsletter. Combine with other filters (e.g., `x:news_text t:elyria`) for geographic or tag-based targeting.
 
 ## Best Practices
 
