@@ -185,6 +185,24 @@ export default function FilterHelper({ isOpen, onAddFilter }: FilterHelperProps)
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => handleCustomFilterClick('news_text')}
+                className="cursor-pointer text-xs"
+              >
+                News Text
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top" align="start" className="max-w-xs">
+              <div className="space-y-1">
+                <div className="font-semibold">News Text Filter</div>
+                <div className="text-xs">Medicare client with phone, no email, status not Brandon</div>
+              </div>
+            </TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => handleCustomFilterClick('medicare_phone')}
                 className="cursor-pointer text-xs"
               >

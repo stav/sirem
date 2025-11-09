@@ -221,6 +221,17 @@ export default function ContactList({
           const emailValue = contact.email
           const result = typeof emailValue === 'string' && emailValue.trim() !== ''
           return isNegated ? !result : result
+        } else if (customFilterQuery === 'news_text') {
+          const hasMedicareClientRole =
+            contact.contact_roles?.some(
+              (role) => role.role_type?.toLowerCase() === 'medicare_client' && role.is_active !== false
+            ) || false
+          const hasPhone = typeof contact.phone === 'string' && contact.phone.trim() !== ''
+          const hasEmail = typeof contact.email === 'string' && contact.email.trim() !== ''
+          const hasBrandonStatus = contact.status?.toLowerCase() === 'brandon'
+
+          const result = hasMedicareClientRole && hasPhone && !hasEmail && !hasBrandonStatus
+          return isNegated ? !result : result
         }
         return true
       } else {
