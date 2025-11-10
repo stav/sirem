@@ -14,7 +14,6 @@ export interface EmailTemplate {
 
 export interface SendEmailOptions {
   to: EmailRecipient[]
-  from: string
   subject: string
   htmlContent: string
   textContent?: string
@@ -33,18 +32,18 @@ export interface SendEmailResult {
  */
 export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
   try {
+    const payload: Record<string, unknown> = {
+      to: options.to.map(recipient => recipient.email),
+      subject: options.subject,
+      html: options.htmlContent,
+      text: options.textContent,
+    }
     const response = await fetch('/api/send-email', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        from: options.from || getDefaultEmailConfig().from,
-        to: options.to.map(recipient => recipient.email),
-        subject: options.subject,
-        html: options.htmlContent,
-        text: options.textContent,
-      }),
+      body: JSON.stringify(payload),
     })
 
     const result = await response.json()
@@ -82,7 +81,6 @@ export interface EmailResult {
 export async function sendBulkEmails(
   recipients: EmailRecipient[],
   template: EmailTemplate,
-  from: string,
   batchSize: number = 10,
   delayMs: number = 1000
 ): Promise<{ success: number; failed: number; errors: string[]; results: EmailResult[] }> {
@@ -112,9 +110,11 @@ export async function sendBulkEmails(
       )
       
       // Send single personalized email
+      console.log('Sending campaign email', {
+        to: recipient.email,
+      })
       const result = await sendEmail({
         to: [recipient],
-        from: from || getDefaultEmailConfig().from,
         subject: personalizedSubject,
         htmlContent: personalizedHtmlContent,
         textContent: personalizedTextContent
@@ -234,9 +234,3 @@ export function extractEmailAddresses(contacts: Array<{
 /**
  * Get default email configuration
  */
-export function getDefaultEmailConfig() {
-  return {
-    from: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
-    replyTo: process.env.RESEND_REPLY_TO_EMAIL || 'onboarding@resend.dev'
-  }
-}

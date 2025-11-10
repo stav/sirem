@@ -5,7 +5,7 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(request: NextRequest) {
   try {
-    const { to, from, subject, html, text } = await request.json()
+    const { to, subject, html, text } = await request.json()
 
     if (!process.env.RESEND_API_KEY) {
       return NextResponse.json(
@@ -14,9 +14,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Use the configured from email if not provided
-    const configuredFrom = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'
-    const fromEmail = from || configuredFrom
+    const fromEmail = process.env.RESEND_FROM_EMAIL
+    const replyTo = process.env.RESEND_REPLY_TO_EMAIL
+
+    if (!fromEmail) {
+      return NextResponse.json(
+        { success: false, error: 'Sender email not configured. Set RESEND_FROM_EMAIL in .env.local.' },
+        { status: 500 }
+      )
+    }
 
     console.log('Sending email:', {
       from: fromEmail,
@@ -33,6 +39,7 @@ export async function POST(request: NextRequest) {
       subject,
       html,
       text,
+      replyTo,
     })
 
     if (error) {

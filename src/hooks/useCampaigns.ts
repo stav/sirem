@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
-import { sendBulkEmails, extractEmailAddresses, getDefaultEmailConfig } from '@/lib/email-service'
+import { sendBulkEmails, extractEmailAddresses } from '@/lib/email-service'
 import type { Database } from '@/lib/supabase'
 import type { Json } from '@/lib/supabase-types'
 
@@ -172,7 +172,6 @@ export function useCampaigns() {
       const enabledRecipients = recipients.filter(r => r.enabled !== false)
 
       // Prepare email data
-      const emailConfig = getDefaultEmailConfig()
       const emailRecipients = enabledRecipients.map(r => ({
         email: r.email_address,
         firstName: r.first_name,
@@ -187,7 +186,6 @@ export function useCampaigns() {
           htmlContent: campaign.html_content ?? campaign.content,
           textContent: campaign.content
         },
-        emailConfig.from,
         5, // batch size
         1000 // delay between batches
       )
