@@ -161,9 +161,13 @@ function normalizeResolverInput(context?: ResolverInput): EligibilityContext | u
 }
 
 // Helper functions for safe metadata access using resolver
-export function getMetadataValue(plan: Plan, key: string, context?: ResolverInput): unknown {
+export function getMetadataResolution(plan: Plan, key: string, context?: ResolverInput): ResolutionResult {
   const normalizedContext = normalizeResolverInput(context)
-  const result = resolvePlanValue(plan, key, normalizedContext)
+  return resolvePlanValue(plan, key, normalizedContext)
+}
+
+export function getMetadataValue(plan: Plan, key: string, context?: ResolverInput): unknown {
+  const result = getMetadataResolution(plan, key, context)
   return result.value ?? null
 }
 

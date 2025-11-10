@@ -22,6 +22,13 @@
 - Added schema integrity tests ensuring concepts are declared, variant characteristics stay aligned, and prevent accidental overrides.
 - Updated tooling (aliases, config) to support test running without warnings.
 
+## Phase 4 Progress – Consumer Audit
+
+- Migrated the plan comparison modal to resolve all metadata via `getResolvedMetadata`, including eligibility toggles and provenance badges.
+- Ran a repo-wide sweep for direct `plan.metadata` reads; remaining usages live exclusively inside resolver-aware utilities.
+- Added `metadata-audit.test.ts` which fails the build if new runtime modules bypass the resolver helpers.
+- Upcoming work: migrate reporting/export scripts to consume the resolver helpers once those surfaces are brought over.
+
 ## Current Architecture (Hybrid Characteristics + Tags)
 
 - **Base Schema** (`data/schema/plans-metadata-schema.ts`) is the single source of truth.
@@ -66,5 +73,5 @@
 
 ## Upcoming Phases
 
-- **Phase 4**: Expand resolver usage across UI/exports; polish metadata editing for variants and legacy fields.
+- **Phase 4**: Finish migrating exports/reporting/API consumers to the resolver helpers; polish metadata editing for variants and legacy fields.
 - **Phase 5**: Data migration/backfill to populate new variant fields; update reporting pipelines; monitor analytics.

@@ -671,7 +671,7 @@ The `metadata` JSONB field provides flexibility for storing additional plan info
 - The lookup key for property indexing in `getAllProperties()`
 - The unique identifier in `FieldDefinition` objects
 
-Since properties are stored in an array (not an object), the `key` must be explicit - it cannot be inferred from object keys like in flat schemas. This key maps directly to how values are stored and retrieved in the `plan.metadata` JSONB field.
+Since properties are stored in an array (not an object), the `key` must be explicit - it cannot be inferred from object keys like in flat schemas. This key maps directly to the JSONB property name, while application code should access values through the resolver helpers in `plan-metadata-utils.ts` instead of reading `plan.metadata` directly.
 
 1. **Extended Benefits**: Benefits that vary by carrier or year (card, fitness, transportation)
 2. **Prescription Drug Details**: Complex RX coverage that needs more than the pharmacy_benefit field
@@ -681,16 +681,21 @@ Since properties are stored in an array (not an object), the `key` must be expli
 ### Accessing Metadata in Code
 
 ```typescript
-// TypeScript helper to safely access metadata
-function getMetadata(plan: Plan, key: string): string | number | null {
-  if (!plan.metadata || typeof plan.metadata !== 'object') return null
-  const metadata = plan.metadata as Record<string, any>
-  return metadata[key] ?? null
-}
+import {
+  getMetadataValue,
+  getMetadataNumber,
+  getMetadataResolution,
+} from '@/lib/plan-metadata-utils'
 
-// Example usage
-const cardBenefit = getMetadata(plan, 'card_benefit')
-const medicaidRequired = getMetadata(plan, 'medicaid_eligibility')
+// Resolve values directly (automatic variant + fallback handling)
+const cardBenefit = getMetadataValue(plan, 'card_benefit')
+const lisPremium = getMetadataNumber(plan, 'premium_monthly', 'lis')
+
+// Inspect where a value came from (variant vs. base)
+const premiumResolution = getMetadataResolution(plan, 'premium_monthly', 'lis')
+if (premiumResolution.source === 'variant') {
+  console.log(`Using ${premiumResolution.definition?.key} for LIS context`)
+}
 ```
 
 ### Adding Metadata During Import
