@@ -28,7 +28,7 @@ type FieldCharacteristics = {
   concept?: string
   type?: string
   frequency?: string
-  eligibility?: string
+  eligibility?: string | string[]
   unit?: string
   modifier?: string
   direction?: 'credit' | 'debit'
@@ -53,7 +53,7 @@ type SchemaProperty = {
   maximum?: number
   tags?: string[]
   characteristics?: FieldCharacteristics
-  variants?: Record<string, FieldVariant>
+  variants?: FieldVariant[]
 }
 
 /**
@@ -98,7 +98,7 @@ export function getAllExpectedFieldKeys(): Set<string> {
   Object.values(properties).forEach((prop) => {
     keys.add(prop.key)
     if (prop.variants) {
-      Object.values(prop.variants).forEach((variant) => {
+      prop.variants.forEach((variant) => {
         keys.add(variant.key)
       })
     }
@@ -214,7 +214,7 @@ export const getPlanMetadata = (() => {
 
     // Generate getters for variant fields (inherit base type)
     if (fieldSchema.variants) {
-      Object.values(fieldSchema.variants).forEach((variant) => {
+      fieldSchema.variants.forEach((variant) => {
         if (fieldType === 'string' && fieldSchema.format === 'date') {
           getters[variant.key] = (plan: Plan, context?: ResolverInput) =>
             getMetadataDate(plan, variant.key, context)

@@ -43,7 +43,7 @@ describe('plans metadata schema characteristics', () => {
         if (baseField?.characteristics) {
           const baseChars = baseField.characteristics
           const variantChars = variantField.characteristics || {}
-          const allowedDifferences = new Set(['eligibility', 'modifier', 'unit'])
+          const allowedDifferences = new Set(['eligibility', 'modifier', 'unit', 'frequency'])
 
           ;(['concept', 'direction', 'frequency', 'type'] as const).forEach((key) => {
             if (key in variantChars && !allowedDifferences.has(key)) {

@@ -26,9 +26,9 @@ parsedSchema.fields.forEach((field) => {
 })
 
 parsedSchema.fields.forEach((field) => {
-  if (!field.baseKey && field.variants) {
+  if (!field.baseKey && field.variants && field.variants.length > 0) {
     const orderedVariants: FieldDefinition[] = []
-    Object.values(field.variants).forEach((variant) => {
+    field.variants.forEach((variant) => {
       const variantDefinition = fieldDefinitions.get(variant.key)
       if (variantDefinition) {
         orderedVariants.push(variantDefinition)
@@ -40,13 +40,23 @@ parsedSchema.fields.forEach((field) => {
   }
 })
 
-function normalizeEligibility(context?: EligibilityContext): string[] {
+type EligibilityToken = string
+
+function normalizeEligibility(context?: EligibilityContext): EligibilityToken[] {
   if (!context || !context.eligibility) return []
   const value = context.eligibility
   if (Array.isArray(value)) {
     return value.map((item) => item.toLowerCase())
   }
   return [value.toLowerCase()]
+}
+
+function normalizeFieldEligibility(eligibility?: string | string[]): EligibilityToken[] {
+  if (!eligibility) return []
+  if (Array.isArray(eligibility)) {
+    return eligibility.map((value) => value.toLowerCase())
+  }
+  return [eligibility.toLowerCase()]
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -93,8 +103,8 @@ export function resolveMetadataValue(
   if (eligibility.length > 0) {
     const candidateVariants = variantsByBase.get(fieldDefinition.key) || []
     for (const variantDefinition of candidateVariants) {
-      const variantEligibility = variantDefinition.characteristics?.eligibility?.toLowerCase()
-      if (variantEligibility && eligibility.includes(variantEligibility)) {
+      const variantEligibility = normalizeFieldEligibility(variantDefinition.characteristics?.eligibility)
+      if (variantEligibility.length > 0 && variantEligibility.some((token) => eligibility.includes(token))) {
         const variantValue = record ? record[variantDefinition.key] : undefined
         if (hasValue(variantValue)) {
           return {

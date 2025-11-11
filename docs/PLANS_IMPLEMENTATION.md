@@ -70,6 +70,14 @@ The `metadata` JSONB field stores all plan benefits and additional information. 
 - `@/schema/plans-metadata-schema.ts` (TypeScript Schema)
 - `src/lib/plan-metadata-utils.ts` (TypeScript interface)
 
+**Field Builder Enumerations:**
+
+- `planMetadataCharacteristicOptions.fieldTypes` → UI-safe list of primitive field types (`string`, `number`).
+- `planMetadataCharacteristicOptions.frequency` → Allowed cadence tokens (`daily`, `monthly`, `quarterly`, `yearly`, `per_stay`).
+- `planMetadataCharacteristicOptions.units` → Monetary unit tokens exposed in the UI (`$`, `%`).
+- `planMetadataCharacteristicOptions.eligibility` → Eligibility tokens including LIS and Medicaid levels (`qdwi`, `qi`, `slmb`, `slmb+`, `qmb`, `qmb+`, `fbde`).
+- `planMetadataCharacteristicOptions.medicaidLevels` → Convenience subset for Medicaid-specific selections.
+
 **🔄 DYNAMIC SCHEMA: New fields may be added, changed, or removed at any time as business requirements evolve.**
 
 **Dates:**
@@ -95,7 +103,7 @@ The `metadata` JSONB field stores all plan benefits and additional information. 
 - `primary_care_copay` (numeric): Primary care physician copay
 - `specialist_copay` (numeric): Specialist copay
 - `hospital_inpatient_per_day_copay` (numeric): Daily hospital inpatient copay
-- `hospital_inpatient_days` (integer): Number of covered hospital days
+- `hospital_inpatient_days` (numeric): Number of covered hospital days
 - `moop_annual` (numeric): Maximum Out-of-Pocket annual limit
 - `ambulance_copay` (numeric): Ambulance service copay
 - `emergency_room_copay` (numeric): Emergency room copay

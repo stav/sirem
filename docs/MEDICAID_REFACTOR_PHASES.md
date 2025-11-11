@@ -6,6 +6,7 @@
   - Added `characteristics` blocks to all base fields and variants.
   - Converted Medicaid/LIS fields into true variants and removed redundant entries.
   - Trimmed variant characteristics to override only what differs (eligibility, modifier, unit).
+  - Introduced schema builder helpers that enforce characteristic enumerations (frequency, eligibility tokens, units) for use in the upcoming field builder UI.
 - Updated runtime utilities to respect the new schema structure.
   - `schema-parser` exposes `characteristics`, `variants`, and now annotates variant definitions with their merged characteristics and `baseKey`.
   - `plan-metadata-utils` rebuilt `getAllExpectedFieldKeys`, legacy-field handling, metadata builders, and default form population to include variants.
@@ -41,7 +42,8 @@
     - `direction` (credit/debit) for finance flows
     - optional `modifier`
   - `tags` are now strictly for grouping/presentation (`['financial', 'cost-sharing']`). They do **not** control eligibility and can be freely extended for UI needs.
-  - `variants` are keyed objects (`variants: { lis: { ... } }`) so each variant has a stable identifier. Variants only override the characteristics that differ (primarily `eligibility`, `modifier`, `unit`).
+- `variants` are ordered arrays (`variants: [{ key: 'premium_monthly_with_extra_help', ... }]`) generated through builder helpers. Variants only override the characteristics that differ (primarily `eligibility`, `modifier`, `unit`, and now `frequency` when a per-stay vs. per-day distinction is required).
+- Builder helpers in the schema expose enumerations for field type, frequency, monetary unit, and eligibility (including LIS and Medicaid levels such as QMB, SLMB+, etc.), so the forthcoming UI can present constrained pickers instead of free-form text.
 
 - **Schema Parser** (`src/lib/schema-parser.ts`)
   - Produces `FieldDefinition` objects.
