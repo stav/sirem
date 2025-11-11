@@ -27,12 +27,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 
 import type { Database } from '@/lib/supabase'
 import { getDisplayDate } from '@/lib/action-utils'
-import { formatDateTime } from '@/lib/utils'
-
-// Helper to format datetime string for display
-function formatDateTimeString(dateString: string | null | undefined) {
-  return formatDateTime(dateString)
-}
+import { formatDateTimeWithWeekday } from '@/lib/utils'
 
 type Action = Database['public']['Tables']['actions']['Row']
 
@@ -153,7 +148,7 @@ const ActionCard = React.memo(function ActionCard({
               <TooltipTrigger asChild>
                 <span className="text-muted-foreground cursor-help text-xs">{daysDiffText}</span>
               </TooltipTrigger>
-              <TooltipContent>{formatDateTimeString(displayDate)}</TooltipContent>
+              <TooltipContent>{formatDateTimeWithWeekday(displayDate)}</TooltipContent>
             </Tooltip>
             {action.status && (
               <Tooltip>
@@ -193,33 +188,33 @@ const ActionCard = React.memo(function ActionCard({
             <div className="flex items-center space-x-1">
               <Calendar className="h-3 w-3" />
               <span className="font-medium">Start:</span>
-              <span>{formatDateTimeString(action.start_date)}</span>
+              <span>{formatDateTimeWithWeekday(action.start_date)}</span>
             </div>
           )}
           {action.completed_date && (
             <div className="flex items-center space-x-1">
               <Check className="h-3 w-3" />
               <span className="font-medium">Completed:</span>
-              <span>{formatDateTimeString(action.completed_date)}</span>
+              <span>{formatDateTimeWithWeekday(action.completed_date)}</span>
             </div>
           )}
           <div className="flex items-center space-x-1">
             <Clock className="h-3 w-3" />
             <span className="font-medium">Created:</span>
-            <span>{formatDateTimeString(action.created_at)}</span>
+            <span>{formatDateTimeWithWeekday(action.created_at)}</span>
           </div>
           {action.updated_at !== action.created_at && (
             <div className="flex items-center space-x-1 sm:col-span-2">
               <Clock className="h-3 w-3" />
               <span className="font-medium">Updated:</span>
-              <span>{formatDateTimeString(action.updated_at)}</span>
+              <span>{formatDateTimeWithWeekday(action.updated_at)}</span>
             </div>
           )}
           {action.end_date && (
             <div className="flex items-center space-x-1 sm:col-span-2">
               <Calendar className="h-3 w-3" />
               <span className="font-medium">End:</span>
-              <span>{formatDateTimeString(action.end_date)}</span>
+              <span>{formatDateTimeWithWeekday(action.end_date)}</span>
             </div>
           )}
         </div>

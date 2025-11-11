@@ -1,7 +1,30 @@
+import { WEEKDAY_NAMES } from './utils'
+
 export function formatLocalDate(dateString: string) {
   if (!dateString) return ''
   const [year, month, day] = dateString.split('T')[0].split('-')
   return `${month}/${day}/${year}`
+}
+
+/**
+ * Display helper for contact-only dates (no time component). Keeps the existing MM/DD/YYYY
+ * formatting that the contact views expect, but prepends the UTC weekday so tooltips show
+ * "Thursday, 11/06/2025". Falls back to the plain formatter if the input is malformed.
+ */
+export function formatLocalDateWithWeekday(dateString: string) {
+  if (!dateString) return ''
+  const [year, month, day] = dateString.split('T')[0].split('-')
+  if (!year || !month || !day) {
+    return formatLocalDate(dateString)
+  }
+
+  const date = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)))
+  if (Number.isNaN(date.getTime())) {
+    return formatLocalDate(dateString)
+  }
+
+  const weekday = WEEKDAY_NAMES[date.getUTCDay()]
+  return `${weekday}, ${formatLocalDate(dateString)}`
 }
 
 export function calculateAge(birthdate: string | null | undefined): number | null {

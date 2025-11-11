@@ -8,8 +8,8 @@ import type { Database } from '@/lib/supabase'
 import Navigation from '@/components/Navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { getStatusBadge, formatLocalDate } from '@/lib/contact-utils'
-import { formatDateTime } from '@/lib/utils'
+import { getStatusBadge, formatLocalDateWithWeekday } from '@/lib/contact-utils'
+import { formatDateTimeWithWeekday } from '@/lib/utils'
 import { fetchAllRecords } from '@/lib/database'
 
 // Optimized type for dashboard contacts
@@ -189,6 +189,17 @@ function renderActionRow(action: Action, router: ReturnType<typeof useRouter>) {
     if (diffDays === 0) return '0d'
     return diffDays > 0 ? `+${diffDays}d` : `${diffDays}d`
   }
+
+  const getDisplayDate = (currentAction: Action): string | null => {
+    if (currentAction.start_date) return currentAction.start_date
+    if (currentAction.end_date) return currentAction.end_date
+    if (currentAction.updated_at) return currentAction.updated_at
+    if (currentAction.created_at) return currentAction.created_at
+    return null
+  }
+
+  const displayDate = getDisplayDate(action)
+  const dayDiffLabel = displayDate ? formatSignedDayDiff(displayDate) : ''
   return (
     <div
       key={action.id}
@@ -215,12 +226,12 @@ function renderActionRow(action: Action, router: ReturnType<typeof useRouter>) {
                 {action.priority}
               </Badge>
             )}
-            {action.start_date && (
+            {displayDate && (
               <span
                 className="text-muted-foreground ml-2 text-xs"
-                title={formatDateTime(action.start_date)}
+                title={formatDateTimeWithWeekday(displayDate)}
               >
-                {formatSignedDayDiff(action.start_date)}
+                {dayDiffLabel}
               </span>
             )}
             <span className="text-muted-foreground ml-2 flex items-center text-xs">
@@ -265,7 +276,11 @@ function renderContactRow(
       {renderContactInfo(contact)}
       {showDate && (
         <div className="flex items-center space-x-2">
-          <Badge variant={badgeVariant} className="text-xs" title={formatLocalDate(contact.birthdate!)}>
+          <Badge
+            variant={badgeVariant}
+            className="text-xs"
+            title={formatLocalDateWithWeekday(contact.birthdate!)}
+          >
             {getBadgeText()}
           </Badge>
         </div>

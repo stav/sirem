@@ -111,6 +111,37 @@ export function formatDateTime(dateString: string | null | undefined): string {
   }
 }
 
+export const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tues', 'Wed', 'Thur', 'Fri', 'Sat'] as const
+
+/**
+ * Format a datetime string for display with weekday (e.g., Thursday, 2025-11-06 14:36)
+ * @param dateString - ISO datetime string or PostgreSQL timestamp (UTC)
+ * @returns Formatted datetime string with weekday or empty string if invalid
+ */
+export function formatDateTimeWithWeekday(dateString: string | null | undefined): string {
+  const formatted = formatDateTime(dateString)
+  if (!formatted || !dateString) return formatted
+
+  try {
+    let normalizedDateString = dateString
+
+    if (dateString.includes(' ') && !dateString.includes('T')) {
+      normalizedDateString = dateString.replace(' ', 'T')
+      if (normalizedDateString.endsWith('+00')) {
+        normalizedDateString = normalizedDateString.replace('+00', 'Z')
+      }
+    }
+
+    const date = new Date(normalizedDateString)
+    if (isNaN(date.getTime())) return formatted
+
+    const weekday = WEEKDAY_NAMES[date.getUTCDay()]
+    return `${weekday}, ${formatted}`
+  } catch {
+    return formatted
+  }
+}
+
 /**
  * Format a datetime string for HTML datetime-local input (YYYY-MM-DDTHH:MM)
  * @param dateString - ISO datetime string or PostgreSQL timestamp (UTC)
