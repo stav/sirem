@@ -13,8 +13,10 @@ import { RoleType } from '@/types/roles'
 function formatYearMonth(dateString: string): string {
   try {
     const date = new Date(dateString)
-    const year = date.getFullYear()
-    const month = String(date.getMonth() + 1).padStart(2, '0')
+    if (Number.isNaN(date.getTime())) return dateString
+
+    const year = date.getUTCFullYear()
+    const month = String(date.getUTCMonth() + 1).padStart(2, '0')
     return `${year}-${month}`
   } catch {
     return dateString // Return original if parsing fails
