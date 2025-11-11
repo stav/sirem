@@ -699,9 +699,6 @@ const planMetadataSections = [
       type: 'string',
       label: 'Medicaid Eligibility',
       description: 'Medicaid eligibility requirements',
-      validation: {
-        enum: ['Required', 'Not Required', 'Optional'],
-      },
     },
     {
       key: 'transitioned_from',
