@@ -202,9 +202,9 @@ function ManagePageContent() {
         if (contact) {
           setSelectedContact(contact)
           setSingleContactView(true)
-          // Open the action for editing
-          handleEditAction(action)
         }
+        // Open the action in view mode
+        handleViewAction(action)
       }
     } else if (contactId) {
       const contact = contacts.find((c) => c.id === contactId)
