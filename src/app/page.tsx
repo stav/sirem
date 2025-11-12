@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { getStatusBadge, formatLocalDateWithWeekday } from '@/lib/contact-utils'
 import { formatDateTimeWithWeekday } from '@/lib/utils'
 import { fetchAllRecords } from '@/lib/database'
+import { getDisplayDate as getActionDisplayDate } from '@/lib/action-utils'
 
 // Optimized type for dashboard contacts
 type DashboardContact = Pick<
@@ -190,16 +191,8 @@ function renderActionRow(action: Action, router: ReturnType<typeof useRouter>) {
     return diffDays > 0 ? `+${diffDays}d` : `${diffDays}d`
   }
 
-  const getDisplayDate = (currentAction: Action): string | null => {
-    if (currentAction.start_date) return currentAction.start_date
-    if (currentAction.end_date) return currentAction.end_date
-    if (currentAction.updated_at) return currentAction.updated_at
-    if (currentAction.created_at) return currentAction.created_at
-    return null
-  }
-
-  const displayDate = getDisplayDate(action)
-  const dayDiffLabel = displayDate ? formatSignedDayDiff(displayDate) : ''
+  const displayDateString = getActionDisplayDate(action)
+  const dayDiffLabel = displayDateString ? formatSignedDayDiff(displayDateString) : ''
   return (
     <div
       key={action.id}
@@ -226,10 +219,10 @@ function renderActionRow(action: Action, router: ReturnType<typeof useRouter>) {
                 {action.priority}
               </Badge>
             )}
-            {displayDate && (
+            {displayDateString && (
               <span
                 className="text-muted-foreground ml-2 text-xs"
-                title={formatDateTimeWithWeekday(displayDate)}
+                title={formatDateTimeWithWeekday(displayDateString)}
               >
                 {dayDiffLabel}
               </span>
@@ -377,15 +370,18 @@ export default function Home() {
     const upcomingActions = actions
       .filter((a) => {
         if (a.completed_date) return false
-        if (!a.start_date) return false
-        const actionDate = new Date(a.start_date)
-        const today = new Date()
-        // Use UTC date comparison
-        const actionDateUTC = new Date(
-          Date.UTC(actionDate.getUTCFullYear(), actionDate.getUTCMonth(), actionDate.getUTCDate())
+        const displayDateString = getActionDisplayDate(a)
+        if (!displayDateString) return false
+        const displayDate = new Date(displayDateString)
+        if (Number.isNaN(displayDate.getTime())) return false
+        const displayDateUTC = new Date(
+          Date.UTC(displayDate.getUTCFullYear(), displayDate.getUTCMonth(), displayDate.getUTCDate())
         )
+        const today = new Date()
         const todayUTC = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()))
-        return actionDateUTC >= todayUTC
+        const thirtyDaysAgoUTC = new Date(todayUTC)
+        thirtyDaysAgoUTC.setUTCDate(thirtyDaysAgoUTC.getUTCDate() - 30)
+        return displayDateUTC >= thirtyDaysAgoUTC
       })
       .slice(0, 5)
 
@@ -395,13 +391,14 @@ export default function Home() {
         if (a.completed_date) return false
         return a.priority === 'high'
       })
-      .sort((a, b) => {
-        // Sort by start_date descending (newest first)
-        if (!a.start_date && !b.start_date) return 0
-        if (!a.start_date) return 1
-        if (!b.start_date) return -1
-        return new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
+      .map((action) => {
+        const displayDateString = getActionDisplayDate(action)
+        const displayDate = new Date(displayDateString)
+        const displayTime = Number.isNaN(displayDate.getTime()) ? 0 : displayDate.getTime()
+        return { action, displayTime }
       })
+      .sort((a, b) => b.displayTime - a.displayTime)
+      .map(({ action }) => action)
 
     // Get medium priority actions, sorted by date (newest first)
     const mediumPriorityActions = actions
@@ -409,13 +406,14 @@ export default function Home() {
         if (a.completed_date) return false
         return a.priority === 'medium'
       })
-      .sort((a, b) => {
-        // Sort by start_date descending (newest first)
-        if (!a.start_date && !b.start_date) return 0
-        if (!a.start_date) return 1
-        if (!b.start_date) return -1
-        return new Date(b.start_date).getTime() - new Date(a.start_date).getTime()
+      .map((action) => {
+        const displayDateString = getActionDisplayDate(action)
+        const displayDate = new Date(displayDateString)
+        const displayTime = Number.isNaN(displayDate.getTime()) ? 0 : displayDate.getTime()
+        return { action, displayTime }
       })
+      .sort((a, b) => b.displayTime - a.displayTime)
+      .map(({ action }) => action)
 
     // Calculate birthday data
     const upcoming65 = getUpcoming65(contacts)
