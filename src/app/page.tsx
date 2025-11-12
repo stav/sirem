@@ -366,7 +366,7 @@ export default function Home() {
       return actionDateUTC < todayDateUTC
     }).length
 
-    // Get upcoming actions (using UTC for date comparisons)
+    // Get upcoming actions (using UTC for date comparisons), sorted by date ascending (earliest first)
     const upcomingActions = actions
       .filter((a) => {
         if (a.completed_date) return false
@@ -383,9 +383,17 @@ export default function Home() {
         thirtyDaysAgoUTC.setUTCDate(thirtyDaysAgoUTC.getUTCDate() - 30)
         return displayDateUTC >= thirtyDaysAgoUTC
       })
+      .map((action) => {
+        const displayDateString = getActionDisplayDate(action)
+        const displayDate = new Date(displayDateString)
+        const displayTime = Number.isNaN(displayDate.getTime()) ? Infinity : displayDate.getTime()
+        return { action, displayTime }
+      })
+      .sort((a, b) => a.displayTime - b.displayTime)
+      .map(({ action }) => action)
       .slice(0, 5)
 
-    // Get high priority actions, sorted by date (newest first)
+    // Get high priority actions, sorted by date ascending (earliest first)
     const highPriorityActions = actions
       .filter((a) => {
         if (a.completed_date) return false
@@ -394,13 +402,13 @@ export default function Home() {
       .map((action) => {
         const displayDateString = getActionDisplayDate(action)
         const displayDate = new Date(displayDateString)
-        const displayTime = Number.isNaN(displayDate.getTime()) ? 0 : displayDate.getTime()
+        const displayTime = Number.isNaN(displayDate.getTime()) ? Infinity : displayDate.getTime()
         return { action, displayTime }
       })
-      .sort((a, b) => b.displayTime - a.displayTime)
+      .sort((a, b) => a.displayTime - b.displayTime)
       .map(({ action }) => action)
 
-    // Get medium priority actions, sorted by date (newest first)
+    // Get medium priority actions, sorted by date ascending (earliest first)
     const mediumPriorityActions = actions
       .filter((a) => {
         if (a.completed_date) return false
@@ -409,10 +417,10 @@ export default function Home() {
       .map((action) => {
         const displayDateString = getActionDisplayDate(action)
         const displayDate = new Date(displayDateString)
-        const displayTime = Number.isNaN(displayDate.getTime()) ? 0 : displayDate.getTime()
+        const displayTime = Number.isNaN(displayDate.getTime()) ? Infinity : displayDate.getTime()
         return { action, displayTime }
       })
-      .sort((a, b) => b.displayTime - a.displayTime)
+      .sort((a, b) => a.displayTime - b.displayTime)
       .map(({ action }) => action)
 
     // Calculate birthday data

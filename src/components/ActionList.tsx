@@ -157,11 +157,12 @@ export default function ActionList({
     }
   }
 
-  // Calculate total actions for the selected contact (before any filtering)
+  // Calculate total actions for the selected/filtered contact (before any filtering)
   const totalActionsForContact = useMemo(() => {
-    if (!selectedContact) return 0
-    return actions.filter((a) => String(a.contact_id) === String(selectedContact.id)).length
-  }, [actions, selectedContact])
+    const contactToUse = selectedContact || filteredContactForActions
+    if (!contactToUse) return 0
+    return actions.filter((a) => String(a.contact_id) === String(contactToUse.id)).length
+  }, [actions, selectedContact, filteredContactForActions])
 
   // Memoize filtered and sorted actions to prevent expensive re-computations
   const displayActions = useMemo(() => {
@@ -352,10 +353,10 @@ export default function ActionList({
         <CardContent className="flex-1 overflow-y-auto">
           {!selectedContact && displayActions.length === 0 ? (
             <div className="py-8 text-center">
-              {totalActionsForContact > 0 ? (
+              {actions.length > 0 ? (
                 <>
                   <p className="text-muted-foreground">
-                    {totalActionsForContact} cards not displayed, maybe try a different filter.
+                    {actions.length} action{actions.length !== 1 ? 's' : ''} not displayed. Check/adjust the filters above to see other actions.
                   </p>
                 </>
               ) : (
@@ -393,7 +394,7 @@ export default function ActionList({
               {totalActionsForContact > 0 ? (
                 <>
                   <p className="text-muted-foreground">
-                    {totalActionsForContact} cards not displayed, maybe try a different filter.
+                    {totalActionsForContact} action{totalActionsForContact !== 1 ? 's' : ''} not displayed. Check/adjust the filters above to see other actions.
                   </p>
                 </>
               ) : (
