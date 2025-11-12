@@ -1,8 +1,11 @@
 import React from 'react'
+import { Phone } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import ModalForm from '@/components/ui/modal-form'
 import DateTimeInput from '@/components/ui/datetime-input'
 import type { Database } from '@/lib/supabase'
@@ -17,6 +20,8 @@ interface ActionFormProps {
   formData: ActionFormData
   setFormData: (data: ActionFormData) => void
   isSubmitting: boolean
+  contactName?: string
+  onCreateVoicemailAction?: () => void
 }
 
 export interface ActionFormData {
@@ -47,15 +52,46 @@ export default function ActionForm({
   formData,
   setFormData,
   isSubmitting,
+  contactName,
+  onCreateVoicemailAction,
 }: ActionFormProps) {
   const isEditing = !!action
+  const title = isEditing ? (
+    'Edit Action'
+  ) : contactName ? (
+    <div className="flex items-center">
+      <span>
+        Add Action
+        <span className="text-muted-foreground ml-2 text-sm font-normal">for {contactName}</span>
+      </span>
+      {onCreateVoicemailAction && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onCreateVoicemailAction}
+              className="ml-2 h-8 w-8 cursor-pointer p-0"
+              aria-label="Create voicemail action"
+            >
+              <Phone className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Create voicemail action</TooltipContent>
+        </Tooltip>
+      )}
+    </div>
+  ) : (
+    'Add Action'
+  )
 
   return (
     <ModalForm
       isOpen={isOpen}
       onCancel={onClose}
       onSubmit={onSubmit}
-      title={isEditing ? 'Edit Action' : 'Add Action'}
+      title={title}
       isLoading={isSubmitting}
     >
       <div className="space-y-4">

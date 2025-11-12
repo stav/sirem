@@ -3,7 +3,7 @@ import { X, Clock, Calendar } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { formatDateTimeForInput } from '@/lib/utils'
+import { formatDateTimeForInput, getLocalTimeAsUTC } from '@/lib/utils'
 
 interface DateTimeInputProps {
   id: string
@@ -27,18 +27,8 @@ export default function DateTimeInput({
   }
 
   const handleNow = () => {
-    // Create local datetime-local format (YYYY-MM-DDTHH:MM)
-    const now = new Date()
-    const year = now.getFullYear()
-    const month = String(now.getMonth() + 1).padStart(2, '0')
-    const day = String(now.getDate()).padStart(2, '0')
-    const hours = String(now.getHours()).padStart(2, '0')
-    const minutes = String(now.getMinutes()).padStart(2, '0')
-    const datetimeLocal = `${year}-${month}-${day}T${hours}:${minutes}`
-
-    // Treat local time as UTC
-    const utcDate = new Date(datetimeLocal + 'Z')
-    onChange(utcDate.toISOString())
+    // Use the shared utility function to get current local time as UTC
+    onChange(getLocalTimeAsUTC())
   }
 
   // Convert ISO string to datetime-local format for the input

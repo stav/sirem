@@ -15,6 +15,7 @@ import { useActions } from '@/hooks/useActions'
 import type { Database } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
 import { logger } from '@/lib/logger'
+import { getLocalTimeAsUTC } from '@/lib/utils'
 import { RoleData, RoleType } from '@/types/roles'
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
@@ -489,6 +490,43 @@ function ManagePageContent() {
     }
   }
 
+  const handleCreateVoicemailAction = async () => {
+    const contactToUse = selectedContact || filteredContactForActions
+    if (!contactToUse) return
+
+    const currentDateTime = getLocalTimeAsUTC()
+    const voicemailActionData: ActionFormData = {
+      title: 'Voicemail',
+      description: '',
+      tags: '',
+      start_date: currentDateTime,
+      end_date: null,
+      completed_date: currentDateTime,
+      status: 'completed',
+      priority: null,
+      duration: null,
+      outcome: null,
+    }
+
+    const success = await createAction(contactToUse.id, voicemailActionData)
+
+    if (success) {
+      const contactName = `${contactToUse.first_name} ${contactToUse.last_name}`
+      toast({
+        title: 'Action created',
+        description: `"Voicemail" for ${contactName} was successfully created.`,
+      })
+      logger.info(`Voicemail action created for ${contactName}`, 'action_create', contactToUse.id)
+      closeActionForm()
+    } else {
+      toast({
+        title: 'Error',
+        description: 'Failed to create voicemail action. Please try again.',
+        variant: 'destructive',
+      })
+    }
+  }
+
   // Individual modal close handlers
   const closeContactForm = () => {
     setShowContactForm(false)
@@ -674,6 +712,16 @@ function ManagePageContent() {
             formData={actionForm}
             setFormData={setActionForm}
             isSubmitting={false}
+            contactName={
+              editingAction
+                ? contacts.find((c) => c.id === editingAction.contact_id)
+                  ? `${contacts.find((c) => c.id === editingAction.contact_id)?.first_name} ${contacts.find((c) => c.id === editingAction.contact_id)?.last_name}`
+                  : undefined
+                : selectedContact || filteredContactForActions
+                  ? `${selectedContact?.first_name || filteredContactForActions?.first_name} ${selectedContact?.last_name || filteredContactForActions?.last_name}`
+                  : undefined
+            }
+            onCreateVoicemailAction={!editingAction ? handleCreateVoicemailAction : undefined}
           />
 
           {/* Action View Modal */}

@@ -179,6 +179,27 @@ export function formatDateTimeForInput(dateString: string | null | undefined): s
 }
 
 /**
+ * Get local time as UTC (treating local time as if it's UTC)
+ * This is used throughout the app to create datetime values that represent
+ * the current local time but are stored as UTC ISO strings.
+ * @returns ISO string in UTC format
+ */
+export function getLocalTimeAsUTC(): string {
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = String(now.getMonth() + 1).padStart(2, '0')
+  const day = String(now.getDate()).padStart(2, '0')
+  const hours = String(now.getHours()).padStart(2, '0')
+  const minutes = String(now.getMinutes()).padStart(2, '0')
+  const seconds = String(now.getSeconds()).padStart(2, '0')
+  const datetimeLocal = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
+
+  // Convert to ISO string (UTC) by treating local time as UTC
+  const utcDate = new Date(datetimeLocal + 'Z')
+  return utcDate.toISOString()
+}
+
+/**
  * Formats a time difference into a human-readable string with years, months, and days
  * @param daysDiff - Number of days difference (positive for future, negative for past)
  * @param isCompleted - Whether this is for a completed item (affects the suffix)

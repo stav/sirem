@@ -3,22 +3,7 @@ import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase'
 import { getDisplayDate, getEffectiveStatus } from '@/lib/action-utils'
 import { fetchAllRecords } from '@/lib/database'
-
-// Helper function to get local time as UTC (treating local time as if it's UTC)
-function getLocalTimeAsUTC(): string {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-  const hours = String(now.getHours()).padStart(2, '0')
-  const minutes = String(now.getMinutes()).padStart(2, '0')
-  const seconds = String(now.getSeconds()).padStart(2, '0')
-  const datetimeLocal = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
-
-  // Convert to ISO string (UTC) by treating local time as UTC
-  const utcDate = new Date(datetimeLocal + 'Z')
-  return utcDate.toISOString()
-}
+import { getLocalTimeAsUTC } from '@/lib/utils'
 
 type Action = Database['public']['Tables']['actions']['Row']
 type ActionInsert = Database['public']['Tables']['actions']['Insert']
