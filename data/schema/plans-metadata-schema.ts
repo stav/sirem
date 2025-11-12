@@ -47,7 +47,7 @@ interface FieldInput {
   key: string
   type: FieldType
   label: string
-  description: string
+  description?: string
   tags?: readonly string[]
   characteristics?: CharacteristicInput
   variants?: readonly VariantInput[]
@@ -194,28 +194,11 @@ export const planMetadataCharacteristicOptions = {
 } as const
 
 const planMetadataSections = [
-  defineSection('Plan Dates', 'Plan effective dates and periods', [
-    {
-      key: 'effective_start',
-      type: 'string',
-      label: 'Effective Start Date',
-      description: 'Plan effective start date in YYYY-MM-DD format',
-      format: 'date',
-    },
-    {
-      key: 'effective_end',
-      type: 'string',
-      label: 'Effective End Date',
-      description: 'Plan effective end date in YYYY-MM-DD format',
-      format: 'date',
-    },
-  ]),
   defineSection('Financials', 'Monthly premiums, givebacks, and maximum out-of-pocket limits', [
     {
       key: 'premium_monthly',
       type: 'number',
       label: 'Premium (monthly)',
-      description: 'Monthly premium amount in dollars',
       characteristics: {
         concept: 'premium',
         frequency: 'monthly',
@@ -230,8 +213,7 @@ const planMetadataSections = [
       variants: [
         {
           key: 'premium_monthly_with_extra_help',
-          label: 'Premium (monthly, with Extra Help)',
-          description: 'Monthly premium for LIS/Extra Help recipients (typically $0)',
+          label: 'with Extra Help',
           characteristics: {
             eligibility: 'lis',
             frequency: 'monthly',
@@ -240,10 +222,9 @@ const planMetadataSections = [
         },
         {
           key: 'premium_monthly_medicaid_qmb',
-          label: 'Premium (monthly, Medicaid QMB)',
-          description: 'Monthly premium for Medicaid QMB recipients',
+          label: 'with Medicaid',
           characteristics: {
-            eligibility: ['medicaid', 'qmb'],
+            eligibility: 'qmb',
             frequency: 'monthly',
             unit: '$',
           },
@@ -254,7 +235,6 @@ const planMetadataSections = [
       key: 'giveback_monthly',
       type: 'number',
       label: 'Giveback (monthly)',
-      description: 'Monthly giveback/rebate amount in dollars',
       characteristics: {
         concept: 'giveback',
         frequency: 'monthly',
@@ -290,7 +270,6 @@ const planMetadataSections = [
       key: 'medical_deductible',
       type: 'number',
       label: 'Medical Deductible',
-      description: 'Standard medical deductible amount in dollars',
       characteristics: {
         concept: 'deductible',
         type: 'medical',
@@ -306,10 +285,9 @@ const planMetadataSections = [
       variants: [
         {
           key: 'medical_deductible_with_medicaid',
-          label: 'Medical Deductible (with Medicaid)',
-          description: 'Medical deductible for Medicaid cost-sharing recipients (typically $0)',
+          label: 'with Medicaid',
           characteristics: {
-            eligibility: ['medicaid', 'qmb'],
+            eligibility: 'qmb',
             modifier: 'with_assistance',
             frequency: 'yearly',
             unit: '$',
@@ -321,7 +299,6 @@ const planMetadataSections = [
       key: 'rx_deductible_tier345',
       type: 'number',
       label: 'RX Deductible (Tiers 3-5)',
-      description: 'Prescription drug deductible for tiers 3, 4, and 5 in dollars',
       characteristics: {
         concept: 'deductible',
         type: 'prescription',
@@ -334,6 +311,18 @@ const planMetadataSections = [
       validation: {
         minimum: 0,
       },
+      variants: [
+        {
+          key: 'rx_deductible_tier345_with_medicaid',
+          label: 'with Medicaid',
+          characteristics: {
+            eligibility: 'qmb',
+            modifier: 'tier345',
+            frequency: 'yearly',
+            unit: '$',
+          },
+        },
+      ],
     },
   ]),
   defineSection('Benefits', 'Benefits and allowances', [
@@ -341,7 +330,6 @@ const planMetadataSections = [
       key: 'otc_benefit_quarterly',
       type: 'number',
       label: 'OTC Benefit (quarterly)',
-      description: 'Quarterly OTC (Over-the-Counter) benefit amount in dollars',
       characteristics: {
         concept: 'benefit',
         type: 'otc',
@@ -358,8 +346,7 @@ const planMetadataSections = [
     {
       key: 'card_benefit',
       type: 'number',
-      label: 'Card Benefit',
-      description: 'Prepaid debit card benefit amount in dollars',
+      label: 'Card Benefit (monthly)',
       characteristics: {
         concept: 'benefit',
         type: 'card',
@@ -377,7 +364,6 @@ const planMetadataSections = [
       key: 'dental_benefit_yearly',
       type: 'number',
       label: 'Dental (yearly)',
-      description: 'Annual dental benefit amount in dollars',
       characteristics: {
         concept: 'benefit',
         type: 'dental',
@@ -395,7 +381,6 @@ const planMetadataSections = [
       key: 'vision_benefit_yearly',
       type: 'number',
       label: 'Vision (yearly)',
-      description: 'Annual vision benefit amount in dollars',
       characteristics: {
         concept: 'benefit',
         type: 'vision',
@@ -413,7 +398,6 @@ const planMetadataSections = [
       key: 'hearing_benefit_yearly',
       type: 'number',
       label: 'Hearing (yearly)',
-      description: 'Annual hearing benefit amount in dollars',
       characteristics: {
         concept: 'benefit',
         type: 'hearing',
@@ -466,6 +450,21 @@ const planMetadataSections = [
   ]),
   defineSection('Hospital Copays', 'Copays for hospital stays and visits', [
     {
+      key: 'hospital_inpatient_days',
+      type: 'number',
+      label: 'Hospital Days',
+      description: 'Days hospital inpatient copay required, after which the copay is zero',
+      characteristics: {
+        concept: 'coverage_limit',
+        type: 'hospital_inpatient',
+        eligibility: 'medicare',
+      },
+      tags: ['cost-sharing'],
+      validation: {
+        minimum: 0,
+      },
+    },
+    {
       key: 'hospital_inpatient_per_day_copay',
       type: 'number',
       label: 'Hospital Copay (daily)',
@@ -485,10 +484,10 @@ const planMetadataSections = [
       variants: [
         {
           key: 'hospital_inpatient_with_assistance_per_stay_copay',
-          label: 'Hospital Copay (with assistance, per stay)',
-          description: 'Hospital inpatient per stay copay amount with assistance in dollars',
+          label: 'with assistance, per stay',
+          description: '-',
           characteristics: {
-            eligibility: ['medicaid', 'qmb+'],
+            eligibility: 'qmb+',
             unit: '$',
             frequency: 'per_stay',
             modifier: 'with_assistance',
@@ -496,31 +495,15 @@ const planMetadataSections = [
         },
         {
           key: 'hospital_inpatient_without_assistance_per_stay_copay',
-          label: 'Hospital Copay (without assistance, per stay)',
-          description: 'Hospital inpatient per stay copay amount without assistance in dollars',
+          label: 'without assistance, per stay',
+          description: '-',
           characteristics: {
-            eligibility: ['medicaid', 'qi'],
             unit: '$',
             frequency: 'per_stay',
             modifier: 'without_assistance',
           },
         },
       ],
-    },
-    {
-      key: 'hospital_inpatient_days',
-      type: 'number',
-      label: 'Hospital Days',
-      description: 'Number of covered hospital inpatient days',
-      characteristics: {
-        concept: 'coverage_limit',
-        type: 'hospital_inpatient',
-        eligibility: 'medicare',
-      },
-      tags: ['cost-sharing'],
-      validation: {
-        minimum: 0,
-      },
     },
     {
       key: 'skilled_nursing_per_day_copay',
@@ -542,10 +525,10 @@ const planMetadataSections = [
       variants: [
         {
           key: 'skilled_nursing_with_assistance_per_stay_copay',
-          label: 'Skilled Nursing (with assistance, per stay)',
-          description: 'Skilled nursing per stay copay amount with assistance in dollars',
+          label: 'with assistance, per stay',
+          description: '-',
           characteristics: {
-            eligibility: ['medicaid', 'slmb+'],
+            eligibility: 'slmb+',
             unit: '$',
             frequency: 'per_stay',
             modifier: 'with_assistance',
@@ -555,35 +538,6 @@ const planMetadataSections = [
     },
   ]),
   defineSection('Emergency Copays', 'Copays for emergency services', [
-    {
-      key: 'ambulance_copay',
-      type: 'number',
-      label: 'Ambulance Copay',
-      description: 'Ambulance service copay amount in dollars',
-      characteristics: {
-        concept: 'copay',
-        type: 'ambulance',
-        eligibility: 'medicare',
-        direction: 'debit',
-        unit: '$',
-      },
-      tags: ['cost-sharing'],
-      validation: {
-        minimum: 0,
-      },
-      variants: [
-        {
-          key: 'ambulance_with_assistance_copay',
-          label: 'Ambulance Copay (with assistance)',
-          description: 'Ambulance service copay amount with assistance in dollars',
-          characteristics: {
-            eligibility: ['medicaid', 'qdwi'],
-            modifier: 'with_assistance',
-            unit: '$',
-          },
-        },
-      ],
-    },
     {
       key: 'emergency_room_copay',
       type: 'number',
@@ -629,6 +583,35 @@ const planMetadataSections = [
       validation: {
         minimum: 0,
       },
+    },
+    {
+      key: 'ambulance_copay',
+      type: 'number',
+      label: 'Ambulance Copay',
+      description: 'Ambulance service ground or air',
+      characteristics: {
+        concept: 'copay',
+        type: 'ambulance',
+        eligibility: 'medicare',
+        direction: 'debit',
+        unit: '$',
+      },
+      tags: ['cost-sharing'],
+      validation: {
+        minimum: 0,
+      },
+      variants: [
+        {
+          key: 'ambulance_with_assistance_copay',
+          label: 'Ambulance Copay (with assistance)',
+          description: 'Ambulance service copay amount with assistance in dollars',
+          characteristics: {
+            eligibility: ['medicaid', 'qdwi'],
+            modifier: 'with_assistance',
+            unit: '$',
+          },
+        },
+      ],
     },
   ]),
   defineSection('Additional Benefits', 'Card, fitness, and transportation benefits', [
@@ -705,6 +688,22 @@ const planMetadataSections = [
       type: 'string',
       label: 'Transitioned From',
       description: 'Information about plan transitions or predecessor plans',
+    },
+  ]),
+  defineSection('Plan Dates', 'Plan effective dates and periods', [
+    {
+      key: 'effective_start',
+      type: 'string',
+      label: 'Effective Start Date',
+      description: 'Plan effective start date in YYYY-MM-DD format',
+      format: 'date',
+    },
+    {
+      key: 'effective_end',
+      type: 'string',
+      label: 'Effective End Date',
+      description: 'Plan effective end date in YYYY-MM-DD format',
+      format: 'date',
     },
   ]),
 ]
