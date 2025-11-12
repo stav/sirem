@@ -1,6 +1,6 @@
 # Supabase Data Dump
 
-This script allows you to export all your Supabase data to JSON files for backup or migration purposes.
+The `dump-data` script allows you to export all your Supabase data to JSON files for backup or migration purposes.
 
 ## Prerequisites
 
