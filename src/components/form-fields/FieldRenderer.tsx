@@ -87,11 +87,8 @@ function isLongTextField(field: FieldDefinition): boolean {
   const longTextFields = [
     'notes',
     'summary',
-    'benefit',
     'description',
-    'pharmacy_benefit',
     'rx_cost_share',
-    'fitness_benefit',
     'service_area',
   ]
 

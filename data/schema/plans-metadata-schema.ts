@@ -630,7 +630,7 @@ const planMetadataSections = [
     },
     {
       key: 'transportation_benefit',
-      type: 'number',
+      type: 'string',
       label: 'Transportation Benefit',
       description: 'Transportation/rides benefit amount in dollars',
       characteristics: {

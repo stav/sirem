@@ -240,14 +240,11 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
   const isLongTextField = (key: string, value: string | number | null): boolean => {
     // Always treat these known long text fields as long text
     const knownLongTextFields = [
-      'pharmacy_benefit',
-      'service_area',
-      'fitness_benefit',
-      'rx_cost_share',
-      'medicaid_eligibility',
-      'transitioned_from',
-      'summary',
+      'notes',
       'pdf_text_sample',
+      'rx_cost_share',
+      'service_area',
+      'summary',
     ]
 
     if (knownLongTextFields.includes(key)) {
