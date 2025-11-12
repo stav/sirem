@@ -42,6 +42,42 @@ type FieldVariant = {
   characteristics?: FieldCharacteristics
 }
 
+const LONG_TEXT_FIELD_KEYS = new Set([
+  'description',
+  'notes',
+  'pdf_text_sample',
+  'rx_cost_share',
+  'service_area',
+  'summary',
+])
+
+const LONG_TEXT_VALUE_THRESHOLD = 100
+
+type LongTextFieldCandidate = {
+  key: string
+  label?: string | null
+  type?: string | null
+}
+
+export function isLongTextMetadataField(field: LongTextFieldCandidate, value?: unknown): boolean {
+  const key = field.key.toLowerCase()
+  const type = field.type ?? 'string'
+
+  if (LONG_TEXT_FIELD_KEYS.has(key)) {
+    return true
+  }
+
+  if (type === 'number' || type === 'integer') {
+    return typeof value === 'string' && value.length > LONG_TEXT_VALUE_THRESHOLD
+  }
+
+  if (typeof value === 'string' && value.length > LONG_TEXT_VALUE_THRESHOLD) {
+    return true
+  }
+
+  return false
+}
+
 type SchemaProperty = {
   key: string
   type: string

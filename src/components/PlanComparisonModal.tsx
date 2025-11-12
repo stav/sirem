@@ -10,7 +10,7 @@ import { calculateCmsId } from '@/lib/plan-utils'
 import { plansMetadataSchema } from '@/schema/plans-metadata-schema'
 import { parseSchema, type FieldDefinition } from '@/lib/schema-parser'
 import { Badge } from '@/components/ui/badge'
-import { getResolvedMetadata } from '@/lib/plan-metadata-utils'
+import { getResolvedMetadata, isLongTextMetadataField } from '@/lib/plan-metadata-utils'
 import type { ResolutionResult } from '@/lib/plan-field-resolution'
 
 const MISSING_RESOLUTION: ResolutionResult = { source: 'missing', key: null, value: undefined }
@@ -234,29 +234,6 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
     if (typeof value === 'number') return String(value)
     if (value === 'n/a' || value === 'N/A') return '—'
     return value
-  }
-
-  // Check if a field should be treated as long text that needs truncation
-  const isLongTextField = (key: string, value: string | number | null): boolean => {
-    // Always treat these known long text fields as long text
-    const knownLongTextFields = [
-      'notes',
-      'pdf_text_sample',
-      'rx_cost_share',
-      'service_area',
-      'summary',
-    ]
-
-    if (knownLongTextFields.includes(key)) {
-      return true
-    }
-
-    // Also treat any text field longer than 100 characters as long text
-    if (typeof value === 'string' && value.length > 100) {
-      return true
-    }
-
-    return false
   }
 
   // Parse metadata value to number (for comparison)
@@ -828,7 +805,14 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                           const result = results[idx]
                           const rawValue = primitiveValues[idx]
                           const displayValue = formatMetadataValue(rawValue)
-                          const isLongText = isLongTextField(key, rawValue)
+                          const longTextCandidate = requestedDefinition
+                            ? {
+                                key: requestedDefinition.key,
+                                label: requestedDefinition.label,
+                                type: requestedDefinition.type,
+                              }
+                            : { key, label: formatLabel(key) }
+                          const isLongText = isLongTextMetadataField(longTextCandidate, rawValue ?? undefined)
                           const badge = getSourceBadge(result, requestedDefinition)
 
                           const titleValue =
