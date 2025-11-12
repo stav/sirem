@@ -1206,14 +1206,8 @@ export default function PlansPage() {
                 </div>
               </div>
 
-              {/* Separator */}
-              <div className="border-t border-gray-200 dark:border-gray-700"></div>
-
               {/* Dynamic Metadata Form */}
               <div>
-                <h3 className="mb-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                  Plan Benefits & Details (Metadata)
-                </h3>
                 <DynamicPlanForm
                   formData={editForm}
                   onChange={(field, value) => setEditForm((f) => ({ ...f, [field]: value }))}
