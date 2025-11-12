@@ -1,13 +1,36 @@
 'use client'
 
 import React, { useState } from 'react'
-import { Upload, FileText, AlertCircle, CheckCircle, Loader2, Activity, Tag, ClipboardList } from 'lucide-react'
-import { importIntegrityData, importActivitiesData, importTagsData } from '@/lib/integrity-import'
+import {
+  Upload,
+  FileText,
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+  Activity,
+  Tag,
+  ClipboardList,
+  CheckSquare,
+} from 'lucide-react'
+import {
+  importIntegrityData,
+  importActivitiesData,
+  importTagsData,
+} from '@/lib/integrity-import'
 import { importPlansCsv } from '@/lib/plans-import'
+import { importActionsCsv, parseKitTextFormat, isKitTextFormat } from '@/lib/actions-import'
+import { parseCsv, normalizeHeader } from '@/lib/csv-utils'
 import Navigation from '@/components/Navigation'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import DateTimeInput from '@/components/ui/datetime-input'
+
+type ImportType = 'full' | 'activities' | 'tags' | 'plans' | 'contact-actions'
 
 interface IntegrityLeadPreview {
   firstName: string
@@ -28,7 +51,25 @@ interface IntegrityLeadPreview {
 export default function ImportPage() {
   const [file, setFile] = useState<File | null>(null)
   const [isImporting, setIsImporting] = useState(false)
-  const [importType, setImportType] = useState<'full' | 'activities' | 'tags' | 'plans'>('full')
+  const [importType, setImportType] = useState<ImportType>('full')
+  const handleImportTypeChange = async (value: ImportType) => {
+    const currentFile = file
+    setImportType(value)
+    setPreview(null)
+    setImportResult(null)
+    
+    // If a file was already selected, re-process it with the new import type
+    if (currentFile) {
+      // Re-process the file with the new import type
+      const syntheticEvent = {
+        target: {
+          files: [currentFile],
+        },
+      } as unknown as React.ChangeEvent<HTMLInputElement>
+      // Pass the new import type directly to avoid closure issues
+      await handleFileSelect(syntheticEvent, value)
+    }
+  }
   const [importResult, setImportResult] = useState<{
     success: boolean
     message: string
@@ -39,6 +80,25 @@ export default function ImportPage() {
       errors: number
     }
   } | null>(null)
+  const [actionTemplate, setActionTemplate] = useState<{
+    title: string
+    description: string
+    tags: string
+    status: string
+    priority: 'none' | 'low' | 'medium' | 'high'
+    start_date: string
+    completed_date: string
+    source: string
+  }>({
+    title: 'Kit Email Blast',
+    description: 'Sent bulk email via Kit.com',
+    tags: 'kit email-blast',
+    status: 'completed',
+    priority: 'medium',
+    start_date: '',
+    completed_date: new Date().toISOString(),
+    source: 'Kit Import',
+  })
   const [preview, setPreview] = useState<{
     totalLeads?: number
     totalActivities?: number
@@ -63,17 +123,29 @@ export default function ImportPage() {
       premium: string
       year: string
     }>
+    // Actions CSV preview
+    totalContacts?: number
+    sampleContacts?: Array<{
+      name: string
+      email: string
+      status?: string
+    }>
   } | null>(null)
 
-  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>, overrideImportType?: ImportType) => {
     const selectedFile = event.target.files?.[0]
-    if (!selectedFile) return
+    if (!selectedFile) {
+      console.log('No file selected')
+      return
+    }
 
+    const currentImportType = overrideImportType ?? importType
+    console.log('File selected:', selectedFile.name, 'Import type:', currentImportType)
     setFile(selectedFile)
     setImportResult(null)
 
     // Preview the file
-    if (importType === 'plans') {
+    if (currentImportType === 'plans') {
       // CSV preview for plans
       try {
         const text = await selectedFile.text()
@@ -110,6 +182,91 @@ export default function ImportPage() {
         })
       } catch (error) {
         console.error('Error previewing CSV:', error)
+        setPreview(null)
+      }
+    } else if (currentImportType === 'contact-actions') {
+      try {
+        console.log('Processing contact-actions file preview')
+        const text = await selectedFile.text()
+        console.log('File text length:', text.length, 'First 200 chars:', text.substring(0, 200))
+        
+        const uniqueContacts = new Map<
+          string,
+          {
+            name: string
+            email: string
+            status?: string
+          }
+        >()
+
+        // Detect format and parse accordingly
+        if (isKitTextFormat(text)) {
+          console.log('Detected Kit.com text format')
+          const kitContacts = parseKitTextFormat(text)
+          kitContacts.forEach((contact) => {
+            if (contact.email && !uniqueContacts.has(contact.email)) {
+              const name = contact.fullName || `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || '(no name)'
+              uniqueContacts.set(contact.email, {
+                name,
+                email: contact.email,
+                status: undefined, // Kit format doesn't include status
+              })
+            }
+          })
+        } else {
+          console.log('Detected CSV format')
+          const rows = parseCsv(text)
+          console.log('Parsed rows:', rows.length)
+          if (rows.length === 0) {
+            console.log('No rows found in CSV')
+            setPreview(null)
+            return
+          }
+
+          const header = rows[0].map(normalizeHeader)
+          console.log('CSV headers:', header)
+          const emailIdx = header.findIndex((h) => h === 'email')
+          console.log('Email column index:', emailIdx)
+          if (emailIdx === -1) {
+            console.log('No email column found. Available headers:', header)
+            setPreview(null)
+            return
+          }
+
+          const firstNameIdx = header.findIndex((h) => h === 'first name')
+          const lastNameIdx = header.findIndex((h) => h === 'last name')
+          const fullNameIdx = header.findIndex((h) => h === 'full name')
+          const statusIdx = header.findIndex((h) => h === 'status')
+
+          const dataRows = rows.slice(1).filter((line) => line.some((cell) => cell && cell.trim() !== ''))
+
+          dataRows.forEach((cols) => {
+            const emailRaw = cols[emailIdx]?.trim().toLowerCase()
+            if (!emailRaw) return
+            if (uniqueContacts.has(emailRaw)) return
+
+            const firstName = firstNameIdx >= 0 ? cols[firstNameIdx]?.trim() : ''
+            const lastName = lastNameIdx >= 0 ? cols[lastNameIdx]?.trim() : ''
+            const fullName = fullNameIdx >= 0 ? cols[fullNameIdx]?.trim() : ''
+            const name = fullName || `${firstName} ${lastName}`.trim() || '(no name)'
+            const status = statusIdx >= 0 ? cols[statusIdx]?.trim() : undefined
+
+            uniqueContacts.set(emailRaw, {
+              name,
+              email: cols[emailIdx]?.trim() ?? '',
+              status,
+            })
+          })
+        }
+
+        const previewData = {
+          totalContacts: uniqueContacts.size,
+          sampleContacts: Array.from(uniqueContacts.values()).slice(0, 5),
+        }
+        console.log('Setting preview with', previewData.totalContacts, 'contacts')
+        setPreview(previewData)
+      } catch (error) {
+        console.error('Error previewing contact-actions CSV:', error)
         setPreview(null)
       }
     } else {
@@ -163,6 +320,14 @@ export default function ImportPage() {
   const handleImport = async () => {
     if (!file) return
 
+    if (importType === 'contact-actions' && !actionTemplate.title.trim()) {
+      setImportResult({
+        success: false,
+        message: 'Action title is required before creating actions.',
+      })
+      return
+    }
+
     setIsImporting(true)
     setImportResult(null)
 
@@ -175,6 +340,17 @@ export default function ImportPage() {
         result = await importTagsData(text)
       } else if (importType === 'plans') {
         result = await importPlansCsv(text)
+      } else if (importType === 'contact-actions') {
+        result = await importActionsCsv(text, {
+          title: actionTemplate.title.trim(),
+          description: actionTemplate.description,
+          tags: actionTemplate.tags,
+          status: actionTemplate.status,
+          priority: actionTemplate.priority === 'none' ? undefined : actionTemplate.priority,
+          start_date: actionTemplate.start_date || null,
+          completed_date: actionTemplate.completed_date || null,
+          source: actionTemplate.source,
+        })
       } else {
         result = await importIntegrityData(text)
       }
@@ -222,7 +398,7 @@ export default function ImportPage() {
                           type="radio"
                           value="full"
                           checked={importType === 'full'}
-                          onChange={(e) => setImportType(e.target.value as 'full' | 'activities' | 'tags' | 'plans')}
+                          onChange={(e) => handleImportTypeChange(e.target.value as ImportType)}
                           className="text-primary"
                         />
                         <span className="text-sm">Full Import (Leads + Activities)</span>
@@ -232,7 +408,7 @@ export default function ImportPage() {
                           type="radio"
                           value="activities"
                           checked={importType === 'activities'}
-                          onChange={(e) => setImportType(e.target.value as 'full' | 'activities' | 'tags' | 'plans')}
+                          onChange={(e) => handleImportTypeChange(e.target.value as ImportType)}
                           className="text-primary"
                         />
                         <span className="text-sm">Activities Only</span>
@@ -242,7 +418,7 @@ export default function ImportPage() {
                           type="radio"
                           value="tags"
                           checked={importType === 'tags'}
-                          onChange={(e) => setImportType(e.target.value as 'full' | 'activities' | 'tags' | 'plans')}
+                          onChange={(e) => handleImportTypeChange(e.target.value as ImportType)}
                           className="text-primary"
                         />
                         <span className="text-sm">Tags Only</span>
@@ -252,10 +428,22 @@ export default function ImportPage() {
                           type="radio"
                           value="plans"
                           checked={importType === 'plans'}
-                          onChange={(e) => setImportType(e.target.value as 'full' | 'activities' | 'tags' | 'plans')}
+                          onChange={(e) => handleImportTypeChange(e.target.value as ImportType)}
                           className="text-primary"
                         />
                         <span className="text-sm">Plans (CSV)</span>
+                      </label>
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="radio"
+                          value="contact-actions"
+                          checked={importType === 'contact-actions'}
+                          onChange={(e) =>
+                            handleImportTypeChange(e.target.value as ImportType)
+                          }
+                          className="text-primary"
+                        />
+                        <span className="text-sm">Contact Actions (CSV)</span>
                       </label>
                     </div>
                   </div>
@@ -263,7 +451,7 @@ export default function ImportPage() {
                   <div className="border-muted-foreground/25 rounded-lg border-2 border-dashed p-6 text-center">
                     <input
                       type="file"
-                      accept={importType === 'plans' ? '.csv' : '.json'}
+                      accept={importType === 'plans' ? '.csv' : importType === 'contact-actions' ? '.csv,.txt' : '.json'}
                       onChange={handleFileSelect}
                       className="hidden"
                       id="file-upload"
@@ -272,13 +460,130 @@ export default function ImportPage() {
                     <label htmlFor="file-upload" className="flex cursor-pointer flex-col items-center">
                       <FileText className="text-muted-foreground mb-4 h-12 w-12" />
                       <span className="text-foreground text-sm font-medium">
-                        {file ? file.name : 'Click to select JSON file'}
+                        {file
+                          ? file.name
+                          : `Click to select ${
+                              importType === 'plans'
+                                ? 'CSV'
+                                : importType === 'contact-actions'
+                                  ? 'CSV or text'
+                                  : 'JSON'
+                            } file`}
                       </span>
                       <span className="text-muted-foreground mt-1 text-xs">
-                        {file ? 'Click to change file' : 'Supports .json files only'}
+                        {file
+                          ? 'Click to change file'
+                          : `Supports ${
+                              importType === 'plans'
+                                ? '.csv'
+                                : importType === 'contact-actions'
+                                  ? '.csv or .txt (Kit.com format)'
+                                  : '.json'
+                            } files only`}
                       </span>
                     </label>
                   </div>
+
+                  {importType === 'contact-actions' && (
+                    <div className="space-y-4 rounded-lg border p-4">
+                      <div>
+                        <Label htmlFor="action-title">Action Title</Label>
+                        <Input
+                          id="action-title"
+                          value={actionTemplate.title}
+                          onChange={(e) => setActionTemplate((prev) => ({ ...prev, title: e.target.value }))}
+                          required
+                        />
+                      </div>
+                      <div>
+                        <Label htmlFor="action-description">Description</Label>
+                        <Textarea
+                          id="action-description"
+                          value={actionTemplate.description}
+                          onChange={(e) => setActionTemplate((prev) => ({ ...prev, description: e.target.value }))}
+                          rows={3}
+                        />
+                      </div>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <Label htmlFor="action-tags">Tags (space separated)</Label>
+                          <Input
+                            id="action-tags"
+                            value={actionTemplate.tags}
+                            onChange={(e) => setActionTemplate((prev) => ({ ...prev, tags: e.target.value }))}
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="action-source">Source</Label>
+                          <Input
+                            id="action-source"
+                            value={actionTemplate.source}
+                            onChange={(e) => setActionTemplate((prev) => ({ ...prev, source: e.target.value }))}
+                          />
+                        </div>
+                      </div>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <div>
+                          <Label htmlFor="action-status">Status</Label>
+                          <Select
+                            value={actionTemplate.status}
+                            onValueChange={(value) =>
+                              setActionTemplate((prev) => ({
+                                ...prev,
+                                status: value,
+                              }))
+                            }
+                          >
+                            <SelectTrigger id="action-status">
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="completed">Completed</SelectItem>
+                              <SelectItem value="planned">Planned</SelectItem>
+                              <SelectItem value="in_progress">In Progress</SelectItem>
+                              <SelectItem value="cancelled">Cancelled</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="action-priority">Priority</Label>
+                          <Select
+                            value={actionTemplate.priority}
+                            onValueChange={(value: 'none' | 'low' | 'medium' | 'high') =>
+                              setActionTemplate((prev) => ({
+                                ...prev,
+                                priority: value,
+                              }))
+                            }
+                          >
+                            <SelectTrigger id="action-priority">
+                              <SelectValue placeholder="Select priority" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="none">None</SelectItem>
+                              <SelectItem value="low">Low</SelectItem>
+                              <SelectItem value="medium">Medium</SelectItem>
+                              <SelectItem value="high">High</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      <div className="grid gap-4 md:grid-cols-2">
+                        <DateTimeInput
+                          id="action-start-date"
+                          label="Start Date (optional)"
+                          value={actionTemplate.start_date}
+                          onChange={(value) => setActionTemplate((prev) => ({ ...prev, start_date: value || '' }))}
+                        />
+                        <DateTimeInput
+                          id="action-completed-date"
+                          label="Completed Date"
+                          value={actionTemplate.completed_date}
+                          onChange={(value) => setActionTemplate((prev) => ({ ...prev, completed_date: value || '' }))}
+                        />
+                      </div>
+                    </div>
+                  )}
 
                   {file && (
                     <div className="space-y-4">
@@ -296,6 +601,8 @@ export default function ImportPage() {
                               <Tag className="mr-2 h-4 w-4" />
                             ) : importType === 'plans' ? (
                               <ClipboardList className="mr-2 h-4 w-4" />
+                            ) : importType === 'contact-actions' ? (
+                              <CheckSquare className="mr-2 h-4 w-4" />
                             ) : (
                               <Upload className="mr-2 h-4 w-4" />
                             )}
@@ -305,6 +612,8 @@ export default function ImportPage() {
                                 ? 'Import Tags'
                                 : importType === 'plans'
                                   ? 'Import Plans'
+                                  : importType === 'contact-actions'
+                                    ? 'Create Actions'
                                   : 'Import Data'}
                           </>
                         )}
@@ -421,6 +730,32 @@ export default function ImportPage() {
                                       .join(', ')}
                                     )
                                   </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Actions Preview */}
+                    {preview.totalContacts !== undefined && (
+                      <>
+                        <div className="bg-muted/50 rounded-lg p-4">
+                          <div className="text-foreground text-sm font-medium">
+                            Total Contacts: {preview.totalContacts.toLocaleString()}
+                          </div>
+                        </div>
+
+                        <div>
+                          <h4 className="text-foreground mb-2 text-sm font-medium">Sample Contacts:</h4>
+                          <div className="space-y-2">
+                            {preview.sampleContacts?.map((contact, index) => (
+                              <div key={`${contact.email}-${index}`} className="bg-card rounded-lg border p-3">
+                                <div className="text-sm font-medium">{contact.name}</div>
+                                <div className="text-muted-foreground text-xs">{contact.email}</div>
+                                {contact.status && (
+                                  <div className="text-muted-foreground mt-1 text-xs">Status: {contact.status}</div>
                                 )}
                               </div>
                             ))}

@@ -1,6 +1,7 @@
-import { supabase } from '@/lib/supabase'
 import type { Database } from '@/lib/supabase'
 import type { Json } from '@/lib/supabase-types'
+import { supabase } from '@/lib/supabase'
+import { parseCsv, normalizeHeader } from '@/lib/csv-utils'
 import { parseLegacyPlanType, mapCarrier } from '@/lib/plan-constants'
 import { getAllProperties } from '@/lib/plan-metadata-utils'
 
@@ -69,51 +70,6 @@ function parseCmsId(id: string | null | undefined): { contract: string | null; p
 }
 
 // Minimal CSV parser that handles quotes and commas
-function parseCsv(text: string): string[][] {
-  const rows: string[][] = []
-  let current: string[] = []
-  let field = ''
-  let inQuotes = false
-  for (let i = 0; i < text.length; i++) {
-    const char = text[i]
-    const next = text[i + 1]
-    if (inQuotes) {
-      if (char === '"' && next === '"') {
-        field += '"'
-        i++
-      } else if (char === '"') {
-        inQuotes = false
-      } else {
-        field += char
-      }
-    } else {
-      if (char === '"') {
-        inQuotes = true
-      } else if (char === ',') {
-        current.push(field)
-        field = ''
-      } else if (char === '\n') {
-        current.push(field)
-        rows.push(current)
-        current = []
-        field = ''
-      } else if (char === '\r') {
-        // skip
-      } else {
-        field += char
-      }
-    }
-  }
-  // push last
-  current.push(field)
-  rows.push(current)
-  return rows
-}
-
-function normalizeHeader(value: string): string {
-  return value.trim().toLowerCase()
-}
-
 export async function importPlansCsv(text: string): Promise<{
   success: boolean
   message: string
