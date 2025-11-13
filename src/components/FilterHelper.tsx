@@ -220,6 +220,7 @@ export default function FilterHelper({ isOpen, onAddFilter }: FilterHelperProps)
                   <li>Does NOT have &quot;Cannot-Help&quot; tag in &quot;Other&quot; category</li>
                   <li>Does NOT have status &quot;Brandon&quot;</li>
                   <li>Does NOT have status &quot;Not-eligible&quot;</li>
+                  <li>Does NOT have status &quot;Already-enrolled&quot;</li>
                   <li>Does NOT have actions within last 7 days</li>
                 </ul>
               </div>

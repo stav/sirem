@@ -173,7 +173,7 @@ export default function ContactList({
         // Custom filtering: x:filter_name
         const customFilterQuery = activeTerm.substring(2).toLowerCase()
         if (customFilterQuery === 'medicare_phone') {
-          // Medicare Phone filter: must have Medicare role, have phone, NOT have AEP-2026_Ready tag, NOT have recent actions, NOT have "Cannot-Help" tag, and NOT have status "Brandon"
+          // Medicare Phone filter: must have Medicare role, have phone, NOT have AEP-2026_Ready tag, NOT have recent actions, NOT have "Cannot-Help" tag, NOT have status "Brandon", NOT have status "Not-eligible", and NOT have status "already-enrolled"
           // Check for Medicare role
           const hasMedicareRole =
             contact.contact_roles?.some(
@@ -200,6 +200,9 @@ export default function ContactList({
           // Check if contact does NOT have status "Not-eligible"
           const hasNotEligibleStatus = contact.status?.toLowerCase() === 'not-eligible'
 
+          // Check if contact does NOT have status "already-enrolled"
+          const hasAlreadyEnrolledStatus = contact.status?.toLowerCase() === 'already-enrolled'
+
           // Check if contact has any action within the last 7 days
           const now = new Date()
           const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000)
@@ -209,7 +212,7 @@ export default function ContactList({
             return displayDate >= sevenDaysAgo
           })
 
-          // All conditions must be true: has Medicare role AND has phone AND does NOT have AEP-2026_Ready tag AND does NOT have recent action AND does NOT have Cannot-Help tag AND does NOT have Brandon status AND does NOT have Not-eligible status
+          // All conditions must be true: has Medicare role AND has phone AND does NOT have AEP-2026_Ready tag AND does NOT have recent action AND does NOT have Cannot-Help tag AND does NOT have Brandon status AND does NOT have Not-eligible status AND does NOT have already-enrolled status
           const result =
             hasMedicareRole &&
             hasPhone &&
@@ -217,7 +220,8 @@ export default function ContactList({
             !hasRecentAction &&
             !hasCannotHelpTag &&
             !hasBrandonStatus &&
-            !hasNotEligibleStatus
+            !hasNotEligibleStatus &&
+            !hasAlreadyEnrolledStatus
           return isNegated ? !result : result
         } else if (customFilterQuery === 'email') {
           const emailValue = contact.email

@@ -145,9 +145,10 @@ The contact filtering system uses a text input box with space-separated filter t
 - Does NOT have the "Cannot-Help" tag in the "Other" category
 - Does NOT have status "Brandon"
 - Does NOT have status "Not-eligible"
+- Does NOT have status "Already-enrolled"
 - Does NOT have any actions within the last 7 days (based on action display date)
 
-**Use Case**: Perfect for identifying Medicare contacts who are eligible for follow-up calls, excluding those who are already ready, can't be helped, assigned to Brandon, not eligible, or were recently contacted.
+**Use Case**: Perfect for identifying Medicare contacts who are eligible for follow-up calls, excluding those who are already ready, can't be helped, assigned to Brandon, not eligible, already enrolled, or were recently contacted.
 
 **Example**:
 
