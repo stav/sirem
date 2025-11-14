@@ -883,7 +883,7 @@ export default function PlansPage() {
 
                   {/* County quick buttons (OR logic with text box) */}
                   <div className="flex flex-wrap gap-1">
-                    {['Butler', 'Cuyahoga', 'Lake', 'Lorain'].map((c) => {
+                    {['Butler', 'Cuyahoga', 'Erie', 'Lake', 'Lorain'].map((c) => {
                       const key = c.toLowerCase()
                       const isActive = selectedCountyButtons.has(key)
                       return (
