@@ -301,23 +301,29 @@ export default function ActionList({
             )}
           </div>
           <div className="flex items-center space-x-2">
-            {!isCollapsed && (
+            {isCollapsed ? (
               <span className="text-muted-foreground text-sm">
-                {displayActions.length} /{' '}
-                {selectedContact
-                  ? actions.filter((action) => action.contact_id === selectedContact.id).length
-                  : actions.length}
+                {displayActions.length} cards rolled up, use arrow to roll down.
               </span>
-            )}
-            {(selectedContact || filteredContactForActions) && (
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button onClick={onAddAction} size="sm" className="cursor-pointer">
-                    <Plus className="h-4 w-4" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>Add new Action</TooltipContent>
-              </Tooltip>
+            ) : (
+              <>
+                <span className="text-muted-foreground text-sm">
+                  {displayActions.length} /{' '}
+                  {selectedContact
+                    ? actions.filter((action) => action.contact_id === selectedContact.id).length
+                    : actions.length}
+                </span>
+                {(selectedContact || filteredContactForActions) && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button onClick={onAddAction} size="sm" className="cursor-pointer">
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Add new Action</TooltipContent>
+                  </Tooltip>
+                )}
+              </>
             )}
           </div>
         </div>
@@ -340,15 +346,6 @@ export default function ActionList({
           />
         )}
       </CardHeader>
-      {isCollapsed && (
-        <CardContent className="flex-1 overflow-y-auto">
-          <div className="py-8 text-center">
-            <p className="text-muted-foreground">
-              {displayActions.length} cards rolled up, use arrow above to roll down.
-            </p>
-          </div>
-        </CardContent>
-      )}
       {!isCollapsed && (
         <CardContent className="flex-1 overflow-y-auto">
           {!selectedContact && displayActions.length === 0 ? (

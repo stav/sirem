@@ -279,6 +279,48 @@ export default function ContactList({
     return filtered
   }, [contacts, filter, actions])
 
+  const filterDescription = useMemo(() => {
+    if (!filter.trim()) return ''
+
+    const terms = filter.trim().split(/\s+/)
+    const filterTypes: string[] = []
+
+    let hasT65 = false
+    let hasName = false
+    let hasTag = false
+    let hasStatus = false
+    let hasRole = false
+
+    terms.forEach((term) => {
+      const trimmedTerm = term.trim()
+      if (!trimmedTerm) return
+
+      if (trimmedTerm.startsWith('t:')) {
+        hasTag = true
+      } else if (trimmedTerm.startsWith('s:')) {
+        hasStatus = true
+      } else if (trimmedTerm.startsWith('r:')) {
+        hasRole = true
+      } else {
+        const numericValue = parseInt(trimmedTerm, 10)
+        if (!isNaN(numericValue) && numericValue > 0 && numericValue.toString() === trimmedTerm) {
+          hasT65 = true
+        } else {
+          hasName = true
+        }
+      }
+    })
+
+    if (hasT65) filterTypes.push('T65')
+    if (hasName) filterTypes.push('Name')
+    if (hasTag) filterTypes.push('Tag')
+    if (hasStatus) filterTypes.push('Status')
+    if (hasRole) filterTypes.push('Role')
+
+    const label = filterTypes.join(' + ')
+    return label ? `${label} filter` : 'filter'
+  }, [filter])
+
   // Notify parent component when filtered contacts change
   useEffect(() => {
     if (onFilteredContactsChange) {
@@ -424,101 +466,73 @@ export default function ContactList({
             </div>
 
             {/* Filter section - only when not in single contact view */}
-            {!singleContactView && (
-              <div className="flex items-center space-x-2">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        value={filter}
-                        onChange={(e) => setFilter(e.target.value)}
-                        placeholder="Multi-filter: name, T65 days, t:tag, s:status (e.g., john 180 t:n2m s:client)..."
-                        className="focus:ring-primary rounded border px-2 py-1 pr-8 text-sm focus:ring-2 focus:outline-none"
-                        style={{ minWidth: 0, width: '280px' }}
-                      />
-                      {filter && (
-                        <button
-                          onClick={() => setFilter('')}
-                          className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer"
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      )}
-                    </div>
-                  </TooltipTrigger>
-                  <TooltipContent side="bottom" align="start" className="max-w-sm">
-                    <div className="space-y-1">
-                      <p className="font-semibold">Multi-Filter Options:</p>
-                      <p className="text-xs">
-                        • <strong>Name:</strong> Type any text (e.g., &quot;john&quot;)
-                      </p>
-                      <p className="text-xs">
-                        • <strong>T65 Days:</strong> Type a number (e.g., &quot;180&quot;)
-                      </p>
-                      <p className="text-xs">
-                        • <strong>Tag:</strong> Use t: prefix (e.g., &quot;t:n2m&quot;)
-                      </p>
-                      <p className="text-xs">
-                        • <strong>Status:</strong> Use s: prefix (e.g., &quot;s:client&quot;)
-                      </p>
-                      <p className="text-xs">
-                        • <strong>Role:</strong> Use r: prefix (e.g., &quot;r:primary&quot;)
-                      </p>
-                      <p className="mt-2 text-xs">Combine filters with spaces for AND logic</p>
-                    </div>
-                  </TooltipContent>
-                </Tooltip>
-                <div className="flex items-center space-x-2">
+            {!singleContactView &&
+              (isCollapsed ? (
+                <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
+                  <span className="text-muted-foreground truncate">
+                    {filter}
+                  </span>
                   <span className="text-muted-foreground text-xs">
                     {filteredContacts.length}/{contacts.length}
                   </span>
-                  {filter && (
-                    <span className="text-xs text-blue-600">
-                      {(() => {
-                        const terms = filter.trim().split(/\s+/)
-                        const filterTypes = []
-
-                        let hasT65 = false
-                        let hasName = false
-                        let hasTag = false
-                        let hasStatus = false
-                        let hasRole = false
-
-                        terms.forEach((term) => {
-                          const trimmedTerm = term.trim()
-                          if (trimmedTerm.startsWith('t:')) {
-                            hasTag = true
-                          } else if (trimmedTerm.startsWith('s:')) {
-                            hasStatus = true
-                          } else if (trimmedTerm.startsWith('r:')) {
-                            hasRole = true
-                          } else {
-                            const numericValue = parseInt(trimmedTerm, 10)
-                            if (!isNaN(numericValue) && numericValue > 0 && numericValue.toString() === trimmedTerm) {
-                              hasT65 = true
-                            } else {
-                              hasName = true
-                            }
-                          }
-                        })
-
-                        if (hasT65) filterTypes.push('T65')
-                        if (hasName) filterTypes.push('Name')
-                        if (hasTag) filterTypes.push('Tag')
-                        if (hasStatus) filterTypes.push('Status')
-                        if (hasRole) filterTypes.push('Role')
-
-                        return filterTypes.join(' + ') + ' filter'
-                      })()}
-                    </span>
-                  )}
+                  {filterDescription && <span className="text-xs text-blue-600">{filterDescription}</span>}
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="flex items-center space-x-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          value={filter}
+                          onChange={(e) => setFilter(e.target.value)}
+                          placeholder="Multi-filter: name, T65 days, t:tag, s:status (e.g., john 180 t:n2m s:client)..."
+                          className="focus:ring-primary rounded border px-2 py-1 pr-8 text-sm focus:ring-2 focus:outline-none"
+                          style={{ minWidth: 0, width: '280px' }}
+                        />
+                        {filter && (
+                          <button
+                            onClick={() => setFilter('')}
+                            className="text-muted-foreground hover:text-foreground absolute top-1/2 right-2 -translate-y-1/2 cursor-pointer"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        )}
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" align="start" className="max-w-sm">
+                      <div className="space-y-1">
+                        <p className="font-semibold">Multi-Filter Options:</p>
+                        <p className="text-xs">
+                          • <strong>Name:</strong> Type any text (e.g., &quot;john&quot;)
+                        </p>
+                        <p className="text-xs">
+                          • <strong>T65 Days:</strong> Type a number (e.g., &quot;180&quot;)
+                        </p>
+                        <p className="text-xs">
+                          • <strong>Tag:</strong> Use t: prefix (e.g., &quot;t:n2m&quot;)
+                        </p>
+                        <p className="text-xs">
+                          • <strong>Status:</strong> Use s: prefix (e.g., &quot;s:client&quot;)
+                        </p>
+                        <p className="text-xs">
+                          • <strong>Role:</strong> Use r: prefix (e.g., &quot;r:primary&quot;)
+                        </p>
+                        <p className="mt-2 text-xs">Combine filters with spaces for AND logic</p>
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                  <div className="flex items-center space-x-2">
+                    <span className="text-muted-foreground text-xs">
+                      {filteredContacts.length}/{contacts.length}
+                    </span>
+                    {filterDescription && <span className="text-xs text-blue-600">{filterDescription}</span>}
+                  </div>
+                </div>
+              ))}
 
-            {/* Action buttons - only when not in single contact view */}
-            {!singleContactView && (
+            {/* Action buttons - only when not in single contact view and expanded */}
+            {!singleContactView && !isCollapsed && (
               <div className="flex space-x-2">
                 {contacts.length > 0 && (
                   <>
