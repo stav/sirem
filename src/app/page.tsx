@@ -203,7 +203,7 @@ function renderActionRow(action: Action, router: ReturnType<typeof useRouter>) {
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <h4 className="text-foreground font-medium">{action.title}</h4>
+          <h4 className="text-foreground font-medium line-clamp-2">{action.title}</h4>
           <div className="mt-1 flex items-center space-x-2">
             {action.priority && (
               <Badge
@@ -233,7 +233,7 @@ function renderActionRow(action: Action, router: ReturnType<typeof useRouter>) {
             </span>
           </div>
           {action.description && (
-            <p className="text-muted-foreground mt-1 text-sm">{action.description}</p>
+            <p className="text-muted-foreground mt-1 text-sm line-clamp-2">{action.description}</p>
           )}
         </div>
         <div className="ml-2">
@@ -370,6 +370,7 @@ export default function Home() {
     const upcomingActions = actions
       .filter((a) => {
         if (a.completed_date) return false
+        if (a.priority === 'high') return false
         const displayDateString = getActionDisplayDate(a)
         if (!displayDateString) return false
         const displayDate = new Date(displayDateString)
