@@ -22,7 +22,7 @@ export type Contact = Database['public']['Tables']['contacts']['Row'] & {
   contact_roles?: Database['public']['Tables']['contact_roles']['Row'][]
 }
 
-interface ContactForm {
+export interface ContactForm {
   first_name: string
   last_name: string
   phone: string
@@ -49,11 +49,17 @@ interface UseContactsOptions {
 export function useContacts(options?: UseContactsOptions) {
   const [contacts, setContacts] = useState<Contact[]>(options?.initialContacts ?? [])
   const [loading, setLoading] = useState(!options?.initialContacts)
+  const [refreshing, setRefreshing] = useState(false)
   const shouldAutoFetch = options?.autoFetch ?? true
 
-  const fetchContacts = async () => {
+  const fetchContacts = async (isRefresh = false) => {
     try {
-      setLoading(true)
+      // Only set loading to true on initial fetch, not on refreshes
+      if (isRefresh) {
+        setRefreshing(true)
+      } else {
+        setLoading(true)
+      }
       const data = await fetchAllRecords<Contact>(
         'contacts',
         CONTACTS_SELECT_QUERY,
@@ -65,7 +71,11 @@ export function useContacts(options?: UseContactsOptions) {
     } catch (error) {
       console.error('Error fetching contacts:', error)
     } finally {
-      setLoading(false)
+      if (isRefresh) {
+        setRefreshing(false)
+      } else {
+        setLoading(false)
+      }
     }
   }
 
@@ -113,7 +123,12 @@ export function useContacts(options?: UseContactsOptions) {
       }
 
       logger.contactCreated(`${contactData.first_name} ${contactData.last_name}`, newContact.id)
-      await fetchContacts()
+      
+      // Optimistically add to local state first
+      setContacts((prevContacts) => [...prevContacts, newContact])
+      
+      // Then refresh in background without showing loading state
+      await fetchContacts(true) // Pass true to indicate this is a refresh, not initial load
       return newContact
     } catch (error) {
       console.error('Error creating contact:', error)
@@ -148,11 +163,15 @@ export function useContacts(options?: UseContactsOptions) {
 
       // Update the local state immediately with the returned data
       if (data && data.length > 0) {
+        // Optimistically update local state first
         setContacts((prevContacts) => prevContacts.map((contact) => (contact.id === contactId ? data[0] : contact)))
+        
+        // Then refresh in background without showing loading state
+        await fetchContacts(true) // Pass true to indicate this is a refresh, not initial load
         return data[0] // Return the updated contact data
       } else {
         // Fallback to fetching all contacts
-        await fetchContacts()
+        await fetchContacts(true) // Pass true to indicate this is a refresh, not initial load
         return false
       }
     } catch (error) {
@@ -177,7 +196,12 @@ export function useContacts(options?: UseContactsOptions) {
       }
 
       logger.contactDeleted(contactName, contactId)
-      await fetchContacts()
+      
+      // Optimistically remove from local state
+      setContacts((prevContacts) => prevContacts.filter((contact) => contact.id !== contactId))
+      
+      // Then refresh in background without showing loading state
+      await fetchContacts(true) // Pass true to indicate this is a refresh, not initial load
       return true
     } catch (error) {
       console.error('Error deleting contact:', error)
@@ -203,6 +227,7 @@ export function useContacts(options?: UseContactsOptions) {
   return {
     contacts,
     loading,
+    refreshing,
     fetchContacts,
     createContact,
     updateContact,

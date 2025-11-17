@@ -719,7 +719,7 @@ export default function PlansPage() {
 
   return (
     <div className="bg-background min-h-screen">
-      <Navigation pageTitle="Plans" />
+      <Navigation />
 
       <div className="flex h-[calc(100vh-4rem)] flex-col">
         <div className="flex flex-1 flex-col">

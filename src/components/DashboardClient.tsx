@@ -181,7 +181,7 @@ export default function DashboardClient({ data }: DashboardClientProps) {
 
   return (
     <div className="bg-background min-h-screen">
-      <Navigation pageTitle="Dashboard" />
+      <Navigation />
 
       <div className="p-6">
         <div className="mx-auto">

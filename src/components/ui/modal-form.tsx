@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, ReactNode } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { X } from 'lucide-react'
+import { X, Loader2 } from 'lucide-react'
 
 interface ModalFormProps {
   isOpen: boolean
@@ -79,7 +79,14 @@ export default function ModalForm({
             {submitText && (
               <div className="flex space-x-2 pt-4">
                 <Button type="submit" className="flex-1 cursor-pointer" disabled={isLoading}>
-                  {isLoading ? 'Saving...' : submitText}
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    submitText
+                  )}
                 </Button>
               </div>
             )}
