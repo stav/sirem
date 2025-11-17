@@ -27,8 +27,8 @@ export default function DynamicPlanForm({
   className = '',
   plan,
 }: DynamicPlanFormProps) {
-  // Parse the schema
-  const schema: ParsedSchema = parseSchema(plansMetadataSchema)
+  // Parse the schema (memoized to avoid re-parsing on every render)
+  const schema: ParsedSchema = useSchema()
 
   // Filter sections if specified
   const filteredSections = React.useMemo(() => {
