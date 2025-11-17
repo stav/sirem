@@ -5,18 +5,25 @@ import { getDisplayDate, getEffectiveStatus } from '@/lib/action-utils'
 import { fetchAllRecords } from '@/lib/database'
 import { getLocalTimeAsUTC } from '@/lib/utils'
 
-type Action = Database['public']['Tables']['actions']['Row']
+export type Action = Database['public']['Tables']['actions']['Row']
 type ActionInsert = Database['public']['Tables']['actions']['Insert']
 
 // Use the generated types for form data
 type ActionForm = Omit<ActionInsert, 'id' | 'created_at' | 'updated_at' | 'contact_id' | 'source' | 'metadata'>
 
-export function useActions() {
-  const [actions, setActions] = useState<Action[]>([])
-  const [loading, setLoading] = useState(true)
+interface UseActionsOptions {
+  initialActions?: Action[]
+  autoFetch?: boolean
+}
+
+export function useActions(options?: UseActionsOptions) {
+  const [actions, setActions] = useState<Action[]>(options?.initialActions ?? [])
+  const [loading, setLoading] = useState(!options?.initialActions)
+  const shouldAutoFetch = options?.autoFetch ?? true
 
   const fetchActions = async () => {
     try {
+      setLoading(true)
       // Fetch all actions by making multiple requests to overcome the 1000 row limit
       const allActions = await fetchAllRecords<Action>('actions', '*', 'created_at', false)
 
@@ -168,8 +175,19 @@ export function useActions() {
     )
 
   useEffect(() => {
+    if (options?.initialActions) {
+      setActions(options.initialActions)
+      setLoading(false)
+    }
+  }, [options?.initialActions])
+
+  useEffect(() => {
+    if (options?.initialActions || !shouldAutoFetch) {
+      return
+    }
     fetchActions()
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldAutoFetch])
 
   return {
     actions,
