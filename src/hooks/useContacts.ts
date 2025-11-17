@@ -5,8 +5,9 @@ import type { Database } from '@/lib/supabase'
 import { RoleData, RoleType } from '@/types/roles'
 import { fetchAllRecords } from '@/lib/database'
 import type { Json } from '@/lib/supabase-types'
+import { CONTACTS_SELECT_QUERY } from '@/lib/query-constants'
 
-type Contact = Database['public']['Tables']['contacts']['Row'] & {
+export type Contact = Database['public']['Tables']['contacts']['Row'] & {
   addresses?: Database['public']['Tables']['addresses']['Row'][]
   contact_tags?: {
     tags: {
@@ -33,61 +34,29 @@ interface ContactForm {
   ssn: string
 }
 
-interface PendingRole {
+export interface PendingRole {
   id: string
   role_type: RoleType
   role_data: RoleData
   is_primary: boolean
 }
 
-export function useContacts() {
-  const [contacts, setContacts] = useState<Contact[]>([])
-  const [loading, setLoading] = useState(true)
+interface UseContactsOptions {
+  initialContacts?: Contact[]
+  autoFetch?: boolean
+}
+
+export function useContacts(options?: UseContactsOptions) {
+  const [contacts, setContacts] = useState<Contact[]>(options?.initialContacts ?? [])
+  const [loading, setLoading] = useState(!options?.initialContacts)
+  const shouldAutoFetch = options?.autoFetch ?? true
 
   const fetchContacts = async () => {
     try {
+      setLoading(true)
       const data = await fetchAllRecords<Contact>(
         'contacts',
-        `
-          *,
-          addresses (
-            id,
-            address1,
-            address2,
-            city,
-            state_code,
-            postal_code,
-            county,
-            county_fips,
-            latitude,
-            longitude,
-            contact_id,
-            address_type,
-            source,
-            created_at,
-            updated_at
-          ),
-          contact_tags (
-            tags (
-              id,
-              label,
-              tag_categories (
-                id,
-                name
-              )
-            )
-          ),
-          contact_roles (
-            id,
-            contact_id,
-            role_type,
-            role_data,
-            is_active,
-            is_primary,
-            created_at,
-            updated_at
-          )
-        `,
+        CONTACTS_SELECT_QUERY,
         'created_at',
         false
       )
@@ -217,8 +186,19 @@ export function useContacts() {
   }
 
   useEffect(() => {
+    if (options?.initialContacts) {
+      setContacts(options.initialContacts)
+      setLoading(false)
+    }
+  }, [options?.initialContacts])
+
+  useEffect(() => {
+    if (options?.initialContacts || !shouldAutoFetch) {
+      return
+    }
     fetchContacts()
-  }, [])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldAutoFetch])
 
   return {
     contacts,
