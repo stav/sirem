@@ -118,13 +118,7 @@ export default function ActionForm({
   )
 
   return (
-    <ModalForm
-      isOpen={isOpen}
-      onCancel={onClose}
-      onSubmit={onSubmit}
-      title={title}
-      isLoading={isSubmitting}
-    >
+    <ModalForm isOpen={isOpen} onCancel={onClose} onSubmit={onSubmit} title={title} isLoading={isSubmitting}>
       <div className="space-y-4">
         {/* Title */}
         <div>

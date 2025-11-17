@@ -59,4 +59,3 @@ export function parseCsv(text: string): string[][] {
 export function normalizeHeader(value: string): string {
   return value.trim().toLowerCase()
 }
-

@@ -126,5 +126,9 @@ export function resolveMetadataValue(
 }
 
 export function resolvePlanValue(plan: Plan, fieldKey: string, context?: EligibilityContext): ResolutionResult {
-  return resolveMetadataValue((plan.metadata as Record<string, unknown> | null | undefined) ?? undefined, fieldKey, context)
+  return resolveMetadataValue(
+    (plan.metadata as Record<string, unknown> | null | undefined) ?? undefined,
+    fieldKey,
+    context
+  )
 }

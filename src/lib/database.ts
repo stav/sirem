@@ -3,7 +3,7 @@ import type { Database } from './supabase-types'
 
 /**
  * Fetches all records from a Supabase table using pagination to overcome the 1000 row limit.
- * 
+ *
  * @param tableName - Name of the table to query
  * @param selectQuery - SELECT query string (can include joins)
  * @param orderBy - Column to order by
@@ -49,4 +49,3 @@ export async function fetchAllRecords<T>(
 
   return allRecords
 }
-

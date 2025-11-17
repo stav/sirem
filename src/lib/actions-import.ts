@@ -34,33 +34,33 @@ interface CsvContactRow {
 /**
  * Parse Kit.com export format:
  * K
- * 
+ *
  * Kenneth (keallen@prodigy.net)
- * 
+ *
  * K
- * 
+ *
  * Karen (karenekdavis@gmail.com)
  */
 export function parseKitTextFormat(text: string): CsvContactRow[] {
   const contacts: CsvContactRow[] = []
   const lines = text.split('\n').map((line) => line.trim())
-  
+
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i]
     // Skip empty lines and single-letter lines (section headers)
     if (!line || line.length === 1) continue
-    
+
     // Look for pattern: "Name (email@domain.com)"
     const match = line.match(/^(.+?)\s*\(([^\s]+@[^)]+)\)$/)
     if (match) {
       const fullName = match[1].trim()
       const email = match[2].trim().toLowerCase()
-      
+
       // Try to split name into first/last
       const nameParts = fullName.split(/\s+/)
       const firstName = nameParts[0] || undefined
       const lastName = nameParts.slice(1).join(' ') || undefined
-      
+
       contacts.push({
         email,
         firstName,
@@ -69,7 +69,7 @@ export function parseKitTextFormat(text: string): CsvContactRow[] {
       })
     }
   }
-  
+
   return contacts
 }
 
@@ -77,12 +77,15 @@ export function parseKitTextFormat(text: string): CsvContactRow[] {
  * Detect if text is Kit.com format (has lines like "Name (email@domain.com)")
  */
 export function isKitTextFormat(text: string): boolean {
-  const lines = text.split('\n').map((line) => line.trim()).filter((line) => line.length > 1)
+  const lines = text
+    .split('\n')
+    .map((line) => line.trim())
+    .filter((line) => line.length > 1)
   // Check if at least one line matches the Kit format pattern
   return lines.some((line) => /^.+?\s*\([^\s]+@[^)]+\)$/.test(line))
 }
 
-const chunk = <T,>(arr: T[], size: number): T[][] => {
+const chunk = <T>(arr: T[], size: number): T[][] => {
   const result: T[][] = []
   for (let i = 0; i < arr.length; i += size) {
     result.push(arr.slice(i, i + size))
@@ -112,7 +115,7 @@ export async function importActionsCsv(
 ): Promise<{ success: boolean; message: string; stats: ImportStats }> {
   // Detect format and parse accordingly
   let csvContacts: CsvContactRow[]
-  
+
   if (isKitTextFormat(text)) {
     // Parse Kit.com text format
     csvContacts = parseKitTextFormat(text)
@@ -120,7 +123,11 @@ export async function importActionsCsv(
     // Parse CSV format
     const rows = parseCsv(text)
     if (rows.length === 0) {
-      return { success: false, message: 'Empty file – nothing to import.', stats: { total: 0, imported: 0, skipped: 0, errors: 0 } }
+      return {
+        success: false,
+        message: 'Empty file – nothing to import.',
+        stats: { total: 0, imported: 0, skipped: 0, errors: 0 },
+      }
     }
 
     const header = rows[0].map(normalizeHeader)
@@ -177,11 +184,8 @@ export async function importActionsCsv(
   for (const emailChunk of chunk(uniqueEmails, 50)) {
     // Build case-insensitive query using ilike with or
     const orConditions = emailChunk.map((email) => `email.ilike.${email}`).join(',')
-    
-    const { data, error } = await supabase
-      .from('contacts')
-      .select('id,email,first_name,last_name')
-      .or(orConditions)
+
+    const { data, error } = await supabase.from('contacts').select('id,email,first_name,last_name').or(orConditions)
 
     if (error) {
       lookupErrors.push(error.message)
@@ -214,9 +218,7 @@ export async function importActionsCsv(
       return
     }
 
-    const derivedName =
-      (row.fullName && row.fullName.trim()) ||
-      `${row.firstName ?? ''} ${row.lastName ?? ''}`.trim()
+    const derivedName = (row.fullName && row.fullName.trim()) || `${row.firstName ?? ''} ${row.lastName ?? ''}`.trim()
 
     const metadata: Json = {
       import_type: 'kit_email_blast',
@@ -282,4 +284,3 @@ export async function importActionsCsv(
     },
   }
 }
-

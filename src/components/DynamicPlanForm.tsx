@@ -82,10 +82,12 @@ export default function DynamicPlanForm({
     (variant: FieldDefinition) => {
       const eligibility = variant.characteristics?.eligibility
       return (
-        <div key={variant.key} className="space-y-1 rounded-md border border-dashed border-muted-foreground/30 p-3">
-          <div className="flex items-center justify-between text-xs font-medium text-muted-foreground">
+        <div key={variant.key} className="border-muted-foreground/30 space-y-1 rounded-md border border-dashed p-3">
+          <div className="text-muted-foreground flex items-center justify-between text-xs font-medium">
             <span>{variant.label}</span>
-            {eligibility ? <span className="rounded bg-muted px-2 py-0.5 uppercase tracking-wide">{eligibility}</span> : null}
+            {eligibility ? (
+              <span className="bg-muted rounded px-2 py-0.5 tracking-wide uppercase">{eligibility}</span>
+            ) : null}
           </div>
           {renderField(variant)}
           {variant.description && <p className="text-muted-foreground text-xs">{variant.description}</p>}
@@ -108,8 +110,8 @@ export default function DynamicPlanForm({
           </div>
 
           {variantFields.length > 0 && (
-            <div className="ml-1 space-y-2 border-l border-border pl-4">
-              <p className="text-muted-foreground text-[11px] font-medium uppercase tracking-wide">Variants</p>
+            <div className="border-border ml-1 space-y-2 border-l pl-4">
+              <p className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">Variants</p>
               <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                 {variantFields.map((variant) => renderVariantField(variant))}
               </div>
@@ -128,7 +130,9 @@ export default function DynamicPlanForm({
       if (sectionFields.length === 0) return null
 
       const baseFields = sectionFields.filter((field) => !field.baseKey)
-      const orphanVariants = sectionFields.filter((field) => field.baseKey && !sectionFields.some((f) => f.key === field.baseKey))
+      const orphanVariants = sectionFields.filter(
+        (field) => field.baseKey && !sectionFields.some((f) => f.key === field.baseKey)
+      )
 
       return (
         <div key={section.key} className="space-y-4">
@@ -169,7 +173,8 @@ export default function DynamicPlanForm({
         <div className="border-t border-b pt-2 pb-2">
           <h3 className="text-foreground text-sm font-semibold">Legacy / Custom Fields</h3>
           <p className="text-muted-foreground mt-1 text-xs">
-            Fields in metadata that don&apos;t match the current schema. These may be from older versions or custom additions.
+            Fields in metadata that don&apos;t match the current schema. These may be from older versions or custom
+            additions.
           </p>
         </div>
 

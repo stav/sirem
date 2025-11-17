@@ -168,9 +168,7 @@ export function parseSchema(schema: Record<string, unknown>): ParsedSchema {
   }
 }
 
-function normalizeVariants(
-  variants: unknown
-): FieldVariant[] | undefined {
+function normalizeVariants(variants: unknown): FieldVariant[] | undefined {
   if (!variants) return undefined
 
   if (Array.isArray(variants)) {

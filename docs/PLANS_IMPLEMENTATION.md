@@ -689,11 +689,7 @@ Since properties are stored in an array (not an object), the `key` must be expli
 ### Accessing Metadata in Code
 
 ```typescript
-import {
-  getMetadataValue,
-  getMetadataNumber,
-  getMetadataResolution,
-} from '@/lib/plan-metadata-utils'
+import { getMetadataValue, getMetadataNumber, getMetadataResolution } from '@/lib/plan-metadata-utils'
 
 // Resolve values directly (automatic variant + fallback handling)
 const cardBenefit = getMetadataValue(plan, 'card_benefit')

@@ -20,10 +20,7 @@ describe('plans metadata schema characteristics', () => {
       if (concept && !conceptKeyExceptions.has(concept)) {
         const normalizedKey = field.key.toLowerCase()
         const normalizedConcept = concept.toLowerCase()
-        expect(
-          normalizedKey.includes(normalizedConcept),
-          `${field.key} should include concept '${concept}'`
-        ).toBe(true)
+        expect(normalizedKey.includes(normalizedConcept), `${field.key} should include concept '${concept}'`).toBe(true)
       }
     })
   })

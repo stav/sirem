@@ -353,7 +353,8 @@ export default function ActionList({
               {actions.length > 0 ? (
                 <>
                   <p className="text-muted-foreground">
-                    {actions.length} action{actions.length !== 1 ? 's' : ''} not displayed. Check/adjust the filters above to see other actions.
+                    {actions.length} action{actions.length !== 1 ? 's' : ''} not displayed. Check/adjust the filters
+                    above to see other actions.
                   </p>
                 </>
               ) : (
@@ -391,7 +392,8 @@ export default function ActionList({
               {totalActionsForContact > 0 ? (
                 <>
                   <p className="text-muted-foreground">
-                    {totalActionsForContact} action{totalActionsForContact !== 1 ? 's' : ''} not displayed. Check/adjust the filters above to see other actions.
+                    {totalActionsForContact} action{totalActionsForContact !== 1 ? 's' : ''} not displayed. Check/adjust
+                    the filters above to see other actions.
                   </p>
                 </>
               ) : (

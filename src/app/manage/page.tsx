@@ -109,7 +109,14 @@ function ManagePageContent() {
       showContactViewModal ||
       showContactNotesModal ||
       isExportListModalOpen,
-    [showContactForm, showActionForm, showActionViewModal, showContactViewModal, showContactNotesModal, isExportListModalOpen]
+    [
+      showContactForm,
+      showActionForm,
+      showActionViewModal,
+      showContactViewModal,
+      showContactNotesModal,
+      isExportListModalOpen,
+    ]
   )
 
   useEffect(() => {
@@ -124,8 +131,7 @@ function ManagePageContent() {
       const target = event.target as HTMLElement | null
       const tagName = target?.tagName
       const isTypingTarget =
-        target &&
-        (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT' || target.isContentEditable)
+        target && (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT' || target.isContentEditable)
       if (isTypingTarget) return
 
       event.preventDefault()

@@ -314,8 +314,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
     const hospitalCosts = hospitalDailyCopay * daysPerStay * usageInputs.hospitalStays
     const ambulanceCosts = resolveNumericValue('ambulance_copay') * usageInputs.ambulanceUses
 
-    const totalCopays =
-      primaryCareCosts + specialistCosts + erCosts + urgentCareCosts + hospitalCosts + ambulanceCosts
+    const totalCopays = primaryCareCosts + specialistCosts + erCosts + urgentCareCosts + hospitalCosts + ambulanceCosts
 
     return premium - giveback + totalCopays
   }
@@ -516,7 +515,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
           <div className="flex flex-col gap-2">
             <h2 className="text-xl font-semibold">Compare Plans ({plans.length})</h2>
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-muted-foreground text-xs uppercase tracking-wide">Eligibility</span>
+              <span className="text-muted-foreground text-xs tracking-wide uppercase">Eligibility</span>
               {eligibilityOptions.map(({ label, value }) => {
                 const isActive = eligibilityFilters.includes(value)
                 return (
@@ -525,7 +524,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                     size="sm"
                     variant={isActive ? 'default' : 'outline'}
                     onClick={() => toggleEligibility(value)}
-                    className="h-7 text-xs uppercase tracking-wide"
+                    className="h-7 text-xs tracking-wide uppercase"
                     aria-pressed={isActive}
                   >
                     {label}
@@ -533,7 +532,7 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                 )
               })}
               {eligibilityFilters.length === 0 && (
-                <Badge variant="outline" className="border-dashed border-border/60 text-muted-foreground">
+                <Badge variant="outline" className="border-border/60 text-muted-foreground border-dashed">
                   Medicare baseline
                 </Badge>
               )}
@@ -827,7 +826,9 @@ export default function PlanComparisonModal({ isOpen, onClose, plans, onRefresh 
                               <td
                                 key={idx}
                                 className={`max-w-48 overflow-hidden px-3 py-2 text-center text-xs ${hasDiscrep ? 'border-2 border-yellow-500 bg-yellow-100 dark:bg-yellow-900/30' : ''} ${isSourcePlan ? 'border-l-4 border-l-blue-500 bg-blue-100/50 dark:bg-blue-900/30' : ''}`}
-                                title={hasDiscrep ? `⚠️ Discrepancy: Metadata value differs from main field` : titleValue}
+                                title={
+                                  hasDiscrep ? `⚠️ Discrepancy: Metadata value differs from main field` : titleValue
+                                }
                               >
                                 <div className="flex flex-col items-center gap-1">
                                   <div className="line-clamp-3">{displayValue}</div>

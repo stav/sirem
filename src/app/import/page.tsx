@@ -12,11 +12,7 @@ import {
   ClipboardList,
   CheckSquare,
 } from 'lucide-react'
-import {
-  importIntegrityData,
-  importActivitiesData,
-  importTagsData,
-} from '@/lib/integrity-import'
+import { importIntegrityData, importActivitiesData, importTagsData } from '@/lib/integrity-import'
 import { importPlansCsv } from '@/lib/plans-import'
 import { importActionsCsv, parseKitTextFormat, isKitTextFormat } from '@/lib/actions-import'
 import { parseCsv, normalizeHeader } from '@/lib/csv-utils'
@@ -57,7 +53,7 @@ export default function ImportPage() {
     setImportType(value)
     setPreview(null)
     setImportResult(null)
-    
+
     // If a file was already selected, re-process it with the new import type
     if (currentFile) {
       // Re-process the file with the new import type
@@ -189,7 +185,7 @@ export default function ImportPage() {
         console.log('Processing contact-actions file preview')
         const text = await selectedFile.text()
         console.log('File text length:', text.length, 'First 200 chars:', text.substring(0, 200))
-        
+
         const uniqueContacts = new Map<
           string,
           {
@@ -205,7 +201,8 @@ export default function ImportPage() {
           const kitContacts = parseKitTextFormat(text)
           kitContacts.forEach((contact) => {
             if (contact.email && !uniqueContacts.has(contact.email)) {
-              const name = contact.fullName || `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || '(no name)'
+              const name =
+                contact.fullName || `${contact.firstName || ''} ${contact.lastName || ''}`.trim() || '(no name)'
               uniqueContacts.set(contact.email, {
                 name,
                 email: contact.email,
@@ -438,9 +435,7 @@ export default function ImportPage() {
                           type="radio"
                           value="contact-actions"
                           checked={importType === 'contact-actions'}
-                          onChange={(e) =>
-                            handleImportTypeChange(e.target.value as ImportType)
-                          }
+                          onChange={(e) => handleImportTypeChange(e.target.value as ImportType)}
                           className="text-primary"
                         />
                         <span className="text-sm">Contact Actions (CSV)</span>
@@ -451,7 +446,9 @@ export default function ImportPage() {
                   <div className="border-muted-foreground/25 rounded-lg border-2 border-dashed p-6 text-center">
                     <input
                       type="file"
-                      accept={importType === 'plans' ? '.csv' : importType === 'contact-actions' ? '.csv,.txt' : '.json'}
+                      accept={
+                        importType === 'plans' ? '.csv' : importType === 'contact-actions' ? '.csv,.txt' : '.json'
+                      }
                       onChange={handleFileSelect}
                       className="hidden"
                       id="file-upload"
@@ -463,11 +460,7 @@ export default function ImportPage() {
                         {file
                           ? file.name
                           : `Click to select ${
-                              importType === 'plans'
-                                ? 'CSV'
-                                : importType === 'contact-actions'
-                                  ? 'CSV or text'
-                                  : 'JSON'
+                              importType === 'plans' ? 'CSV' : importType === 'contact-actions' ? 'CSV or text' : 'JSON'
                             } file`}
                       </span>
                       <span className="text-muted-foreground mt-1 text-xs">
@@ -614,7 +607,7 @@ export default function ImportPage() {
                                   ? 'Import Plans'
                                   : importType === 'contact-actions'
                                     ? 'Create Actions'
-                                  : 'Import Data'}
+                                    : 'Import Data'}
                           </>
                         )}
                       </Button>

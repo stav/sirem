@@ -18,12 +18,7 @@ export function useActions() {
   const fetchActions = async () => {
     try {
       // Fetch all actions by making multiple requests to overcome the 1000 row limit
-      const allActions = await fetchAllRecords<Action>(
-        'actions',
-        '*',
-        'created_at',
-        false
-      )
+      const allActions = await fetchAllRecords<Action>('actions', '*', 'created_at', false)
 
       setActions(allActions)
     } catch (error) {

@@ -67,9 +67,7 @@ function assertEligibilityToken(token: EligibilityOption): string {
   throw new Error(`Unsupported eligibility token: ${token}`)
 }
 
-function normalizeEligibilityInput(
-  eligibility: CharacteristicInput['eligibility']
-): string | string[] | undefined {
+function normalizeEligibilityInput(eligibility: CharacteristicInput['eligibility']): string | string[] | undefined {
   if (!eligibility) return undefined
 
   if (Array.isArray(eligibility)) {
@@ -742,5 +740,3 @@ export const plansMetadataSchema = {
     },
   ],
 } as const
-
-

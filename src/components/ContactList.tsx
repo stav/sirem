@@ -469,9 +469,7 @@ export default function ContactList({
             {!singleContactView &&
               (isCollapsed ? (
                 <div className="flex flex-wrap items-center gap-2 text-xs sm:text-sm">
-                  <span className="text-muted-foreground truncate">
-                    {filter}
-                  </span>
+                  <span className="text-muted-foreground truncate">{filter}</span>
                   <span className="text-muted-foreground text-xs">
                     {filteredContacts.length}/{contacts.length}
                   </span>
@@ -679,8 +677,8 @@ export default function ContactList({
                 {selectedFormat === 'csv'
                   ? 'CSV data'
                   : selectedFormat === 'sms'
-                  ? 'text message template'
-                  : 'formatted text'}{' '}
+                    ? 'text message template'
+                    : 'formatted text'}{' '}
                 below and paste it into your document for printing:
               </div>
               <textarea

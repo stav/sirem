@@ -252,14 +252,11 @@ export const getPlanMetadata = (() => {
     if (fieldSchema.variants) {
       fieldSchema.variants.forEach((variant) => {
         if (fieldType === 'string' && fieldSchema.format === 'date') {
-          getters[variant.key] = (plan: Plan, context?: ResolverInput) =>
-            getMetadataDate(plan, variant.key, context)
+          getters[variant.key] = (plan: Plan, context?: ResolverInput) => getMetadataDate(plan, variant.key, context)
         } else if (fieldType === 'number') {
-          getters[variant.key] = (plan: Plan, context?: ResolverInput) =>
-            getMetadataNumber(plan, variant.key, context)
+          getters[variant.key] = (plan: Plan, context?: ResolverInput) => getMetadataNumber(plan, variant.key, context)
         } else {
-          getters[variant.key] = (plan: Plan, context?: ResolverInput) =>
-            getMetadataString(plan, variant.key, context)
+          getters[variant.key] = (plan: Plan, context?: ResolverInput) => getMetadataString(plan, variant.key, context)
         }
       })
     }

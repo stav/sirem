@@ -5,10 +5,7 @@ import { describe, expect, it } from 'vitest'
 const projectRoot = process.cwd()
 const srcRoot = join(projectRoot, 'src')
 
-const allowList = new Set([
-  'src/lib/plan-field-resolution.ts',
-  'src/lib/plan-metadata-utils.ts',
-])
+const allowList = new Set(['src/lib/plan-field-resolution.ts', 'src/lib/plan-metadata-utils.ts'])
 
 function collectSourceFiles(dir: string): string[] {
   const entries = readdirSync(dir, { withFileTypes: true })
@@ -50,4 +47,3 @@ describe('plan metadata access audit', () => {
     expect(violations).toEqual([])
   })
 })
-
