@@ -3,8 +3,8 @@ import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import ModalForm from '@/components/ui/modal-form'
 import type { Database } from '@/lib/supabase'
-import { useContacts } from '@/hooks/useContacts'
 import { useToast } from '@/hooks/use-toast'
+import type { ContactForm } from '@/hooks/useContacts'
 
 type Contact = Database['public']['Tables']['contacts']['Row'] & {
   addresses?: Database['public']['Tables']['addresses']['Row'][]
@@ -16,13 +16,25 @@ interface ContactNotesModalProps {
   onClose: () => void
   contact: Contact | null
   onContactUpdated?: () => void
+  updateContact?: (contactId: string, contactData: ContactForm) => Promise<Contact | false>
 }
 
-export default function ContactNotesModal({ isOpen, onClose, contact, onContactUpdated }: ContactNotesModalProps) {
+export default function ContactNotesModal({
+  isOpen,
+  onClose,
+  contact,
+  onContactUpdated,
+  updateContact: updateContactProp,
+}: ContactNotesModalProps) {
   const [notes, setNotes] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const { updateContact } = useContacts()
   const { toast } = useToast()
+  
+  // Use the updateContact function passed from parent, or create a minimal one if not provided
+  const updateContact = updateContactProp || (async () => {
+    console.error('updateContact function not provided to ContactNotesModal')
+    return false
+  })
 
   // Update notes when contact changes
   useEffect(() => {

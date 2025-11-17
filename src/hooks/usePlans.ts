@@ -20,9 +20,17 @@ type EnrollmentWithContact = {
   } | null
 }
 
-export function usePlans() {
-  const [plans, setPlans] = useState<Plan[]>([])
-  const [loading, setLoading] = useState<boolean>(true)
+interface UsePlansOptions {
+  initialPlans?: Plan[]
+  autoFetch?: boolean
+}
+
+export function usePlans(options?: UsePlansOptions) {
+  const initialPlans = options?.initialPlans ?? []
+  const shouldAutoFetch = options?.autoFetch ?? (initialPlans.length === 0)
+
+  const [plans, setPlans] = useState<Plan[]>(initialPlans)
+  const [loading, setLoading] = useState<boolean>(shouldAutoFetch)
   const [error, setError] = useState<string | null>(null)
 
   const fetchPlans = async () => {
@@ -280,8 +288,10 @@ export function usePlans() {
   }
 
   useEffect(() => {
-    fetchPlans()
-  }, [])
+    if (shouldAutoFetch) {
+      fetchPlans()
+    }
+  }, [shouldAutoFetch])
 
   return { plans, loading, error, fetchPlans, createPlan, updatePlan, deletePlan, deletePlans, getPlanEnrollments }
 }

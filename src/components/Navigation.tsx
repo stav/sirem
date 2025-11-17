@@ -1,10 +1,9 @@
+'use client'
+
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
 import { Users, BarChart3, Upload, ClipboardList, Tags } from 'lucide-react'
 import { ThemeToggle } from './ThemeToggle'
-
-interface NavigationProps {
-  pageTitle: string
-}
 
 // Define available pages with their routes and icons
 const pages = [
@@ -15,7 +14,9 @@ const pages = [
   { title: 'Import', path: '/import', icon: Upload },
 ]
 
-export default function Navigation({ pageTitle }: NavigationProps) {
+export default function Navigation() {
+  const pathname = usePathname()
+
   return (
     <nav className="bg-background border-b shadow-sm">
       <div className="scrollbar-hide w-full overflow-x-auto">
@@ -27,13 +28,13 @@ export default function Navigation({ pageTitle }: NavigationProps) {
             <div className="flex items-center space-x-4">
               {pages.map((page) => {
                 const IconComponent = page.icon
-                const isActive = page.title === pageTitle
+                const isActive = pathname === page.path || (page.path === '/' && pathname === '/')
 
                 return (
                   <Link
                     key={page.path}
                     href={page.path}
-                    className={`flex items-center rounded-md px-3 py-2 text-sm font-medium whitespace-nowrap transition-colors ${
+                    className={`flex items-center rounded-md px-3 py-2 text-sm font-medium whitespace-nowrap transition-all duration-200 ${
                       isActive
                         ? 'border-primary/20 bg-primary/10 text-primary border'
                         : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
