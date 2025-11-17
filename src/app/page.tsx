@@ -1,9 +1,12 @@
+import { Suspense } from 'react'
 import { fetchAllRecordsServer } from '@/lib/database-server'
 import { calculateDashboardData, type DashboardContact, type Action } from '@/lib/dashboard-utils'
 import DashboardClient from '@/components/DashboardClient'
+import DashboardLoading from '@/components/loading/DashboardLoading'
 
-export default async function Home() {
-  // Fetch data on the server - this runs before the page is sent to the browser
+async function DashboardData() {
+  // Data fetching happens inside Suspense boundary
+  // This allows the fallback to show while data is being fetched
   const [allContacts, allActions] = await Promise.all([
     // Optimized contacts query - only fetch essential fields for dashboard
     fetchAllRecordsServer<DashboardContact>(
@@ -48,4 +51,12 @@ export default async function Home() {
 
   // Pass pre-calculated data to client component
   return <DashboardClient data={dashboardData} />
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<DashboardLoading />}>
+      <DashboardData />
+    </Suspense>
+  )
 }

@@ -141,7 +141,7 @@ export default function TagsPage() {
   if (loading) {
     return (
       <div className="bg-background min-h-screen">
-        <Navigation pageTitle="Tags" />
+        <Navigation />
         <div className="p-6">
           <div className="mx-auto max-w-6xl">
             <div className="animate-pulse">
@@ -159,7 +159,7 @@ export default function TagsPage() {
 
   return (
     <div className="bg-background min-h-screen">
-      <Navigation pageTitle="Tags" />
+      <Navigation />
 
       <div className="p-6">
         <div className="mx-auto max-w-6xl">

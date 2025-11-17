@@ -19,11 +19,17 @@ interface UseActionsOptions {
 export function useActions(options?: UseActionsOptions) {
   const [actions, setActions] = useState<Action[]>(options?.initialActions ?? [])
   const [loading, setLoading] = useState(!options?.initialActions)
+  const [refreshing, setRefreshing] = useState(false)
   const shouldAutoFetch = options?.autoFetch ?? true
 
-  const fetchActions = async () => {
+  const fetchActions = async (isRefresh = false) => {
     try {
-      setLoading(true)
+      // Only set loading to true on initial fetch, not on refreshes
+      if (isRefresh) {
+        setRefreshing(true)
+      } else {
+        setLoading(true)
+      }
       // Fetch all actions by making multiple requests to overcome the 1000 row limit
       const allActions = await fetchAllRecords<Action>('actions', '*', 'created_at', false)
 
@@ -31,7 +37,11 @@ export function useActions(options?: UseActionsOptions) {
     } catch (error) {
       console.error('Error fetching actions:', error)
     } finally {
-      setLoading(false)
+      if (isRefresh) {
+        setRefreshing(false)
+      } else {
+        setLoading(false)
+      }
     }
   }
 
@@ -57,7 +67,7 @@ export function useActions(options?: UseActionsOptions) {
         return false
       }
 
-      await fetchActions()
+      await fetchActions(true) // Pass true to indicate this is a refresh, not initial load
       return true
     } catch (error) {
       console.error('Error creating action:', error)
@@ -88,7 +98,13 @@ export function useActions(options?: UseActionsOptions) {
         return false
       }
 
-      await fetchActions()
+      // Optimistically update local state first
+      setActions((prevActions) =>
+        prevActions.map((action) => (action.id === actionId ? { ...action, ...updateData } : action))
+      )
+
+      // Then refresh in background without showing loading state
+      await fetchActions(true) // Pass true to indicate this is a refresh, not initial load
       return true
     } catch (error) {
       console.error('Error updating action:', error)
@@ -105,7 +121,11 @@ export function useActions(options?: UseActionsOptions) {
         return false
       }
 
-      await fetchActions()
+      // Optimistically remove from local state
+      setActions((prevActions) => prevActions.filter((action) => action.id !== actionId))
+
+      // Then refresh in background without showing loading state
+      await fetchActions(true) // Pass true to indicate this is a refresh, not initial load
       return true
     } catch (error) {
       console.error('Error deleting action:', error)
@@ -118,6 +138,15 @@ export function useActions(options?: UseActionsOptions) {
       const newStatus = action.status === 'completed' ? 'planned' : 'completed'
       const completedDate = newStatus === 'completed' ? getLocalTimeAsUTC() : null
 
+      // Optimistically update local state first
+      setActions((prevActions) =>
+        prevActions.map((a) =>
+          a.id === action.id
+            ? { ...a, status: newStatus as Action['status'], completed_date: completedDate }
+            : a
+        )
+      )
+
       const { error } = await supabase
         .from('actions')
         .update({
@@ -128,10 +157,13 @@ export function useActions(options?: UseActionsOptions) {
 
       if (error) {
         console.error('Error updating action:', error)
+        // Revert optimistic update on error
+        await fetchActions(true)
         return false
       }
 
-      await fetchActions()
+      // Then refresh in background without showing loading state
+      await fetchActions(true) // Pass true to indicate this is a refresh, not initial load
       return true
     } catch (error) {
       console.error('Error updating action:', error)
@@ -144,6 +176,15 @@ export function useActions(options?: UseActionsOptions) {
       // Use the created_at date as the completed_date
       const completedDate = action.created_at
 
+      // Optimistically update local state first
+      setActions((prevActions) =>
+        prevActions.map((a) =>
+          a.id === action.id
+            ? { ...a, status: 'completed' as Action['status'], completed_date: completedDate }
+            : a
+        )
+      )
+
       const { error } = await supabase
         .from('actions')
         .update({
@@ -154,10 +195,13 @@ export function useActions(options?: UseActionsOptions) {
 
       if (error) {
         console.error('Error updating action:', error)
+        // Revert optimistic update on error
+        await fetchActions(true)
         return false
       }
 
-      await fetchActions()
+      // Then refresh in background without showing loading state
+      await fetchActions(true) // Pass true to indicate this is a refresh, not initial load
       return true
     } catch (error) {
       console.error('Error updating action:', error)
@@ -192,6 +236,7 @@ export function useActions(options?: UseActionsOptions) {
   return {
     actions,
     loading,
+    refreshing,
     fetchActions,
     createAction,
     updateAction,

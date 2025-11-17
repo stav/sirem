@@ -66,8 +66,8 @@ export default function ManageClient({ initialContacts, initialActions }: Manage
     autoFetch: false,
   })
 
-  const fetchContacts = async () => {
-    await originalFetchContacts()
+  const fetchContacts = async (isRefresh = false) => {
+    await originalFetchContacts(isRefresh)
     setRefreshTimestamp(Date.now())
   }
 
@@ -99,6 +99,7 @@ export default function ManageClient({ initialContacts, initialActions }: Manage
   const [selectedContact, setSelectedContact] = useState<Contact | null>(null)
   const [singleContactView, setSingleContactView] = useState(false)
   const [isSubmittingContact, setIsSubmittingContact] = useState(false)
+  const [isSubmittingAction, setIsSubmittingAction] = useState(false)
   const [refreshTimestamp, setRefreshTimestamp] = useState<number>(Date.now())
   const [roleRefreshTrigger, setRoleRefreshTrigger] = useState<number>(0)
   const [pendingRoles, setPendingRoles] = useState<PendingRole[]>([])
@@ -282,8 +283,7 @@ export default function ManageClient({ initialContacts, initialActions }: Manage
           }
         }
 
-        await fetchContacts()
-
+        // No need to call fetchContacts() - the hook handles it with optimistic updates
         toast({
           title: `Contact ${action}`,
           description: `${contactName} was successfully ${action}.`,
@@ -382,36 +382,56 @@ export default function ManageClient({ initialContacts, initialActions }: Manage
 
   const handleActionSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setIsSubmittingAction(true)
 
-    if (editingAction) {
-      const success = await updateAction(editingAction.id, actionForm)
+    try {
+      if (editingAction) {
+        const success = await updateAction(editingAction.id, actionForm)
 
-      if (success) {
-        const contact = contacts.find((c) => c.id === editingAction.contact_id)
-        const contactName = contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
+        if (success) {
+          const contact = contacts.find((c) => c.id === editingAction.contact_id)
+          const contactName = contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
 
-        toast({
-          title: 'Action updated',
-          description: `"${actionForm.title}" for ${contactName} was successfully updated.`,
-        })
-        logger.info(`Action updated: ${actionForm.title} for ${contactName}`, 'action_update', editingAction.contact_id)
-        closeActionForm()
+          toast({
+            title: 'Action updated',
+            description: `"${actionForm.title}" for ${contactName} was successfully updated.`,
+          })
+          logger.info(`Action updated: ${actionForm.title} for ${contactName}`, 'action_update', editingAction.contact_id)
+          closeActionForm()
+        } else {
+          toast({
+            title: 'Error',
+            description: 'Failed to update action. Please try again.',
+            variant: 'destructive',
+          })
+        }
+      } else {
+        const contactToUse = selectedContact || filteredContactForActions
+        if (!contactToUse) {
+          setIsSubmittingAction(false)
+          return
+        }
+
+        const success = await createAction(contactToUse.id, actionForm)
+
+        if (success) {
+          const contactName = contactToUse ? `${contactToUse.first_name} ${contactToUse.last_name}` : 'Unknown Contact'
+          toast({
+            title: 'Action created',
+            description: `"${actionForm.title}" for ${contactName} was successfully created.`,
+          })
+          logger.info(`Action created: ${actionForm.title}`, 'action_create', contactToUse.id)
+          closeActionForm()
+        } else {
+          toast({
+            title: 'Error',
+            description: 'Failed to create action. Please try again.',
+            variant: 'destructive',
+          })
+        }
       }
-    } else {
-      const contactToUse = selectedContact || filteredContactForActions
-      if (!contactToUse) return
-
-      const success = await createAction(contactToUse.id, actionForm)
-
-      if (success) {
-        const contactName = contactToUse ? `${contactToUse.first_name} ${contactToUse.last_name}` : 'Unknown Contact'
-        toast({
-          title: 'Action created',
-          description: `"${actionForm.title}" for ${contactName} was successfully created.`,
-        })
-        logger.info(`Action created: ${actionForm.title}`, 'action_create', contactToUse.id)
-        closeActionForm()
-      }
+    } finally {
+      setIsSubmittingAction(false)
     }
   }
 
@@ -587,7 +607,7 @@ export default function ManageClient({ initialContacts, initialActions }: Manage
   if (loading) {
     return (
       <div className="bg-background min-h-screen">
-        <Navigation pageTitle="Manage" />
+        <Navigation />
         <div className="p-6">
           <div className="mx-auto max-w-7xl">
             <div className="animate-pulse">
@@ -609,7 +629,7 @@ export default function ManageClient({ initialContacts, initialActions }: Manage
 
   return (
     <div className="bg-background min-h-screen">
-      <Navigation pageTitle="Manage" />
+      <Navigation />
 
       <div className="p-6">
         <div className="mx-auto max-w-7xl">
@@ -694,7 +714,7 @@ export default function ManageClient({ initialContacts, initialActions }: Manage
             action={editingAction}
             formData={actionForm}
             setFormData={setActionForm}
-            isSubmitting={false}
+            isSubmitting={isSubmittingAction}
             contactName={actionFormContactName}
             onCreateVoicemailAction={!editingAction ? handleCreateVoicemailAction : undefined}
           />
@@ -714,14 +734,15 @@ export default function ManageClient({ initialContacts, initialActions }: Manage
               handleEditContact(contact)
             }}
             roleRefreshTrigger={roleRefreshTrigger}
-            onContactUpdated={fetchContacts}
+            onContactUpdated={() => fetchContacts(true)} // Pass true to indicate refresh, not initial load
           />
 
           <ContactNotesModal
             isOpen={showContactNotesModal}
             onClose={closeContactNotesModal}
             contact={editingContactForNotes}
-            onContactUpdated={fetchContacts}
+            updateContact={updateContact} // Pass the updateContact function from the hook
+            onContactUpdated={() => fetchContacts(true)} // Pass true to indicate refresh, not initial load
           />
         </div>
       </div>
