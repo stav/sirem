@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useCallback } from 'react'
 import { Phone } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -86,6 +86,37 @@ export default function ActionForm({
     'Add Action'
   )
 
+  // Memoize onChange handlers to prevent unnecessary re-renders
+  const handleFieldChange = useCallback(
+    (field: keyof ActionFormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      setFormData({ ...formData, [field]: e.target.value })
+    },
+    [formData, setFormData]
+  )
+
+  const handleNumberFieldChange = useCallback(
+    (field: keyof ActionFormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData({ ...formData, [field]: e.target.value ? parseFloat(e.target.value) : null })
+    },
+    [formData, setFormData]
+  )
+
+  const handleDateTimeChange = useCallback(
+    (field: keyof ActionFormData) => (value: string) => {
+      setFormData({ ...formData, [field]: value })
+    },
+    [formData, setFormData]
+  )
+
+  const handlePriorityChange = useCallback(
+    (value: string) => {
+      let priority: 'low' | 'medium' | 'high' | null = null
+      if (value === 'low' || value === 'medium' || value === 'high') priority = value
+      setFormData({ ...formData, priority })
+    },
+    [formData, setFormData]
+  )
+
   return (
     <ModalForm
       isOpen={isOpen}
@@ -101,7 +132,7 @@ export default function ActionForm({
           <Input
             id="title"
             value={formData.title}
-            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+            onChange={handleFieldChange('title')}
             placeholder="Enter action title"
             required
           />
@@ -113,7 +144,7 @@ export default function ActionForm({
           <Textarea
             id="description"
             value={formData.description}
-            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            onChange={handleFieldChange('description')}
             placeholder="Enter action description"
             rows={3}
           />
@@ -125,7 +156,7 @@ export default function ActionForm({
           <Textarea
             id="outcome"
             value={formData.outcome || ''}
-            onChange={(e) => setFormData({ ...formData, outcome: e.target.value })}
+            onChange={handleFieldChange('outcome')}
             placeholder="Enter the outcome of this action"
             rows={2}
           />
@@ -137,7 +168,7 @@ export default function ActionForm({
           <Input
             id="tags"
             value={formData.tags}
-            onChange={(e) => setFormData({ ...formData, tags: e.target.value })}
+            onChange={handleFieldChange('tags')}
             placeholder="Enter space-separated tags (e.g., medicare consultation called)"
           />
         </div>
@@ -145,14 +176,7 @@ export default function ActionForm({
         {/* Priority */}
         <div>
           <Label htmlFor="priority">Priority</Label>
-          <Select
-            value={formData.priority || 'none'}
-            onValueChange={(value) => {
-              let priority: 'low' | 'medium' | 'high' | null = null
-              if (value === 'low' || value === 'medium' || value === 'high') priority = value
-              setFormData({ ...formData, priority })
-            }}
-          >
+          <Select value={formData.priority || 'none'} onValueChange={handlePriorityChange}>
             <SelectTrigger>
               <SelectValue placeholder="Select priority" />
             </SelectTrigger>
@@ -175,7 +199,7 @@ export default function ActionForm({
             step="0.5"
             min="0"
             value={formData.duration || ''}
-            onChange={(e) => setFormData({ ...formData, duration: e.target.value ? parseFloat(e.target.value) : null })}
+            onChange={handleNumberFieldChange('duration')}
             placeholder="Enter duration in hours (e.g., 1.5)"
           />
         </div>
@@ -186,7 +210,7 @@ export default function ActionForm({
             id="start_date"
             label="Start Date & Time"
             value={formData.start_date || ''}
-            onChange={(value) => setFormData({ ...formData, start_date: value })}
+            onChange={handleDateTimeChange('start_date')}
             placeholder="Select start date and time"
           />
         </div>
@@ -197,7 +221,7 @@ export default function ActionForm({
             id="end_date"
             label="End Date & Time"
             value={formData.end_date || ''}
-            onChange={(value) => setFormData({ ...formData, end_date: value })}
+            onChange={handleDateTimeChange('end_date')}
             placeholder="Select end date and time"
           />
         </div>
@@ -208,7 +232,7 @@ export default function ActionForm({
             id="completed_date"
             label="Completed Date & Time"
             value={formData.completed_date || ''}
-            onChange={(value) => setFormData({ ...formData, completed_date: value })}
+            onChange={handleDateTimeChange('completed_date')}
             placeholder="Select completed date and time"
           />
         </div>

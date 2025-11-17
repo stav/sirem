@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -362,6 +362,47 @@ export default function ContactForm({
 
   const excludeFields = ['id', 'contact_id', 'created_at', 'updated_at']
 
+  // Memoize onChange handlers to prevent unnecessary re-renders
+  const handleFieldChange = useCallback(
+    (field: keyof ContactFormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      onFormDataChange({ ...formData, [field]: e.target.value })
+    },
+    [formData, onFormDataChange]
+  )
+
+  const handleStatusChange = useCallback(
+    (value: string) => {
+      onFormDataChange({ ...formData, status: value })
+    },
+    [formData, onFormDataChange]
+  )
+
+  const handleMedicareIdChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const value = e.target.value.replace(/[^A-Z0-9-]/gi, '')
+      onFormDataChange({ ...formData, medicare_beneficiary_id: value })
+    },
+    [formData, onFormDataChange]
+  )
+
+  const handleSsnChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const cleaned = e.target.value.replace(/\D/g, '')
+      let formatted = ''
+      if (cleaned.length > 0) {
+        formatted = cleaned.substring(0, 3)
+        if (cleaned.length > 3) {
+          formatted += '-' + cleaned.substring(3, 5)
+          if (cleaned.length > 5) {
+            formatted += '-' + cleaned.substring(5, 9)
+          }
+        }
+      }
+      onFormDataChange({ ...formData, ssn: formatted })
+    },
+    [formData, onFormDataChange]
+  )
+
   return (
     <>
       <ModalForm
@@ -377,38 +418,19 @@ export default function ContactForm({
         <div className="space-y-4">
           <div>
             <Label htmlFor="first_name">First Name</Label>
-            <Input
-              id="first_name"
-              value={formData.first_name}
-              onChange={(e) => onFormDataChange({ ...formData, first_name: e.target.value })}
-              required
-            />
+            <Input id="first_name" value={formData.first_name} onChange={handleFieldChange('first_name')} required />
           </div>
           <div>
             <Label htmlFor="last_name">Last Name</Label>
-            <Input
-              id="last_name"
-              value={formData.last_name}
-              onChange={(e) => onFormDataChange({ ...formData, last_name: e.target.value })}
-              required
-            />
+            <Input id="last_name" value={formData.last_name} onChange={handleFieldChange('last_name')} required />
           </div>
           <div>
             <Label htmlFor="phone">Phone</Label>
-            <Input
-              id="phone"
-              value={formData.phone}
-              onChange={(e) => onFormDataChange({ ...formData, phone: e.target.value })}
-            />
+            <Input id="phone" value={formData.phone} onChange={handleFieldChange('phone')} />
           </div>
           <div>
             <Label htmlFor="email">Email</Label>
-            <Input
-              id="email"
-              type="email"
-              value={formData.email}
-              onChange={(e) => onFormDataChange({ ...formData, email: e.target.value })}
-            />
+            <Input id="email" type="email" value={formData.email} onChange={handleFieldChange('email')} />
           </div>
 
           {/* Contact Roles Management */}
@@ -443,7 +465,7 @@ export default function ContactForm({
 
           <div>
             <Label htmlFor="status">Status</Label>
-            <Select value={formData.status} onValueChange={(value) => onFormDataChange({ ...formData, status: value })}>
+            <Select value={formData.status} onValueChange={handleStatusChange}>
               <SelectTrigger>
                 <SelectValue placeholder="Select status" />
               </SelectTrigger>
@@ -466,12 +488,7 @@ export default function ContactForm({
           </div>
           <div>
             <Label htmlFor="notes">Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => onFormDataChange({ ...formData, notes: e.target.value })}
-              rows={3}
-            />
+            <Textarea id="notes" value={formData.notes} onChange={handleFieldChange('notes')} rows={3} />
           </div>
           <div className="text-muted-foreground my-8">
             <hr />
@@ -481,48 +498,17 @@ export default function ContactForm({
             <Input
               id="medicare_beneficiary_id"
               value={formData.medicare_beneficiary_id}
-              onChange={(e) => {
-                // Only allow alphanumeric characters and hyphens
-                const value = e.target.value.replace(/[^A-Z0-9-]/gi, '')
-                onFormDataChange({ ...formData, medicare_beneficiary_id: value })
-              }}
+              onChange={handleMedicareIdChange}
               maxLength={13}
             />
           </div>
           <div>
             <Label htmlFor="ssn">Social Security Number (SSN)</Label>
-            <Input
-              id="ssn"
-              value={formData.ssn}
-              onChange={(e) => {
-                // Remove all non-numeric characters
-                const cleaned = e.target.value.replace(/\D/g, '')
-
-                // Format as XXX-XX-XXXX while typing
-                let formatted = ''
-                if (cleaned.length > 0) {
-                  formatted = cleaned.substring(0, 3)
-                  if (cleaned.length > 3) {
-                    formatted += '-' + cleaned.substring(3, 5)
-                    if (cleaned.length > 5) {
-                      formatted += '-' + cleaned.substring(5, 9)
-                    }
-                  }
-                }
-
-                onFormDataChange({ ...formData, ssn: formatted })
-              }}
-              maxLength={11}
-            />
+            <Input id="ssn" value={formData.ssn} onChange={handleSsnChange} maxLength={11} />
           </div>
           <div>
             <Label htmlFor="birthdate">Birthday</Label>
-            <Input
-              id="birthdate"
-              type="date"
-              value={formData.birthdate}
-              onChange={(e) => onFormDataChange({ ...formData, birthdate: e.target.value })}
-            />
+            <Input id="birthdate" type="date" value={formData.birthdate} onChange={handleFieldChange('birthdate')} />
           </div>
 
           {/* Address Management Section */}

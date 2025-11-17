@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useCallback, Suspense } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Navigation from '@/components/Navigation'
 import ContactList from '@/components/ContactList'
@@ -101,13 +101,16 @@ function ManagePageContent() {
     setFilteredContacts(contacts)
   }, [])
 
-  const isAnyModalOpen =
-    showContactForm ||
-    showActionForm ||
-    showActionViewModal ||
-    showContactViewModal ||
-    showContactNotesModal ||
-    isExportListModalOpen
+  const isAnyModalOpen = useMemo(
+    () =>
+      showContactForm ||
+      showActionForm ||
+      showActionViewModal ||
+      showContactViewModal ||
+      showContactNotesModal ||
+      isExportListModalOpen,
+    [showContactForm, showActionForm, showActionViewModal, showContactViewModal, showContactNotesModal, isExportListModalOpen]
+  )
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -595,6 +598,22 @@ function ManagePageContent() {
     setFilteredContactForActions(null)
   }
 
+  // Memoize expensive contactName computations
+  const actionFormContactName = useMemo(() => {
+    if (editingAction) {
+      const contact = contacts.find((c) => c.id === editingAction.contact_id)
+      return contact ? `${contact.first_name} ${contact.last_name}` : undefined
+    }
+    const contactToUse = selectedContact || filteredContactForActions
+    return contactToUse ? `${contactToUse.first_name} ${contactToUse.last_name}` : undefined
+  }, [editingAction, contacts, selectedContact, filteredContactForActions])
+
+  const actionViewContactName = useMemo(() => {
+    if (!viewingAction) return ''
+    const contact = contacts.find((c) => c.id === viewingAction.contact_id)
+    return contact ? `${contact.first_name} ${contact.last_name}` : 'Unknown Contact'
+  }, [viewingAction, contacts])
+
   const loading = contactsLoading || actionsLoading
 
   if (loading) {
@@ -712,15 +731,7 @@ function ManagePageContent() {
             formData={actionForm}
             setFormData={setActionForm}
             isSubmitting={false}
-            contactName={
-              editingAction
-                ? contacts.find((c) => c.id === editingAction.contact_id)
-                  ? `${contacts.find((c) => c.id === editingAction.contact_id)?.first_name} ${contacts.find((c) => c.id === editingAction.contact_id)?.last_name}`
-                  : undefined
-                : selectedContact || filteredContactForActions
-                  ? `${selectedContact?.first_name || filteredContactForActions?.first_name} ${selectedContact?.last_name || filteredContactForActions?.last_name}`
-                  : undefined
-            }
+            contactName={actionFormContactName}
             onCreateVoicemailAction={!editingAction ? handleCreateVoicemailAction : undefined}
           />
 
@@ -729,13 +740,7 @@ function ManagePageContent() {
             isOpen={showActionViewModal}
             onClose={closeActionViewModal}
             action={viewingAction}
-            contactName={
-              viewingAction
-                ? contacts.find((c) => c.id === viewingAction.contact_id)
-                  ? `${contacts.find((c) => c.id === viewingAction.contact_id)?.first_name} ${contacts.find((c) => c.id === viewingAction.contact_id)?.last_name}`
-                  : 'Unknown Contact'
-                : ''
-            }
+            contactName={actionViewContactName}
           />
 
           {/* Contact View Modal */}
