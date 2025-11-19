@@ -3,7 +3,7 @@ import { X, Clock, Calendar } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
-import { formatDateTimeForInput, getLocalTimeAsUTC } from '@/lib/utils'
+import { formatDateTimeForInput, getLocalTimeAsUTC, estDateTimeLocalToUTC } from '@/lib/utils'
 
 interface DateTimeInputProps {
   id: string
@@ -36,7 +36,7 @@ export default function DateTimeInput({
     return formatDateTimeForInput(isoString)
   }
 
-  // Convert datetime-local format to ISO string
+  // Convert datetime-local format (EST) to UTC ISO string for storage
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const datetimeLocal = e.target.value
     if (!datetimeLocal) {
@@ -44,9 +44,9 @@ export default function DateTimeInput({
       return
     }
 
-    // Convert to ISO string (UTC)
-    const utcDate = new Date(datetimeLocal + 'Z')
-    onChange(utcDate.toISOString())
+    // Convert EST datetime-local to UTC ISO string
+    const utcIsoString = estDateTimeLocalToUTC(datetimeLocal)
+    onChange(utcIsoString)
   }
 
   return (

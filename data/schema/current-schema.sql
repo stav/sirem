@@ -58,7 +58,7 @@ CREATE OR REPLACE FUNCTION "public"."update_updated_at_column"() RETURNS "trigge
     SET "search_path" TO 'public', 'extensions'
     AS $$
 BEGIN
-  NEW.updated_at := timezone('America/New_York'::text, now());
+  NEW.updated_at := timezone('utc'::text, now());
   RETURN NEW;
 END;
 $$;

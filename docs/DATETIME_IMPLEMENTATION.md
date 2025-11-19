@@ -2,7 +2,7 @@
 
 ## Overview
 
-The Sirem CRM system uses a simplified datetime approach treating all times as UTC to provide full datetime functionality for action scheduling and tracking.
+The Sirem CRM system uses proper timezone handling: **UTC in the database, EST in the UI**. This follows industry best practices while providing a simple user experience for Eastern Time users.
 
 ## Implementation Details
 
@@ -10,7 +10,8 @@ The Sirem CRM system uses a simplified datetime approach treating all times as U
 
 - All date/time fields use PostgreSQL `timestamp with time zone` type
 - Fields: `created_at`, `updated_at`, `start_date`, `end_date`, `completed_date`
-- Stored as ISO 8601 datetime strings
+- **All timestamps are stored in UTC** (real UTC, not EST masquerading as UTC)
+- Table defaults and triggers use `timezone('utc'::text, now())`
 
 ### Frontend Components
 
@@ -18,33 +19,36 @@ The Sirem CRM system uses a simplified datetime approach treating all times as U
 
 - **Location**: `src/components/ui/datetime-input.tsx`
 - **Input Type**: HTML `datetime-local` input
-- **Format**: `YYYY-MM-DDTHH:MM` (local time)
+- **Format**: `YYYY-MM-DDTHH:MM` (EST time displayed to user)
 - **Features**:
   - Clear button (X) to reset the field
-  - "Now" button (clock icon) to set current date/time
-  - Automatic conversion between ISO strings and datetime-local format
+  - "Now" button (clock icon) to set current EST time
+  - Automatic conversion between UTC (storage) and EST (display/input)
 
 #### Utility Functions
 
 - **Location**: `src/lib/utils.ts`
-- **`formatDateTime()`**: Formats ISO string to `YYYY-MM-DD HH:MM` for display
-- **`formatDateTimeForInput()`**: Formats ISO string to `YYYY-MM-DDTHH:MM` for input fields
+- **`formatDateTime()`**: Converts UTC to EST and formats as `YYYY-MM-DD HH:MM` for display
+- **`formatDateTimeForInput()`**: Converts UTC to EST and formats as `YYYY-MM-DDTHH:MM` for input fields
+- **`estDateTimeLocalToUTC()`**: Converts EST datetime-local string to UTC ISO string for storage
+- **`getLocalTimeAsUTC()`**: Gets current EST time and converts to UTC ISO string
 
 ### Data Flow
 
-1. **User Input**: User selects date/time via datetime-local input (UTC time)
-2. **Form Handling**: DateTimeInput stores time as UTC ISO string
+1. **User Input**: User selects date/time via datetime-local input (EST time)
+2. **Form Handling**: DateTimeInput converts EST to UTC ISO string
 3. **Database Storage**: UTC ISO string stored in PostgreSQL timestamp field
-4. **Display**: Utility functions display UTC time components
+4. **Display**: Utility functions convert UTC to EST and display EST time components
 
 ### Timezone Handling
 
-The system treats all times as UTC for simplicity:
+The system uses proper timezone conversion:
 
-- **Input**: User enters time in UTC format
-- **Storage**: Time is stored as UTC ISO string
-- **Display**: UTC time components are displayed directly
-- **No Conversion**: No timezone conversion needed
+- **Storage**: All times stored as **real UTC** in the database
+- **Display**: UTC times converted to **EST** for display
+- **Input**: User enters **EST** time, converted to UTC for storage
+- **Conversion**: Uses `Intl.DateTimeFormat` with `America/New_York` timezone
+- **DST**: Automatically handles Eastern Daylight Time (EDT) transitions
 
 ### Components Updated
 
@@ -67,21 +71,24 @@ The system treats all times as UTC for simplicity:
 
 ### Benefits of This Approach
 
-1. **Simplicity**: No timezone conversion complexity
-2. **User-Friendly**: Times appear exactly as entered (in UTC)
-3. **Consistent**: All datetime fields use the same UTC format
-4. **Future-Proof**: Database schema supports timezone handling if needed later
-5. **UTC Time**: All times are treated as UTC for consistency
+1. **Industry Standard**: Follows best practices (UTC storage, local display)
+2. **User-Friendly**: Users see and enter times in their local timezone (EST)
+3. **Accurate**: Proper timezone conversion handles DST automatically
+4. **Scalable**: Easy to extend to support multiple timezones in the future
+5. **Integration-Ready**: Real UTC timestamps work correctly with external systems
+6. **Maintainable**: Clear separation between storage (UTC) and presentation (EST)
 
 ### Usage Examples
 
 #### Creating an Action with DateTime
 
 ```typescript
+// User enters: 2:30 PM EST on Jan 15, 2024
+// DateTimeInput converts to UTC: "2024-01-15T19:30:00.000Z" (EST is UTC-5 in winter)
 const actionData = {
   title: 'Follow up call',
-  start_date: '2024-01-15T14:30:00.000Z', // 2:30 PM
-  end_date: '2024-01-15T15:00:00.000Z', // 3:00 PM
+  start_date: '2024-01-15T19:30:00.000Z', // Stored as UTC
+  end_date: '2024-01-15T20:00:00.000Z', // Stored as UTC
   // ... other fields
 }
 ```
@@ -91,25 +98,34 @@ const actionData = {
 ```typescript
 import { formatDateTime } from '@/lib/utils'
 
-// Input: "2024-01-15T14:30:00.000Z"
-// Output: "2024-01-15 14:30"
+// Input (UTC): "2024-01-15T19:30:00.000Z"
+// Output (EST): "2024-01-15 14:30" (converted back to EST for display)
 const displayTime = formatDateTime(action.start_date)
 ```
 
 ### Migration Notes
 
-- Existing date-only data will be displayed with 00:00 time
-- New actions will have full datetime functionality
-- No database migration required (existing schema supports datetime)
-- Backward compatible with existing date-only data
+- **Migration 21** (`21-update-timezone-to-utc.sql`) updates all table defaults to use real UTC
+- **Migration 09** already uses UTC for the `update_updated_at_column()` trigger function
+- Existing data timestamps remain unchanged (only defaults for new records are updated)
+- The frontend conversion functions handle both old and new data formats
+
+### Timezone Conversion Details
+
+The system uses JavaScript's `Intl.DateTimeFormat` API for accurate timezone conversion:
+
+- **UTC to EST**: Uses `formatToParts()` to extract EST components from UTC dates
+- **EST to UTC**: Uses iterative adjustment to find the UTC time that converts to the target EST time
+- **DST Handling**: `America/New_York` timezone automatically handles EST/EDT transitions
+- **Accuracy**: All conversions are precise to the second
 
 ### Future Considerations
 
-If timezone support is needed later:
+To support multiple user timezones:
 
-1. Add timezone selection to DateTimeInput
-2. Implement timezone conversion utilities
-3. Update display to show timezone indicators
-4. Handle daylight saving time transitions
+1. Store user timezone preference in user profile
+2. Update `APP_TIMEZONE` constant to use user's timezone
+3. Add timezone indicator to display (e.g., "2:30 PM EST")
+4. Consider using a timezone library (like `date-fns-tz`) for more complex scenarios
 
-The current implementation provides a solid foundation that can be extended with timezone support when needed.
+The current implementation provides a solid, standards-compliant foundation that can be extended when needed.

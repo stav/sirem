@@ -76,9 +76,106 @@ export function generateUUID(): string {
 }
 
 /**
- * Format a datetime string for display (YYYY-MM-DD HH:MM)
+ * Timezone constant for the application (Eastern Time)
+ */
+const APP_TIMEZONE = 'America/New_York'
+
+/**
+ * Convert UTC datetime string to EST components for display
+ * @param utcDateString - ISO datetime string in UTC
+ * @returns Object with EST date/time components
+ */
+function utcToEST(utcDateString: string): {
+  year: number
+  month: number
+  day: number
+  hours: number
+  minutes: number
+  seconds: number
+} {
+  const utcDate = new Date(utcDateString)
+  
+  // Use Intl.DateTimeFormat to get EST components
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: APP_TIMEZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  })
+  
+  const parts = formatter.formatToParts(utcDate)
+  const getPart = (type: string) => {
+    const part = parts.find((p) => p.type === type)
+    return part ? parseInt(part.value, 10) : 0
+  }
+  
+  return {
+    year: getPart('year'),
+    month: getPart('month'),
+    day: getPart('day'),
+    hours: getPart('hour'),
+    minutes: getPart('minute'),
+    seconds: getPart('second'),
+  }
+}
+
+/**
+ * Convert EST datetime-local string to UTC ISO string for storage
+ * @param estDateTimeLocal - datetime-local string (YYYY-MM-DDTHH:MM) in EST
+ * @returns ISO string in UTC
+ */
+export function estDateTimeLocalToUTC(estDateTimeLocal: string): string {
+  // Parse the datetime-local string
+  const [datePart, timePart] = estDateTimeLocal.split('T')
+  const [year, month, day] = datePart.split('-').map(Number)
+  const [hours, minutes] = timePart.split(':').map(Number)
+  
+  // Create a date string in ISO format for this EST time
+  const estDateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
+  
+  // Strategy: We need to find a UTC time that, when converted to EST, equals our target EST time
+  // Use iterative adjustment: start with a guess and adjust
+  
+  // Start with UTC date using the same components
+  const testUtcDate = new Date(`${estDateString}Z`)
+  const testEst = utcToEST(testUtcDate.toISOString())
+  
+  // Calculate the difference between target and actual EST times
+  const targetEstDate = new Date(year, month - 1, day, hours, minutes, 0)
+  const actualEstDate = new Date(testEst.year, testEst.month - 1, testEst.day, testEst.hours, testEst.minutes, 0)
+  const diffMs = targetEstDate.getTime() - actualEstDate.getTime()
+  
+  // Adjust the UTC date by the difference
+  // Note: diffMs is in local time, but we need to account for timezone offset
+  // The difference tells us how much to adjust the UTC time
+  const adjustedUtcDate = new Date(testUtcDate.getTime() + diffMs)
+  
+  // Verify the result (one iteration should be enough, but we can refine if needed)
+  const finalEst = utcToEST(adjustedUtcDate.toISOString())
+  if (
+    finalEst.year === year &&
+    finalEst.month === month &&
+    finalEst.day === day &&
+    finalEst.hours === hours &&
+    finalEst.minutes === minutes
+  ) {
+    return adjustedUtcDate.toISOString()
+  }
+  
+  // If not exact, do one more adjustment
+  const finalEstDate = new Date(finalEst.year, finalEst.month - 1, finalEst.day, finalEst.hours, finalEst.minutes, 0)
+  const finalDiffMs = targetEstDate.getTime() - finalEstDate.getTime()
+  return new Date(adjustedUtcDate.getTime() + finalDiffMs).toISOString()
+}
+
+/**
+ * Format a datetime string for display (YYYY-MM-DD HH:MM) in EST
  * @param dateString - ISO datetime string or PostgreSQL timestamp (UTC)
- * @returns Formatted datetime string or empty string if invalid
+ * @returns Formatted datetime string in EST or empty string if invalid
  */
 export function formatDateTime(dateString: string | null | undefined): string {
   if (!dateString) return ''
@@ -96,15 +193,17 @@ export function formatDateTime(dateString: string | null | undefined): string {
       }
     }
 
-    const date = new Date(normalizedDateString)
-    if (isNaN(date.getTime())) return ''
+    const utcDate = new Date(normalizedDateString)
+    if (isNaN(utcDate.getTime())) return ''
 
-    // Display UTC time components (no timezone conversion)
-    const year = date.getUTCFullYear()
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0')
-    const day = String(date.getUTCDate()).padStart(2, '0')
-    const hours = String(date.getUTCHours()).padStart(2, '0')
-    const minutes = String(date.getUTCMinutes()).padStart(2, '0')
+    // Convert UTC to EST for display
+    const est = utcToEST(normalizedDateString)
+    
+    const year = est.year
+    const month = String(est.month).padStart(2, '0')
+    const day = String(est.day).padStart(2, '0')
+    const hours = String(est.hours).padStart(2, '0')
+    const minutes = String(est.minutes).padStart(2, '0')
     return `${year}-${month}-${day} ${hours}:${minutes}`
   } catch {
     return ''
@@ -114,9 +213,9 @@ export function formatDateTime(dateString: string | null | undefined): string {
 export const WEEKDAY_NAMES = ['Sun', 'Mon', 'Tues', 'Wed', 'Thur', 'Fri', 'Sat'] as const
 
 /**
- * Format a datetime string for display with weekday (e.g., Thursday, 2025-11-06 14:36)
+ * Format a datetime string for display with weekday (e.g., Thursday, 2025-11-06 14:36) in EST
  * @param dateString - ISO datetime string or PostgreSQL timestamp (UTC)
- * @returns Formatted datetime string with weekday or empty string if invalid
+ * @returns Formatted datetime string with weekday in EST or empty string if invalid
  */
 export function formatDateTimeWithWeekday(dateString: string | null | undefined): string {
   const formatted = formatDateTime(dateString)
@@ -132,10 +231,13 @@ export function formatDateTimeWithWeekday(dateString: string | null | undefined)
       }
     }
 
-    const date = new Date(normalizedDateString)
-    if (isNaN(date.getTime())) return formatted
+    const utcDate = new Date(normalizedDateString)
+    if (isNaN(utcDate.getTime())) return formatted
 
-    const weekday = WEEKDAY_NAMES[date.getUTCDay()]
+    // Convert UTC to EST for weekday calculation
+    const est = utcToEST(normalizedDateString)
+    const estDate = new Date(est.year, est.month - 1, est.day, est.hours, est.minutes)
+    const weekday = WEEKDAY_NAMES[estDate.getDay()]
     return `${weekday}, ${formatted}`
   } catch {
     return formatted
@@ -143,9 +245,9 @@ export function formatDateTimeWithWeekday(dateString: string | null | undefined)
 }
 
 /**
- * Format a datetime string for HTML datetime-local input (YYYY-MM-DDTHH:MM)
+ * Format a datetime string for HTML datetime-local input (YYYY-MM-DDTHH:MM) in EST
  * @param dateString - ISO datetime string or PostgreSQL timestamp (UTC)
- * @returns Formatted datetime string for input or empty string if invalid
+ * @returns Formatted datetime string for input in EST or empty string if invalid
  */
 export function formatDateTimeForInput(dateString: string | null | undefined): string {
   if (!dateString) return ''
@@ -163,15 +265,17 @@ export function formatDateTimeForInput(dateString: string | null | undefined): s
       }
     }
 
-    const date = new Date(normalizedDateString)
-    if (isNaN(date.getTime())) return ''
+    const utcDate = new Date(normalizedDateString)
+    if (isNaN(utcDate.getTime())) return ''
 
-    // Get UTC time components (no timezone conversion)
-    const year = date.getUTCFullYear()
-    const month = String(date.getUTCMonth() + 1).padStart(2, '0')
-    const day = String(date.getUTCDate()).padStart(2, '0')
-    const hours = String(date.getUTCHours()).padStart(2, '0')
-    const minutes = String(date.getUTCMinutes()).padStart(2, '0')
+    // Convert UTC to EST for input display
+    const est = utcToEST(normalizedDateString)
+    
+    const year = est.year
+    const month = String(est.month).padStart(2, '0')
+    const day = String(est.day).padStart(2, '0')
+    const hours = String(est.hours).padStart(2, '0')
+    const minutes = String(est.minutes).padStart(2, '0')
     return `${year}-${month}-${day}T${hours}:${minutes}`
   } catch {
     return ''
@@ -179,24 +283,21 @@ export function formatDateTimeForInput(dateString: string | null | undefined): s
 }
 
 /**
- * Get local time as UTC (treating local time as if it's UTC)
- * This is used throughout the app to create datetime values that represent
- * the current local time but are stored as UTC ISO strings.
- * @returns ISO string in UTC format
+ * Get current EST time as UTC ISO string for storage
+ * This properly converts the current EST time to UTC for database storage
+ * @returns ISO string in UTC format representing current EST time
  */
 export function getLocalTimeAsUTC(): string {
   const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-  const hours = String(now.getHours()).padStart(2, '0')
-  const minutes = String(now.getMinutes()).padStart(2, '0')
-  const seconds = String(now.getSeconds()).padStart(2, '0')
-  const datetimeLocal = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`
-
-  // Convert to ISO string (UTC) by treating local time as UTC
-  const utcDate = new Date(datetimeLocal + 'Z')
-  return utcDate.toISOString()
+  
+  // Get current time components in EST
+  const est = utcToEST(now.toISOString())
+  
+  // Create a date representing this EST time
+  const estDateString = `${est.year}-${String(est.month).padStart(2, '0')}-${String(est.day).padStart(2, '0')}T${String(est.hours).padStart(2, '0')}:${String(est.minutes).padStart(2, '0')}:${String(est.seconds).padStart(2, '0')}`
+  
+  // Use the helper function to convert EST datetime-local to UTC
+  return estDateTimeLocalToUTC(estDateString.replace(' ', 'T').substring(0, 16))
 }
 
 /**
