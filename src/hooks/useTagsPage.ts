@@ -5,7 +5,7 @@ import type { Database } from '@/lib/supabase-types'
 type Tag = Database['public']['Tables']['tags']['Row']
 type TagCategory = Database['public']['Tables']['tag_categories']['Row']
 
-interface TagWithCategory extends Tag {
+export interface TagWithCategory extends Tag {
   tag_categories: TagCategory
 }
 
@@ -16,10 +16,21 @@ interface CategoryForm {
   parent_category_id?: string
 }
 
-export function useTagsPage() {
-  const [tags, setTags] = useState<TagWithCategory[]>([])
-  const [categories, setCategories] = useState<TagCategory[]>([])
-  const [loading, setLoading] = useState(true)
+interface UseTagsPageOptions {
+  initialTags?: TagWithCategory[]
+  initialCategories?: TagCategory[]
+  autoFetch?: boolean
+}
+
+export function useTagsPage(options?: UseTagsPageOptions) {
+  const initialTags = options?.initialTags ?? []
+  const initialCategories = options?.initialCategories ?? []
+  // Auto-fetch is disabled if initial data is provided, unless explicitly enabled
+  const shouldAutoFetch = options?.autoFetch ?? (initialTags.length === 0 && initialCategories.length === 0)
+
+  const [tags, setTags] = useState<TagWithCategory[]>(initialTags)
+  const [categories, setCategories] = useState<TagCategory[]>(initialCategories)
+  const [loading, setLoading] = useState(shouldAutoFetch)
 
   const fetchTags = useCallback(async () => {
     try {
@@ -153,9 +164,11 @@ export function useTagsPage() {
   }
 
   useEffect(() => {
-    fetchTags()
-    fetchCategories()
-  }, [fetchTags, fetchCategories])
+    if (shouldAutoFetch) {
+      fetchTags()
+      fetchCategories()
+    }
+  }, [shouldAutoFetch, fetchTags, fetchCategories])
 
   return {
     tags,
