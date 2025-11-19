@@ -10,7 +10,6 @@ interface NavigationProps {
 const pages = [
   { title: 'Dashboard', path: '/', icon: BarChart3 },
   { title: 'Manage', path: '/manage', icon: Users },
-  // { title: 'Sheets', path: '/sheets', icon: Table },
   { title: 'Plans', path: '/plans', icon: ClipboardList },
   { title: 'Tags', path: '/tags', icon: Tags },
   { title: 'Import', path: '/import', icon: Upload },
