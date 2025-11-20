@@ -107,17 +107,6 @@ export default function PlansPage() {
         console.error('Failed to parse saved selections:', error)
       }
     }
-
-    // Load panel position
-    const savedPosition = localStorage.getItem('ag-grid-panel-position')
-    if (savedPosition) {
-      try {
-        const position = JSON.parse(savedPosition)
-        setSelectionPanelPosition(position)
-      } catch (error) {
-        console.error('Failed to parse panel position:', error)
-      }
-    }
   }, [])
 
   // Save selections to localStorage whenever savedSelections changes
@@ -125,12 +114,7 @@ export default function PlansPage() {
     localStorage.setItem('ag-grid-saved-selections', JSON.stringify(savedSelections))
   }, [savedSelections])
 
-  // Save panel position to localStorage whenever it changes
-  useEffect(() => {
-    localStorage.setItem('ag-grid-panel-position', JSON.stringify(selectionPanelPosition))
-  }, [selectionPanelPosition])
-
-  // Cleanup timeout on unmount
+  // Cleanup timeouts on unmount
   useEffect(() => {
     return () => {
       if (refreshTimeoutRef.current) {
@@ -399,9 +383,16 @@ export default function PlansPage() {
     })
   }
 
+  // Throttle mousemove to reduce state update frequency
+  const lastMouseMoveRef = useRef<number>(0)
   const handleMouseMove = React.useCallback(
     (e: MouseEvent) => {
       if (!isDragging) return
+
+      // Throttle to max 60fps (16ms between updates) to reduce main thread blocking
+      const now = performance.now()
+      if (now - lastMouseMoveRef.current < 16) return
+      lastMouseMoveRef.current = now
 
       const newX = e.clientX - dragStart.x
       const newY = e.clientY - dragStart.y
