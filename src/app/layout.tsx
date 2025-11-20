@@ -17,7 +17,10 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Sirem CRM - Contact Management System',
+  title: {
+    template: '%s | Sirem',
+    default: 'Sirem',
+  },
   description: 'A modern CRM system for managing contacts and actions',
 }
 

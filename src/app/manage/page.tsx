@@ -14,6 +14,7 @@ import { useContacts } from '@/hooks/useContacts'
 import { useActions } from '@/hooks/useActions'
 import type { Database } from '@/lib/supabase'
 import { useToast } from '@/hooks/use-toast'
+import { useDocumentTitle } from '@/hooks/useDocumentTitle'
 import { logger } from '@/lib/logger'
 import { getLocalTimeAsUTC } from '@/lib/utils'
 import { RoleData, RoleType } from '@/types/roles'
@@ -97,6 +98,13 @@ function ManagePageContent() {
   const [filteredContactForActions, setFilteredContactForActions] = useState<Contact | null>(null)
   const [isQuickFilterHelperOpen, setIsQuickFilterHelperOpen] = useState(false)
   const [isExportListModalOpen, setIsExportListModalOpen] = useState(false)
+
+  // Update document title based on selected contact
+  const pageTitle = selectedContact?.first_name
+    ? `Manage ${selectedContact.first_name} | Sirem`
+    : 'Manage | Sirem'
+  useDocumentTitle(pageTitle)
+
   const handleFilteredContactsChange = useCallback((contacts: Contact[]) => {
     setFilteredContacts(contacts)
   }, [])
