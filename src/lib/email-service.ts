@@ -8,15 +8,19 @@ export interface EmailRecipient {
 
 export interface EmailTemplate {
   subject: string
-  htmlContent: string
-  textContent: string
+  htmlContent?: string
+  textContent?: string
+  templateName?: string
+  templateProps?: Record<string, unknown>
 }
 
 export interface SendEmailOptions {
   to: EmailRecipient[]
   subject: string
-  htmlContent: string
+  htmlContent?: string
   textContent?: string
+  templateName?: string
+  templateProps?: Record<string, unknown>
   replyTo?: string
   tags?: Array<{ name: string; value: string }>
 }
@@ -37,6 +41,8 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
       subject: options.subject,
       html: options.htmlContent,
       text: options.textContent,
+      templateName: options.templateName,
+      templateProps: options.templateProps,
     }
     const response = await fetch('/api/send-email', {
       method: 'POST',
@@ -96,28 +102,50 @@ export async function sendBulkEmails(
     // Send each email individually with personalization
     for (const recipient of batch) {
       // Personalize the content for this recipient
-      const personalizedHtmlContent = createPersonalizedTemplate(
-        template.htmlContent,
-        recipient
-      )
-      const personalizedTextContent = createPersonalizedTemplate(
-        template.textContent || template.htmlContent,
-        recipient
-      )
-      const personalizedSubject = createPersonalizedTemplate(
+      let personalizedHtmlContent = template.htmlContent
+      let personalizedTextContent = template.textContent
+      let personalizedSubject = template.subject
+      let personalizedProps = template.templateProps
+
+      // Handle string template replacement
+      if (template.htmlContent) {
+         personalizedHtmlContent = createPersonalizedTemplate(
+          template.htmlContent,
+          recipient
+        )
+      }
+
+      if (template.textContent || template.htmlContent) {
+        personalizedTextContent = createPersonalizedTemplate(
+          template.textContent || template.htmlContent || '',
+          recipient
+        )
+      }
+
+      personalizedSubject = createPersonalizedTemplate(
         template.subject,
         recipient
       )
       
+      // Handle React Email props replacement (basic string replacement in values)
+      if (template.templateProps) {
+        personalizedProps = JSON.parse(
+          createPersonalizedTemplate(JSON.stringify(template.templateProps), recipient)
+        )
+      }
+      
       // Send single personalized email
       console.log('Sending campaign email', {
         to: recipient.email,
+        template: template.templateName || 'custom-html'
       })
       const result = await sendEmail({
         to: [recipient],
         subject: personalizedSubject,
         htmlContent: personalizedHtmlContent,
-        textContent: personalizedTextContent
+        textContent: personalizedTextContent,
+        templateName: template.templateName,
+        templateProps: personalizedProps
       })
 
       const emailResult: EmailResult = {

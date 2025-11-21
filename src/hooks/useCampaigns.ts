@@ -54,6 +54,7 @@ export interface CampaignForm {
   content: string
   html_content?: string
   scheduled_at?: string
+  metadata?: Record<string, unknown>
 }
 
 export function useCampaigns() {
@@ -99,7 +100,8 @@ export function useCampaigns() {
           html_content: campaignData.html_content,
           total_recipients: recipients.length,
           scheduled_at: campaignData.scheduled_at || null,
-          status: campaignData.scheduled_at ? 'scheduled' : 'draft'
+          status: campaignData.scheduled_at ? 'scheduled' : 'draft',
+          metadata: campaignData.metadata || null
         })
         .select()
         .single()
@@ -178,13 +180,20 @@ export function useCampaigns() {
         lastName: r.last_name
       }))
 
+      // Extract template info from metadata if available
+      const metadata = campaign.metadata as Record<string, unknown> | null
+      const templateName = metadata?.templateName as string | undefined
+      const templateProps = metadata?.templateProps as Record<string, unknown> | undefined
+
       // Send emails
       const result = await sendBulkEmails(
         emailRecipients,
         {
           subject: campaign.subject,
           htmlContent: campaign.html_content ?? campaign.content,
-          textContent: campaign.content
+          textContent: campaign.content,
+          templateName,
+          templateProps
         },
         5, // batch size
         1000 // delay between batches
@@ -301,10 +310,12 @@ export function useCampaigns() {
         content?: string
         html_content?: string | null
         scheduled_at?: string | null
+        metadata?: Json
       } = {
         ...updates,
         scheduled_at: updates.scheduled_at === '' || updates.scheduled_at === undefined ? null : updates.scheduled_at,
         html_content: updates.html_content === '' || updates.html_content === undefined ? null : updates.html_content,
+        metadata: updates.metadata
       }
 
       const { error } = await supabase
