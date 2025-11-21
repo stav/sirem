@@ -101,7 +101,7 @@ export function useCampaigns() {
           total_recipients: recipients.length,
           scheduled_at: campaignData.scheduled_at || null,
           status: campaignData.scheduled_at ? 'scheduled' : 'draft',
-          metadata: campaignData.metadata || null
+          metadata: campaignData.metadata ? (campaignData.metadata as Json) : null
         })
         .select()
         .single()
@@ -195,7 +195,27 @@ export function useCampaigns() {
 
       // Prepare email data with full contact information
       const emailRecipients = enabledRecipients.map(r => {
-        const contact = (r as any).contacts
+        type RecipientWithContact = CampaignRecipient & {
+          contacts?: {
+            id: string
+            first_name: string
+            last_name: string
+            middle_name?: string | null
+            prefix?: string | null
+            suffix?: string | null
+            phone?: string | null
+            addresses?: Array<{
+              address1?: string | null
+              address2?: string | null
+              city?: string | null
+              state_code?: string | null
+              postal_code?: string | null
+              county?: string | null
+            }>
+          }
+        }
+        const recipient = r as RecipientWithContact
+        const contact = recipient.contacts
         const addresses = (contact?.addresses || []) as Array<{
           address1?: string | null
           address2?: string | null
@@ -360,7 +380,7 @@ export function useCampaigns() {
         ...updates,
         scheduled_at: updates.scheduled_at === '' || updates.scheduled_at === undefined ? null : updates.scheduled_at,
         html_content: updates.html_content === '' || updates.html_content === undefined ? null : updates.html_content,
-        metadata: updates.metadata
+        metadata: updates.metadata ? (updates.metadata as Json) : undefined
       }
 
       const { error } = await supabase
