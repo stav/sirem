@@ -12,7 +12,6 @@ import {
 import * as React from 'react'
 
 interface DefaultTemplateProps {
-  previewText?: string;
   heading?: string;
   content?: string;
   ctaText?: string;
@@ -20,7 +19,6 @@ interface DefaultTemplateProps {
 }
 
 export const DefaultTemplate = ({
-  previewText = 'Check out our latest update',
   heading = 'Hello there',
   content = 'We have some news for you.',
   ctaText,
@@ -29,7 +27,7 @@ export const DefaultTemplate = ({
   return (
     <Html>
       <Head />
-      <Preview>{previewText}</Preview>
+      <Preview>{heading}</Preview>
       <Body style={main}>
         <Container style={container}>
           <Heading style={h1}>{heading}</Heading>
