@@ -1,7 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Mail, Users, Filter, ArrowRight } from 'lucide-react'
 import { useCampaigns } from '@/hooks/useCampaigns'
 import { useToast } from '@/hooks/use-toast'
@@ -26,23 +30,44 @@ export default function CampaignFromFilter({
     html_content: '',
     scheduled_at: ''
   })
+  const [templateType, setTemplateType] = useState<string>('custom')
+  const [defaultTemplateProps, setDefaultTemplateProps] = useState({
+    heading: '',
+    ctaText: '',
+    ctaUrl: ''
+  })
+  const [showHtmlEditor, setShowHtmlEditor] = useState(false)
 
   const { createCampaign } = useCampaigns()
   const { toast } = useToast()
 
-  // Extract email addresses from filtered contacts
-  const emailRecipients = filteredContacts
-    .filter(contact => contact.email) // Only include contacts with email
-    .map(contact => ({
-      email: contact.email!,
-      firstName: contact.first_name || undefined,
-      lastName: contact.last_name || undefined,
-      contact
-    }))
+  // Extract email addresses from filtered contacts - memoized to prevent recalculation on every render
+  const emailRecipients = useMemo(() => {
+    return filteredContacts
+      .filter(contact => contact.email) // Only include contacts with email
+      .map(contact => ({
+        email: contact.email!,
+        firstName: contact.first_name || undefined,
+        lastName: contact.last_name || undefined,
+        contact
+      }))
+  }, [filteredContacts])
 
-  const handleCreateCampaign = async () => {
+  const handleCreateCampaign = useCallback(async () => {
     try {
-      const result = await createCampaign(campaignData, filteredContacts)
+      const submissionData = {
+        ...campaignData,
+        metadata: templateType === 'default-template' ? {
+          templateName: 'DefaultTemplate',
+          templateProps: {
+            heading: defaultTemplateProps.heading,
+            ctaText: defaultTemplateProps.ctaText,
+            ctaUrl: defaultTemplateProps.ctaUrl,
+          }
+        } : undefined
+      }
+
+      const result = await createCampaign(submissionData, filteredContacts)
       
       if (result) {
         toast({
@@ -65,7 +90,7 @@ export default function CampaignFromFilter({
         variant: "destructive"
       })
     }
-  }
+  }, [campaignData, templateType, defaultTemplateProps, createCampaign, filteredContacts, emailRecipients.length, toast, onClose])
 
   if (step === 'preview') {
     return (
@@ -149,42 +174,144 @@ export default function CampaignFromFilter({
         {/* Campaign Form Fields */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="text-sm font-medium">Campaign Name</label>
-            <input
-              type="text"
+            <Label htmlFor="name">Campaign Name</Label>
+            <Input
+              id="name"
               value={campaignData.name}
               onChange={(e) => setCampaignData(prev => ({ ...prev, name: e.target.value }))}
               placeholder="Enter campaign name"
-              className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
               required
             />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium">Email Subject</label>
-            <input
-              type="text"
+            <Label htmlFor="subject">Email Subject</Label>
+            <Input
+              id="subject"
               value={campaignData.subject}
               onChange={(e) => setCampaignData(prev => ({ ...prev, subject: e.target.value }))}
               placeholder="Enter email subject"
-              className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground"
               required
             />
           </div>
         </div>
 
+        {/* Template Selection */}
         <div className="space-y-2">
-          <label className="text-sm font-medium">Email Content</label>
-          <textarea
-            value={campaignData.content}
-            onChange={(e) => setCampaignData(prev => ({ ...prev, content: e.target.value }))}
-            placeholder="Enter your email content. Use {{firstName}} for personalization..."
-            className="w-full px-3 py-2 border border-input rounded-md focus:outline-none focus:ring-2 focus:ring-ring bg-background text-foreground h-32"
-            required
-          />
+          <Label>Email Template</Label>
+          <Select
+            value={templateType}
+            onValueChange={(value) => setTemplateType(value)}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select a template" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="custom">Custom HTML / Text</SelectItem>
+              <SelectItem value="default-template">Standard Template (React Email)</SelectItem>
+            </SelectContent>
+          </Select>
           <p className="text-sm text-muted-foreground">
-            Use <code>{'{{firstName}}'}</code>, <code>{'{{lastName}}'}</code>, or <code>{'{{fullName}}'}</code> for personalization
+            {templateType === 'custom' 
+              ? "Write your own content or paste HTML." 
+              : "Use a pre-designed responsive template with heading, text, and a button."}
           </p>
         </div>
+
+        {templateType === 'custom' ? (
+          <>
+            <div className="space-y-2">
+              <Label>Email Content Type</Label>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant={!showHtmlEditor ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowHtmlEditor(false)}
+                >
+                  Plain Text
+                </Button>
+                <Button
+                  type="button"
+                  variant={showHtmlEditor ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setShowHtmlEditor(true)}
+                >
+                  HTML
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Email Content</Label>
+              <Textarea
+                value={showHtmlEditor ? campaignData.html_content : campaignData.content}
+                onChange={(e) => setCampaignData(prev => ({ 
+                  ...prev, 
+                  [showHtmlEditor ? 'html_content' : 'content']: e.target.value 
+                }))}
+                placeholder={showHtmlEditor ? "Enter HTML..." : "Enter your email content. Use {{firstName}} for personalization..."}
+                className="min-h-[200px]"
+                required
+              />
+              {!showHtmlEditor && (
+                <p className="text-sm text-muted-foreground">
+                  Use <code>{'{{firstName}}'}</code>, <code>{'{{lastName}}'}</code>, or <code>{'{{fullName}}'}</code> for personalization
+                </p>
+              )}
+            </div>
+          </>
+        ) : (
+          /* Default Template Fields */
+          <div className="space-y-4 border p-4 rounded-lg bg-muted/50">
+            <h3 className="font-medium mb-2">Template Settings</h3>
+            
+            <div className="space-y-2">
+              <Label htmlFor="heading">Heading</Label>
+              <Input
+                id="heading"
+                value={defaultTemplateProps.heading}
+                onChange={(e) => setDefaultTemplateProps(prev => ({ ...prev, heading: e.target.value }))}
+                placeholder="e.g. Welcome to Sirem!"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="content">Body Text</Label>
+              <Textarea
+                id="content"
+                value={campaignData.content}
+                onChange={(e) => setCampaignData(prev => ({ ...prev, content: e.target.value }))}
+                placeholder="Enter the main content of your email..."
+                className="min-h-[150px]"
+                required
+              />
+              <p className="text-sm text-muted-foreground">
+                Use <code>{'{{firstName}}'}</code>, <code>{'{{lastName}}'}</code>, or <code>{'{{fullName}}'}</code> for personalization
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="ctaText">Button Text</Label>
+                <Input
+                  id="ctaText"
+                  value={defaultTemplateProps.ctaText}
+                  onChange={(e) => setDefaultTemplateProps(prev => ({ ...prev, ctaText: e.target.value }))}
+                  placeholder="e.g. Get Started"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="ctaUrl">Button URL</Label>
+                <Input
+                  id="ctaUrl"
+                  value={defaultTemplateProps.ctaUrl}
+                  onChange={(e) => setDefaultTemplateProps(prev => ({ ...prev, ctaUrl: e.target.value }))}
+                  placeholder="https://..."
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Recipients Summary */}
         <div className="bg-muted p-4 rounded-lg">

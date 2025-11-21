@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
+import { DefaultTemplate } from '@/emails/DefaultTemplate'
+import { render } from '@react-email/render'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(request: NextRequest) {
   try {
-    const { to, subject, html, text } = await request.json()
+    const { to, subject, html, text, templateName, templateProps } = await request.json()
+
+    let htmlContent = html
+    let textContent = text
+
+    // If a template is requested, render it
+    if (templateName === 'DefaultTemplate') {
+        const emailElement = DefaultTemplate(templateProps || {})
+        htmlContent = await render(emailElement)
+        textContent = await render(emailElement, { plainText: true })
+    }
 
     if (!process.env.RESEND_API_KEY) {
       return NextResponse.json(
@@ -28,17 +40,18 @@ export async function POST(request: NextRequest) {
       from: fromEmail,
       to,
       subject,
-      hasHtml: !!html,
-      hasText: !!text,
-      recipientsCount: to.length
+      hasHtml: !!htmlContent,
+      hasText: !!textContent,
+      recipientsCount: to.length,
+      templateName: templateName || 'raw'
     })
 
     const { data, error } = await resend.emails.send({
       from: fromEmail,
       to,
       subject,
-      html,
-      text,
+      html: htmlContent,
+      text: textContent,
       replyTo,
     })
 
