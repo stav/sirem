@@ -159,10 +159,30 @@ export function useCampaigns() {
         throw new Error('Campaign not found')
       }
 
-      // Get recipients - include both pending and sent (for resend capability)
+      // Get recipients with full contact data including addresses
+      // Include both pending and sent (for resend capability)
       const { data: recipients, error: recipientsError } = await supabase
         .from('campaign_recipients')
-        .select('*')
+        .select(`
+          *,
+          contacts (
+            id,
+            first_name,
+            last_name,
+            middle_name,
+            prefix,
+            suffix,
+            phone,
+            addresses (
+              address1,
+              address2,
+              city,
+              state_code,
+              postal_code,
+              county
+            )
+          )
+        `)
         .eq('campaign_id', campaignId)
         .in('status', ['pending', 'sent'])
 
@@ -173,12 +193,37 @@ export function useCampaigns() {
       // Filter to only enabled recipients
       const enabledRecipients = recipients.filter(r => r.enabled !== false)
 
-      // Prepare email data
-      const emailRecipients = enabledRecipients.map(r => ({
-        email: r.email_address,
-        firstName: r.first_name,
-        lastName: r.last_name
-      }))
+      // Prepare email data with full contact information
+      const emailRecipients = enabledRecipients.map(r => {
+        const contact = (r as any).contacts
+        const addresses = (contact?.addresses || []) as Array<{
+          address1?: string | null
+          address2?: string | null
+          city?: string | null
+          state_code?: string | null
+          postal_code?: string | null
+          county?: string | null
+        }>
+        
+        // Use primary address (first one) if available
+        const primaryAddress = addresses[0] || {}
+
+        return {
+          email: r.email_address,
+          firstName: contact?.first_name || r.first_name || null,
+          lastName: contact?.last_name || r.last_name || null,
+          middleName: contact?.middle_name || null,
+          prefix: contact?.prefix || null,
+          suffix: contact?.suffix || null,
+          phone: contact?.phone || null,
+          address1: primaryAddress.address1 || null,
+          address2: primaryAddress.address2 || null,
+          city: primaryAddress.city || null,
+          state: primaryAddress.state_code || null,
+          postalCode: primaryAddress.postal_code || null,
+          county: primaryAddress.county || null,
+        }
+      })
 
       // Extract template info from metadata if available
       const metadata = campaign.metadata as Record<string, unknown> | null

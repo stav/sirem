@@ -4,6 +4,19 @@ export interface EmailRecipient {
   email: string
   firstName?: string | null
   lastName?: string | null
+  middleName?: string | null
+  prefix?: string | null
+  suffix?: string | null
+  phone?: string | null
+  // Address fields (using primary address if multiple exist)
+  address1?: string | null
+  address2?: string | null
+  city?: string | null
+  state?: string | null
+  postalCode?: string | null
+  county?: string | null
+  // Full address string (formatted)
+  fullAddress?: string | null
 }
 
 export interface EmailTemplate {
@@ -178,27 +191,66 @@ export async function sendBulkEmails(
  */
 export function createPersonalizedTemplate(
   template: string,
-  contact: {
-    firstName?: string | null
-    lastName?: string | null
-    email?: string
-  }
+  contact: EmailRecipient
 ): string {
   let personalizedTemplate = template
 
+  // Build full name with all components
+  const nameParts: string[] = []
+  if (contact.prefix) nameParts.push(contact.prefix)
+  if (contact.firstName) nameParts.push(contact.firstName)
+  if (contact.middleName) nameParts.push(contact.middleName)
+  if (contact.lastName) nameParts.push(contact.lastName)
+  if (contact.suffix) nameParts.push(contact.suffix)
+  const fullName = nameParts.join(' ').trim()
+  const firstNameLastName = `${contact.firstName || ''} ${contact.lastName || ''}`.trim()
+
+  // Build full address string if address components exist
+  const addressParts: string[] = []
+  if (contact.address1) addressParts.push(contact.address1)
+  if (contact.address2) addressParts.push(contact.address2)
+  const streetAddress = addressParts.join(', ').trim()
+  
+  const cityStateZipParts: string[] = []
+  if (contact.city) cityStateZipParts.push(contact.city)
+  if (contact.state) cityStateZipParts.push(contact.state)
+  if (contact.postalCode) cityStateZipParts.push(contact.postalCode)
+  const cityStateZip = cityStateZipParts.join(', ').trim()
+  
+  const fullAddress = [streetAddress, cityStateZip].filter(Boolean).join('\n').trim() || contact.fullAddress || ''
+
   // Replace common placeholders
   const replacements: Record<string, string> = {
+    // Name fields
     '{{firstName}}': contact.firstName || '',
     '{{lastName}}': contact.lastName || '',
-    '{{fullName}}': `${contact.firstName || ''} ${contact.lastName || ''}`.trim(),
+    '{{middleName}}': contact.middleName || '',
+    '{{prefix}}': contact.prefix || '',
+    '{{suffix}}': contact.suffix || '',
+    '{{fullName}}': fullName || firstNameLastName,
+    // Contact fields
     '{{email}}': contact.email || '',
+    '{{phone}}': contact.phone || '',
+    // Address fields
+    '{{address1}}': contact.address1 || '',
+    '{{address2}}': contact.address2 || '',
+    '{{streetAddress}}': streetAddress,
+    '{{city}}': contact.city || '',
+    '{{state}}': contact.state || '',
+    '{{postalCode}}': contact.postalCode || '',
+    '{{zipCode}}': contact.postalCode || '', // Alias for postalCode
+    '{{county}}': contact.county || '',
+    '{{fullAddress}}': fullAddress,
+    // Fallback variants
     '{{firstName|fallback}}': contact.firstName || 'Valued Customer',
     '{{lastName|fallback}}': contact.lastName || '',
+    '{{fullName|fallback}}': fullName || firstNameLastName || 'Valued Customer',
   }
 
-  // Apply replacements
+  // Apply replacements (escape special regex characters in placeholders)
   Object.entries(replacements).forEach(([placeholder, value]) => {
-    personalizedTemplate = personalizedTemplate.replace(new RegExp(placeholder, 'g'), value)
+    const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    personalizedTemplate = personalizedTemplate.replace(new RegExp(escapedPlaceholder, 'g'), value)
   })
 
   return personalizedTemplate
