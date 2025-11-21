@@ -122,8 +122,9 @@ export default function ManageClient({ initialContacts, initialActions }: Manage
       showActionViewModal ||
       showContactViewModal ||
       showContactNotesModal ||
-      isExportListModalOpen,
-    [showContactForm, showActionForm, showActionViewModal, showContactViewModal, showContactNotesModal, isExportListModalOpen]
+      isExportListModalOpen ||
+      showCampaignModal,
+    [showContactForm, showActionForm, showActionViewModal, showContactViewModal, showContactNotesModal, isExportListModalOpen, showCampaignModal]
   )
 
   useEffect(() => {
@@ -132,7 +133,7 @@ export default function ManageClient({ initialContacts, initialActions }: Manage
       if (selectedContact) return
       if (isAnyModalOpen) return
       if (event.ctrlKey || event.metaKey || event.altKey) return
-      if (event.key.toLowerCase() !== 'f') return
+      if (!event.key || event.key.toLowerCase() !== 'f') return
       if (event.repeat) return
 
       const target = event.target as HTMLElement | null
