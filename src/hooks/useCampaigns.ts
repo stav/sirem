@@ -294,20 +294,39 @@ export function useCampaigns() {
 
   const updateCampaign = async (campaignId: string, updates: Partial<CampaignForm>) => {
     try {
+      // Prepare update data - convert empty strings to null for optional fields
+      const updateData: {
+        name?: string
+        subject?: string
+        content?: string
+        html_content?: string | null
+        scheduled_at?: string | null
+      } = {
+        ...updates,
+        scheduled_at: updates.scheduled_at === '' || updates.scheduled_at === undefined ? null : updates.scheduled_at,
+        html_content: updates.html_content === '' || updates.html_content === undefined ? null : updates.html_content,
+      }
+
       const { error } = await supabase
         .from('campaigns')
-        .update(updates)
+        .update(updateData)
         .eq('id', campaignId)
 
       if (error) {
-        console.error('Error updating campaign:', error)
+        console.error('Error updating campaign:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+          error,
+        })
         return false
       }
 
       await fetchCampaigns()
       return true
     } catch (error) {
-      console.error('Error updating campaign:', error)
+      console.error('Error updating campaign (catch):', error)
       return false
     }
   }
