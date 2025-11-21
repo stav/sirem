@@ -61,6 +61,7 @@ export default function CampaignFromFilter({
           templateName: 'DefaultTemplate',
           templateProps: {
             heading: defaultTemplateProps.heading,
+            content: campaignData.content, // Include the body text content
             ctaText: defaultTemplateProps.ctaText,
             ctaUrl: defaultTemplateProps.ctaUrl,
           }
@@ -254,9 +255,17 @@ export default function CampaignFromFilter({
                 required
               />
               {!showHtmlEditor && (
-                <p className="text-sm text-muted-foreground">
-                  Use <code>{'{{firstName}}'}</code>, <code>{'{{lastName}}'}</code>, or <code>{'{{fullName}}'}</code> for personalization
-                </p>
+                <div className="mt-2 p-3 bg-muted/50 border border-dashed rounded-md">
+                  <p className="text-xs font-semibold text-muted-foreground mb-2">💡 Available personalization variables:</p>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                    <div><strong>Name:</strong> <code className="text-xs">{'{{firstName}}'}</code>, <code className="text-xs">{'{{lastName}}'}</code>, <code className="text-xs">{'{{middleName}}'}</code>, <code className="text-xs">{'{{fullName}}'}</code></div>
+                    <div><strong>Title:</strong> <code className="text-xs">{'{{prefix}}'}</code>, <code className="text-xs">{'{{suffix}}'}</code></div>
+                    <div><strong>Contact:</strong> <code className="text-xs">{'{{email}}'}</code>, <code className="text-xs">{'{{phone}}'}</code></div>
+                    <div><strong>Address:</strong> <code className="text-xs">{'{{address1}}'}</code>, <code className="text-xs">{'{{address2}}'}</code>, <code className="text-xs">{'{{city}}'}</code></div>
+                    <div><strong>Location:</strong> <code className="text-xs">{'{{state}}'}</code>, <code className="text-xs">{'{{postalCode}}'}</code>, <code className="text-xs">{'{{zipCode}}'}</code>, <code className="text-xs">{'{{county}}'}</code></div>
+                    <div><strong>Combined:</strong> <code className="text-xs">{'{{streetAddress}}'}</code>, <code className="text-xs">{'{{fullAddress}}'}</code></div>
+                  </div>
+                </div>
               )}
             </div>
           </>
@@ -285,9 +294,17 @@ export default function CampaignFromFilter({
                 className="min-h-[150px]"
                 required
               />
-              <p className="text-sm text-muted-foreground">
-                Use <code>{'{{firstName}}'}</code>, <code>{'{{lastName}}'}</code>, or <code>{'{{fullName}}'}</code> for personalization
-              </p>
+              <div className="mt-2 p-3 bg-muted/50 border border-dashed rounded-md">
+                <p className="text-xs font-semibold text-muted-foreground mb-2">💡 Available personalization variables:</p>
+                <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                  <div><strong>Name:</strong> <code className="text-xs">{'{{firstName}}'}</code>, <code className="text-xs">{'{{lastName}}'}</code>, <code className="text-xs">{'{{middleName}}'}</code>, <code className="text-xs">{'{{fullName}}'}</code></div>
+                  <div><strong>Title:</strong> <code className="text-xs">{'{{prefix}}'}</code>, <code className="text-xs">{'{{suffix}}'}</code></div>
+                  <div><strong>Contact:</strong> <code className="text-xs">{'{{email}}'}</code>, <code className="text-xs">{'{{phone}}'}</code></div>
+                  <div><strong>Address:</strong> <code className="text-xs">{'{{address1}}'}</code>, <code className="text-xs">{'{{address2}}'}</code>, <code className="text-xs">{'{{city}}'}</code></div>
+                  <div><strong>Location:</strong> <code className="text-xs">{'{{state}}'}</code>, <code className="text-xs">{'{{postalCode}}'}</code>, <code className="text-xs">{'{{zipCode}}'}</code>, <code className="text-xs">{'{{county}}'}</code></div>
+                  <div><strong>Combined:</strong> <code className="text-xs">{'{{streetAddress}}'}</code>, <code className="text-xs">{'{{fullAddress}}'}</code></div>
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
