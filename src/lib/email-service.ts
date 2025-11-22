@@ -140,11 +140,9 @@ export async function sendBulkEmails(
         recipient
       )
       
-      // Handle React Email props replacement (basic string replacement in values)
+      // Handle React Email props replacement (recursively personalize object values)
       if (template.templateProps) {
-        personalizedProps = JSON.parse(
-          createPersonalizedTemplate(JSON.stringify(template.templateProps), recipient)
-        )
+        personalizedProps = personalizeObject(template.templateProps, recipient)
       }
       
       // Send single personalized email
@@ -254,6 +252,40 @@ export function createPersonalizedTemplate(
   })
 
   return personalizedTemplate
+}
+
+/**
+ * Recursively personalize an object by replacing placeholders in all string values
+ */
+function personalizeObject(
+  obj: Record<string, unknown>,
+  contact: EmailRecipient
+): Record<string, unknown> {
+  const personalized: Record<string, unknown> = {}
+  
+  for (const [key, value] of Object.entries(obj)) {
+    if (typeof value === 'string') {
+      // Replace placeholders in string values
+      personalized[key] = createPersonalizedTemplate(value, contact)
+    } else if (Array.isArray(value)) {
+      // Recursively process array elements
+      personalized[key] = value.map(item => 
+        typeof item === 'string' 
+          ? createPersonalizedTemplate(item, contact)
+          : typeof item === 'object' && item !== null
+          ? personalizeObject(item as Record<string, unknown>, contact)
+          : item
+      )
+    } else if (typeof value === 'object' && value !== null) {
+      // Recursively process nested objects
+      personalized[key] = personalizeObject(value as Record<string, unknown>, contact)
+    } else {
+      // Keep other types as-is
+      personalized[key] = value
+    }
+  }
+  
+  return personalized
 }
 
 /**
