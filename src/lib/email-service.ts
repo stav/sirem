@@ -218,37 +218,40 @@ export function createPersonalizedTemplate(
   const fullAddress = [streetAddress, cityStateZip].filter(Boolean).join('\n').trim() || contact.fullAddress || ''
 
   // Replace common placeholders
+  // Support both {{varName}} and {{ varName }} formats (with optional spaces)
   const replacements: Record<string, string> = {
     // Name fields
-    '{{firstName}}': contact.firstName || '',
-    '{{lastName}}': contact.lastName || '',
-    '{{middleName}}': contact.middleName || '',
-    '{{prefix}}': contact.prefix || '',
-    '{{suffix}}': contact.suffix || '',
-    '{{fullName}}': fullName || firstNameLastName,
+    'firstName': contact.firstName || '',
+    'lastName': contact.lastName || '',
+    'middleName': contact.middleName || '',
+    'prefix': contact.prefix || '',
+    'suffix': contact.suffix || '',
+    'fullName': fullName || firstNameLastName,
     // Contact fields
-    '{{email}}': contact.email || '',
-    '{{phone}}': contact.phone || '',
+    'email': contact.email || '',
+    'phone': contact.phone || '',
     // Address fields
-    '{{address1}}': contact.address1 || '',
-    '{{address2}}': contact.address2 || '',
-    '{{streetAddress}}': streetAddress,
-    '{{city}}': contact.city || '',
-    '{{state}}': contact.state || '',
-    '{{postalCode}}': contact.postalCode || '',
-    '{{zipCode}}': contact.postalCode || '', // Alias for postalCode
-    '{{county}}': contact.county || '',
-    '{{fullAddress}}': fullAddress,
+    'address1': contact.address1 || '',
+    'address2': contact.address2 || '',
+    'streetAddress': streetAddress,
+    'city': contact.city || '',
+    'state': contact.state || '',
+    'postalCode': contact.postalCode || '',
+    'zipCode': contact.postalCode || '', // Alias for postalCode
+    'county': contact.county || '',
+    'fullAddress': fullAddress,
     // Fallback variants
-    '{{firstName|fallback}}': contact.firstName || 'Valued Customer',
-    '{{lastName|fallback}}': contact.lastName || '',
-    '{{fullName|fallback}}': fullName || firstNameLastName || 'Valued Customer',
+    'firstName|fallback': contact.firstName || 'Valued Customer',
+    'lastName|fallback': contact.lastName || '',
+    'fullName|fallback': fullName || firstNameLastName || 'Valued Customer',
   }
 
-  // Apply replacements (escape special regex characters in placeholders)
-  Object.entries(replacements).forEach(([placeholder, value]) => {
-    const escapedPlaceholder = placeholder.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-    personalizedTemplate = personalizedTemplate.replace(new RegExp(escapedPlaceholder, 'g'), value)
+  // Apply replacements (handle both {{varName}} and {{ varName }} formats)
+  Object.entries(replacements).forEach(([varName, value]) => {
+    // Match {{varName}} or {{ varName }} or {{varName }} or {{ varName}}
+    // This regex handles optional spaces inside the braces
+    const pattern = `\\{\\{\\s*${varName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\}\\}`
+    personalizedTemplate = personalizedTemplate.replace(new RegExp(pattern, 'g'), value)
   })
 
   return personalizedTemplate
