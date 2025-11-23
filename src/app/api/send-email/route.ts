@@ -18,15 +18,11 @@ export async function POST(request: NextRequest) {
         // Get recipient email (handle both array and single string)
         const recipientEmail = Array.isArray(to) && to.length > 0 ? to[0] : (typeof to === 'string' ? to : '')
         
-        // Ensure recipient email and footer config are in template props
+        // Pass recipient email and baseUrl to template (company info is hardcoded in template)
         const finalTemplateProps = {
           ...templateProps,
           recipientEmail,
           baseUrl,
-          companyName: process.env.COMPANY_NAME,
-          companyAddress: process.env.COMPANY_ADDRESS,
-          companyContactEmail: process.env.COMPANY_CONTACT_EMAIL,
-          privacyPolicyUrl: process.env.PRIVACY_POLICY_URL,
         }
         const emailElement = DefaultTemplate(finalTemplateProps)
         htmlContent = await render(emailElement)

@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
   <h1>Successfully Unsubscribed</h1>
   <p class="success">You have been unsubscribed from our email list.</p>
   <p>We're sorry to see you go. You will no longer receive marketing emails from us.</p>
-  <p class="info">If you have any questions or concerns, please contact us at ${process.env.COMPANY_CONTACT_EMAIL || process.env.RESEND_REPLY_TO_EMAIL || 'support@yourdomain.com'}.</p>
+  <p class="info">If you have any questions or concerns, please contact us at support@medstar.agency.</p>
 </body>
 </html>`,
       { status: 200, headers: { 'Content-Type': 'text/html' } }

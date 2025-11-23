@@ -18,12 +18,13 @@ interface DefaultTemplateProps {
   ctaUrl?: string;
   recipientEmail?: string;
   baseUrl?: string;
-  companyName?: string;
-  companyAddress?: string;
-  companyContactEmail?: string;
-  privacyPolicyUrl?: string;
-  unsubscribeUrl?: string;
 }
+
+// Company information - hardcoded for email footer compliance
+const COMPANY_NAME = 'Medstar Senior Benefits'
+const COMPANY_ADDRESS = '7387 Pine Ridge Court, Cleveland, Ohio'
+const COMPANY_CONTACT_EMAIL = 'support@medstar.agency'
+const PRIVACY_POLICY_URL = 'https://medstar.agency/privacy'
 
 export const DefaultTemplate = ({
   heading = 'Hello there',
@@ -32,11 +33,6 @@ export const DefaultTemplate = ({
   ctaUrl,
   recipientEmail,
   baseUrl,
-  companyName,
-  companyAddress,
-  companyContactEmail,
-  privacyPolicyUrl,
-  unsubscribeUrl,
 }: DefaultTemplateProps) => {
   // Convert line breaks to <br /> tags for HTML rendering
   const htmlContent = content.replace(/\n/g, '<br />')
@@ -44,9 +40,9 @@ export const DefaultTemplate = ({
   // Generate unsubscribe URL if recipient email is provided
   // baseUrl comes from the request origin (localhost, preview, staging, production)
   const finalBaseUrl = baseUrl || process.env.NEXT_PUBLIC_SITE_URL || 'https://yourdomain.com'
-  const finalUnsubscribeUrl = unsubscribeUrl || (recipientEmail 
+  const finalUnsubscribeUrl = recipientEmail 
     ? `${finalBaseUrl}/api/unsubscribe?email=${encodeURIComponent(recipientEmail)}`
-    : `${finalBaseUrl}/api/unsubscribe`)
+    : `${finalBaseUrl}/api/unsubscribe`
 
   return (
     <Html>
@@ -74,32 +70,22 @@ export const DefaultTemplate = ({
                 Unsubscribe
               </Link>
               {' | '}
-              {privacyPolicyUrl && (
-                <>
-                  <Link href={privacyPolicyUrl} style={footerLink}>
+                  <Link href={PRIVACY_POLICY_URL} style={footerLink}>
                     Privacy Policy
                   </Link>
                   {' | '}
-                </>
-              )}
-              {companyContactEmail && (
-                <Link href={`mailto:${companyContactEmail}`} style={footerLink}>
+                <Link href={`mailto:${COMPANY_CONTACT_EMAIL}`} style={footerLink}>
                   Contact Us
                 </Link>
-              )}
             </Text>
             
-            {companyName && (
-              <Text style={footerText}>
-                <strong>{companyName}</strong>
-              </Text>
-            )}
+            <Text style={footerText}>
+              <strong>{COMPANY_NAME}</strong>
+            </Text>
             
-            {companyAddress && (
-              <Text style={footerText}>
-                {companyAddress}
-              </Text>
-            )}
+            <Text style={footerText}>
+              {COMPANY_ADDRESS}
+            </Text>
             
             <Text style={footerDisclaimer}>
               You received this email because you are subscribed to our mailing list.
