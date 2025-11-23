@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Mail, Users, Filter, ArrowRight } from 'lucide-react'
+import { Mail, Users, Filter, ArrowRight, X } from 'lucide-react'
 import { useCampaigns } from '@/hooks/useCampaigns'
 import { useToast } from '@/hooks/use-toast'
 import type { Database } from '@/lib/supabase'
@@ -37,6 +37,7 @@ export default function CampaignFromFilter({
     ctaUrl: ''
   })
   const [showHtmlEditor, setShowHtmlEditor] = useState(false)
+  const [removedRecipients, setRemovedRecipients] = useState<Set<string>>(new Set())
 
   const { createCampaign } = useCampaigns()
   const { toast } = useToast()
@@ -44,14 +45,30 @@ export default function CampaignFromFilter({
   // Extract email addresses from filtered contacts - memoized to prevent recalculation on every render
   const emailRecipients = useMemo(() => {
     return filteredContacts
-      .filter(contact => contact.email) // Only include contacts with email
+      .filter(contact => contact.email && !removedRecipients.has(contact.email.toLowerCase())) // Only include contacts with email that haven't been removed
       .map(contact => ({
         email: contact.email!,
         firstName: contact.first_name || undefined,
         lastName: contact.last_name || undefined,
         contact
       }))
-  }, [filteredContacts])
+  }, [filteredContacts, removedRecipients])
+
+  const handleRemoveRecipient = useCallback((email: string) => {
+    setRemovedRecipients(prev => {
+      const next = new Set(prev)
+      next.add(email.toLowerCase())
+      return next
+    })
+  }, [])
+
+  const handleRestoreRecipient = useCallback((email: string) => {
+    setRemovedRecipients(prev => {
+      const next = new Set(prev)
+      next.delete(email.toLowerCase())
+      return next
+    })
+  }, [])
 
   const handleCreateCampaign = useCallback(async () => {
     try {
@@ -68,7 +85,12 @@ export default function CampaignFromFilter({
         } : undefined
       }
 
-      const result = await createCampaign(submissionData, filteredContacts)
+      // Filter out removed recipients when creating the campaign
+      const contactsToUse = filteredContacts.filter(
+        contact => contact.email && !removedRecipients.has(contact.email.toLowerCase())
+      )
+      
+      const result = await createCampaign(submissionData, contactsToUse)
       
       if (result) {
         toast({
@@ -91,7 +113,7 @@ export default function CampaignFromFilter({
         variant: "destructive"
       })
     }
-  }, [campaignData, templateType, defaultTemplateProps, createCampaign, filteredContacts, emailRecipients.length, toast, onClose])
+  }, [campaignData, templateType, defaultTemplateProps, createCampaign, filteredContacts, removedRecipients, emailRecipients.length, toast, onClose])
 
   if (step === 'preview') {
     return (
@@ -121,10 +143,10 @@ export default function CampaignFromFilter({
           {/* Email Recipients Preview */}
           <div className="space-y-3">
             <h4 className="font-medium">Email Recipients</h4>
-            <div className="max-h-40 overflow-y-auto space-y-2">
-              {emailRecipients.slice(0, 10).map((recipient, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-muted rounded">
-                  <div>
+            <div className="max-h-60 overflow-y-auto space-y-2">
+              {emailRecipients.map((recipient, index) => (
+                <div key={`${recipient.email}-${index}`} className="flex items-center justify-between p-2 bg-muted rounded hover:bg-muted/80 transition-colors">
+                  <div className="flex-1 min-w-0">
                     <span className="font-medium">
                       {recipient.firstName} {recipient.lastName}
                     </span>
@@ -132,11 +154,47 @@ export default function CampaignFromFilter({
                       {recipient.email}
                     </span>
                   </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 flex-shrink-0 ml-2"
+                    onClick={() => handleRemoveRecipient(recipient.email)}
+                    title="Remove recipient"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
                 </div>
               ))}
-              {emailRecipients.length > 10 && (
-                <div className="text-sm text-muted-foreground text-center py-2">
-                  ... and {emailRecipients.length - 10} more recipients
+              {removedRecipients.size > 0 && (
+                <div className="mt-3 pt-3 border-t">
+                  <p className="text-sm text-muted-foreground mb-2">Removed recipients ({removedRecipients.size}):</p>
+                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                    {filteredContacts
+                      .filter(contact => contact.email && removedRecipients.has(contact.email.toLowerCase()))
+                      .map((contact, index) => (
+                        <div key={`removed-${contact.email}-${index}`} className="flex items-center justify-between p-2 bg-red-50 dark:bg-red-950/20 rounded text-sm">
+                          <div className="flex-1 min-w-0">
+                            <span className="font-medium opacity-75">
+                              {contact.first_name} {contact.last_name}
+                            </span>
+                            <span className="text-muted-foreground ml-2 opacity-75">
+                              {contact.email}
+                            </span>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 flex-shrink-0 ml-2"
+                            onClick={() => handleRestoreRecipient(contact.email!)}
+                            title="Restore recipient"
+                          >
+                            <X className="h-3 w-3 rotate-45" />
+                          </Button>
+                        </div>
+                      ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -336,9 +394,40 @@ export default function CampaignFromFilter({
             <Users className="h-4 w-4 text-primary" />
             <span className="font-medium">Recipients</span>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-sm text-muted-foreground mb-3">
             This campaign will be sent to <strong>{emailRecipients.length}</strong> contacts with email addresses.
+            {removedRecipients.size > 0 && (
+              <span className="ml-2 text-muted-foreground">
+                ({removedRecipients.size} removed)
+              </span>
+            )}
           </p>
+          {emailRecipients.length > 0 && (
+            <div className="max-h-60 overflow-y-auto space-y-2 mt-3">
+              {emailRecipients.map((recipient, index) => (
+                <div key={`${recipient.email}-${index}`} className="flex items-center justify-between p-2 bg-background rounded border hover:bg-muted/50 transition-colors">
+                  <div className="flex-1 min-w-0">
+                    <span className="font-medium">
+                      {recipient.firstName} {recipient.lastName}
+                    </span>
+                    <span className="text-sm text-muted-foreground ml-2">
+                      {recipient.email}
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 flex-shrink-0 ml-2"
+                    onClick={() => handleRemoveRecipient(recipient.email)}
+                    title="Remove recipient"
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="flex justify-end gap-2">
