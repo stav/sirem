@@ -101,7 +101,7 @@ export async function sendBulkEmails(
   recipients: EmailRecipient[],
   template: EmailTemplate,
   batchSize: number = 10,
-  delayMs: number = 1000
+  delayMs: number = 600
 ): Promise<{ success: number; failed: number; errors: string[]; results: EmailResult[] }> {
   let successCount = 0
   let failedCount = 0
@@ -113,7 +113,9 @@ export async function sendBulkEmails(
     const batch = recipients.slice(i, i + batchSize)
     
     // Send each email individually with personalization
-    for (const recipient of batch) {
+    for (let j = 0; j < batch.length; j++) {
+      const recipient = batch[j]
+      
       // Personalize the content for this recipient
       let personalizedHtmlContent = template.htmlContent
       let personalizedTextContent = template.textContent
@@ -173,11 +175,12 @@ export async function sendBulkEmails(
         failedCount += 1
         errors.push(`${recipient.email}: ${result.error}`)
       }
-    }
 
-    // Add delay between batches to respect rate limits
-    if (i + batchSize < recipients.length) {
-      await new Promise(resolve => setTimeout(resolve, delayMs))
+      // Add delay between each email to respect rate limits (2 requests per second = 500ms minimum)
+      // Using 600ms to provide a safety margin
+      if (j < batch.length - 1 || i + batchSize < recipients.length) {
+        await new Promise(resolve => setTimeout(resolve, delayMs))
+      }
     }
   }
 

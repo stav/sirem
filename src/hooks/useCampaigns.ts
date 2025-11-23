@@ -260,8 +260,8 @@ export function useCampaigns() {
           templateName,
           templateProps
         },
-        5, // batch size
-        1000 // delay between batches
+        10, // batch size (for organization, but delay is per-email)
+        600 // delay between each email (600ms = ~1.67 req/sec, safely under 2 req/sec limit)
       )
 
       // Update recipient statuses individually with API response data FIRST
