@@ -393,5 +393,15 @@ export async function extractEmailAddresses(
 }
 
 /**
- * Get default email configuration
+ * Generate unsubscribe URL for a given email address
+ * @param baseUrl - The base URL of the application (e.g., from request.nextUrl.origin)
+ * @param recipientEmail - Optional email address to include in the unsubscribe URL
+ * @returns The unsubscribe URL with optional email query parameter
  */
+export function getUnsubscribeUrl(baseUrl?: string, recipientEmail?: string | null): string {
+  if (recipientEmail) {
+    return `${baseUrl}/api/unsubscribe?email=${encodeURIComponent(recipientEmail)}`
+  }
+  
+  return `${baseUrl}/api/unsubscribe`
+}

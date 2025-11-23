@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { DefaultTemplate } from '@/emails/DefaultTemplate'
 import { render } from '@react-email/render'
+import { getUnsubscribeUrl } from '@/lib/email-service'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
@@ -56,6 +57,15 @@ export async function POST(request: NextRequest) {
       templateName: templateName || 'raw'
     })
 
+    // Build List-Unsubscribe header for email client unsubscribe button
+    // RFC 2369: List-Unsubscribe header allows email clients to show unsubscribe button
+    const toArray = Array.isArray(to) ? to : [to]
+    
+    // For multiple recipients, we'll use a generic unsubscribe URL
+    // (Email clients will show the button, but clicking goes to our page)
+    // For single recipient, we can personalize it
+    const unsubscribeUrl = getUnsubscribeUrl(baseUrl, toArray.length === 1 ? toArray[0] : null)
+
     const { data, error } = await resend.emails.send({
       from: fromEmail,
       to,
@@ -63,6 +73,10 @@ export async function POST(request: NextRequest) {
       html: htmlContent,
       text: textContent,
       replyTo,
+      headers: {
+        'List-Unsubscribe': `<${unsubscribeUrl}>`,
+        'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click', // RFC 8058: One-click unsubscribe
+      },
     })
 
     if (error) {

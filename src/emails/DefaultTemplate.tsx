@@ -10,6 +10,7 @@ import {
   Section,
 } from '@react-email/components'
 import * as React from 'react'
+import { getUnsubscribeUrl } from '@/lib/email-service'
 
 interface DefaultTemplateProps {
   heading?: string;
@@ -37,12 +38,8 @@ export const DefaultTemplate = ({
   // Convert line breaks to <br /> tags for HTML rendering
   const htmlContent = content.replace(/\n/g, '<br />')
 
-  // Generate unsubscribe URL if recipient email is provided
-  // baseUrl comes from the request origin (localhost, preview, staging, production)
-  const finalBaseUrl = baseUrl || process.env.NEXT_PUBLIC_SITE_URL || 'https://yourdomain.com'
-  const finalUnsubscribeUrl = recipientEmail 
-    ? `${finalBaseUrl}/api/unsubscribe?email=${encodeURIComponent(recipientEmail)}`
-    : `${finalBaseUrl}/api/unsubscribe`
+  // Generate unsubscribe URL using shared utility
+  const finalUnsubscribeUrl = getUnsubscribeUrl(baseUrl, recipientEmail)
 
   return (
     <Html>
