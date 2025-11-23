@@ -8,13 +8,27 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 export async function POST(request: NextRequest) {
   try {
     const { to, subject, html, text, templateName, templateProps } = await request.json()
+    const baseUrl = request.nextUrl.origin
 
     let htmlContent = html
     let textContent = text
 
     // If a template is requested, render it
     if (templateName === 'DefaultTemplate') {
-        const emailElement = DefaultTemplate(templateProps || {})
+        // Get recipient email (handle both array and single string)
+        const recipientEmail = Array.isArray(to) && to.length > 0 ? to[0] : (typeof to === 'string' ? to : '')
+        
+        // Ensure recipient email and footer config are in template props
+        const finalTemplateProps = {
+          ...templateProps,
+          recipientEmail,
+          baseUrl,
+          companyName: process.env.COMPANY_NAME,
+          companyAddress: process.env.COMPANY_ADDRESS,
+          companyContactEmail: process.env.COMPANY_CONTACT_EMAIL,
+          privacyPolicyUrl: process.env.PRIVACY_POLICY_URL,
+        }
+        const emailElement = DefaultTemplate(finalTemplateProps)
         htmlContent = await render(emailElement)
         textContent = await render(emailElement, { plainText: true })
     }
