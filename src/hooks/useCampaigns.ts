@@ -160,7 +160,7 @@ export function useCampaigns() {
       }
 
       // Get recipients with full contact data including addresses
-      // Include both pending and sent (for resend capability)
+      // Include pending, sent, and failed (for resend capability)
       const { data: recipients, error: recipientsError } = await supabase
         .from('campaign_recipients')
         .select(`
@@ -184,7 +184,7 @@ export function useCampaigns() {
           )
         `)
         .eq('campaign_id', campaignId)
-        .in('status', ['pending', 'sent'])
+        .in('status', ['pending', 'sent', 'failed'])
 
       if (recipientsError || !recipients) {
         throw new Error('Failed to fetch recipients')
