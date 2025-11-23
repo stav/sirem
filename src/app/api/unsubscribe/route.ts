@@ -40,21 +40,54 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Find contact by email
-    const { data: contactData } = await supabase
-      .from('contacts')
+    const emailLower = email.toLowerCase().trim()
+
+    // Check if already unsubscribed
+    const { data: existingUnsubscribe } = await supabase
+      .from('email_unsubscribes')
       .select('id')
-      .eq('email', email)
+      .eq('email_address', emailLower)
+      .limit(1)
       .single()
 
-    // Also check emails table
+    // If already unsubscribed, still return success (idempotent)
+    if (existingUnsubscribe) {
+      return new NextResponse(
+        `<!DOCTYPE html>
+<html>
+<head>
+  <title>Unsubscribed</title>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+    .success { color: #16a34a; }
+    .info { color: #6b7280; margin-top: 20px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>Already Unsubscribed</h1>
+  <p class="success">This email address is already unsubscribed from our mailing list.</p>
+  <p>You will not receive marketing emails from us.</p>
+  <p class="info">If you have any questions or concerns, please contact us at support@medstar.agency.</p>
+</body>
+</html>`,
+        { status: 200, headers: { 'Content-Type': 'text/html' } }
+      )
+    }
+
+    // Find contact by email (check main email field)
+    const { data: contactData } = await supabase
+      .from('contacts')
+      .select('id, email')
+      .eq('email', emailLower)
+      .single()
+
+    // Also check emails table for additional email addresses
     let contactId = contactData?.id
     if (!contactId) {
       const { data: emailData } = await supabase
         .from('emails')
         .select('contact_id')
-        .eq('email_address', email)
-        .eq('inactive', false)
+        .eq('email_address', emailLower)
         .limit(1)
         .single()
       
@@ -67,11 +100,11 @@ export async function GET(request: NextRequest) {
                      'unknown'
     const userAgent = request.headers.get('user-agent') || 'unknown'
 
-    // Record unsubscribe
+    // Record unsubscribe (only if not already exists)
     const { error: unsubscribeError } = await supabase
       .from('email_unsubscribes')
       .insert({
-        email_address: email,
+        email_address: emailLower,
         contact_id: contactId || null,
         source: 'link',
         ip_address: ipAddress,
@@ -80,23 +113,29 @@ export async function GET(request: NextRequest) {
 
     if (unsubscribeError) {
       console.error('Error recording unsubscribe:', unsubscribeError)
+      // Continue anyway - we'll still mark emails as inactive
     }
 
-    // Mark email as inactive in emails table if contact found
+    // Mark specific email as inactive (not the entire contact)
     if (contactId) {
-      // Mark in main contact email
-      await supabase
-        .from('contacts')
-        .update({ inactive: true })
-        .eq('id', contactId)
-        .eq('email', email)
+      // If this email matches the main contact email, mark it in contacts table
+      if (contactData?.email?.toLowerCase().trim() === emailLower) {
+        // Note: We can't directly mark just the email field inactive in contacts table
+        // So we'll mark the contact as inactive only if this is their primary email
+        // This is a limitation of the schema - ideally we'd have a separate flag
+        await supabase
+          .from('contacts')
+          .update({ inactive: true })
+          .eq('id', contactId)
+          .eq('email', emailLower)
+      }
 
-      // Mark in emails table
+      // Always mark in emails table (for emails table entries)
       await supabase
         .from('emails')
         .update({ inactive: true })
         .eq('contact_id', contactId)
-        .eq('email_address', email)
+        .eq('email_address', emailLower)
     }
 
     // Return success page

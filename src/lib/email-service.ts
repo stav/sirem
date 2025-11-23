@@ -303,29 +303,70 @@ export function isValidEmail(email: string): boolean {
 }
 
 /**
- * Extract email addresses from contact data
+ * Get set of unsubscribed email addresses from the database
  */
-export function extractEmailAddresses(contacts: Array<{
-  email?: string | null
-  first_name?: string | null
-  last_name?: string | null
-  emails?: Array<{
-    email_address?: string
-    inactive?: boolean
-  }>
-}>): EmailRecipient[] {
+export async function getUnsubscribedEmails(): Promise<Set<string>> {
+  try {
+    const { supabase } = await import('./supabase')
+    // Type assertion needed because email_unsubscribes table may not be in generated types
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const supabaseClient = supabase as any
+    const { data, error } = await supabaseClient
+      .from('email_unsubscribes')
+      .select('email_address')
+
+    if (error) {
+      console.error('Error fetching unsubscribed emails:', error)
+      return new Set()
+    }
+
+    return new Set((data || []).map((row: { email_address: string }) => row.email_address.toLowerCase().trim()))
+  } catch (error) {
+    console.error('Error fetching unsubscribed emails:', error)
+    return new Set()
+  }
+}
+
+/**
+ * Extract email addresses from contact data
+ * Filters out inactive contacts, inactive emails, and unsubscribed emails
+ */
+export async function extractEmailAddresses(
+  contacts: Array<{
+    email?: string | null
+    first_name?: string | null
+    last_name?: string | null
+    inactive?: boolean | null
+    emails?: Array<{
+      email_address?: string
+      inactive?: boolean
+    }>
+  }>,
+  unsubscribedEmails?: Set<string>
+): Promise<EmailRecipient[]> {
+  // Fetch unsubscribed emails if not provided
+  const unsubscribed = unsubscribedEmails || await getUnsubscribedEmails()
+  
   const recipients: EmailRecipient[] = []
   const seenEmails = new Set<string>()
 
   contacts.forEach(contact => {
+    // Skip inactive contacts
+    if (contact.inactive === true) {
+      return
+    }
+
     // Check main email field
-    if (contact.email && isValidEmail(contact.email) && !seenEmails.has(contact.email)) {
-      recipients.push({
-        email: contact.email,
-        firstName: contact.first_name,
-        lastName: contact.last_name
-      })
-      seenEmails.add(contact.email)
+    if (contact.email && isValidEmail(contact.email)) {
+      const emailLower = contact.email.toLowerCase().trim()
+      if (!seenEmails.has(emailLower) && !unsubscribed.has(emailLower)) {
+        recipients.push({
+          email: contact.email,
+          firstName: contact.first_name,
+          lastName: contact.last_name
+        })
+        seenEmails.add(emailLower)
+      }
     }
 
     // Check emails from related emails table
@@ -333,14 +374,16 @@ export function extractEmailAddresses(contacts: Array<{
       contact.emails.forEach((emailRecord) => {
         if (emailRecord.email_address && 
             isValidEmail(emailRecord.email_address) && 
-            !emailRecord.inactive &&
-            !seenEmails.has(emailRecord.email_address)) {
-          recipients.push({
-            email: emailRecord.email_address,
-            firstName: contact.first_name,
-            lastName: contact.last_name
-          })
-          seenEmails.add(emailRecord.email_address)
+            !emailRecord.inactive) {
+          const emailLower = emailRecord.email_address.toLowerCase().trim()
+          if (!seenEmails.has(emailLower) && !unsubscribed.has(emailLower)) {
+            recipients.push({
+              email: emailRecord.email_address,
+              firstName: contact.first_name,
+              lastName: contact.last_name
+            })
+            seenEmails.add(emailLower)
+          }
         }
       })
     }

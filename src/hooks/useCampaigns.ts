@@ -84,8 +84,8 @@ export function useCampaigns() {
 
   const createCampaign = async (campaignData: CampaignForm, contacts: Contact[]) => {
     try {
-      // Extract email addresses from contacts
-      const recipients = extractEmailAddresses(contacts)
+      // Extract email addresses from contacts (filters out inactive and unsubscribed)
+      const recipients = await extractEmailAddresses(contacts)
       
       if (recipients.length === 0) {
         throw new Error('No valid email addresses found in the selected contacts')
@@ -194,8 +194,18 @@ export function useCampaigns() {
       // Filter to only enabled recipients
       const enabledRecipients = recipients.filter(r => r.enabled !== false)
 
+      // Get unsubscribed emails to filter them out
+      const { getUnsubscribedEmails } = await import('@/lib/email-service')
+      const unsubscribedEmails = await getUnsubscribedEmails()
+
+      // Filter out unsubscribed emails
+      const validRecipients = enabledRecipients.filter(r => {
+        const emailLower = r.email_address.toLowerCase().trim()
+        return !unsubscribedEmails.has(emailLower)
+      })
+
       // Prepare email data with full contact information
-      const emailRecipients = enabledRecipients.map(r => {
+      const emailRecipients = validRecipients.map(r => {
         type RecipientWithContact = CampaignRecipient & {
           contacts?: {
             id: string
