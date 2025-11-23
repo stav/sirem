@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import { sendBulkEmails, extractEmailAddresses } from '@/lib/email-service'
+import { logger } from '@/lib/logger'
 import type { Database } from '@/lib/supabase'
 import type { Json } from '@/lib/supabase-types'
 
@@ -330,6 +331,9 @@ export function useCampaigns() {
           sent_count: result.success
         })
         .eq('id', campaignId)
+
+      // Log to history
+      logger.campaignSent(campaign.name, result.success, result.failed, campaignId)
 
       await fetchCampaigns()
       return { success: true, sent: result.success, failed: result.failed }
