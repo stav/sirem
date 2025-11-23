@@ -18,7 +18,6 @@ interface DefaultTemplateProps {
   ctaText?: string;
   ctaUrl?: string;
   recipientEmail?: string;
-  baseUrl?: string;
 }
 
 // Company information - hardcoded for email footer compliance
@@ -33,13 +32,12 @@ export const DefaultTemplate = ({
   ctaText,
   ctaUrl,
   recipientEmail,
-  baseUrl,
 }: DefaultTemplateProps) => {
   // Convert line breaks to <br /> tags for HTML rendering
   const htmlContent = content.replace(/\n/g, '<br />')
 
-  // Generate unsubscribe URL using shared utility
-  const finalUnsubscribeUrl = getUnsubscribeUrl(baseUrl, recipientEmail)
+  // Generate unsubscribe URL using shared utility (uses hardcoded production domain)
+  const finalUnsubscribeUrl = getUnsubscribeUrl(recipientEmail)
 
   return (
     <Html>

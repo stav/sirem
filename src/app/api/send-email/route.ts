@@ -9,7 +9,6 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 export async function POST(request: NextRequest) {
   try {
     const { to, subject, html, text, templateName, templateProps } = await request.json()
-    const baseUrl = request.nextUrl.origin
 
     let htmlContent = html
     let textContent = text
@@ -19,11 +18,10 @@ export async function POST(request: NextRequest) {
         // Get recipient email (handle both array and single string)
         const recipientEmail = Array.isArray(to) && to.length > 0 ? to[0] : (typeof to === 'string' ? to : '')
         
-        // Pass recipient email and baseUrl to template (company info is hardcoded in template)
+        // Pass recipient email to template (baseUrl no longer needed - uses hardcoded production domain)
         const finalTemplateProps = {
           ...templateProps,
           recipientEmail,
-          baseUrl,
         }
         const emailElement = DefaultTemplate(finalTemplateProps)
         htmlContent = await render(emailElement)
@@ -59,12 +57,13 @@ export async function POST(request: NextRequest) {
 
     // Build List-Unsubscribe header for email client unsubscribe button
     // RFC 2369: List-Unsubscribe header allows email clients to show unsubscribe button
+    // Uses hardcoded production domain so links work regardless of where campaign was created
     const toArray = Array.isArray(to) ? to : [to]
     
     // For multiple recipients, we'll use a generic unsubscribe URL
     // (Email clients will show the button, but clicking goes to our page)
     // For single recipient, we can personalize it
-    const unsubscribeUrl = getUnsubscribeUrl(baseUrl, toArray.length === 1 ? toArray[0] : null)
+    const unsubscribeUrl = getUnsubscribeUrl(toArray.length === 1 ? toArray[0] : null)
 
     const { data, error } = await resend.emails.send({
       from: fromEmail,
