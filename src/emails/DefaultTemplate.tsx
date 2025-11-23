@@ -24,6 +24,9 @@ export const DefaultTemplate = ({
   ctaText,
   ctaUrl,
 }: DefaultTemplateProps) => {
+  // Convert line breaks to <br /> tags for HTML rendering
+  const htmlContent = content.replace(/\n/g, '<br />')
+
   return (
     <Html>
       <Head />
@@ -31,9 +34,9 @@ export const DefaultTemplate = ({
       <Body style={main}>
         <Container style={container}>
           <Heading style={h1}>{heading}</Heading>
-          <Text style={text}>
-            {content}
-          </Text>
+          {/* Use Text component with dangerouslySetInnerHTML to render HTML content */}
+          {/* This is safe here because content comes from admin-controlled campaign creation */}
+          <Text style={text} dangerouslySetInnerHTML={{ __html: htmlContent }} />
           
           {ctaText && ctaUrl && (
             <Section style={btnContainer}>
