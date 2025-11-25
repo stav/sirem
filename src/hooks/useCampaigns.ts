@@ -304,6 +304,47 @@ export function useCampaigns() {
         }).filter(Boolean)
 
         await Promise.all(updates)
+
+        // Create action records for each successfully sent email
+        const currentTime = new Date().toISOString()
+        const successfulResults = result.results.filter(r => r.success)
+        
+        if (successfulResults.length > 0) {
+          const actionRecords = successfulResults
+            .map(emailResult => {
+              const recipient = enabledRecipients.find(r => r.email_address === emailResult.email)
+              if (!recipient || !recipient.contact_id) return null
+
+              // Get contact name for description
+              type RecipientWithContact = CampaignRecipient & {
+                contacts?: {
+                  id: string
+                  first_name: string | null
+                  last_name: string | null
+                }
+              }
+              const recipientWithContact = recipient as RecipientWithContact
+              const contact = recipientWithContact.contacts
+              const contactName = contact 
+                ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || recipient.email_address
+                : recipient.email_address
+
+              return {
+                contact_id: recipient.contact_id,
+                title: `Campaign email sent: ${campaign.name}`,
+                description: `Email campaign "${campaign.name}" sent to ${contactName} (${recipient.email_address}). Subject: ${campaign.subject}`,
+                status: 'completed',
+                completed_date: currentTime,
+                created_at: currentTime,
+                source: 'Campaign'
+              }
+            })
+            .filter((record): record is NonNullable<typeof record> => record !== null)
+
+          if (actionRecords.length > 0) {
+            await supabase.from('actions').insert(actionRecords)
+          }
+        }
       } else if (result.success > 0) {
         // Fallback: update all enabled recipients as sent if no individual results
         const enabledRecipientIds = enabledRecipients.map(r => r.id)
@@ -315,6 +356,40 @@ export function useCampaigns() {
           })
           .eq('campaign_id', campaignId)
           .in('id', enabledRecipientIds)
+
+        // Create action records for all enabled recipients (fallback case)
+        const currentTime = new Date().toISOString()
+        const actionRecords = enabledRecipients
+          .filter(r => !!r.contact_id)
+          .map(recipient => {
+            // Get contact name for description
+            type RecipientWithContact = CampaignRecipient & {
+              contacts?: {
+                id: string
+                first_name: string | null
+                last_name: string | null
+              }
+            }
+            const recipientWithContact = recipient as RecipientWithContact
+            const contact = recipientWithContact.contacts
+            const contactName = contact 
+              ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || recipient.email_address
+              : recipient.email_address
+
+            return {
+              contact_id: recipient.contact_id!,
+              title: `Campaign email sent: ${campaign.name}`,
+              description: `Email campaign "${campaign.name}" sent to ${contactName} (${recipient.email_address}). Subject: ${campaign.subject}`,
+              status: 'completed',
+              completed_date: currentTime,
+              created_at: currentTime,
+              source: 'Campaign'
+            }
+          })
+
+        if (actionRecords.length > 0) {
+          await supabase.from('actions').insert(actionRecords)
+        }
       }
 
       // Update campaign status based on results
