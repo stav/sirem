@@ -81,18 +81,7 @@ export async function GET(request: NextRequest) {
       .eq('email', emailLower)
       .single()
 
-    // Also check emails table for additional email addresses
-    let contactId = contactData?.id
-    if (!contactId) {
-      const { data: emailData } = await supabase
-        .from('emails')
-        .select('contact_id')
-        .eq('email_address', emailLower)
-        .limit(1)
-        .single()
-      
-      contactId = emailData?.contact_id
-    }
+    const contactId = contactData?.id || null
 
     // Get client IP and user agent for audit trail
     const ipAddress = request.headers.get('x-forwarded-for') || 
@@ -105,7 +94,7 @@ export async function GET(request: NextRequest) {
       .from('email_unsubscribes')
       .insert({
         email_address: emailLower,
-        contact_id: contactId || null,
+        contact_id: contactId,
         source: 'link',
         ip_address: ipAddress,
         user_agent: userAgent,
@@ -113,29 +102,7 @@ export async function GET(request: NextRequest) {
 
     if (unsubscribeError) {
       console.error('Error recording unsubscribe:', unsubscribeError)
-      // Continue anyway - we'll still mark emails as inactive
-    }
-
-    // Mark specific email as inactive (not the entire contact)
-    if (contactId) {
-      // If this email matches the main contact email, mark it in contacts table
-      if (contactData?.email?.toLowerCase().trim() === emailLower) {
-        // Note: We can't directly mark just the email field inactive in contacts table
-        // So we'll mark the contact as inactive only if this is their primary email
-        // This is a limitation of the schema - ideally we'd have a separate flag
-        await supabase
-          .from('contacts')
-          .update({ inactive: true })
-          .eq('id', contactId)
-          .eq('email', emailLower)
-      }
-
-      // Always mark in emails table (for emails table entries)
-      await supabase
-        .from('emails')
-        .update({ inactive: true })
-        .eq('contact_id', contactId)
-        .eq('email_address', emailLower)
+      throw unsubscribeError
     }
 
     // Return success page

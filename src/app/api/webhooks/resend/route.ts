@@ -152,26 +152,14 @@ async function unsubscribeEmail(email: string, source: string) {
     .eq('email', email)
     .single()
 
-  let contactId = contactData?.id
-
-  // Also check emails table
-  if (!contactId) {
-    const { data: emailData } = await supabase
-      .from('emails')
-      .select('contact_id')
-      .eq('email_address', email)
-      .limit(1)
-      .single()
-    
-    contactId = emailData?.contact_id
-  }
+  const contactId = contactData?.id || null
 
   // Record unsubscribe
   const { error: unsubscribeError } = await supabase
     .from('email_unsubscribes')
     .insert({
       email_address: email,
-      contact_id: contactId || null,
+      contact_id: contactId,
       source, // 'webhook_complaint' or other source
       ip_address: null, // Not available from webhook
       user_agent: null, // Not available from webhook
@@ -180,23 +168,6 @@ async function unsubscribeEmail(email: string, source: string) {
   if (unsubscribeError) {
     console.error('Error recording unsubscribe from webhook:', unsubscribeError)
     throw unsubscribeError
-  }
-
-  // Mark email/contact as inactive (same logic as manual unsubscribe)
-  if (contactId) {
-    if (contactData?.email?.toLowerCase().trim() === email) {
-      await supabase
-        .from('contacts')
-        .update({ inactive: true })
-        .eq('id', contactId)
-        .eq('email', email)
-    }
-
-    await supabase
-      .from('emails')
-      .update({ inactive: true })
-      .eq('contact_id', contactId)
-      .eq('email_address', email)
   }
 
   console.log('Successfully processed unsubscribe for:', email, 'source:', source)

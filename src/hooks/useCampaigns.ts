@@ -82,14 +82,16 @@ export function useCampaigns() {
     }
   }
 
-  const createCampaign = async (campaignData: CampaignForm, contacts: Contact[]) => {
+  const createCampaign = async (campaignData: CampaignForm, contacts: Contact[], disabledEmails: string[] = []) => {
     try {
-      // Extract email addresses from contacts (filters out inactive and unsubscribed)
+      // Extract email addresses from contacts (filters out unsubscribed)
       const recipients = await extractEmailAddresses(contacts)
       
       if (recipients.length === 0) {
         throw new Error('No valid email addresses found in the selected contacts')
       }
+
+      const disabledEmailsSet = new Set(disabledEmails.map(e => e.toLowerCase().trim()))
 
       // Create campaign
       const { data: campaign, error: campaignError } = await supabase
@@ -112,14 +114,14 @@ export function useCampaigns() {
         return null
       }
 
-      // Create campaign recipients
+      // Create campaign recipients - include all recipients, but set enabled based on disabledEmails
       const recipientData = recipients.map(recipient => ({
         campaign_id: campaign.id,
         contact_id: contacts.find(c => c.email === recipient.email)?.id || '',
         email_address: recipient.email,
         first_name: recipient.firstName,
         last_name: recipient.lastName,
-        enabled: true  // All new recipients are enabled by default
+        enabled: !disabledEmailsSet.has(recipient.email.toLowerCase().trim())
       }))
 
       const { error: recipientsError } = await supabase

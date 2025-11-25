@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Mail, Users, Filter, ArrowRight, X } from 'lucide-react'
+import { Mail, Users, Filter, ArrowRight, CheckCircle2 } from 'lucide-react'
+import { Checkbox } from '@/components/ui/checkbox'
 import { useCampaigns } from '@/hooks/useCampaigns'
 import { useToast } from '@/hooks/use-toast'
 import type { Database } from '@/lib/supabase'
@@ -37,7 +38,7 @@ export default function CampaignFromFilter({
     ctaUrl: ''
   })
   const [showHtmlEditor, setShowHtmlEditor] = useState(false)
-  const [removedRecipients, setRemovedRecipients] = useState<Set<string>>(new Set())
+  const [disabledRecipients, setDisabledRecipients] = useState<Set<string>>(new Set())
 
   const { createCampaign } = useCampaigns()
   const { toast } = useToast()
@@ -45,27 +46,24 @@ export default function CampaignFromFilter({
   // Extract email addresses from filtered contacts - memoized to prevent recalculation on every render
   const emailRecipients = useMemo(() => {
     return filteredContacts
-      .filter(contact => contact.email && !removedRecipients.has(contact.email.toLowerCase())) // Only include contacts with email that haven't been removed
+      .filter(contact => contact.email) // Only include contacts with email
       .map(contact => ({
         email: contact.email!,
         firstName: contact.first_name || undefined,
         lastName: contact.last_name || undefined,
-        contact
+        contact,
+        disabled: disabledRecipients.has(contact.email!.toLowerCase())
       }))
-  }, [filteredContacts, removedRecipients])
+  }, [filteredContacts, disabledRecipients])
 
-  const handleRemoveRecipient = useCallback((email: string) => {
-    setRemovedRecipients(prev => {
+  const handleToggleRecipient = useCallback((email: string, enabled: boolean) => {
+    setDisabledRecipients(prev => {
       const next = new Set(prev)
-      next.add(email.toLowerCase())
-      return next
-    })
-  }, [])
-
-  const handleRestoreRecipient = useCallback((email: string) => {
-    setRemovedRecipients(prev => {
-      const next = new Set(prev)
-      next.delete(email.toLowerCase())
+      if (enabled) {
+        next.delete(email.toLowerCase())
+      } else {
+        next.add(email.toLowerCase())
+      }
       return next
     })
   }, [])
@@ -85,12 +83,9 @@ export default function CampaignFromFilter({
         } : undefined
       }
 
-      // Filter out removed recipients when creating the campaign
-      const contactsToUse = filteredContacts.filter(
-        contact => contact.email && !removedRecipients.has(contact.email.toLowerCase())
-      )
-      
-      const result = await createCampaign(submissionData, contactsToUse)
+      // Include all contacts, but pass disabled emails list
+      const disabledEmails = Array.from(disabledRecipients)
+      const result = await createCampaign(submissionData, filteredContacts, disabledEmails)
       
       if (result) {
         toast({
@@ -113,7 +108,7 @@ export default function CampaignFromFilter({
         variant: "destructive"
       })
     }
-  }, [campaignData, templateType, defaultTemplateProps, createCampaign, filteredContacts, removedRecipients, emailRecipients.length, toast, onClose])
+  }, [campaignData, templateType, defaultTemplateProps, createCampaign, filteredContacts, disabledRecipients, emailRecipients.length, toast, onClose])
 
   if (step === 'preview') {
     return (
@@ -145,58 +140,29 @@ export default function CampaignFromFilter({
             <h4 className="font-medium">Email Recipients</h4>
             <div className="max-h-60 overflow-y-auto space-y-2">
               {emailRecipients.map((recipient, index) => (
-                <div key={`${recipient.email}-${index}`} className="flex items-center justify-between p-2 bg-muted rounded hover:bg-muted/80 transition-colors">
-                  <div className="flex-1 min-w-0">
-                    <span className="font-medium">
-                      {recipient.firstName} {recipient.lastName}
-                    </span>
-                    <span className="text-sm text-muted-foreground ml-2">
-                      {recipient.email}
-                    </span>
+                <div key={`${recipient.email}-${index}`} className={`flex items-center justify-between p-2 rounded hover:bg-muted/80 transition-colors ${recipient.disabled ? 'bg-muted/50 opacity-60' : 'bg-muted'}`}>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <Checkbox
+                      checked={!recipient.disabled}
+                      onCheckedChange={(checked) => {
+                        handleToggleRecipient(recipient.email, checked === true)
+                      }}
+                      className="flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium">
+                        {recipient.firstName} {recipient.lastName}
+                      </span>
+                      <span className="text-sm text-muted-foreground ml-2">
+                        {recipient.email}
+                      </span>
+                    </div>
+                    {!recipient.disabled && (
+                      <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    )}
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 flex-shrink-0 ml-2"
-                    onClick={() => handleRemoveRecipient(recipient.email)}
-                    title="Remove recipient"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
                 </div>
               ))}
-              {removedRecipients.size > 0 && (
-                <div className="mt-3 pt-3 border-t">
-                  <p className="text-sm text-muted-foreground mb-2">Removed recipients ({removedRecipients.size}):</p>
-                  <div className="space-y-1 max-h-32 overflow-y-auto">
-                    {filteredContacts
-                      .filter(contact => contact.email && removedRecipients.has(contact.email.toLowerCase()))
-                      .map((contact, index) => (
-                        <div key={`removed-${contact.email}-${index}`} className="flex items-center justify-between p-2 bg-red-50 dark:bg-red-950/20 rounded text-sm">
-                          <div className="flex-1 min-w-0">
-                            <span className="font-medium opacity-75">
-                              {contact.first_name} {contact.last_name}
-                            </span>
-                            <span className="text-muted-foreground ml-2 opacity-75">
-                              {contact.email}
-                            </span>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7 flex-shrink-0 ml-2"
-                            onClick={() => handleRestoreRecipient(contact.email!)}
-                            title="Restore recipient"
-                          >
-                            <X className="h-3 w-3 rotate-45" />
-                          </Button>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
             </div>
           </div>
 
@@ -395,35 +361,37 @@ export default function CampaignFromFilter({
             <span className="font-medium">Recipients</span>
           </div>
           <p className="text-sm text-muted-foreground mb-3">
-            This campaign will be sent to <strong>{emailRecipients.length}</strong> contacts with email addresses.
-            {removedRecipients.size > 0 && (
+            This campaign will be sent to <strong>{emailRecipients.filter(r => !r.disabled).length}</strong> of <strong>{emailRecipients.length}</strong> contacts.
+            {disabledRecipients.size > 0 && (
               <span className="ml-2 text-muted-foreground">
-                ({removedRecipients.size} removed)
+                ({disabledRecipients.size} disabled)
               </span>
             )}
           </p>
           {emailRecipients.length > 0 && (
             <div className="max-h-60 overflow-y-auto space-y-2 mt-3">
               {emailRecipients.map((recipient, index) => (
-                <div key={`${recipient.email}-${index}`} className="flex items-center justify-between p-2 bg-background rounded border hover:bg-muted/50 transition-colors">
-                  <div className="flex-1 min-w-0">
-                    <span className="font-medium">
-                      {recipient.firstName} {recipient.lastName}
-                    </span>
-                    <span className="text-sm text-muted-foreground ml-2">
-                      {recipient.email}
-                    </span>
+                <div key={`${recipient.email}-${index}`} className={`flex items-center justify-between p-2 rounded border hover:bg-muted/50 transition-colors ${recipient.disabled ? 'bg-muted/50 opacity-60 border-muted' : 'bg-background'}`}>
+                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                    <Checkbox
+                      checked={!recipient.disabled}
+                      onCheckedChange={(checked) => {
+                        handleToggleRecipient(recipient.email, checked === true)
+                      }}
+                      className="flex-shrink-0"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <span className="font-medium">
+                        {recipient.firstName} {recipient.lastName}
+                      </span>
+                      <span className="text-sm text-muted-foreground ml-2">
+                        {recipient.email}
+                      </span>
+                    </div>
+                    {!recipient.disabled && (
+                      <CheckCircle2 className="h-4 w-4 text-green-600 flex-shrink-0" />
+                    )}
                   </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8 flex-shrink-0 ml-2"
-                    onClick={() => handleRemoveRecipient(recipient.email)}
-                    title="Remove recipient"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
                 </div>
               ))}
             </div>

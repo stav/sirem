@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -162,111 +162,19 @@ export default function CampaignList({
           const stats = getDeliveryStats(campaign)
           
           return (
-            <Card key={campaign.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg">{campaign.name}</CardTitle>
-                    <CardDescription className="text-sm">
-                      {campaign.subject}
-                    </CardDescription>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {getStatusBadge(campaign.status)}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => onViewCampaign(campaign)}>
-                          <Eye className="mr-2 h-4 w-4" />
-                          View Details
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => onEditCampaign(campaign)}>
-                          <Edit className="mr-2 h-4 w-4" />
-                          Edit
-                        </DropdownMenuItem>
-                        {canSend(campaign) && (
-                          <DropdownMenuItem onClick={() => onSendCampaign(campaign.id)}>
-                            <Send className="mr-2 h-4 w-4" />
-                            Send Now
-                          </DropdownMenuItem>
-                        )}
-                        {canResend(campaign) && (
-                          <DropdownMenuItem onClick={() => onSendCampaign(campaign.id)}>
-                            <Send className="mr-2 h-4 w-4" />
-                            Resend
-                          </DropdownMenuItem>
-                        )}
-                        <DropdownMenuItem 
-                          onClick={() => handleDeleteClick(campaign.id)}
-                          className="text-red-600"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                  <div>
-                    <div className="text-gray-500">Recipients</div>
-                    <div className="font-semibold">{stats.total}</div>
-                  </div>
-                  <div>
-                    <div className="text-gray-500">Sent</div>
-                    <div className="font-semibold">{stats.sent}</div>
-                  </div>
-                  <div>
-                    <div className="text-gray-500">Delivered</div>
-                    <div className="font-semibold">{stats.delivered}</div>
-                  </div>
-                  <div>
-                    <div className="text-gray-500">Opened</div>
-                    <div className="font-semibold">{stats.opened}</div>
-                  </div>
-                </div>
-
-                {campaign.status === 'sent' && stats.delivered > 0 && (
-                  <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
-                    <div>
-                      <div className="text-gray-500">Delivery Rate</div>
-                      <div className="font-semibold text-green-600">{stats.deliveryRate}%</div>
-                    </div>
-                    <div>
-                      <div className="text-gray-500">Open Rate</div>
-                      <div className="font-semibold text-blue-600">{stats.openRate}%</div>
-                    </div>
-                    <div>
-                      <div className="text-gray-500">Click Rate</div>
-                      <div className="font-semibold text-purple-600">{stats.clickRate}%</div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
-                  <div>
-                    Created {formatDate(campaign.created_at)}
-                  </div>
-                  {campaign.sent_at && (
-                    <div>
-                      Sent {formatDate(campaign.sent_at)}
-                    </div>
-                  )}
-                  {campaign.scheduled_at && campaign.status === 'scheduled' && (
-                    <div className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      Scheduled for {formatDate(campaign.scheduled_at)}
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+            <CampaignCard
+              key={campaign.id}
+              campaign={campaign}
+              stats={stats}
+              getStatusBadge={getStatusBadge}
+              canSend={canSend}
+              canResend={canResend}
+              onViewCampaign={onViewCampaign}
+              onEditCampaign={onEditCampaign}
+              onSendCampaign={onSendCampaign}
+              handleDeleteClick={handleDeleteClick}
+              formatDate={formatDate}
+            />
           )
         })}
       </div>
@@ -289,5 +197,177 @@ export default function CampaignList({
         </AlertDialogContent>
       </AlertDialog>
     </>
+  )
+}
+
+// Separate component to fetch enabled count per campaign
+function CampaignCard({
+  campaign,
+  stats,
+  getStatusBadge,
+  canSend,
+  canResend,
+  onViewCampaign,
+  onEditCampaign,
+  onSendCampaign,
+  handleDeleteClick,
+  formatDate
+}: {
+  campaign: Campaign
+  stats: {
+    total: number
+    sent: number
+    delivered: number
+    opened: number
+    clicked: number
+    bounced: number
+    deliveryRate: number
+    openRate: number
+    clickRate: number
+  }
+  getStatusBadge: (status: Campaign['status']) => React.ReactElement
+  canSend: (campaign: Campaign) => boolean
+  canResend: (campaign: Campaign) => boolean
+  onViewCampaign: (campaign: Campaign) => void
+  onEditCampaign: (campaign: Campaign) => void
+  onSendCampaign: (campaignId: string) => void
+  handleDeleteClick: (campaignId: string) => void
+  formatDate: (dateString: string) => string
+}) {
+  const [enabledCount, setEnabledCount] = useState<number | null>(null)
+
+  useEffect(() => {
+    // Fetch enabled count for this campaign
+    const fetchEnabledCount = async () => {
+      try {
+        const { supabase } = await import('@/lib/supabase')
+        const { count } = await supabase
+          .from('campaign_recipients')
+          .select('*', { count: 'exact', head: true })
+          .eq('campaign_id', campaign.id)
+          .neq('enabled', false)
+
+        setEnabledCount(count ?? 0)
+      } catch (error) {
+        console.error('Error fetching enabled count:', error)
+      }
+    }
+
+    if (campaign.status === 'draft' || campaign.status === 'scheduled') {
+      fetchEnabledCount()
+    }
+  }, [campaign.id, campaign.status])
+
+  return (
+    <Card className="hover:shadow-md transition-shadow">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className="space-y-1">
+            <CardTitle className="text-lg">{campaign.name}</CardTitle>
+            <CardDescription className="text-sm">
+              {campaign.subject}
+            </CardDescription>
+          </div>
+          <div className="flex items-center gap-2">
+            {getStatusBadge(campaign.status)}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm">
+                  <MoreHorizontal className="h-4 w-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={() => onViewCampaign(campaign)}>
+                  <Eye className="mr-2 h-4 w-4" />
+                  View Details
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => onEditCampaign(campaign)}>
+                  <Edit className="mr-2 h-4 w-4" />
+                  Edit
+                </DropdownMenuItem>
+                {canSend(campaign) && (
+                  <DropdownMenuItem onClick={() => onSendCampaign(campaign.id)}>
+                    <Send className="mr-2 h-4 w-4" />
+                    Send Now
+                  </DropdownMenuItem>
+                )}
+                {canResend(campaign) && (
+                  <DropdownMenuItem onClick={() => onSendCampaign(campaign.id)}>
+                    <Send className="mr-2 h-4 w-4" />
+                    Resend
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem 
+                  onClick={() => handleDeleteClick(campaign.id)}
+                  className="text-red-600"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div>
+            <div className="text-gray-500">Recipients</div>
+            <div className="font-semibold">{stats.total}</div>
+            {campaign.status === 'draft' || campaign.status === 'scheduled' ? (
+              <div className="text-xs text-gray-400 mt-1">
+                {enabledCount !== null ? `${enabledCount} enabled` : 'Total added'}
+              </div>
+            ) : null}
+          </div>
+          <div>
+            <div className="text-gray-500">Sent</div>
+            <div className="font-semibold">{stats.sent}</div>
+          </div>
+          <div>
+            <div className="text-gray-500">Delivered</div>
+            <div className="font-semibold">{stats.delivered}</div>
+          </div>
+          <div>
+            <div className="text-gray-500">Opened</div>
+            <div className="font-semibold">{stats.opened}</div>
+          </div>
+        </div>
+
+        {campaign.status === 'sent' && stats.delivered > 0 && (
+          <div className="mt-4 grid grid-cols-3 gap-4 text-sm">
+            <div>
+              <div className="text-gray-500">Delivery Rate</div>
+              <div className="font-semibold text-green-600">{stats.deliveryRate}%</div>
+            </div>
+            <div>
+              <div className="text-gray-500">Open Rate</div>
+              <div className="font-semibold text-blue-600">{stats.openRate}%</div>
+            </div>
+            <div>
+              <div className="text-gray-500">Click Rate</div>
+              <div className="font-semibold text-purple-600">{stats.clickRate}%</div>
+            </div>
+          </div>
+        )}
+
+        <div className="mt-4 flex items-center justify-between text-sm text-gray-500">
+          <div>
+            Created {formatDate(campaign.created_at)}
+          </div>
+          {campaign.sent_at && (
+            <div>
+              Sent {formatDate(campaign.sent_at)}
+            </div>
+          )}
+          {campaign.scheduled_at && campaign.status === 'scheduled' && (
+            <div className="flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              Scheduled for {formatDate(campaign.scheduled_at)}
+            </div>
+          )}
+        </div>
+      </CardContent>
+    </Card>
   )
 }
