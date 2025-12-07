@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -24,7 +24,7 @@ interface ContactBasicInfoProps {
   contact: Contact
   tags: TagWithCategory[]
   tagsLoading: boolean
-  onTagsUpdated?: () => void
+  onTagsUpdatedWithData: (tags: TagWithCategory[]) => void
   onContactUpdated?: () => void
 }
 
@@ -32,22 +32,14 @@ export default function ContactBasicInfo({
   contact,
   tags,
   tagsLoading,
-  onTagsUpdated,
-  onContactUpdated,
+  onTagsUpdatedWithData,
 }: ContactBasicInfoProps) {
   const [isEditingTags, setIsEditingTags] = useState(false)
-
-  const handleTagsChange = useCallback(() => {
-    // Tags are updated in real-time by TagPicker
-    // Changes are saved immediately to the database
-    // Refresh the tags display and trigger parent refresh
-    if (onTagsUpdated) {
-      onTagsUpdated()
-    }
-    if (onContactUpdated) {
-      onContactUpdated()
-    }
-  }, [onTagsUpdated, onContactUpdated])
+  
+  // Reset editing state when contact changes
+  useEffect(() => {
+    setIsEditingTags(false)
+  }, [contact.id])
 
   return (
     <div className="space-y-4">
@@ -75,7 +67,12 @@ export default function ContactBasicInfo({
         </div>
 
         {isEditingTags ? (
-          <TagPicker contactId={contact.id} selectedTagIds={tags.map((t) => t.id)} onTagsChange={handleTagsChange} />
+          <TagPicker 
+            key={`tag-picker-${contact.id}`}
+            contactId={contact.id} 
+            selectedTagIds={tags.map((t) => t.id)} 
+            onTagsChangeWithData={onTagsUpdatedWithData}
+          />
         ) : (
           <>
             {tagsLoading ? (

@@ -111,6 +111,14 @@ export default function ContactViewModal({
     }
   }, [contact?.id]) // #SMA Intentionally excluding contact to prevent infinite loops
 
+  // Optimistically update tags with full tag data (no fetch needed)
+  const updateTagsOptimistically = useCallback((tags: TagWithCategory[]) => {
+    // Directly update tags state with the provided tag objects
+    // No database fetch needed - TagPicker already saved to DB
+    // This prevents any re-renders or fetches that could cause the contact list to refresh
+    setTags(tags)
+  }, [])
+
   useEffect(() => {
     if (!contact || !isOpen) return
 
@@ -176,7 +184,7 @@ export default function ContactViewModal({
           contact={contact}
           tags={tags}
           tagsLoading={tagsLoading}
-          onTagsUpdated={fetchTags}
+          onTagsUpdatedWithData={updateTagsOptimistically}
           onContactUpdated={onContactUpdated}
         />
         <ContactRolesDisplay contact={contact} refreshTrigger={roleRefreshTrigger} />

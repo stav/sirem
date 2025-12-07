@@ -19,15 +19,17 @@ interface TagWithCategory extends Tag {
 interface TagPickerProps {
   contactId?: string
   selectedTagIds: string[]
-  onTagsChange: (tagIds: string[]) => void
+  onTagsChange?: (tagIds: string[]) => void
+  onTagsChangeWithData?: (tags: TagWithCategory[]) => void
   className?: string
 }
 
-function TagPicker({ contactId, selectedTagIds, onTagsChange, className }: TagPickerProps) {
+function TagPicker({ contactId, selectedTagIds, onTagsChange, onTagsChangeWithData, className }: TagPickerProps) {
   // Only fetch tags if we have a contactId to prevent unnecessary API calls
   const { tags, categories, loading, assignTagToContact, removeTagFromContact } = useTags()
   const [open, setOpen] = useState(false)
   const [selectedTags, setSelectedTags] = useState<TagWithCategory[]>([])
+  
 
   // Update selected tags when tags or selectedTagIds change
   useEffect(() => {
@@ -48,7 +50,14 @@ function TagPicker({ contactId, selectedTagIds, onTagsChange, className }: TagPi
     if (isAlreadySelected) {
       // Remove tag
       const newTagIds = selectedTagIds.filter((id) => id !== tag.id)
-      onTagsChange(newTagIds)
+      const updatedTags = selectedTags.filter((t) => t.id !== tag.id)
+      
+      // Prefer onTagsChangeWithData to avoid database fetches
+      if (onTagsChangeWithData) {
+        onTagsChangeWithData(updatedTags)
+      } else if (onTagsChange) {
+        onTagsChange(newTagIds)
+      }
 
       // If contactId is provided, update the database immediately
       if (contactId) {
@@ -57,7 +66,14 @@ function TagPicker({ contactId, selectedTagIds, onTagsChange, className }: TagPi
     } else {
       // Add tag
       const newTagIds = [...selectedTagIds, tag.id]
-      onTagsChange(newTagIds)
+      const updatedTags = [...selectedTags, tag]
+      
+      // Prefer onTagsChangeWithData to avoid database fetches
+      if (onTagsChangeWithData) {
+        onTagsChangeWithData(updatedTags)
+      } else if (onTagsChange) {
+        onTagsChange(newTagIds)
+      }
 
       // If contactId is provided, update the database immediately
       if (contactId) {
@@ -68,7 +84,14 @@ function TagPicker({ contactId, selectedTagIds, onTagsChange, className }: TagPi
 
   const handleRemoveTag = async (tagId: string) => {
     const newTagIds = selectedTagIds.filter((id) => id !== tagId)
-    onTagsChange(newTagIds)
+    const updatedTags = selectedTags.filter((t) => t.id !== tagId)
+    
+    // Prefer onTagsChangeWithData to avoid database fetches
+    if (onTagsChangeWithData) {
+      onTagsChangeWithData(updatedTags)
+    } else if (onTagsChange) {
+      onTagsChange(newTagIds)
+    }
 
     // If contactId is provided, update the database immediately
     if (contactId) {
