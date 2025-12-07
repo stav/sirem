@@ -454,10 +454,7 @@ export default function ContactForm({
                 selectedTagIds={contactTagIds}
                 onTagsChange={(tagIds) => {
                   setContactTagIds(tagIds)
-                  // Optionally refresh parent contact list
-                  if (onRefreshContact) {
-                    onRefreshContact()
-                  }
+                  // Tags are saved immediately by TagPicker, so we don't need to refresh
                 }}
               />
             </div>
