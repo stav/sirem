@@ -23,6 +23,7 @@ export const metadata: Metadata = {
     default: 'Sirem',
   },
   description: 'A modern CRM system for managing contacts and actions',
+  referrer: 'strict-origin-when-cross-origin',
 }
 
 export default function RootLayout({
