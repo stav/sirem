@@ -19,36 +19,58 @@ export async function fetchAllRecordsServer<T>(
   ascending: boolean = false,
   limit: number = 1000
 ): Promise<T[]> {
-  const supabase = await createServerSupabaseClient()
-  let allRecords: T[] = []
-  let offset = 0
-  let hasMore = true
-
-  while (hasMore) {
-    const { data, error } = await supabase
-      .from(tableName)
-      .select(selectQuery)
-      .order(orderBy, { ascending })
-      .range(offset, offset + limit - 1)
-
-    if (error) {
-      console.error(`Error fetching ${tableName}:`, error)
-      break
+  try {
+    const supabase = await createServerSupabaseClient()
+    
+    // Verify Supabase URL is configured
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
+    if (!supabaseUrl || supabaseUrl.includes('your-project-id')) {
+      throw new Error(
+        `Supabase URL not configured. Please set NEXT_PUBLIC_SUPABASE_URL in .env.local. ` +
+        `Current value: ${supabaseUrl ? 'invalid' : 'missing'}`
+      )
     }
+    
+    let allRecords: T[] = []
+    let offset = 0
+    let hasMore = true
 
-    if (data && data.length > 0) {
-      allRecords = [...allRecords, ...(data as T[])]
-      offset += limit
+    while (hasMore) {
+      const { data, error } = await supabase
+        .from(tableName)
+        .select(selectQuery)
+        .order(orderBy, { ascending })
+        .range(offset, offset + limit - 1)
 
-      // If we got less than the limit, we've reached the end
-      if (data.length < limit) {
+      if (error) {
+        console.error(`Error fetching ${tableName}:`, error)
+        throw new Error(`Failed to fetch ${tableName}: ${error.message} (${error.code || 'unknown'})`)
+      }
+
+      if (data && data.length > 0) {
+        allRecords = [...allRecords, ...(data as T[])]
+        offset += limit
+
+        // If we got less than the limit, we've reached the end
+        if (data.length < limit) {
+          hasMore = false
+        }
+      } else {
         hasMore = false
       }
-    } else {
-      hasMore = false
     }
-  }
 
-  return allRecords
+    return allRecords
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error)
+    console.error(`Error in fetchAllRecordsServer for ${tableName}:`, errorMessage)
+    
+    // Re-throw with more context
+    throw new Error(
+      `Database fetch failed for ${tableName}. ` +
+      `This usually means: 1) Supabase project is paused, 2) Invalid credentials in .env.local, ` +
+      `or 3) Network connectivity issues. Error: ${errorMessage}`
+    )
+  }
 }
 
