@@ -580,7 +580,6 @@ export function useCampaignRecipients(campaignId: string) {
     if (campaignId) {
       fetchRecipients()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaignId])
 
   return {

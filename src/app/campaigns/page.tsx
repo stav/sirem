@@ -302,7 +302,6 @@ function CampaignAnalytics({ campaign }: { campaign: Campaign }) {
 
   useEffect(() => {
     fetchRecipients()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [campaign.id])
 
   const handleToggleEnabled = async (recipientId: string, enabled: boolean) => {
