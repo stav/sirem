@@ -423,7 +423,7 @@ async function main() {
 
     // Add priority fields first
     priorityFields.forEach((key) => {
-      if (obj.hasOwnProperty(key)) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
         sorted[key] = sortObjectKeys(obj[key])
       }
     })

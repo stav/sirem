@@ -221,7 +221,6 @@ export function useContacts(options?: UseContactsOptions) {
       return
     }
     fetchContacts()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shouldAutoFetch])
 
   return {

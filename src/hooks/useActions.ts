@@ -230,7 +230,6 @@ export function useActions(options?: UseActionsOptions) {
       return
     }
     fetchActions()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [shouldAutoFetch])
 
   return {

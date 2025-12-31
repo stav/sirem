@@ -219,7 +219,6 @@ export default function ManageClient({ initialContacts, initialActions }: Manage
       setSelectedContact(null)
       setSingleContactView(false)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams, actions, contacts, contactsLoading, actionsLoading, router])
 
   const handleAddContact = () => {

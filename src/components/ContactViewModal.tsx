@@ -109,7 +109,6 @@ export default function ContactViewModal({
     } finally {
       setTagsLoading(false)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contact?.id]) // #SMA Intentionally excluding contact to prevent infinite loops
 
   useEffect(() => {
@@ -139,7 +138,6 @@ export default function ContactViewModal({
 
     fetchAddresses()
     fetchTags()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contact?.id, isOpen]) // #SMA Intentionally excluding fetchTags to prevent infinite loops
 
   if (!contact) return null

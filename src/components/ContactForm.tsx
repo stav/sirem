@@ -203,7 +203,6 @@ export default function ContactForm({
       fetchAddresses()
       fetchContactTags()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [editingContact?.id, isOpen]) // #SMA Intentionally excluding fetchAddresses and fetchContactTags to prevent infinite loops
 
   // Clear state when modal is closed
