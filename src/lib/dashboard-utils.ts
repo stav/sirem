@@ -146,7 +146,7 @@ export function calculateDashboardData(contacts: DashboardContact[], actions: Ac
   const totalActions = actions.length
   const completedActions = actions.filter((a) => a.completed_date).length
   const pendingActions = totalActions - completedActions
-  
+
   // Use UTC for overdue comparison
   const todayUTC = new Date()
   const todayDateUTC = new Date(Date.UTC(todayUTC.getUTCFullYear(), todayUTC.getUTCMonth(), todayUTC.getUTCDate()))
@@ -239,5 +239,3 @@ export function calculateDashboardData(contacts: DashboardContact[], actions: Ac
     pastBirthdays,
   }
 }
-
-

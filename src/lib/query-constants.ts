@@ -38,4 +38,3 @@ export const CONTACTS_SELECT_QUERY = `
     updated_at
   )
 `
-

@@ -4,11 +4,6 @@ export const metadata: Metadata = {
   title: 'Manage',
 }
 
-export default function ManageLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function ManageLayout({ children }: { children: React.ReactNode }) {
   return children
 }
-

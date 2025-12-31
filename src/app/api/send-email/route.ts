@@ -15,24 +15,21 @@ export async function POST(request: NextRequest) {
 
     // If a template is requested, render it
     if (templateName === 'DefaultTemplate') {
-        // Get recipient email (handle both array and single string)
-        const recipientEmail = Array.isArray(to) && to.length > 0 ? to[0] : (typeof to === 'string' ? to : '')
-        
-        // Pass recipient email to template (baseUrl no longer needed - uses hardcoded production domain)
-        const finalTemplateProps = {
-          ...templateProps,
-          recipientEmail,
-        }
-        const emailElement = DefaultTemplate(finalTemplateProps)
-        htmlContent = await render(emailElement)
-        textContent = await render(emailElement, { plainText: true })
+      // Get recipient email (handle both array and single string)
+      const recipientEmail = Array.isArray(to) && to.length > 0 ? to[0] : typeof to === 'string' ? to : ''
+
+      // Pass recipient email to template (baseUrl no longer needed - uses hardcoded production domain)
+      const finalTemplateProps = {
+        ...templateProps,
+        recipientEmail,
+      }
+      const emailElement = DefaultTemplate(finalTemplateProps)
+      htmlContent = await render(emailElement)
+      textContent = await render(emailElement, { plainText: true })
     }
 
     if (!process.env.RESEND_API_KEY) {
-      return NextResponse.json(
-        { success: false, error: 'Email service not configured' },
-        { status: 500 }
-      )
+      return NextResponse.json({ success: false, error: 'Email service not configured' }, { status: 500 })
     }
 
     const fromEmail = process.env.RESEND_FROM_EMAIL
@@ -52,14 +49,14 @@ export async function POST(request: NextRequest) {
       hasHtml: !!htmlContent,
       hasText: !!textContent,
       recipientsCount: to.length,
-      templateName: templateName || 'raw'
+      templateName: templateName || 'raw',
     })
 
     // Build List-Unsubscribe header for email client unsubscribe button
     // RFC 2369: List-Unsubscribe header allows email clients to show unsubscribe button
     // Uses hardcoded production domain so links work regardless of where campaign was created
     const toArray = Array.isArray(to) ? to : [to]
-    
+
     // For multiple recipients, we'll use a generic unsubscribe URL
     // (Email clients will show the button, but clicking goes to our page)
     // For single recipient, we can personalize it
@@ -81,20 +78,14 @@ export async function POST(request: NextRequest) {
     if (error) {
       console.error('Resend API error:', error)
       const errorMessage = error.message || JSON.stringify(error)
-      return NextResponse.json(
-        { success: false, error: errorMessage },
-        { status: 500 }
-      )
+      return NextResponse.json({ success: false, error: errorMessage }, { status: 500 })
     }
 
     return NextResponse.json({
       success: true,
-      messageId: data?.id
+      messageId: data?.id,
     })
   } catch {
-    return NextResponse.json(
-      { success: false, error: 'Failed to send email' },
-      { status: 500 }
-    )
+    return NextResponse.json({ success: false, error: 'Failed to send email' }, { status: 500 })
   }
 }

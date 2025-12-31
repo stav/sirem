@@ -660,8 +660,8 @@ export default function ContactList({
             }
           }}
         >
-          <div className="flex max-h-[90vh] w-full max-w-2xl flex-col rounded-lg bg-card text-card-foreground shadow-lg border border-border">
-            <div className="flex items-center justify-between border-b border-border p-4">
+          <div className="bg-card text-card-foreground border-border flex max-h-[90vh] w-full max-w-2xl flex-col rounded-lg border shadow-lg">
+            <div className="border-border flex items-center justify-between border-b p-4">
               <h2 className="text-lg font-semibold">Contact List for Printing</h2>
               <div className="flex items-center space-x-4">
                 <div className="flex items-center space-x-2">
@@ -687,7 +687,7 @@ export default function ContactList({
               </div>
             </div>
             <div className="flex-1 overflow-y-auto p-4">
-              <div className="mb-4 text-sm text-muted-foreground">
+              <div className="text-muted-foreground mb-4 text-sm">
                 Copy the{' '}
                 {selectedFormat === 'csv'
                   ? 'CSV data'
@@ -699,10 +699,10 @@ export default function ContactList({
               <textarea
                 readOnly
                 value={formatContactsForPrint()}
-                className="h-64 w-full resize-none rounded-md border border-input bg-background p-3 font-mono text-sm text-foreground focus:ring-2 focus:ring-ring focus:outline-none"
+                className="border-input bg-background text-foreground focus:ring-ring h-64 w-full resize-none rounded-md border p-3 font-mono text-sm focus:ring-2 focus:outline-none"
                 onClick={(e) => (e.target as HTMLTextAreaElement).select()}
               />
-              <div className="mt-4 flex items-center justify-between text-sm text-muted-foreground">
+              <div className="text-muted-foreground mt-4 flex items-center justify-between text-sm">
                 <span>{filteredContacts.length} contacts listed</span>
                 <Button
                   size="sm"

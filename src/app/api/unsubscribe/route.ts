@@ -75,30 +75,22 @@ export async function GET(request: NextRequest) {
     }
 
     // Find contact by email (check main email field)
-    const { data: contactData } = await supabase
-      .from('contacts')
-      .select('id, email')
-      .eq('email', emailLower)
-      .single()
+    const { data: contactData } = await supabase.from('contacts').select('id, email').eq('email', emailLower).single()
 
     const contactId = contactData?.id || null
 
     // Get client IP and user agent for audit trail
-    const ipAddress = request.headers.get('x-forwarded-for') || 
-                     request.headers.get('x-real-ip') || 
-                     'unknown'
+    const ipAddress = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || 'unknown'
     const userAgent = request.headers.get('user-agent') || 'unknown'
 
     // Record unsubscribe (only if not already exists)
-    const { error: unsubscribeError } = await supabase
-      .from('email_unsubscribes')
-      .insert({
-        email_address: emailLower,
-        contact_id: contactId,
-        source: 'link',
-        ip_address: ipAddress,
-        user_agent: userAgent,
-      })
+    const { error: unsubscribeError } = await supabase.from('email_unsubscribes').insert({
+      email_address: emailLower,
+      contact_id: contactId,
+      source: 'link',
+      ip_address: ipAddress,
+      user_agent: userAgent,
+    })
 
     if (unsubscribeError) {
       console.error('Error recording unsubscribe:', unsubscribeError)
@@ -147,5 +139,3 @@ export async function GET(request: NextRequest) {
     )
   }
 }
-
-

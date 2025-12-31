@@ -1,23 +1,13 @@
-import {
-  Body,
-  Container,
-  Head,
-  Heading,
-  Html,
-  Link,
-  Preview,
-  Text,
-  Section,
-} from '@react-email/components'
+import { Body, Container, Head, Heading, Html, Link, Preview, Text, Section } from '@react-email/components'
 import * as React from 'react'
 import { getUnsubscribeUrl } from '@/lib/email-service'
 
 interface DefaultTemplateProps {
-  heading?: string;
-  content?: string;
-  ctaText?: string;
-  ctaUrl?: string;
-  recipientEmail?: string;
+  heading?: string
+  content?: string
+  ctaText?: string
+  ctaUrl?: string
+  recipientEmail?: string
 }
 
 // Company information - hardcoded for email footer compliance
@@ -49,7 +39,7 @@ export const DefaultTemplate = ({
           {/* Use Text component with dangerouslySetInnerHTML to render HTML content */}
           {/* This is safe here because content comes from admin-controlled campaign creation */}
           <Text style={text} dangerouslySetInnerHTML={{ __html: htmlContent }} />
-          
+
           {ctaText && ctaUrl && (
             <Section style={btnContainer}>
               <Link href={ctaUrl} style={button}>
@@ -57,7 +47,7 @@ export const DefaultTemplate = ({
               </Link>
             </Section>
           )}
-          
+
           {/* Compliant Email Footer */}
           <Section style={footerSection}>
             <Text style={footerText}>
@@ -65,31 +55,29 @@ export const DefaultTemplate = ({
                 Unsubscribe
               </Link>
               {' | '}
-                  <Link href={PRIVACY_POLICY_URL} style={footerLink}>
-                    Privacy Policy
-                  </Link>
-                  {' | '}
-                <Link href={`mailto:${COMPANY_CONTACT_EMAIL}`} style={footerLink}>
-                  Contact Us
-                </Link>
+              <Link href={PRIVACY_POLICY_URL} style={footerLink}>
+                Privacy Policy
+              </Link>
+              {' | '}
+              <Link href={`mailto:${COMPANY_CONTACT_EMAIL}`} style={footerLink}>
+                Contact Us
+              </Link>
             </Text>
-            
+
             <Text style={footerText}>
               <strong>{COMPANY_NAME}</strong>
             </Text>
-            
-            <Text style={footerText}>
-              {COMPANY_ADDRESS}
-            </Text>
-            
+
+            <Text style={footerText}>{COMPANY_ADDRESS}</Text>
+
             <Text style={footerDisclaimer}>
-              You received this email because you are subscribed to our mailing list.
-              If you no longer wish to receive these emails, please{' '}
+              You received this email because you are subscribed to our mailing list. If you no longer wish to receive
+              these emails, please{' '}
               <Link href={finalUnsubscribeUrl} style={unsubscribeLink}>
                 unsubscribe here
               </Link>
               .
-          </Text>
+            </Text>
           </Section>
         </Container>
       </Body>
@@ -101,7 +89,8 @@ export default DefaultTemplate
 
 const main = {
   backgroundColor: '#ffffff',
-  fontFamily: '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif',
+  fontFamily:
+    '-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Oxygen-Sans,Ubuntu,Cantarell,"Helvetica Neue",sans-serif',
 }
 
 const container = {
@@ -175,4 +164,3 @@ const footerDisclaimer = {
   textAlign: 'center' as const,
   fontStyle: 'italic',
 }
-

@@ -50,7 +50,7 @@ export interface SendEmailResult {
 export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
   try {
     const payload: Record<string, unknown> = {
-      to: options.to.map(recipient => recipient.email),
+      to: options.to.map((recipient) => recipient.email),
       subject: options.subject,
       html: options.htmlContent,
       text: options.textContent,
@@ -70,19 +70,19 @@ export async function sendEmail(options: SendEmailOptions): Promise<SendEmailRes
     if (!result.success) {
       return {
         success: false,
-        error: result.error || 'Failed to send email'
+        error: result.error || 'Failed to send email',
       }
     }
 
     return {
       success: true,
-      messageId: result.messageId
+      messageId: result.messageId,
     }
   } catch (error) {
     console.error('Email sending error:', error)
     return {
       success: false,
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
+      error: error instanceof Error ? error.message : 'Unknown error occurred',
     }
   }
 }
@@ -111,11 +111,11 @@ export async function sendBulkEmails(
   // Process recipients individually for personalization
   for (let i = 0; i < recipients.length; i += batchSize) {
     const batch = recipients.slice(i, i + batchSize)
-    
+
     // Send each email individually with personalization
     for (let j = 0; j < batch.length; j++) {
       const recipient = batch[j]
-      
+
       // Personalize the content for this recipient
       let personalizedHtmlContent = template.htmlContent
       let personalizedTextContent = template.textContent
@@ -124,10 +124,7 @@ export async function sendBulkEmails(
 
       // Handle string template replacement
       if (template.htmlContent) {
-         personalizedHtmlContent = createPersonalizedTemplate(
-          template.htmlContent,
-          recipient
-        )
+        personalizedHtmlContent = createPersonalizedTemplate(template.htmlContent, recipient)
       }
 
       if (template.textContent || template.htmlContent) {
@@ -137,20 +134,17 @@ export async function sendBulkEmails(
         )
       }
 
-      personalizedSubject = createPersonalizedTemplate(
-        template.subject,
-        recipient
-      )
-      
+      personalizedSubject = createPersonalizedTemplate(template.subject, recipient)
+
       // Handle React Email props replacement (recursively personalize object values)
       if (template.templateProps) {
         personalizedProps = personalizeObject(template.templateProps, recipient)
       }
-      
+
       // Send single personalized email
       console.log('Sending campaign email', {
         to: recipient.email,
-        template: template.templateName || 'custom-html'
+        template: template.templateName || 'custom-html',
       })
       const result = await sendEmail({
         to: [recipient],
@@ -158,14 +152,14 @@ export async function sendBulkEmails(
         htmlContent: personalizedHtmlContent,
         textContent: personalizedTextContent,
         templateName: template.templateName,
-        templateProps: personalizedProps
+        templateProps: personalizedProps,
       })
 
       const emailResult: EmailResult = {
         email: recipient.email,
         success: result.success,
         messageId: result.messageId,
-        error: result.error
+        error: result.error,
       }
       results.push(emailResult)
 
@@ -179,7 +173,7 @@ export async function sendBulkEmails(
       // Add delay between each email to respect rate limits (2 requests per second = 500ms minimum)
       // Using 600ms to provide a safety margin
       if (j < batch.length - 1 || i + batchSize < recipients.length) {
-        await new Promise(resolve => setTimeout(resolve, delayMs))
+        await new Promise((resolve) => setTimeout(resolve, delayMs))
       }
     }
   }
@@ -190,10 +184,7 @@ export async function sendBulkEmails(
 /**
  * Create a personalized email template with contact data
  */
-export function createPersonalizedTemplate(
-  template: string,
-  contact: EmailRecipient
-): string {
+export function createPersonalizedTemplate(template: string, contact: EmailRecipient): string {
   let personalizedTemplate = template
 
   // Build full name with all components
@@ -211,38 +202,38 @@ export function createPersonalizedTemplate(
   if (contact.address1) addressParts.push(contact.address1)
   if (contact.address2) addressParts.push(contact.address2)
   const streetAddress = addressParts.join(', ').trim()
-  
+
   const cityStateZipParts: string[] = []
   if (contact.city) cityStateZipParts.push(contact.city)
   if (contact.state) cityStateZipParts.push(contact.state)
   if (contact.postalCode) cityStateZipParts.push(contact.postalCode)
   const cityStateZip = cityStateZipParts.join(', ').trim()
-  
+
   const fullAddress = [streetAddress, cityStateZip].filter(Boolean).join('\n').trim() || contact.fullAddress || ''
 
   // Replace common placeholders
   // Support both {{varName}} and {{ varName }} formats (with optional spaces)
   const replacements: Record<string, string> = {
     // Name fields
-    'firstName': contact.firstName || '',
-    'lastName': contact.lastName || '',
-    'middleName': contact.middleName || '',
-    'prefix': contact.prefix || '',
-    'suffix': contact.suffix || '',
-    'fullName': fullName || firstNameLastName,
+    firstName: contact.firstName || '',
+    lastName: contact.lastName || '',
+    middleName: contact.middleName || '',
+    prefix: contact.prefix || '',
+    suffix: contact.suffix || '',
+    fullName: fullName || firstNameLastName,
     // Contact fields
-    'email': contact.email || '',
-    'phone': contact.phone || '',
+    email: contact.email || '',
+    phone: contact.phone || '',
     // Address fields
-    'address1': contact.address1 || '',
-    'address2': contact.address2 || '',
-    'streetAddress': streetAddress,
-    'city': contact.city || '',
-    'state': contact.state || '',
-    'postalCode': contact.postalCode || '',
-    'zipCode': contact.postalCode || '', // Alias for postalCode
-    'county': contact.county || '',
-    'fullAddress': fullAddress,
+    address1: contact.address1 || '',
+    address2: contact.address2 || '',
+    streetAddress: streetAddress,
+    city: contact.city || '',
+    state: contact.state || '',
+    postalCode: contact.postalCode || '',
+    zipCode: contact.postalCode || '', // Alias for postalCode
+    county: contact.county || '',
+    fullAddress: fullAddress,
     // Fallback variants
     'firstName|fallback': contact.firstName || 'Valued Customer',
     'lastName|fallback': contact.lastName || '',
@@ -263,24 +254,21 @@ export function createPersonalizedTemplate(
 /**
  * Recursively personalize an object by replacing placeholders in all string values
  */
-function personalizeObject(
-  obj: Record<string, unknown>,
-  contact: EmailRecipient
-): Record<string, unknown> {
+function personalizeObject(obj: Record<string, unknown>, contact: EmailRecipient): Record<string, unknown> {
   const personalized: Record<string, unknown> = {}
-  
+
   for (const [key, value] of Object.entries(obj)) {
     if (typeof value === 'string') {
       // Replace placeholders in string values
       personalized[key] = createPersonalizedTemplate(value, contact)
     } else if (Array.isArray(value)) {
       // Recursively process array elements
-      personalized[key] = value.map(item => 
-        typeof item === 'string' 
+      personalized[key] = value.map((item) =>
+        typeof item === 'string'
           ? createPersonalizedTemplate(item, contact)
           : typeof item === 'object' && item !== null
-          ? personalizeObject(item as Record<string, unknown>, contact)
-          : item
+            ? personalizeObject(item as Record<string, unknown>, contact)
+            : item
       )
     } else if (typeof value === 'object' && value !== null) {
       // Recursively process nested objects
@@ -290,7 +278,7 @@ function personalizeObject(
       personalized[key] = value
     }
   }
-  
+
   return personalized
 }
 
@@ -311,9 +299,7 @@ export async function getUnsubscribedEmails(): Promise<Set<string>> {
     // Type assertion needed because email_unsubscribes table may not be in generated types
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const supabaseClient = supabase as any
-    const { data, error } = await supabaseClient
-      .from('email_unsubscribes')
-      .select('email_address')
+    const { data, error } = await supabaseClient.from('email_unsubscribes').select('email_address')
 
     if (error) {
       console.error('Error fetching unsubscribed emails:', error)
@@ -340,12 +326,12 @@ export async function extractEmailAddresses(
   unsubscribedEmails?: Set<string>
 ): Promise<EmailRecipient[]> {
   // Fetch unsubscribed emails if not provided
-  const unsubscribed = unsubscribedEmails || await getUnsubscribedEmails()
-  
+  const unsubscribed = unsubscribedEmails || (await getUnsubscribedEmails())
+
   const recipients: EmailRecipient[] = []
   const seenEmails = new Set<string>()
 
-  contacts.forEach(contact => {
+  contacts.forEach((contact) => {
     // Check main email field
     if (contact.email && isValidEmail(contact.email)) {
       const emailLower = contact.email.toLowerCase().trim()
@@ -353,7 +339,7 @@ export async function extractEmailAddresses(
         recipients.push({
           email: contact.email,
           firstName: contact.first_name,
-          lastName: contact.last_name
+          lastName: contact.last_name,
         })
         seenEmails.add(emailLower)
       }
@@ -371,10 +357,10 @@ export async function extractEmailAddresses(
 export function getUnsubscribeUrl(recipientEmail?: string | null): string {
   // Use environment variable if set, otherwise default to production domain
   const baseUrl = process.env.NEXT_PUBLIC_SITE_URL
-  
+
   if (recipientEmail) {
     return `${baseUrl}/api/unsubscribe?email=${encodeURIComponent(recipientEmail)}`
   }
-  
+
   return `${baseUrl}/api/unsubscribe`
 }

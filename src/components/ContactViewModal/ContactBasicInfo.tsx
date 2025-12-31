@@ -28,14 +28,9 @@ interface ContactBasicInfoProps {
   onContactUpdated?: () => void
 }
 
-export default function ContactBasicInfo({
-  contact,
-  tags,
-  tagsLoading,
-  onTagsUpdatedWithData,
-}: ContactBasicInfoProps) {
+export default function ContactBasicInfo({ contact, tags, tagsLoading, onTagsUpdatedWithData }: ContactBasicInfoProps) {
   const [isEditingTags, setIsEditingTags] = useState(false)
-  
+
   // Reset editing state when contact changes
   useEffect(() => {
     setIsEditingTags(false)
@@ -67,10 +62,10 @@ export default function ContactBasicInfo({
         </div>
 
         {isEditingTags ? (
-          <TagPicker 
+          <TagPicker
             key={`tag-picker-${contact.id}`}
-            contactId={contact.id} 
-            selectedTagIds={tags.map((t) => t.id)} 
+            contactId={contact.id}
+            selectedTagIds={tags.map((t) => t.id)}
             onTagsChangeWithData={onTagsUpdatedWithData}
           />
         ) : (

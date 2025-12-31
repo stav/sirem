@@ -16,4 +16,3 @@ export type ManageContact = Database['public']['Tables']['contacts']['Row'] & {
 }
 
 export type ManageAction = Database['public']['Tables']['actions']['Row']
-

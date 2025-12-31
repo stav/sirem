@@ -228,4 +228,3 @@ async function main() {
 
 // Run the ingestion
 main().catch(console.error)
-

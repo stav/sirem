@@ -123,12 +123,15 @@ function extractPlanTypeFromContent(pdfText) {
   if (!pdfText) return null
 
   const text = pdfText.toUpperCase()
-  
+
   // Check for SNP types first
-  if (text.includes('D-SNP') || text.includes('DUAL ELIGIBLE')) return { type_network: 'HMO', type_snp: 'D', type_program: 'SNP' }
-  if (text.includes('C-SNP') || text.includes('CHRONIC')) return { type_network: 'HMO', type_snp: 'C', type_program: 'SNP' }
-  if (text.includes('I-SNP') || text.includes('INSTITUTIONAL')) return { type_network: 'HMO', type_snp: 'I', type_program: 'SNP' }
-  
+  if (text.includes('D-SNP') || text.includes('DUAL ELIGIBLE'))
+    return { type_network: 'HMO', type_snp: 'D', type_program: 'SNP' }
+  if (text.includes('C-SNP') || text.includes('CHRONIC'))
+    return { type_network: 'HMO', type_snp: 'C', type_program: 'SNP' }
+  if (text.includes('I-SNP') || text.includes('INSTITUTIONAL'))
+    return { type_network: 'HMO', type_snp: 'I', type_program: 'SNP' }
+
   // Check for network types
   if (text.includes('PPO')) {
     return { type_network: 'PPO', type_extension: null, type_snp: null, type_program: 'MAPD' }
@@ -154,7 +157,9 @@ function extractCountiesFromContent(pdfText) {
 
   // Look for county lists in Aetna PDFs
   // Pattern: "which includes the following counties:\nOhio: Ashland, Belmont, Carroll..."
-  const countySectionMatch = pdfText.match(/which includes the following counties:[\s\S]{0,500}?([A-Z][a-z]+(?:\s*,\s*[A-Z][a-z]+){2,})/)
+  const countySectionMatch = pdfText.match(
+    /which includes the following counties:[\s\S]{0,500}?([A-Z][a-z]+(?:\s*,\s*[A-Z][a-z]+){2,})/
+  )
   if (countySectionMatch && countySectionMatch[1]) {
     const countyText = countySectionMatch[1]
     // Remove state prefix if present
@@ -233,7 +238,8 @@ function extractPlanDataFromPdf(pdfText, filename) {
   }
 
   // Extract deductible
-  const deductibleMatch = pdfText.match(/Plan deductible[\s\S]*?\$([\d,]+)/i) || pdfText.match(/Deductible:[\s\S]*?\$([\d,]+)/i)
+  const deductibleMatch =
+    pdfText.match(/Plan deductible[\s\S]*?\$([\d,]+)/i) || pdfText.match(/Deductible:[\s\S]*?\$([\d,]+)/i)
   if (deductibleMatch) {
     data.metadata.medical_deductible = parseFloat(deductibleMatch[1].replace(/,/g, ''))
   } else if (pdfText.includes('$0') && pdfText.includes('deductible')) {
@@ -249,7 +255,8 @@ function extractPlanDataFromPdf(pdfText, filename) {
   }
 
   // Extract prescription drug deductible
-  const rxDeductibleMatch = pdfText.match(/\$(\d+)\s+for Part D/i) || pdfText.match(/prescription drug deductible[\s\S]*?\$([\d,]+)/i)
+  const rxDeductibleMatch =
+    pdfText.match(/\$(\d+)\s+for Part D/i) || pdfText.match(/prescription drug deductible[\s\S]*?\$([\d,]+)/i)
   if (rxDeductibleMatch) {
     data.metadata.rx_deductible = parseFloat(rxDeductibleMatch[1].replace(/,/g, ''))
   } else {
@@ -258,14 +265,17 @@ function extractPlanDataFromPdf(pdfText, filename) {
 
   // Extract copays (similar patterns to MedMutual)
   // Primary care - be more specific to avoid false matches
-  const pcpMatch = pdfText.match(/Primary care[\s\S]{0,200}?\$(\d+)\s+copay/i) || 
-                   pdfText.match(/Primary care physician[\s\S]{0,200}?\$(\d+)\s+copay/i)
-  if (pcpMatch && parseFloat(pcpMatch[1]) < 500) { // Sanity check - copays shouldn't be > $500
+  const pcpMatch =
+    pdfText.match(/Primary care[\s\S]{0,200}?\$(\d+)\s+copay/i) ||
+    pdfText.match(/Primary care physician[\s\S]{0,200}?\$(\d+)\s+copay/i)
+  if (pcpMatch && parseFloat(pcpMatch[1]) < 500) {
+    // Sanity check - copays shouldn't be > $500
     data.metadata.primary_care_copay = parseFloat(pcpMatch[1])
   }
 
-  const specialistMatch = pdfText.match(/Specialist[\s\S]{0,200}?\$(\d+)\s+copay/i) ||
-                         pdfText.match(/Specialist visit[\s\S]{0,200}?\$(\d+)\s+copay/i)
+  const specialistMatch =
+    pdfText.match(/Specialist[\s\S]{0,200}?\$(\d+)\s+copay/i) ||
+    pdfText.match(/Specialist visit[\s\S]{0,200}?\$(\d+)\s+copay/i)
   if (specialistMatch && parseFloat(specialistMatch[1]) < 500) {
     data.metadata.specialist_copay = parseFloat(specialistMatch[1])
   }
@@ -377,7 +387,7 @@ function extractPlanType(planName, description = '') {
  */
 async function fetchFromCmsApi() {
   console.log('🔍 Attempting to fetch from CMS data sources...')
-  
+
   // CMS typically publishes data at data.cms.gov or cms.gov
   // The exact URLs change each year, but the pattern is consistent
   const possibleEndpoints = [
@@ -410,7 +420,7 @@ async function fetchFromCmsApi() {
  */
 async function readLocalFile() {
   console.log('🔍 Checking for locally downloaded CMS files...')
-  
+
   const possibleFiles = [
     'MA_Landscape_Source_Files_2026.csv',
     '2026-ma-landscape-source-files.csv',
@@ -439,14 +449,14 @@ async function readLocalFile() {
  */
 async function fetchFromAetnaEnrollmentSite(zipCode, countyFips, planYear = 2026) {
   console.log('🔍 Attempting to fetch from Aetna enrollment site...')
-  
+
   const url = `https://enrollmedicare.aetna.com/s/shop?ZipCode=${zipCode}&CountyFIPS=${countyFips}&PlanYear=${planYear}&entry=SelectYear&step=PlanList`
-  
+
   try {
     console.log(`  Fetching: ${url}`)
     const html = await fetchUrl(url)
     console.log(`  ✅ Successfully fetched HTML`)
-    
+
     // Try to extract any embedded JSON data
     const jsonMatches = html.match(/<script[^>]*>[\s\S]*?({[\s\S]*?"plan[s]?":[\s\S]*?})[\s\S]*?<\/script>/gi)
     if (jsonMatches && jsonMatches.length > 0) {
@@ -465,7 +475,7 @@ async function fetchFromAetnaEnrollmentSite(zipCode, countyFips, planYear = 2026
         }
       }
     }
-    
+
     return html
   } catch (error) {
     console.log(`  ❌ Failed: ${error.message}`)
@@ -479,24 +489,24 @@ async function fetchFromAetnaEnrollmentSite(zipCode, countyFips, planYear = 2026
  */
 function parseAetnaEnrollmentHtml(html) {
   if (!html || typeof html !== 'string') return []
-  
+
   const plans = []
-  
+
   // Try to find plan information in the HTML
   // The page structure may vary, so we'll look for common patterns
-  
+
   // Look for data attributes or script tags with plan data
   // Note: The Aetna enrollment site loads data dynamically via JavaScript/API
   // This HTML parser is a placeholder - actual data extraction requires
   // either capturing the API response or using a headless browser
-  
+
   // Future enhancement: Could use regex patterns to extract embedded data
   // const planPatterns = [
   //   /data-plan-id="([^"]+)"/gi,
   //   /plan[_-]?id["\s:=]+([H\d-]+)/gi,
   //   /contract[_-]?number["\s:=]+([H\d]+)/gi,
   // ]
-  
+
   return plans
 }
 
@@ -641,7 +651,7 @@ async function main() {
   const args = process.argv.slice(2)
   let zipCode = null
   let countyFips = null
-  
+
   // Parse arguments: --zip=44035 --county=39093
   for (const arg of args) {
     if (arg.startsWith('--zip=')) {
@@ -697,7 +707,7 @@ async function main() {
   const localFile = await readLocalFile()
   if (localFile) {
     console.log('📊 Parsing local file...')
-    
+
     // Try parsing as CSV
     if (localFile.data.includes(',') && localFile.data.split('\n').length > 1) {
       const csvPlans = parseCsvData(localFile.data)
@@ -706,7 +716,7 @@ async function main() {
         extractedPlans = csvPlans
       }
     }
-    
+
     // Try parsing as JSON
     if (extractedPlans.length === 0) {
       try {
@@ -726,7 +736,7 @@ async function main() {
     const cmsData = await fetchFromCmsApi()
     if (cmsData) {
       console.log('📊 Parsing CMS data...')
-      
+
       // Try parsing as CSV
       if (cmsData.includes(',') && cmsData.split('\n').length > 1) {
         const csvPlans = parseCsvData(cmsData)
@@ -735,7 +745,7 @@ async function main() {
           extractedPlans = csvPlans
         }
       }
-      
+
       // Try parsing as JSON
       if (extractedPlans.length === 0) {
         try {
@@ -757,7 +767,7 @@ async function main() {
     const aetnaData = await fetchFromAetnaEnrollmentSite(zipCode, countyFips, 2026)
     if (aetnaData) {
       console.log('📊 Parsing Aetna enrollment site data...')
-      
+
       // Try parsing as JSON first
       if (typeof aetnaData === 'object') {
         const jsonPlans = parseJsonData(JSON.stringify(aetnaData))
@@ -766,7 +776,7 @@ async function main() {
           extractedPlans = jsonPlans
         }
       }
-      
+
       // Try parsing as HTML
       if (extractedPlans.length === 0 && typeof aetnaData === 'string') {
         const htmlPlans = parseAetnaEnrollmentHtml(aetnaData)
@@ -815,7 +825,7 @@ async function main() {
     console.log('  - Run this script again: node scripts/extract-aetna-plans.mjs')
     console.log('  - The script will automatically detect and parse CSV/JSON files')
     console.log('  - Or manually create a JSON file following the template format')
-    
+
     // Create a template JSON file
     const template = [
       {
@@ -837,12 +847,12 @@ async function main() {
         },
       },
     ]
-    
+
     const templateFile = 'aetna-plans-template.json'
     await fs.writeFile(templateFile, JSON.stringify(template, null, 2))
     console.log(`\n📄 Created template file: ${templateFile}`)
     console.log('   You can use this as a starting point for manual data entry.')
-    
+
     process.exit(0)
   }
 
@@ -904,4 +914,3 @@ async function main() {
 
 // Run the extraction
 main().catch(console.error)
-

@@ -10,12 +10,7 @@ import { Badge } from '@/components/ui/badge'
 import { getStatusBadge, formatLocalDateWithWeekday } from '@/lib/contact-utils'
 import { formatDateTimeWithWeekday } from '@/lib/utils'
 import { getDisplayDate as getActionDisplayDate } from '@/lib/action-utils'
-import type {
-  DashboardContact,
-  Action,
-  ContactWithBirthday,
-  DashboardData,
-} from '@/lib/dashboard-utils'
+import type { DashboardContact, Action, ContactWithBirthday, DashboardData } from '@/lib/dashboard-utils'
 
 // Helper function to render status badge
 function renderStatusBadge(status: string | null) {
@@ -61,9 +56,7 @@ function renderActionRow(action: Action, router: ReturnType<typeof useRouter>) {
   const formatSignedDayDiff = (dateString: string | null) => {
     if (!dateString) return ''
     const target = new Date(dateString)
-    const targetUTC = new Date(
-      Date.UTC(target.getUTCFullYear(), target.getUTCMonth(), target.getUTCDate())
-    )
+    const targetUTC = new Date(Date.UTC(target.getUTCFullYear(), target.getUTCMonth(), target.getUTCDate()))
     const now = new Date()
     const todayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
     const diffDays = Math.round((targetUTC.getTime() - todayUTC.getTime()) / (1000 * 60 * 60 * 24))
@@ -83,16 +76,12 @@ function renderActionRow(action: Action, router: ReturnType<typeof useRouter>) {
     >
       <div className="flex items-start justify-between">
         <div className="flex-1">
-          <h4 className="text-foreground font-medium line-clamp-2">{action.title}</h4>
+          <h4 className="text-foreground line-clamp-2 font-medium">{action.title}</h4>
           <div className="mt-1 flex items-center space-x-2">
             {action.priority && (
               <Badge
                 variant={
-                  action.priority === 'high'
-                    ? 'destructive'
-                    : action.priority === 'medium'
-                      ? 'default'
-                      : 'secondary'
+                  action.priority === 'high' ? 'destructive' : action.priority === 'medium' ? 'default' : 'secondary'
                 }
                 className="text-xs"
               >
@@ -100,10 +89,7 @@ function renderActionRow(action: Action, router: ReturnType<typeof useRouter>) {
               </Badge>
             )}
             {displayDateString && (
-              <span
-                className="text-muted-foreground ml-2 text-xs"
-                title={formatDateTimeWithWeekday(displayDateString)}
-              >
+              <span className="text-muted-foreground ml-2 text-xs" title={formatDateTimeWithWeekday(displayDateString)}>
                 {dayDiffLabel}
               </span>
             )}
@@ -113,7 +99,7 @@ function renderActionRow(action: Action, router: ReturnType<typeof useRouter>) {
             </span>
           </div>
           {action.description && (
-            <p className="text-muted-foreground mt-1 text-sm line-clamp-2">{action.description}</p>
+            <p className="text-muted-foreground mt-1 line-clamp-2 text-sm">{action.description}</p>
           )}
         </div>
         <div className="ml-2">
@@ -149,11 +135,7 @@ function renderContactRow(
       {renderContactInfo(contact)}
       {showDate && (
         <div className="flex items-center space-x-2">
-          <Badge
-            variant={badgeVariant}
-            className="text-xs"
-            title={formatLocalDateWithWeekday(contact.birthdate!)}
-          >
+          <Badge variant={badgeVariant} className="text-xs" title={formatLocalDateWithWeekday(contact.birthdate!)}>
             {getBadgeText()}
           </Badge>
         </div>
@@ -197,23 +179,18 @@ export default function DashboardClient({ data }: DashboardClientProps) {
                   </Link>
                 </div>
               </CardHeader>
-              <CardContent className="p-4 max-h-[50vh] overflow-auto scrollbar-hide">
+              <CardContent className="scrollbar-hide max-h-[50vh] overflow-auto p-4">
                 {upcomingActions.length === 0 ? (
                   <div className="py-8 text-center">
                     <Bell className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
                     <p className="text-muted-foreground">No upcoming actions</p>
-                    <Link
-                      href="/manage"
-                      className="text-primary hover:text-primary/80 mt-2 inline-flex items-center"
-                    >
+                    <Link href="/manage" className="text-primary hover:text-primary/80 mt-2 inline-flex items-center">
                       <Plus className="mr-1 h-4 w-4" />
                       Add an action
                     </Link>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {upcomingActions.map((action) => renderActionRow(action, router))}
-                  </div>
+                  <div className="space-y-2">{upcomingActions.map((action) => renderActionRow(action, router))}</div>
                 )}
               </CardContent>
             </Card>
@@ -223,7 +200,7 @@ export default function DashboardClient({ data }: DashboardClientProps) {
               <CardHeader>
                 <CardTitle>High Priority</CardTitle>
               </CardHeader>
-              <CardContent className="p-4 max-h-[50vh] overflow-auto scrollbar-hide">
+              <CardContent className="scrollbar-hide max-h-[50vh] overflow-auto p-4">
                 {highPriorityActions.length === 0 ? (
                   <div className="py-8 text-center">
                     <p className="text-muted-foreground">No high priority actions</p>
@@ -241,7 +218,7 @@ export default function DashboardClient({ data }: DashboardClientProps) {
               <CardHeader>
                 <CardTitle>Medium Priority</CardTitle>
               </CardHeader>
-              <CardContent className="p-4 max-h-[50vh] overflow-auto scrollbar-hide">
+              <CardContent className="scrollbar-hide max-h-[50vh] overflow-auto p-4">
                 {mediumPriorityActions.length === 0 ? (
                   <div className="py-8 text-center">
                     <p className="text-muted-foreground">No medium priority actions</p>
@@ -264,7 +241,7 @@ export default function DashboardClient({ data }: DashboardClientProps) {
               </CardHeader>
               <CardContent>
                 <div className="scrollbar-hide max-h-[35vh] overflow-x-auto overflow-y-auto">
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 min-w-max">
+                  <div className="grid min-w-max grid-cols-1 gap-6 md:grid-cols-2">
                     {/* Upcoming 65 */}
                     <div className="md:after:bg-border relative md:after:absolute md:after:top-0 md:after:right-[-12px] md:after:bottom-0 md:after:w-px">
                       <h4 className="text-muted-foreground mb-3 text-sm font-medium">Upcoming</h4>
@@ -304,7 +281,7 @@ export default function DashboardClient({ data }: DashboardClientProps) {
               </CardHeader>
               <CardContent>
                 <div className="scrollbar-hide max-h-[35vh] overflow-x-auto overflow-y-auto">
-                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2 min-w-max">
+                  <div className="grid min-w-max grid-cols-1 gap-6 md:grid-cols-2">
                     {/* Upcoming Birthdays */}
                     <div className="md:after:bg-border relative md:after:absolute md:after:top-0 md:after:right-[-12px] md:after:bottom-0 md:after:w-px">
                       <h4 className="text-muted-foreground mb-3 text-sm font-medium">Upcoming</h4>
@@ -342,5 +319,3 @@ export default function DashboardClient({ data }: DashboardClientProps) {
     </div>
   )
 }
-
-

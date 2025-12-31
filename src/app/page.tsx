@@ -55,20 +55,26 @@ async function DashboardData() {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
     console.error('Dashboard data fetch error:', errorMessage)
-    
+
     return (
       <div className="p-8">
         <div className="rounded-lg border border-red-200 bg-red-50 p-6">
-          <h2 className="text-lg font-semibold text-red-900 mb-2">
-            Database Connection Error
-          </h2>
-          <p className="text-red-700 mb-4">{errorMessage}</p>
-          <div className="text-sm text-red-600 space-y-1">
-            <p><strong>Common fixes:</strong></p>
-            <ul className="list-disc list-inside space-y-1 ml-4">
+          <h2 className="mb-2 text-lg font-semibold text-red-900">Database Connection Error</h2>
+          <p className="mb-4 text-red-700">{errorMessage}</p>
+          <div className="space-y-1 text-sm text-red-600">
+            <p>
+              <strong>Common fixes:</strong>
+            </p>
+            <ul className="ml-4 list-inside list-disc space-y-1">
               <li>Check that your Supabase project is not paused (free tier projects pause after inactivity)</li>
-              <li>Verify <code className="bg-red-100 px-1 rounded">NEXT_PUBLIC_SUPABASE_URL</code> and <code className="bg-red-100 px-1 rounded">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> in <code className="bg-red-100 px-1 rounded">.env.local</code></li>
-              <li>Restart the dev server after updating <code className="bg-red-100 px-1 rounded">.env.local</code></li>
+              <li>
+                Verify <code className="rounded bg-red-100 px-1">NEXT_PUBLIC_SUPABASE_URL</code> and{' '}
+                <code className="rounded bg-red-100 px-1">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> in{' '}
+                <code className="rounded bg-red-100 px-1">.env.local</code>
+              </li>
+              <li>
+                Restart the dev server after updating <code className="rounded bg-red-100 px-1">.env.local</code>
+              </li>
               <li>Check your network connection</li>
             </ul>
           </div>

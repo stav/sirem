@@ -29,7 +29,6 @@ function TagPicker({ contactId, selectedTagIds, onTagsChange, onTagsChangeWithDa
   const { tags, categories, loading, assignTagToContact, removeTagFromContact } = useTags()
   const [open, setOpen] = useState(false)
   const [selectedTags, setSelectedTags] = useState<TagWithCategory[]>([])
-  
 
   // Update selected tags when tags or selectedTagIds change
   useEffect(() => {
@@ -51,7 +50,7 @@ function TagPicker({ contactId, selectedTagIds, onTagsChange, onTagsChangeWithDa
       // Remove tag
       const newTagIds = selectedTagIds.filter((id) => id !== tag.id)
       const updatedTags = selectedTags.filter((t) => t.id !== tag.id)
-      
+
       // Prefer onTagsChangeWithData to avoid database fetches
       if (onTagsChangeWithData) {
         onTagsChangeWithData(updatedTags)
@@ -67,7 +66,7 @@ function TagPicker({ contactId, selectedTagIds, onTagsChange, onTagsChangeWithDa
       // Add tag
       const newTagIds = [...selectedTagIds, tag.id]
       const updatedTags = [...selectedTags, tag]
-      
+
       // Prefer onTagsChangeWithData to avoid database fetches
       if (onTagsChangeWithData) {
         onTagsChangeWithData(updatedTags)
@@ -85,7 +84,7 @@ function TagPicker({ contactId, selectedTagIds, onTagsChange, onTagsChangeWithDa
   const handleRemoveTag = async (tagId: string) => {
     const newTagIds = selectedTagIds.filter((id) => id !== tagId)
     const updatedTags = selectedTags.filter((t) => t.id !== tagId)
-    
+
     // Prefer onTagsChangeWithData to avoid database fetches
     if (onTagsChangeWithData) {
       onTagsChangeWithData(updatedTags)

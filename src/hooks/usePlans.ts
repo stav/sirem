@@ -27,7 +27,7 @@ interface UsePlansOptions {
 
 export function usePlans(options?: UsePlansOptions) {
   const initialPlans = options?.initialPlans ?? []
-  const shouldAutoFetch = options?.autoFetch ?? (initialPlans.length === 0)
+  const shouldAutoFetch = options?.autoFetch ?? initialPlans.length === 0
 
   const [plans, setPlans] = useState<Plan[]>(initialPlans)
   const [loading, setLoading] = useState<boolean>(shouldAutoFetch)

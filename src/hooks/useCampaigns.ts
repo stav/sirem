@@ -64,10 +64,7 @@ export function useCampaigns() {
 
   const fetchCampaigns = async () => {
     try {
-      const { data, error } = await supabase
-        .from('campaigns')
-        .select('*')
-        .order('created_at', { ascending: false })
+      const { data, error } = await supabase.from('campaigns').select('*').order('created_at', { ascending: false })
 
       if (error) {
         console.error('Error fetching campaigns:', error)
@@ -86,12 +83,12 @@ export function useCampaigns() {
     try {
       // Extract email addresses from contacts (filters out unsubscribed)
       const recipients = await extractEmailAddresses(contacts)
-      
+
       if (recipients.length === 0) {
         throw new Error('No valid email addresses found in the selected contacts')
       }
 
-      const disabledEmailsSet = new Set(disabledEmails.map(e => e.toLowerCase().trim()))
+      const disabledEmailsSet = new Set(disabledEmails.map((e) => e.toLowerCase().trim()))
 
       // Create campaign
       const { data: campaign, error: campaignError } = await supabase
@@ -104,7 +101,7 @@ export function useCampaigns() {
           total_recipients: recipients.length,
           scheduled_at: campaignData.scheduled_at || null,
           status: campaignData.scheduled_at ? 'scheduled' : 'draft',
-          metadata: campaignData.metadata ? (campaignData.metadata as Json) : null
+          metadata: campaignData.metadata ? (campaignData.metadata as Json) : null,
         })
         .select()
         .single()
@@ -115,18 +112,16 @@ export function useCampaigns() {
       }
 
       // Create campaign recipients - include all recipients, but set enabled based on disabledEmails
-      const recipientData = recipients.map(recipient => ({
+      const recipientData = recipients.map((recipient) => ({
         campaign_id: campaign.id,
-        contact_id: contacts.find(c => c.email === recipient.email)?.id || '',
+        contact_id: contacts.find((c) => c.email === recipient.email)?.id || '',
         email_address: recipient.email,
         first_name: recipient.firstName,
         last_name: recipient.lastName,
-        enabled: !disabledEmailsSet.has(recipient.email.toLowerCase().trim())
+        enabled: !disabledEmailsSet.has(recipient.email.toLowerCase().trim()),
       }))
 
-      const { error: recipientsError } = await supabase
-        .from('campaign_recipients')
-        .insert(recipientData)
+      const { error: recipientsError } = await supabase.from('campaign_recipients').insert(recipientData)
 
       if (recipientsError) {
         console.error('Error creating campaign recipients:', recipientsError)
@@ -146,10 +141,7 @@ export function useCampaigns() {
   const sendCampaign = async (campaignId: string) => {
     try {
       // Update campaign status to sending
-      await supabase
-        .from('campaigns')
-        .update({ status: 'sending' })
-        .eq('id', campaignId)
+      await supabase.from('campaigns').update({ status: 'sending' }).eq('id', campaignId)
 
       // Get campaign details
       const { data: campaign, error: campaignError } = await supabase
@@ -166,7 +158,8 @@ export function useCampaigns() {
       // Include pending, sent, and failed (for resend capability)
       const { data: recipients, error: recipientsError } = await supabase
         .from('campaign_recipients')
-        .select(`
+        .select(
+          `
           *,
           contacts (
             id,
@@ -185,7 +178,8 @@ export function useCampaigns() {
               county
             )
           )
-        `)
+        `
+        )
         .eq('campaign_id', campaignId)
         .in('status', ['pending', 'sent', 'failed'])
 
@@ -194,20 +188,20 @@ export function useCampaigns() {
       }
 
       // Filter to only enabled recipients
-      const enabledRecipients = recipients.filter(r => r.enabled !== false)
+      const enabledRecipients = recipients.filter((r) => r.enabled !== false)
 
       // Get unsubscribed emails to filter them out
       const { getUnsubscribedEmails } = await import('@/lib/email-service')
       const unsubscribedEmails = await getUnsubscribedEmails()
 
       // Filter out unsubscribed emails
-      const validRecipients = enabledRecipients.filter(r => {
+      const validRecipients = enabledRecipients.filter((r) => {
         const emailLower = r.email_address.toLowerCase().trim()
         return !unsubscribedEmails.has(emailLower)
       })
 
       // Prepare email data with full contact information
-      const emailRecipients = validRecipients.map(r => {
+      const emailRecipients = validRecipients.map((r) => {
         type RecipientWithContact = CampaignRecipient & {
           contacts?: {
             id: string
@@ -237,7 +231,7 @@ export function useCampaigns() {
           postal_code?: string | null
           county?: string | null
         }>
-        
+
         // Use primary address (first one) if available
         const primaryAddress = addresses[0] || {}
 
@@ -271,7 +265,7 @@ export function useCampaigns() {
           htmlContent: campaign.html_content ?? campaign.content,
           textContent: campaign.content,
           templateName,
-          templateProps
+          templateProps,
         },
         10, // batch size (for organization, but delay is per-email)
         600 // delay between each email (600ms = ~1.67 req/sec, safely under 2 req/sec limit)
@@ -280,39 +274,38 @@ export function useCampaigns() {
       // Update recipient statuses individually with API response data FIRST
       // This ensures we capture all results even if all emails fail
       if (result.results && result.results.length > 0) {
-        const updates = result.results.map(emailResult => {
-          const recipient = enabledRecipients.find(r => r.email_address === emailResult.email)
-          if (!recipient) return null
+        const updates = result.results
+          .map((emailResult) => {
+            const recipient = enabledRecipients.find((r) => r.email_address === emailResult.email)
+            if (!recipient) return null
 
-          const updateData: Record<string, unknown> = {
-            status: emailResult.success ? 'sent' : 'failed',
-            sent_at: new Date().toISOString()
-          }
+            const updateData: Record<string, unknown> = {
+              status: emailResult.success ? 'sent' : 'failed',
+              sent_at: new Date().toISOString(),
+            }
 
-          if (emailResult.messageId) {
-            updateData.resend_message_id = emailResult.messageId
-          }
+            if (emailResult.messageId) {
+              updateData.resend_message_id = emailResult.messageId
+            }
 
-          if (emailResult.error) {
-            updateData.error_message = emailResult.error
-          }
+            if (emailResult.error) {
+              updateData.error_message = emailResult.error
+            }
 
-          return supabase
-            .from('campaign_recipients')
-            .update(updateData)
-            .eq('id', recipient.id)
-        }).filter(Boolean)
+            return supabase.from('campaign_recipients').update(updateData).eq('id', recipient.id)
+          })
+          .filter(Boolean)
 
         await Promise.all(updates)
 
         // Create action records for each successfully sent email
         const currentTime = new Date().toISOString()
-        const successfulResults = result.results.filter(r => r.success)
-        
+        const successfulResults = result.results.filter((r) => r.success)
+
         if (successfulResults.length > 0) {
           const actionRecords = successfulResults
-            .map(emailResult => {
-              const recipient = enabledRecipients.find(r => r.email_address === emailResult.email)
+            .map((emailResult) => {
+              const recipient = enabledRecipients.find((r) => r.email_address === emailResult.email)
               if (!recipient || !recipient.contact_id) return null
 
               // Get contact name for description
@@ -325,7 +318,7 @@ export function useCampaigns() {
               }
               const recipientWithContact = recipient as RecipientWithContact
               const contact = recipientWithContact.contacts
-              const contactName = contact 
+              const contactName = contact
                 ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || recipient.email_address
                 : recipient.email_address
 
@@ -336,7 +329,7 @@ export function useCampaigns() {
                 status: 'completed',
                 completed_date: currentTime,
                 created_at: currentTime,
-                source: 'Campaign'
+                source: 'Campaign',
               }
             })
             .filter((record): record is NonNullable<typeof record> => record !== null)
@@ -347,12 +340,12 @@ export function useCampaigns() {
         }
       } else if (result.success > 0) {
         // Fallback: update all enabled recipients as sent if no individual results
-        const enabledRecipientIds = enabledRecipients.map(r => r.id)
+        const enabledRecipientIds = enabledRecipients.map((r) => r.id)
         await supabase
           .from('campaign_recipients')
-          .update({ 
+          .update({
             status: 'sent',
-            sent_at: new Date().toISOString()
+            sent_at: new Date().toISOString(),
           })
           .eq('campaign_id', campaignId)
           .in('id', enabledRecipientIds)
@@ -360,8 +353,8 @@ export function useCampaigns() {
         // Create action records for all enabled recipients (fallback case)
         const currentTime = new Date().toISOString()
         const actionRecords = enabledRecipients
-          .filter(r => !!r.contact_id)
-          .map(recipient => {
+          .filter((r) => !!r.contact_id)
+          .map((recipient) => {
             // Get contact name for description
             type RecipientWithContact = CampaignRecipient & {
               contacts?: {
@@ -372,7 +365,7 @@ export function useCampaigns() {
             }
             const recipientWithContact = recipient as RecipientWithContact
             const contact = recipientWithContact.contacts
-            const contactName = contact 
+            const contactName = contact
               ? `${contact.first_name || ''} ${contact.last_name || ''}`.trim() || recipient.email_address
               : recipient.email_address
 
@@ -383,7 +376,7 @@ export function useCampaigns() {
               status: 'completed',
               completed_date: currentTime,
               created_at: currentTime,
-              source: 'Campaign'
+              source: 'Campaign',
             }
           })
 
@@ -395,27 +388,24 @@ export function useCampaigns() {
       // Update campaign status based on results
       if (result.success === 0 && result.failed > 0) {
         // All emails failed
-        await supabase
-          .from('campaigns')
-          .update({ status: 'cancelled' })
-          .eq('id', campaignId)
-        
+        await supabase.from('campaigns').update({ status: 'cancelled' }).eq('id', campaignId)
+
         await fetchCampaigns()
-        return { 
-          success: false, 
+        return {
+          success: false,
           error: `All emails failed to send. ${result.errors.join('; ')}`,
           sent: result.success,
-          failed: result.failed
+          failed: result.failed,
         }
       }
 
       // Some or all emails succeeded
       await supabase
         .from('campaigns')
-        .update({ 
+        .update({
           status: 'sent',
           sent_at: new Date().toISOString(),
-          sent_count: result.success
+          sent_count: result.success,
         })
         .eq('id', campaignId)
 
@@ -426,12 +416,9 @@ export function useCampaigns() {
       return { success: true, sent: result.success, failed: result.failed }
     } catch (error) {
       console.error('Error sending campaign:', error)
-      
+
       // Update campaign status to failed
-      await supabase
-        .from('campaigns')
-        .update({ status: 'cancelled' })
-        .eq('id', campaignId)
+      await supabase.from('campaigns').update({ status: 'cancelled' }).eq('id', campaignId)
 
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
     }
@@ -439,10 +426,7 @@ export function useCampaigns() {
 
   const deleteCampaign = async (campaignId: string) => {
     try {
-      const { error } = await supabase
-        .from('campaigns')
-        .delete()
-        .eq('id', campaignId)
+      const { error } = await supabase.from('campaigns').delete().eq('id', campaignId)
 
       if (error) {
         console.error('Error deleting campaign:', error)
@@ -471,13 +455,10 @@ export function useCampaigns() {
         ...updates,
         scheduled_at: updates.scheduled_at === '' || updates.scheduled_at === undefined ? null : updates.scheduled_at,
         html_content: updates.html_content === '' || updates.html_content === undefined ? null : updates.html_content,
-        metadata: updates.metadata ? (updates.metadata as Json) : undefined
+        metadata: updates.metadata ? (updates.metadata as Json) : undefined,
       }
 
-      const { error } = await supabase
-        .from('campaigns')
-        .update(updateData)
-        .eq('id', campaignId)
+      const { error } = await supabase.from('campaigns').update(updateData).eq('id', campaignId)
 
       if (error) {
         console.error('Error updating campaign:', {
@@ -509,7 +490,7 @@ export function useCampaigns() {
     createCampaign,
     sendCampaign,
     deleteCampaign,
-    updateCampaign
+    updateCampaign,
   }
 }
 
@@ -538,10 +519,14 @@ export function useCampaignRecipients(campaignId: string) {
     }
   }
 
-  const updateRecipientStatus = async (recipientId: string, status: CampaignRecipient['status'], metadata?: Record<string, unknown>) => {
+  const updateRecipientStatus = async (
+    recipientId: string,
+    status: CampaignRecipient['status'],
+    metadata?: Record<string, unknown>
+  ) => {
     try {
       const updateData: Record<string, unknown> = { status }
-      
+
       if (status === 'sent') {
         updateData.sent_at = new Date().toISOString()
       } else if (status === 'delivered') {
@@ -558,10 +543,7 @@ export function useCampaignRecipients(campaignId: string) {
         updateData.metadata = metadata
       }
 
-      const { error } = await supabase
-        .from('campaign_recipients')
-        .update(updateData)
-        .eq('id', recipientId)
+      const { error } = await supabase.from('campaign_recipients').update(updateData).eq('id', recipientId)
 
       if (error) {
         console.error('Error updating recipient status:', error)
@@ -586,6 +568,6 @@ export function useCampaignRecipients(campaignId: string) {
     recipients,
     loading,
     fetchRecipients,
-    updateRecipientStatus
+    updateRecipientStatus,
   }
 }

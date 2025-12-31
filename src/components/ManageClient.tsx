@@ -124,7 +124,15 @@ export default function ManageClient({ initialContacts, initialActions }: Manage
       showContactNotesModal ||
       isExportListModalOpen ||
       showCampaignModal,
-    [showContactForm, showActionForm, showActionViewModal, showContactViewModal, showContactNotesModal, isExportListModalOpen, showCampaignModal]
+    [
+      showContactForm,
+      showActionForm,
+      showActionViewModal,
+      showContactViewModal,
+      showContactNotesModal,
+      isExportListModalOpen,
+      showCampaignModal,
+    ]
   )
 
   useEffect(() => {
@@ -264,7 +272,9 @@ export default function ManageClient({ initialContacts, initialActions }: Manage
     setIsSubmittingContact(true)
 
     try {
-      const result = editingContact ? await updateContact(editingContact.id, contactForm) : await createContact(contactForm, pendingRoles)
+      const result = editingContact
+        ? await updateContact(editingContact.id, contactForm)
+        : await createContact(contactForm, pendingRoles)
 
       if (result) {
         const contactName = `${contactForm.first_name} ${contactForm.last_name}`
@@ -400,7 +410,11 @@ export default function ManageClient({ initialContacts, initialActions }: Manage
             title: 'Action updated',
             description: `"${actionForm.title}" for ${contactName} was successfully updated.`,
           })
-          logger.info(`Action updated: ${actionForm.title} for ${contactName}`, 'action_update', editingAction.contact_id)
+          logger.info(
+            `Action updated: ${actionForm.title} for ${contactName}`,
+            'action_update',
+            editingAction.contact_id
+          )
           closeActionForm()
         } else {
           toast({
@@ -752,17 +766,14 @@ export default function ManageClient({ initialContacts, initialActions }: Manage
 
           {/* Campaign Modal */}
           <Dialog open={showCampaignModal} onOpenChange={setShowCampaignModal}>
-            <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogContent className="max-h-[90vh] max-w-4xl overflow-y-auto">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
                   <Mail className="h-5 w-5" />
                   Create Email Campaign
                 </DialogTitle>
               </DialogHeader>
-              <CampaignFromFilter
-                filteredContacts={filteredContacts}
-                onClose={() => setShowCampaignModal(false)}
-              />
+              <CampaignFromFilter filteredContacts={filteredContacts} onClose={() => setShowCampaignModal(false)} />
             </DialogContent>
           </Dialog>
         </div>
@@ -770,4 +781,3 @@ export default function ManageClient({ initialContacts, initialActions }: Manage
     </div>
   )
 }
-

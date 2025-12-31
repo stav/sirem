@@ -141,9 +141,7 @@ export function useActions(options?: UseActionsOptions) {
       // Optimistically update local state first
       setActions((prevActions) =>
         prevActions.map((a) =>
-          a.id === action.id
-            ? { ...a, status: newStatus as Action['status'], completed_date: completedDate }
-            : a
+          a.id === action.id ? { ...a, status: newStatus as Action['status'], completed_date: completedDate } : a
         )
       )
 
@@ -179,9 +177,7 @@ export function useActions(options?: UseActionsOptions) {
       // Optimistically update local state first
       setActions((prevActions) =>
         prevActions.map((a) =>
-          a.id === action.id
-            ? { ...a, status: 'completed' as Action['status'], completed_date: completedDate }
-            : a
+          a.id === action.id ? { ...a, status: 'completed' as Action['status'], completed_date: completedDate } : a
         )
       )
 

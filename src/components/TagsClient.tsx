@@ -25,15 +25,7 @@ interface TagsClientProps {
 }
 
 export default function TagsClient({ initialTags, initialCategories }: TagsClientProps) {
-  const {
-    tags,
-    categories,
-    createCategory,
-    deleteCategory,
-    updateCategory,
-    deleteTag,
-    fetchTags,
-  } = useTagsPage({
+  const { tags, categories, createCategory, deleteCategory, updateCategory, deleteTag, fetchTags } = useTagsPage({
     initialTags,
     initialCategories,
     autoFetch: false,
@@ -327,4 +319,3 @@ export default function TagsClient({ initialTags, initialCategories }: TagsClien
     </div>
   )
 }
-

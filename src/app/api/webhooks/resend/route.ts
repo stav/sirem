@@ -11,22 +11,15 @@ const supabase = createClient(
  * Verify webhook signature from Resend
  * Resend signs webhooks with a secret key
  */
-function verifyResendSignature(
-  payload: string,
-  signature: string,
-  secret: string
-): boolean {
+function verifyResendSignature(payload: string, signature: string, secret: string): boolean {
   try {
     const hmac = crypto.createHmac('sha256', secret)
     hmac.update(payload)
     const expectedSignature = hmac.digest('hex')
-    
+
     // Resend may send signature in different formats, handle both
     return (
-      crypto.timingSafeEqual(
-        Buffer.from(signature),
-        Buffer.from(expectedSignature)
-      ) || signature === expectedSignature
+      crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expectedSignature)) || signature === expectedSignature
     )
   } catch (error) {
     console.error('Error verifying signature:', error)
@@ -36,9 +29,9 @@ function verifyResendSignature(
 
 /**
  * Handle Resend webhook events
- * 
+ *
  * Only handles email.complained events (spam complaints) which trigger unsubscribe.
- * 
+ *
  * Note: There is NO email.unsubscribed event in Resend. Unsubscribes are handled via:
  * - Manual unsubscribe links (your /api/unsubscribe endpoint)
  * - email.complained events (spam complaints - handled here)
@@ -52,16 +45,11 @@ export async function POST(request: NextRequest) {
     // Verify webhook signature (if secret is configured)
     const webhookSecret = process.env.RESEND_WEBHOOK_SECRET
     if (webhookSecret) {
-      const signature = request.headers.get('resend-signature') || 
-                       request.headers.get('x-resend-signature') || 
-                       ''
-      
+      const signature = request.headers.get('resend-signature') || request.headers.get('x-resend-signature') || ''
+
       if (!signature || !verifyResendSignature(rawBody, signature, webhookSecret)) {
         console.error('Invalid webhook signature')
-        return NextResponse.json(
-          { error: 'Invalid signature' },
-          { status: 401 }
-        )
+        return NextResponse.json({ error: 'Invalid signature' }, { status: 401 })
       }
     } else {
       console.warn('RESEND_WEBHOOK_SECRET not configured - skipping signature verification')
@@ -84,10 +72,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Webhook processing error:', error)
     // Return 200 to prevent Resend from retrying
-    return NextResponse.json(
-      { error: 'Processing failed' },
-      { status: 200 }
-    )
+    return NextResponse.json({ error: 'Processing failed' }, { status: 200 })
   }
 }
 
@@ -116,7 +101,7 @@ async function handleComplaintEvent(data: {
   [key: string]: unknown
 }) {
   const email = extractEmailFromEvent(data)
-  
+
   if (!email) {
     console.error('Invalid email in complaint event:', data)
     return
@@ -146,24 +131,18 @@ async function unsubscribeEmail(email: string, source: string) {
   }
 
   // Find contact by email
-  const { data: contactData } = await supabase
-    .from('contacts')
-    .select('id, email')
-    .eq('email', email)
-    .single()
+  const { data: contactData } = await supabase.from('contacts').select('id, email').eq('email', email).single()
 
   const contactId = contactData?.id || null
 
   // Record unsubscribe
-  const { error: unsubscribeError } = await supabase
-    .from('email_unsubscribes')
-    .insert({
-      email_address: email,
-      contact_id: contactId,
-      source, // 'webhook_complaint' or other source
-      ip_address: null, // Not available from webhook
-      user_agent: null, // Not available from webhook
-    })
+  const { error: unsubscribeError } = await supabase.from('email_unsubscribes').insert({
+    email_address: email,
+    contact_id: contactId,
+    source, // 'webhook_complaint' or other source
+    ip_address: null, // Not available from webhook
+    user_agent: null, // Not available from webhook
+  })
 
   if (unsubscribeError) {
     console.error('Error recording unsubscribe from webhook:', unsubscribeError)
@@ -172,5 +151,3 @@ async function unsubscribeEmail(email: string, source: string) {
 
   console.log('Successfully processed unsubscribe for:', email, 'source:', source)
 }
-
-

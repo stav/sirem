@@ -21,11 +21,13 @@ export function ContactFilterProvider({ children }: { children: ReactNode }) {
   }
 
   return (
-    <ContactFilterContext.Provider value={{
-      filteredContacts,
-      setFilteredContacts,
-      clearFilteredContacts
-    }}>
+    <ContactFilterContext.Provider
+      value={{
+        filteredContacts,
+        setFilteredContacts,
+        clearFilteredContacts,
+      }}
+    >
       {children}
     </ContactFilterContext.Provider>
   )
@@ -38,7 +40,7 @@ export function useContactFilter() {
     return {
       filteredContacts: [],
       setFilteredContacts: () => {},
-      clearFilteredContacts: () => {}
+      clearFilteredContacts: () => {},
     }
   }
   return context

@@ -29,12 +29,14 @@ export default function ContactNotesModal({
   const [notes, setNotes] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const { toast } = useToast()
-  
+
   // Use the updateContact function passed from parent, or create a minimal one if not provided
-  const updateContact = updateContactProp || (async () => {
-    console.error('updateContact function not provided to ContactNotesModal')
-    return false
-  })
+  const updateContact =
+    updateContactProp ||
+    (async () => {
+      console.error('updateContact function not provided to ContactNotesModal')
+      return false
+    })
 
   // Update notes when contact changes
   useEffect(() => {

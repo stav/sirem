@@ -7,9 +7,11 @@ This document details how the email campaign subscription and unsubscription sys
 ## Database Schema
 
 ### 1. `email_unsubscribes` Table
+
 **Purpose**: Primary tracking table for unsubscribed email addresses. This is the **main filter** used to exclude emails from campaigns.
 
 **Fields**:
+
 - `id` (UUID, Primary Key)
 - `created_at` (TIMESTAMP WITH TIME ZONE) - When the unsubscribe occurred
 - `email_address` (TEXT, NOT NULL) - The unsubscribed email address (indexed)
@@ -21,6 +23,7 @@ This document details how the email campaign subscription and unsubscription sys
 - `metadata` (JSONB) - Additional metadata
 
 **Indexes**:
+
 - `idx_email_unsubscribes_email` - Fast lookup by email address
 - `idx_email_unsubscribes_contact_id` - Fast lookup by contact
 - `idx_email_unsubscribes_created_at` - For time-based queries
@@ -28,7 +31,9 @@ This document details how the email campaign subscription and unsubscription sys
 **Key Point**: This table is the **PRIMARY FILTER** - if an email exists here, it's excluded from all campaigns.
 
 ### 2. `contacts` Table
+
 **Relevant Fields**:
+
 - `id` (UUID, Primary Key)
 - `email` (TEXT, nullable) - Primary email address
 - `inactive` (BOOLEAN, default false) - General contact inactive flag
@@ -38,7 +43,9 @@ This document details how the email campaign subscription and unsubscription sys
 **Limitation**: The `contacts` table only has one `inactive` boolean. If a contact has multiple email addresses, marking the contact inactive affects all emails, not just the unsubscribed one.
 
 ### 3. `emails` Table
+
 **Relevant Fields**:
+
 - `id` (UUID, Primary Key)
 - `contact_id` (UUID, Foreign Key to contacts)
 - `email_address` (TEXT, NOT NULL) - Additional email addresses for a contact
@@ -49,7 +56,9 @@ This document details how the email campaign subscription and unsubscription sys
 **Key Point**: This table supports multiple email addresses per contact, each with its own inactive status.
 
 ### 4. `campaign_recipients` Table
+
 **Relevant Fields**:
+
 - `id` (UUID, Primary Key)
 - `campaign_id` (UUID, Foreign Key to campaigns)
 - `contact_id` (UUID, Foreign Key to contacts)
@@ -94,6 +103,7 @@ This document details how the email campaign subscription and unsubscription sys
 **Function**: `extractEmailAddresses()` in `src/lib/email-service.ts`
 
 **Filtering Steps** (in order):
+
 1. **Skip inactive contacts**: If `contact.inactive === true`, exclude entire contact
 2. **Check main email field** (`contacts.email`):
    - Must be valid email format
@@ -112,6 +122,7 @@ This document details how the email campaign subscription and unsubscription sys
 **Function**: `sendCampaign()` in `src/hooks/useCampaigns.ts`
 
 **Additional Filtering**:
+
 1. **Filter by enabled status**: Only recipients where `campaign_recipients.enabled !== false`
 2. **Filter by unsubscribe status**: Check `email_unsubscribes` table again (in case someone unsubscribed after campaign was created)
 
@@ -172,7 +183,9 @@ This document details how the email campaign subscription and unsubscription sys
 ## Current Issues and Limitations
 
 ### 1. Multiple Sources of Truth
+
 The system uses **three separate mechanisms** to track subscription status:
+
 - `email_unsubscribes` table (PRIMARY - checked first)
 - `contacts.inactive` (general flag, not email-specific)
 - `emails.inactive` (email-specific, but only for emails in emails table)
@@ -180,14 +193,18 @@ The system uses **three separate mechanisms** to track subscription status:
 **Problem**: This creates confusion about which field controls subscription status.
 
 ### 2. Contact Inactive Flag is Too Broad
+
 When someone unsubscribes via their primary email (`contacts.email`), the entire contact is marked inactive. This affects:
+
 - All email addresses for that contact
 - Other contact-related functionality (not just email campaigns)
 
 **Problem**: Unsubscribing from emails shouldn't make the entire contact inactive.
 
 ### 3. No Easy Resubscribe Mechanism
+
 To resubscribe someone, you need to:
+
 1. Delete from `email_unsubscribes` table
 2. Set `contacts.inactive = false` (if it was set)
 3. Set `emails.inactive = false` (if it was set)
@@ -195,11 +212,13 @@ To resubscribe someone, you need to:
 **Problem**: No UI or simple function to resubscribe. Requires manual SQL or multiple operations.
 
 ### 4. UI Doesn't Show Filtering Status
+
 The campaign creation UI shows all contacts with emails, but doesn't indicate which will be filtered out. Users see 3 recipients but only 1 makes it to the campaign.
 
 **Problem**: No visibility into why recipients are excluded.
 
 ### 5. `campaign_recipients.enabled` Confusion
+
 This field is per-campaign and unrelated to global subscription status, but the naming suggests it might be related.
 
 **Problem**: Potential confusion about what "enabled" means.
@@ -225,12 +244,14 @@ This field is per-campaign and unrelated to global subscription status, but the 
 ### Recommendation:
 
 **Keep the `email_unsubscribes` table** for these reasons:
+
 - Compliance and audit trail requirements
 - Ability to track unsubscribes for emails not in contacts table
 - Historical tracking (when, how, from where)
 - Legal protection (proof of unsubscribe requests)
 
 However, **simplify the system** by:
+
 - Making `email_unsubscribes` the ONLY source of truth for subscription status
 - Remove the need to update `contacts.inactive` and `emails.inactive` for unsubscribes
 - Use `contacts.inactive` and `emails.inactive` only for other business logic (not email subscriptions)
@@ -239,15 +260,18 @@ However, **simplify the system** by:
 ## Summary
 
 ### Current Flow:
+
 1. User unsubscribes → Recorded in `email_unsubscribes` + `contacts.inactive`/`emails.inactive` set
 2. Campaign creation → Filters by `email_unsubscribes` table (PRIMARY) + inactive flags
 3. Campaign sending → Filters by `email_unsubscribes` table again + `campaign_recipients.enabled`
 
 ### Key Tables:
+
 - **`email_unsubscribes`**: PRIMARY filter for subscription status
 - **`contacts.inactive`**: General contact flag (too broad for email subscriptions)
 - **`emails.inactive`**: Email-specific flag (only for emails table entries)
 - **`campaign_recipients.enabled`**: Per-campaign flag (not related to subscription)
 
 ### Main Problem:
+
 Too many sources of truth, making it confusing and difficult to resubscribe someone.

@@ -4,11 +4,6 @@ export const metadata: Metadata = {
   title: 'Import',
 }
 
-export default function ImportLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function ImportLayout({ children }: { children: React.ReactNode }) {
   return children
 }
-

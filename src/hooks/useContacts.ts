@@ -60,12 +60,7 @@ export function useContacts(options?: UseContactsOptions) {
       } else {
         setLoading(true)
       }
-      const data = await fetchAllRecords<Contact>(
-        'contacts',
-        CONTACTS_SELECT_QUERY,
-        'created_at',
-        false
-      )
+      const data = await fetchAllRecords<Contact>('contacts', CONTACTS_SELECT_QUERY, 'created_at', false)
 
       setContacts(data)
     } catch (error) {
@@ -123,10 +118,10 @@ export function useContacts(options?: UseContactsOptions) {
       }
 
       logger.contactCreated(`${contactData.first_name} ${contactData.last_name}`, newContact.id)
-      
+
       // Optimistically add to local state first
       setContacts((prevContacts) => [...prevContacts, newContact])
-      
+
       // Then refresh in background without showing loading state
       await fetchContacts(true) // Pass true to indicate this is a refresh, not initial load
       return newContact
@@ -165,7 +160,7 @@ export function useContacts(options?: UseContactsOptions) {
       if (data && data.length > 0) {
         // Optimistically update local state first
         setContacts((prevContacts) => prevContacts.map((contact) => (contact.id === contactId ? data[0] : contact)))
-        
+
         // Then refresh in background without showing loading state
         await fetchContacts(true) // Pass true to indicate this is a refresh, not initial load
         return data[0] // Return the updated contact data
@@ -196,10 +191,10 @@ export function useContacts(options?: UseContactsOptions) {
       }
 
       logger.contactDeleted(contactName, contactId)
-      
+
       // Optimistically remove from local state
       setContacts((prevContacts) => prevContacts.filter((contact) => contact.id !== contactId))
-      
+
       // Then refresh in background without showing loading state
       await fetchContacts(true) // Pass true to indicate this is a refresh, not initial load
       return true

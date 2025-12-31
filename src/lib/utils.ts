@@ -62,10 +62,10 @@ export function generateUUID(): string {
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
     let random = Math.random() * 16
     if (timestamp > 0) {
-      random = (timestamp + random) % 16 | 0
+      random = ((timestamp + random) % 16) | 0
       timestamp = Math.floor(timestamp / 16)
     } else {
-      random = (perfTime + random) % 16 | 0
+      random = ((perfTime + random) % 16) | 0
       perfTime = Math.floor(perfTime / 16)
     }
     if (char === 'x') {
@@ -94,7 +94,7 @@ function utcToEST(utcDateString: string): {
   seconds: number
 } {
   const utcDate = new Date(utcDateString)
-  
+
   // Use Intl.DateTimeFormat to get EST components
   const formatter = new Intl.DateTimeFormat('en-US', {
     timeZone: APP_TIMEZONE,
@@ -106,13 +106,13 @@ function utcToEST(utcDateString: string): {
     second: '2-digit',
     hour12: false,
   })
-  
+
   const parts = formatter.formatToParts(utcDate)
   const getPart = (type: string) => {
     const part = parts.find((p) => p.type === type)
     return part ? parseInt(part.value, 10) : 0
   }
-  
+
   return {
     year: getPart('year'),
     month: getPart('month'),
@@ -133,27 +133,27 @@ export function estDateTimeLocalToUTC(estDateTimeLocal: string): string {
   const [datePart, timePart] = estDateTimeLocal.split('T')
   const [year, month, day] = datePart.split('-').map(Number)
   const [hours, minutes] = timePart.split(':').map(Number)
-  
+
   // Create a date string in ISO format for this EST time
   const estDateString = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:00`
-  
+
   // Strategy: We need to find a UTC time that, when converted to EST, equals our target EST time
   // Use iterative adjustment: start with a guess and adjust
-  
+
   // Start with UTC date using the same components
   const testUtcDate = new Date(`${estDateString}Z`)
   const testEst = utcToEST(testUtcDate.toISOString())
-  
+
   // Calculate the difference between target and actual EST times
   const targetEstDate = new Date(year, month - 1, day, hours, minutes, 0)
   const actualEstDate = new Date(testEst.year, testEst.month - 1, testEst.day, testEst.hours, testEst.minutes, 0)
   const diffMs = targetEstDate.getTime() - actualEstDate.getTime()
-  
+
   // Adjust the UTC date by the difference
   // Note: diffMs is in local time, but we need to account for timezone offset
   // The difference tells us how much to adjust the UTC time
   const adjustedUtcDate = new Date(testUtcDate.getTime() + diffMs)
-  
+
   // Verify the result (one iteration should be enough, but we can refine if needed)
   const finalEst = utcToEST(adjustedUtcDate.toISOString())
   if (
@@ -165,7 +165,7 @@ export function estDateTimeLocalToUTC(estDateTimeLocal: string): string {
   ) {
     return adjustedUtcDate.toISOString()
   }
-  
+
   // If not exact, do one more adjustment
   const finalEstDate = new Date(finalEst.year, finalEst.month - 1, finalEst.day, finalEst.hours, finalEst.minutes, 0)
   const finalDiffMs = targetEstDate.getTime() - finalEstDate.getTime()
@@ -198,7 +198,7 @@ export function formatDateTime(dateString: string | null | undefined): string {
 
     // Convert UTC to EST for display
     const est = utcToEST(normalizedDateString)
-    
+
     const year = est.year
     const month = String(est.month).padStart(2, '0')
     const day = String(est.day).padStart(2, '0')
@@ -270,7 +270,7 @@ export function formatDateTimeForInput(dateString: string | null | undefined): s
 
     // Convert UTC to EST for input display
     const est = utcToEST(normalizedDateString)
-    
+
     const year = est.year
     const month = String(est.month).padStart(2, '0')
     const day = String(est.day).padStart(2, '0')
@@ -289,13 +289,13 @@ export function formatDateTimeForInput(dateString: string | null | undefined): s
  */
 export function getLocalTimeAsUTC(): string {
   const now = new Date()
-  
+
   // Get current time components in EST
   const est = utcToEST(now.toISOString())
-  
+
   // Create a date representing this EST time
   const estDateString = `${est.year}-${String(est.month).padStart(2, '0')}-${String(est.day).padStart(2, '0')}T${String(est.hours).padStart(2, '0')}:${String(est.minutes).padStart(2, '0')}:${String(est.seconds).padStart(2, '0')}`
-  
+
   // Use the helper function to convert EST datetime-local to UTC
   return estDateTimeLocalToUTC(estDateString.replace(' ', 'T').substring(0, 16))
 }

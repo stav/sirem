@@ -4,11 +4,6 @@ export const metadata: Metadata = {
   title: 'Tags',
 }
 
-export default function TagsLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function TagsLayout({ children }: { children: React.ReactNode }) {
   return children
 }
-
